@@ -64,7 +64,7 @@ void start_game()
         draw();
 
         timer_wait_for_frame(&game_timer);
-        printf("fps: %f\n",timer_get_prior_frame_fps(&game_timer));
+        //printf("fps: %f\n",timer_get_prior_frame_fps(&game_timer));
     }
 
     deinit();
@@ -102,7 +102,6 @@ void deinit()
     window_deinit();
 }
 
-int x,y;
 void update()
 {
     //gfx_draw_line(100,100,300,300,COLOR_BLUE);
@@ -110,6 +109,7 @@ void update()
     //gfx_draw_circle(500,500,20, main_color, true);
     //gfx_draw_ellipse(500,550,20,20,main_color, true);
 
+    int x,y;
     window_get_mouse_coords(&x, &y);
     printf("X: %d, Y: %d\n",x,y);
 }
