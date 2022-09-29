@@ -102,6 +102,7 @@ void deinit()
     window_deinit();
 }
 
+int x,y;
 void update()
 {
     //gfx_draw_line(100,100,300,300,COLOR_BLUE);
@@ -109,23 +110,8 @@ void update()
     //gfx_draw_circle(500,500,20, main_color, true);
     //gfx_draw_ellipse(500,550,20,20,main_color, true);
 
-    // @TEMP
-#if 0
-    uint8_t r = rand() % 255;
-    uint8_t g = rand() % 255;
-    uint8_t b = rand() % 255;
-
-    uint32_t color = gfx_rgb_to_color(r,g,b);
-
-    for(int i = 0; i < VIEW_WIDTH; ++i)
-    {
-        for(int j = 0; j < VIEW_HEIGHT; ++j)
-        {
-            gfx_draw_pixel(i,j,color);
-        }
-    }
-#endif
-
+    window_get_mouse_coords(&x, &y);
+    printf("X: %d, Y: %d\n",x,y);
 }
 
 void draw()
@@ -137,8 +123,8 @@ void draw()
 
     gfx_draw_image(rat_img,200,200,1.0);
 
-    for(int i = 0; i < 100; ++i)
-        for(int j = 0; j < 100; ++j)
+    for(int i = x; i < 10; ++i)
+        for(int j = y; j < 10; ++j)
             gfx_draw_pixela(i, j, main_color, 0.5);
 
     gfx_draw();

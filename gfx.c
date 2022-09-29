@@ -9,6 +9,7 @@
 
 #include "common.h"
 #include "shader.h"
+#include "settings.h"
 #include "gfx.h"
 
 #define MAX_GFX_IMAGES 32
@@ -29,7 +30,7 @@ void gfx_init(int width, int height)
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    float z = 0.9;
+    float z = 1.00;
 
     Vertex vertices[4] = 
     {
@@ -153,9 +154,6 @@ bool gfx_draw_image(int img_index, int x, int y,float scale)
     int dst_w = (int)(img->w*scale);
 	int dst_h = (int)(img->h*scale);
 
-    //printf("image w: %d, h: %d\n",dst_w, dst_h);
-    //printf("buffer w: %d, h: %d\n",buffer_width, buffer_height);
-
     for(int j = 0; j < dst_h;++j)
     {
         if (y + j >= buffer_height)
@@ -165,8 +163,6 @@ bool gfx_draw_image(int img_index, int x, int y,float scale)
         {
             if (x + i >= buffer_width)
                 break;
-
-            //printf("col: %d,row: %d\n",i,j);
 
             int index = floor((j*dst_h + i)/scale);
 

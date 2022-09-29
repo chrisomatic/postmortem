@@ -1,5 +1,7 @@
 # Rat FX
 
+:rat:
+
 This is a work-in-progress 2D Graphics Library
 
 ## Build and Run Example

@@ -13,6 +13,9 @@ static GLFWwindow* window;
 int window_width = VIEW_WIDTH;
 int window_height = VIEW_HEIGHT;
 
+static double window_coord_x = 0;
+static double window_coord_y = 0;
+
 static void window_size_callback(GLFWwindow* window, int window_width, int window_height);
 static void window_maximize_callback(GLFWwindow* window, int maximized);
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
@@ -68,6 +71,12 @@ bool window_init()
     return true;
 }
 
+void window_get_mouse_coords(int* x, int* y)
+{
+    *x = (int)(window_coord_x);
+    *y = (int)(window_height - window_coord_y);
+}
+
 void window_deinit()
 {
     glfwTerminate();
@@ -117,16 +126,14 @@ static void window_maximize_callback(GLFWwindow* window, int maximized)
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-
+    window_coord_x = xpos;
+    window_coord_y = ypos;
 }
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
-        int mode = glfwGetInputMode(window,GLFW_CURSOR);
-        if(mode == GLFW_CURSOR_NORMAL)
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 }
 
