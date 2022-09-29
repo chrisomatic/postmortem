@@ -64,6 +64,8 @@ void gfx_init(int width, int height)
     back_buffer = malloc(width*height*sizeof(uint32_t));
     buffer_width = width;
     buffer_height = height;
+
+    stbi_set_flip_vertically_on_load(1);
 }
 
 void gfx_clear_buffer(uint32_t color)
@@ -147,14 +149,13 @@ bool gfx_draw_image(int img_index, int x, int y,float scale)
     }
     GFXImage* img = &gfx_images[img_index];
 
-    uint32_t* dst = back_buffer;
-    dst = dst + (buffer_width*y) + x;
-
     int dst_w = (int)(img->w*scale);
-	int dst_h = (int)(img->h*scale);
+    int dst_h = (int)(img->h*scale);
+    // int total = img->w*img->h*img->n;
 
-    //printf("image w: %d, h: %d\n",dst_w, dst_h);
-    //printf("buffer w: %d, h: %d\n",buffer_width, buffer_height);
+    // printf("image w: %d, h: %d, n: %d\n",img->w, img->h, img->n);
+    // printf("dst w: %d, h: %d\n",dst_w, dst_h);
+    // printf("buffer w: %d, h: %d\n",buffer_width, buffer_height);
 
     for(int j = 0; j < dst_h;++j)
     {
@@ -168,14 +169,22 @@ bool gfx_draw_image(int img_index, int x, int y,float scale)
 
             //printf("col: %d,row: %d\n",i,j);
 
-            int index = floor((j*dst_h + i)/scale);
+            // int img_idx = (j*img->w+i)*img->n;
+            // uint8_t r = img->data[img_idx];
+            // uint8_t g = img->data[img_idx+1];
+            // uint8_t b = img->data[img_idx+2];
+            // uint8_t a = img->data[img_idx+3];
 
+
+            int index = (j*dst_w + i);
             uint8_t r = *(img->data + (4*index) + 0);
             uint8_t g = *(img->data + (4*index) + 1);
             uint8_t b = *(img->data + (4*index) + 2);
+            uint8_t a = *(img->data + (4*index) + 3);
 
-            *dst = gfx_rgb_to_color(r,g,b);
-            dst = back_buffer + (buffer_width*j) + i;
+            uint32_t color = gfx_rgb_to_color(r,g,b);
+            gfx_draw_pixela(i+x, j+y, color, (float)a/255.0);
+
         }
     }
 
