@@ -2,8 +2,10 @@
 
 #include <GLFW/glfw3.h>
 
-extern int view_width;
-extern int view_height;
+extern int window_width;
+extern int window_height;
+extern int window_center_x;
+extern int window_center_y;
 
 bool window_init();
 void window_deinit();

@@ -1,2 +1,2 @@
 #!/bin/sh
-./build.sh && ./example
+./build.sh && ./bin/example

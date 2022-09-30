@@ -23,6 +23,8 @@
 Timer game_timer = {0};
 
 int rat_img = 0;
+int mouse_x = 0;
+int mouse_y = 0;
 
 typedef struct
 {
@@ -130,7 +132,12 @@ void update()
 
     int x,y;
     window_get_mouse_coords(&x, &y);
-    //printf("X: %d, Y: %d\n",x,y);
+    if(x != mouse_x || y != mouse_y)
+    {
+        mouse_x = x;
+        mouse_y = y;
+        printf("X: %d, Y: %d\n",x,y);
+    }
 }
 
 void draw()
@@ -147,9 +154,7 @@ void draw()
         //gfx_draw_pixel((int)rats[i].x,(int)rats[i].y,main_color);
     }
 
-    //gfx_draw_circle(200, 200, 100, main_color);
-
-    gfx_draw();
+    gfx_render();
     window_swap_buffers();
 }
 

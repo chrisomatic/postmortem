@@ -1,7 +1,7 @@
 #pragma once
 
 void gfx_init(int width, int height,int border);
-void gfx_draw();
+void gfx_render();
 void gfx_clear_buffer(uint32_t color);
 
 // Image

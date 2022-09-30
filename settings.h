@@ -3,6 +3,9 @@
 #define VIEW_WIDTH   1200
 #define VIEW_HEIGHT  800
 
+#define CENTER_X (VIEW_WIDTH/2)
+#define CENTER_Y (VIEW_HEIGHT/2)
+
 #define ASPECT_NUM 16.0f
 #define ASPECT_DEM  9.0f
 #define ASPECT_RATIO (ASPECT_NUM / ASPECT_DEM)
