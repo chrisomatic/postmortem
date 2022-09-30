@@ -141,37 +141,50 @@ void gfx_free_image(int img_index)
     memset(img, 0, sizeof(GFXImage));
 }
 
-bool gfx_draw_image(int img_index, int x, int y,float scale)
+static uint32_t get_img_pixel(GFXImage* img, int x, int y, float* alpha)
+{
+    int index = sizeof(uint32_t) * ((y*img->w) + x);
+
+    uint8_t r = *(img->data + index + 0);
+    uint8_t g = *(img->data + index + 1);
+    uint8_t b = *(img->data + index + 2);
+    uint8_t a = *(img->data + index + 3);
+
+    *alpha = (a / 255.0);
+
+    return gfx_rgb_to_color(r,g,b);
+}
+
+bool gfx_draw_image(int img_index, int x, int y,float scale, float alpha)
 {
     if(img_index < 0)
     {
         printf("Invalid image index!\n");
         return false;
     }
+
     GFXImage* img = &gfx_images[img_index];
 
-    int dst_w = (int)(img->w*scale);
-    int dst_h = (int)(img->h*scale);
+    int new_width = (int)(img->w*scale);
+    int new_height = (int)(img->h*scale);
     // int total = img->w*img->h*img->n;
 
-    for(int j = 0; j < dst_h;++j)
+    for(int j = 0; j < new_height;++j)
     {
         if (y + j >= buffer_height)
             continue;
 
-        for(int i = 0; i < dst_w;++i)
+        for(int i = 0; i < new_width;++i)
         {
             if (x + i >= buffer_width)
                 break;
+            
+            int n_i = (int)round(i/scale);
+            int n_j = (int)round(j/scale);
 
-            int index = (j*dst_w + i);
-            uint8_t r = *(img->data + (4*index) + 0);
-            uint8_t g = *(img->data + (4*index) + 1);
-            uint8_t b = *(img->data + (4*index) + 2);
-            uint8_t a = *(img->data + (4*index) + 3);
-
-            uint32_t color = gfx_rgb_to_color(r,g,b);
-            gfx_draw_pixela(i+x, j+y, color, (float)a/255.0);
+            float img_a = 1.0;
+            uint32_t color = get_img_pixel(img, n_i, n_j, &img_a);
+            gfx_draw_pixela(i+x, j+y, color, alpha*img_a);
         }
     }
 
@@ -328,8 +341,37 @@ void gfx_draw_circle(int x0, int y0, int r, uint32_t color, bool filled)
 	}
 }
 
-void gfx_draw_circle_wu(int radius)
+void gfx_draw_circle_wu(int x, int y, int radius, uint32_t color)
 {
+    int i = 0;
+    int j = radius;
+
+    double last_fade_amount = 0;
+    double fade_amount = 0;
+
+    const int MAX_OPAQUE = 100.0;
+
+    while(i < j)
+    {
+        double height = sqrt(MAX(radius * radius - i * i, 0));
+        fade_amount = MAX_OPAQUE * (ceil(height) - height);
+
+        if(fade_amount < last_fade_amount)
+            --j;
+
+        // Opaqueness reset so drop down a row.
+        last_fade_amount = fade_amount;
+
+        // The API needs integers, so convert here now we've checked if 
+        // it dropped.
+        int fade_amount_i = (int)fade_amount;
+
+        // We're fading out the current j row, and fading in the next one down.
+        gfx_draw_pixela(x+i,y+j,color, MAX_OPAQUE - fade_amount_i);
+        gfx_draw_pixela(x+i,y+j-1,color, fade_amount_i);
+
+        ++i;
+    }
 }
 
 void gfx_draw_ellipse(int origin_x,int origin_y, int w, int h, uint32_t color, bool filled)

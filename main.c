@@ -111,7 +111,7 @@ void update()
 
     int x,y;
     window_get_mouse_coords(&x, &y);
-    printf("X: %d, Y: %d\n",x,y);
+    //printf("X: %d, Y: %d\n",x,y);
 }
 
 void draw()
@@ -121,11 +121,8 @@ void draw()
 
     gfx_clear_buffer(bkg_color);
 
-    gfx_draw_image(rat_img,200,200,1.0);
-
-    for(int i = x; i < 10; ++i)
-        for(int j = y; j < 10; ++j)
-            gfx_draw_pixela(i, j, main_color, 0.5);
+    gfx_draw_image(rat_img,200,200,0.2,0.4);
+    gfx_draw_circle_wu(100, 100, 30, main_color);
 
     gfx_draw();
     window_swap_buffers();
