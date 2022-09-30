@@ -21,6 +21,8 @@
 Timer game_timer = {0};
 
 int rat_img = 0;
+int mouse_x = 0;
+int mouse_y = 0;
 
 // =========================
 // Function Prototypes
@@ -93,7 +95,7 @@ void init()
     printf(" - Graphics.\n");
     gfx_init(VIEW_WIDTH, VIEW_HEIGHT);
 
-    int rat_img = gfx_load_image("img/rat.png");
+    rat_img = gfx_load_image("img/rat.png");
 }
 
 void deinit()
@@ -111,18 +113,72 @@ void update()
 
     int x,y;
     window_get_mouse_coords(&x, &y);
-    //printf("X: %d, Y: %d\n",x,y);
+    if(x != mouse_x || y != mouse_y)
+    {
+        mouse_x = x;
+        mouse_y = y;
+        printf("X: %d, Y: %d\n",x,y);
+    }
 }
 
 void draw()
 {
-    uint32_t bkg_color =  gfx_rgb_to_color(0,0,255);
-    uint32_t main_color = gfx_rgb_to_color(255,0,0);
+    uint32_t bkg_color =  gfx_rgb_to_color(100,100,100);
+    uint32_t red = gfx_rgb_to_color(255,0,0);
+    uint32_t green = gfx_rgb_to_color(0,255,0);
+    uint32_t black = gfx_rgb_to_color(0,0,0);
+
 
     gfx_clear_buffer(bkg_color);
 
-    gfx_draw_image(rat_img,200,200,0.2,0.4);
-    gfx_draw_circle_wu(100, 100, 30, main_color);
+    int x,y;
+
+    // center
+    x = CENTER_X; y = CENTER_Y;
+    gfx_draw_rect(x, y, 100, 100, red, true);
+    gfx_draw_rect(x, y, 100, 100, black, false);
+    for(int i = 0; i < 4; ++i)
+        for(int j = 0; j < 4; ++j)
+            gfx_draw_pixela(i+x, j+y, green, 1.0);
+
+    bool filled = false;
+    // right
+    x = VIEW_WIDTH - 50; y = CENTER_Y;
+    gfx_draw_rect(x, y, 100, 100, red, filled);
+
+    // left
+    x = - 50; y = CENTER_Y;
+    gfx_draw_rect(x, y, 100, 100, red, filled);
+
+    // bottom
+    x = CENTER_X; y = 50;
+    gfx_draw_rect(x, y, 100, 100, red, filled);
+
+    // top
+    x = CENTER_X; y = VIEW_HEIGHT+50;
+    gfx_draw_rect(x, y, 100, 100, red, filled);
+
+    // bottom right
+    x = VIEW_WIDTH - 50; y = 50;
+    gfx_draw_rect(x, y, 100, 100, red, filled);
+
+    x = VIEW_WIDTH-1; y = 0;
+    gfx_draw_rect(x, y, 100, 100, green, filled);
+
+    x = -99; y = 0;
+    gfx_draw_rect(x, y, 100, 100, red, filled);
+
+
+    // gfx_draw_circle_wu(100, 100, 30, red);
+
+
+    // gfx_draw_pixela(0, VIEW_HEIGHT-1, green, 1.0);
+    // gfx_draw_pixela(10, window_height-10, green, 1.0);
+
+    // gfx_draw_image(rat_img,200,200,0.2,0.4);
+    // for(int i = 0; i < 4; ++i)
+    //     for(int j = 0; j < 4; ++j)
+    //         gfx_draw_pixela(i+200, j+200, red, 1.0);
 
     gfx_draw();
     window_swap_buffers();

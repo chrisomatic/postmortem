@@ -5,4 +5,4 @@ gcc main.c \
     timer.c \
     window.c \
     -lglfw -lGLU -lGLEW -lGL -lm \
-    -o example
+    -o bin/example

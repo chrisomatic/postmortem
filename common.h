@@ -24,3 +24,4 @@ typedef struct
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define BOUND(a,l,u)    MAX(MIN(a,u),l)

@@ -10,13 +10,16 @@
 
 static GLFWwindow* window;
 
+int window_center_x = 0;
+int window_center_y = 0;
+
 int window_width = VIEW_WIDTH;
 int window_height = VIEW_HEIGHT;
 
 static double window_coord_x = 0;
 static double window_coord_y = 0;
 
-static void window_size_callback(GLFWwindow* window, int window_width, int window_height);
+static void window_size_callback(GLFWwindow* window, int _window_width, int _window_height);
 static void window_maximize_callback(GLFWwindow* window, int maximized);
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods);
@@ -97,15 +100,18 @@ void window_swap_buffers()
     glfwSwapBuffers(window);
 }
 
-static void window_size_callback(GLFWwindow* window, int window_width, int window_height)
+static void window_size_callback(GLFWwindow* window, int _window_width, int _window_height)
 {
-    printf("Window: W %d, H %d\n",window_width,window_height);
+    printf("Window: W %d, H %d\n",_window_width,_window_height);
 
-    window_height = window_height;
-    window_width  = window_width; //ASPECT_RATIO * window_height;
+    window_height = _window_height;
+    window_width  = _window_width; //ASPECT_RATIO * window_height;
 
     int start_x = (window_width + window_width) / 2.0f - window_width;
     int start_y = (window_height + window_height) / 2.0f - window_height;
+
+    window_center_x = window_width / 2;
+    window_center_y = window_height / 2;
 
     glViewport(start_x,start_y,window_width,window_height);
 }
@@ -139,6 +145,21 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods)
 {
+    bool ctrl = (mods & GLFW_MOD_CONTROL) == GLFW_MOD_CONTROL;
+
+    if(action == GLFW_PRESS)
+    {
+        switch(key)
+        {
+            case GLFW_KEY_C:
+                if(ctrl)
+                {
+                    exit(0);
+                }
+                break;
+        }
+    }
+
     /*
     if(action == GLFW_PRESS)
     {
