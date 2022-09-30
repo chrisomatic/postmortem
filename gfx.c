@@ -21,7 +21,7 @@ static uint32_t* back_buffer;
 static uint32_t buffer_width;
 static uint32_t buffer_height;
 
-void gfx_init(int width, int height)
+void gfx_init(int width, int height,int border)
 {
     printf("GL version: %s\n",glGetString(GL_VERSION));
 
@@ -30,14 +30,15 @@ void gfx_init(int width, int height)
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    float z = 1.00;
+    float zx = 1.0 - (border / (float)window_width);
+    float zy = 1.0 - (border / (float)window_height);
 
     Vertex vertices[4] = 
     {
-        {{-z, -z},{+0.0,+0.0}},
-        {{-z, +z},{+0.0,+1.0}},
-        {{+z, +z},{+1.0,+1.0}},
-        {{+z, -z},{+1.0,+0.0}},
+        {{-zx, -zy},{+0.0,+0.0}},
+        {{-zx, +zy},{+0.0,+1.0}},
+        {{+zx, +zy},{+1.0,+1.0}},
+        {{+zx, -zy},{+1.0,+0.0}},
     }; 
 
     uint32_t indices[6] = {0,1,2,2,0,3};
@@ -155,11 +156,49 @@ static uint32_t get_img_pixel(GFXImage* img, int x, int y, float* alpha)
     return gfx_rgb_to_color(r,g,b);
 }
 
-bool gfx_draw_image(int img_index, int x, int y,float scale, float alpha)
+static void _draw_image()
+{
+
+}
+
+bool gfx_draw_image(int img_index, int x, int y)
 {
     if(img_index < 0)
     {
-        printf("Invalid image index!\n");
+        printf("invalid image index!\n");
+        return false;
+    }
+
+    GFXImage* img = &gfx_images[img_index];
+
+    // int total = img->w*img->h*img->n;
+
+    for(int j = 0; j < img->h;++j)
+    {
+        if (y + j >= buffer_height)
+            continue;
+
+        for(int i = 0; i < img->w;++i)
+        {
+            if (x + i >= buffer_width)
+                break;
+            
+            float img_a = 1.0;
+            uint32_t color = get_img_pixel(img, i, j, &img_a);
+
+            //gfx_draw_pixela(i+x, j+y, color, img_a);
+            gfx_draw_pixel(i+x, j+y, color);
+        }
+    }
+
+    return true;
+}
+
+bool gfx_draw_image_scaled(int img_index, int x, int y,float scale, float alpha)
+{
+    if(img_index < 0)
+    {
+        printf("invalid image index!\n");
         return false;
     }
 
@@ -258,7 +297,20 @@ void gfx_draw_pixela(int x, int y, uint32_t color, float alpha)
 
 void gfx_draw_pixel(int x, int y, uint32_t color)
 {
-    gfx_draw_pixela(x,y,color, 1.0);
+	uint32_t* dst = back_buffer;
+	dst = dst + (buffer_width*y) + x;
+
+	if (dst < back_buffer)
+		return;
+
+	if (dst >= back_buffer + (buffer_width*buffer_height))
+		return;
+
+    if (x < 0 || x >= buffer_width)
+        return;
+
+    if(color > 0)
+        *dst = color;
 }
 
 // THE EXTREMELY FAST LINE ALGORITHM Variation C (Addition)
@@ -301,6 +353,7 @@ void gfx_draw_line(int x, int y, int x2, int y2, uint32_t color)
 	}
 }
 
+/*
 void gfx_draw_circle(int x0, int y0, int r, uint32_t color, bool filled)
 {
 	int x = r;
@@ -340,21 +393,35 @@ void gfx_draw_circle(int x0, int y0, int r, uint32_t color, bool filled)
 		}
 	}
 }
+*/
 
-void gfx_draw_circle_wu(int x, int y, int radius, uint32_t color)
+static void draw_circle_pixels(int x, int y, int i, int j, uint32_t color, float alpha)
+{
+    gfx_draw_pixela(x+i,y+j,color, alpha);
+    gfx_draw_pixela(x+i,y-j,color, alpha);
+    gfx_draw_pixela(x-i,y+j,color, alpha);
+    gfx_draw_pixela(x-i,y-j,color, alpha);
+    gfx_draw_pixela(x+j,y+i,color, alpha);
+    gfx_draw_pixela(x+j,y-i,color, alpha);
+    gfx_draw_pixela(x-j,y+i,color, alpha);
+    gfx_draw_pixela(x-j,y-i,color, alpha);
+}
+
+void gfx_draw_circle(int x, int y, int outer_radius, uint32_t color)
 {
     int i = 0;
-    int j = radius;
+    int j = outer_radius;
 
     double last_fade_amount = 0;
     double fade_amount = 0;
 
-    const int MAX_OPAQUE = 100.0;
+    const float MAX_OPAQUE = 100.0;
 
     while(i < j)
     {
-        double height = sqrt(MAX(radius * radius - i * i, 0));
+        double height = sqrt(MAX(outer_radius * outer_radius - i * i, 0));
         fade_amount = MAX_OPAQUE * (ceil(height) - height);
+        printf("fade_amount: %f\n",fade_amount);
 
         if(fade_amount < last_fade_amount)
             --j;
@@ -367,8 +434,8 @@ void gfx_draw_circle_wu(int x, int y, int radius, uint32_t color)
         int fade_amount_i = (int)fade_amount;
 
         // We're fading out the current j row, and fading in the next one down.
-        gfx_draw_pixela(x+i,y+j,color, MAX_OPAQUE - fade_amount_i);
-        gfx_draw_pixela(x+i,y+j-1,color, fade_amount_i);
+        draw_circle_pixels(x,y,i,j,color,(MAX_OPAQUE - fade_amount_i) / 100.0);
+        draw_circle_pixels(x,y,i,j-1,color,fade_amount_i/100.0);
 
         ++i;
     }

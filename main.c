@@ -14,6 +14,8 @@
 #include "timer.h"
 #include "gfx.h"
 
+#define NUM_RATS 100
+
 // =========================
 // Global Vars
 // =========================
@@ -21,6 +23,14 @@
 Timer game_timer = {0};
 
 int rat_img = 0;
+
+typedef struct
+{
+    float x,y;
+    float angle;
+} Rat;
+
+Rat rats[NUM_RATS] = {0};
 
 // =========================
 // Function Prototypes
@@ -64,7 +74,7 @@ void start_game()
         draw();
 
         timer_wait_for_frame(&game_timer);
-        //printf("fps: %f\n",timer_get_prior_frame_fps(&game_timer));
+        printf("fps: %f\n",timer_get_prior_frame_fps(&game_timer));
     }
 
     deinit();
@@ -91,9 +101,17 @@ void init()
     shader_load_all();
 
     printf(" - Graphics.\n");
-    gfx_init(VIEW_WIDTH, VIEW_HEIGHT);
+    gfx_init(VIEW_WIDTH, VIEW_HEIGHT,20);
 
-    int rat_img = gfx_load_image("img/rat.png");
+    rat_img = gfx_load_image("img/rat_small.png");
+
+    for(int i = 0; i < NUM_RATS; ++i)
+    {
+        rats[i].x = rand() % VIEW_WIDTH;
+        rats[i].y = rand() % VIEW_HEIGHT;
+        rats[i].angle = RAD(rand() % 360);
+    }
+
 }
 
 void deinit()
@@ -104,10 +122,11 @@ void deinit()
 
 void update()
 {
-    //gfx_draw_line(100,100,300,300,COLOR_BLUE);
-
-    //gfx_draw_circle(500,500,20, main_color, true);
-    //gfx_draw_ellipse(500,550,20,20,main_color, true);
+    for(int i = 0; i < NUM_RATS; ++i)
+    {
+        rats[i].x += cos(rats[i].angle);
+        rats[i].y += sin(rats[i].angle);
+    }
 
     int x,y;
     window_get_mouse_coords(&x, &y);
@@ -116,13 +135,19 @@ void update()
 
 void draw()
 {
-    uint32_t bkg_color =  gfx_rgb_to_color(0,0,255);
-    uint32_t main_color = gfx_rgb_to_color(255,0,0);
+    uint32_t bkg_color =  gfx_rgb_to_color(50,50,50);
+    uint32_t main_color = gfx_rgb_to_color(0,200,200);
 
     gfx_clear_buffer(bkg_color);
 
-    gfx_draw_image(rat_img,200,200,0.2,0.4);
-    gfx_draw_circle_wu(100, 100, 30, main_color);
+    for(int i = 0; i < NUM_RATS; ++i)
+    {
+        gfx_draw_image_scaled(rat_img,(int)rats[i].x,(int)rats[i].y,1.0,1.0);
+        //gfx_draw_image(rat_img,(int)rats[i].x,(int)rats[i].y);
+        //gfx_draw_pixel((int)rats[i].x,(int)rats[i].y,main_color);
+    }
+
+    //gfx_draw_circle(200, 200, 100, main_color);
 
     gfx_draw();
     window_swap_buffers();

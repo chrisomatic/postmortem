@@ -97,12 +97,12 @@ void window_swap_buffers()
     glfwSwapBuffers(window);
 }
 
-static void window_size_callback(GLFWwindow* window, int window_width, int window_height)
+static void window_size_callback(GLFWwindow* window, int width, int height)
 {
-    printf("Window: W %d, H %d\n",window_width,window_height);
+    printf("Window: W %d, H %d\n",width,height);
 
-    window_height = window_height;
-    window_width  = window_width; //ASPECT_RATIO * window_height;
+    window_height = height;
+    window_width  = width; //ASPECT_RATIO * window_height;
 
     int start_x = (window_width + window_width) / 2.0f - window_width;
     int start_y = (window_height + window_height) / 2.0f - window_height;
