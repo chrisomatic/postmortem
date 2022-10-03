@@ -5,7 +5,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "settings.h"
 #include "window.h"
 
 static GLFWwindow* window;
