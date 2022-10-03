@@ -9,23 +9,15 @@
 #include "util/stb_image.h"
 
 #include "shader.h"
+#include "window.h"
 #include "gfx.h"
 #include "rat_math.h"
 
 #define MAX_GFX_IMAGES 32
 
-static GLuint texture = 0;
 static GLuint vao, vbo, ibo;
 
-typedef struct
-{
-    unsigned char* data;
-    GLuint texture;
-    int w,h,n;
-} GFXImage;
-
 GFXImage gfx_images[MAX_GFX_IMAGES] = {0};
-int gfx_image_count = 0;
 
 static Matrix proj_matrix;
 
@@ -79,6 +71,10 @@ void gfx_init(int width, int height)
 
     stbi_set_flip_vertically_on_load(1);
 
+    for(int i = 0; i < MAX_GFX_IMAGES; ++i)
+    {
+        gfx_images[i].texture = -1;
+    }
 }
 
 void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b)
@@ -91,18 +87,18 @@ int gfx_load_image(const char* image_path)
 {
     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
     {
-        if(gfx_images[i].data == NULL)
+        if(gfx_images[i].texture == -1)
         {
 
             GFXImage* img = &gfx_images[i];
-            img->data = stbi_load(image_path,&img->w,&img->h,&img->n,4);
+            unsigned char* data = stbi_load(image_path,&img->w,&img->h,&img->n,4);
 
-            if(img->data == NULL)
+            if(data == NULL)
                 return -1;
 
             glGenTextures(1, &img->texture);
             glBindTexture(GL_TEXTURE_2D, img->texture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -110,6 +106,7 @@ int gfx_load_image(const char* image_path)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
             glBindTexture(GL_TEXTURE_2D, 0);
+            stbi_image_free(data);
 
             printf("Loaded image: %s (x: %d, y: %d, n: %d)\n",image_path,img->w,img->h,img->n);
             return i;
@@ -121,16 +118,33 @@ int gfx_load_image(const char* image_path)
 
 void gfx_free_image(int img_index)
 {
+    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
+    {
+        printf("%s: Invalid image index!\n", __func__);
+        return;
+    }
     GFXImage* img = &gfx_images[img_index];
-    stbi_image_free(img->data);
+    //stbi_image_free(img->data);
     memset(img, 0, sizeof(GFXImage));
+    img->texture = -1;
 }
+
+GFXImage* gfx_get_image_data(int img_index)
+{
+    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
+    {
+        printf("%s: Invalid image index!\n", __func__);
+        return NULL;
+    }
+    return &gfx_images[img_index];
+}
+
 
 bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale, float rotation, float opacity)
 {
-    if(img_index < 0)
+    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
-        printf("invalid image index!\n");
+        printf("%s: Invalid image index!\n", __func__);
         return false;
     }
 
@@ -179,13 +193,4 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
     glUseProgram(0);
 
     return true;
-}
-
-uint32_t gfx_rgb_to_color(uint8_t r,uint8_t g,uint8_t b)
-{
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    return (r << 0 | g << 8 | b << 16);
-#else
-    return (r << 24 | g << 16 | b << 8);
-#endif
 }

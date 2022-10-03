@@ -24,6 +24,8 @@
 
 Timer game_timer = {0};
 
+GFXImage* rat_img_data = NULL;
+
 int rat_img = 0;
 int rat2_img = 0;
 int mouse_x = 0;
@@ -96,11 +98,37 @@ void start_game()
     deinit();
 }
 
+void handle_rat_border_collision(float* x, float* y, int w, int h, float* angle)
+{
+
+    if(*x+w >= VIEW_WIDTH)
+    {
+        if(angle != NULL) *angle = PI-*angle;
+        *x = VIEW_WIDTH - w - 1;
+    }
+    else if(*x <= 0)
+    {
+        if(angle != NULL) *angle = PI-*angle;
+        *x = 1;
+    }
+    else if(*y+h >= VIEW_HEIGHT)
+    {
+        if(angle != NULL) *angle = PI*2 - *angle;
+        *y = VIEW_HEIGHT - h - 1;
+    }
+    else if(*y <= 0)
+    {
+        if(angle != NULL) *angle = PI*2 - *angle;
+        *y = 1;
+    }
+
+}
+
 void init()
 {
     bool success;
 
-    success = window_init();
+    success = window_init(VIEW_WIDTH, VIEW_HEIGHT);
 
     if(!success)
     {
@@ -109,7 +137,8 @@ void init()
     }
 
     time_t t;
-    srand((unsigned) time(&t));
+    // srand((unsigned) time(&t));
+    srand((unsigned int)1);
 
     printf("Initializing...\n");
 
@@ -120,6 +149,7 @@ void init()
     gfx_init(VIEW_WIDTH, VIEW_HEIGHT);
 
     rat_img = gfx_load_image("img/rat_small.png");
+    rat_img_data = gfx_get_image_data(rat_img);
 
     for(int i = 0; i < NUM_RATS; ++i)
     {
@@ -138,20 +168,28 @@ void deinit()
 
 void update()
 {
+    int w = rat_img_data->w;
+    int h = rat_img_data->h;
     for(int i = 0; i < NUM_RATS; ++i)
     {
-        rats[i].x += cos(rats[i].angle)*g_delta_t*60;
-        rats[i].y += sin(rats[i].angle)*g_delta_t*60;
-        rats[i].rotate += 100.0f*g_delta_t;
+        Rat* r = &rats[i];
+
+        float xadd = cos(r->angle)*5;
+        float yadd = sin(r->angle)*5;
+        r->x += xadd;
+        r->y += yadd;
+
+        handle_rat_border_collision(&r->x, &r->y, w, h, &r->angle);
     }
 
     int x,y;
-    window_get_mouse_coords(&x, &y);
+    window_get_mouse_view_coords(&x, &y);
+    // window_get_mouse_view_coords(&x, &y);
     if(x != mouse_x || y != mouse_y)
     {
         mouse_x = x;
         mouse_y = y;
-        printf("X: %d, Y: %d\n",x,y);
+        // printf("X: %d, Y: %d\n",x,y);
     }
 }
 
@@ -161,10 +199,12 @@ void draw()
 
     for(int i = 0; i < NUM_RATS; ++i)
     {
-        gfx_draw_image(rat_img,(int)rats[i].x,(int)rats[i].y, COLOR_TINT_NONE,1.0,rats[i].rotate,1.0);
+        gfx_draw_image(rat_img,(int)rats[i].x,(int)rats[i].y, COLOR_TINT_NONE,1.0,0.0,1.0); //rats[i].rotate,1.0);
         //gfx_draw_image(rat_img,(int)rats[i].x,(int)rats[i].y, gfx_rgb_to_color(25,25,25),1.0,0.0,1.0);
     }
 
-    //gfx_render();
+    int x = mouse_x;
+    int y = mouse_y;
+    gfx_draw_image(rat_img,x-rat_img_data->w/2.0,y-rat_img_data->h/2.0,0xFFFF00FF,1.0,0.0,1.0);
 }
 
