@@ -1,5 +1,11 @@
 #pragma once
 
+typedef struct
+{
+    unsigned char* data;
+    int w,h,n;
+} GFXImage;
+
 void gfx_init(int width, int height,int border);
 void gfx_render();
 void gfx_clear_buffer(uint32_t color);
@@ -9,6 +15,7 @@ int gfx_load_image(const char* image_path);
 bool gfx_draw_image(int img_index, int x, int y);
 bool gfx_draw_image_scaled(int img_index, int x, int y,float scale, float alpha);
 void gfx_free_image(int img_index);
+GFXImage* gfx_get_image_data(int img_index);
 
 void gfx_draw_rect(int x, int y, int w, int h, uint32_t color, bool filled);
 void gfx_draw_pixel(int x, int y, uint32_t color);

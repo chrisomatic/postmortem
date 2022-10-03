@@ -1,5 +1,5 @@
 #!/bin/sh
-rmdir -rf bin
+rm -rf bin
 mkdir bin
 
 gcc main.c \

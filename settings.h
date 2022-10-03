@@ -14,5 +14,5 @@
 #define TARGET_FPS     60.0f
 #define TARGET_SPF     (1.0f/TARGET_FPS) // seconds per frame
 
-extern int window_width;
-extern int window_height;
+// extern int window_width;
+// extern int window_height;

@@ -10,6 +10,7 @@
 #include "common.h"
 #include "shader.h"
 #include "settings.h"
+#include "window.h"
 #include "gfx.h"
 
 #define MAX_GFX_IMAGES 32
@@ -21,14 +22,8 @@ static uint32_t* back_buffer;
 static uint32_t buffer_width;
 static uint32_t buffer_height;
 
-typedef struct
-{
-    unsigned char* data;
-    int w,h,n;
-} GFXImage;
 
 GFXImage gfx_images[MAX_GFX_IMAGES] = {0};
-int gfx_image_count = 0;
 
 static uint32_t get_img_pixel(GFXImage* img, int x, int y, float* alpha);
 static uint32_t* get_back_buffer_ptr(int x, int y);
@@ -142,16 +137,32 @@ int gfx_load_image(const char* image_path)
 
 void gfx_free_image(int img_index)
 {
+    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
+    {
+        printf("%s: Invalid image index!\n", __func__);
+        return;
+    }
     GFXImage* img = &gfx_images[img_index];
     stbi_image_free(img->data);
     memset(img, 0, sizeof(GFXImage));
 }
 
+GFXImage* gfx_get_image_data(int img_index)
+{
+    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
+    {
+        printf("%s: Invalid image index!\n", __func__);
+        return NULL;
+    }
+    return &gfx_images[img_index];
+}
+
+
 bool gfx_draw_image(int img_index, int x, int y)
 {
-    if(img_index < 0)
+    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
-        printf("invalid image index!\n");
+        printf("%s: Invalid image index!\n", __func__);
         return false;
     }
 
@@ -182,9 +193,9 @@ bool gfx_draw_image(int img_index, int x, int y)
 
 bool gfx_draw_image_scaled(int img_index, int x, int y,float scale, float alpha)
 {
-    if(img_index < 0)
+    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
-        printf("invalid image index!\n");
+        printf("%s: Invalid image index!\n", __func__);
         return false;
     }
 

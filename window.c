@@ -13,8 +13,14 @@ static GLFWwindow* window;
 int window_center_x = 0;
 int window_center_y = 0;
 
-int window_width = VIEW_WIDTH;
-int window_height = VIEW_HEIGHT;
+// int window_width = VIEW_WIDTH;
+// int window_height = VIEW_HEIGHT;
+// int view_width = VIEW_WIDTH;
+// int view_height = VIEW_HEIGHT;
+int window_width = 0;
+int window_height = 0;
+int view_width = 0;
+int view_height = 0;
 
 static double window_coord_x = 0;
 static double window_coord_y = 0;
@@ -25,7 +31,7 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods);
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 
-bool window_init()
+bool window_init(int _view_width, int _view_height)
 {
     printf("Initializing GLFW.\n");
 
@@ -35,13 +41,21 @@ bool window_init()
         return false;
     }
 
+
+    view_width = _view_width;
+    view_height = _view_height;
+
+    window_width = view_width;
+    window_height = view_height;
+
     glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // Want to use OpenGL 3.3
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); 
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); 
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
 
-    window = glfwCreateWindow(window_width,window_height,"Example",NULL,NULL);
+    // printf("vw: %d, vh: %d\n", view_width, view_height);
+    window = glfwCreateWindow(view_width,view_height,"Example",NULL,NULL);
 
     if(window == NULL)
     {
@@ -78,6 +92,13 @@ void window_get_mouse_coords(int* x, int* y)
 {
     *x = (int)(window_coord_x);
     *y = (int)(window_height - window_coord_y);
+}
+
+void window_get_mouse_view_coords(int* x, int* y)
+{
+    window_get_mouse_coords(x,y);
+    *x *= (view_width/(float)window_width);
+    *y *= (view_height/(float)window_height);
 }
 
 void window_deinit()
