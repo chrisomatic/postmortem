@@ -16,7 +16,9 @@
 
 // Settings
 #define TARGET_FPS 60.0f
-#define NUM_RATS   100
+#define NUM_RATS   10
+
+#define FEQ(a, b) (ABS(a-b) <= 0.00001f)
 
 // =========================
 // Global Vars
@@ -56,6 +58,56 @@ void draw();
 // =========================
 // Main Loop
 // =========================
+
+float calc_angle_rad(float x0, float y0, float x1, float y1)
+{
+    // printf("x: %f | %f        y: %f | %f\n", x0, x1, y0, y1);
+    bool xeq = FEQ(x0, x1);
+    bool yeq = FEQ(y0, y1);
+
+    if(xeq && yeq)
+    {
+        return 0.0f;
+    }
+
+    if(xeq)
+    {
+        if(y1 > y0)
+            return PI_OVER_2;
+        else
+            return PI_OVER_2*3;
+    }
+    else if(yeq)
+    {
+        if(x1 > x0)
+            return 0;
+        else
+            return PI;
+    }
+    else
+    {
+        if(y1 > y0)
+        {
+            float opp = y1-y0;
+            float adj = x1-x0;
+            float a = atanf(opp/adj);
+            if(x1 > x0)
+            {
+                return a;
+            }
+            return PI+a;
+        }
+
+        float opp = x1-x0;
+        float adj = y1-y0;
+        float a = atanf(opp/adj);
+        if(x1 > x0)
+        {
+            return PI_OVER_2*3-a;
+        }
+        return PI_OVER_2*3-a;
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -149,7 +201,7 @@ void init()
     printf(" - Graphics.\n");
     gfx_init(VIEW_WIDTH, VIEW_HEIGHT);
 
-    rat_img = gfx_load_image("img/rat_small.png");
+    rat_img = gfx_load_image("img/rat_small_rect.png");
     rat_img_data = gfx_get_image_data(rat_img);
 
     for(int i = 0; i < NUM_RATS; ++i)
@@ -175,8 +227,8 @@ void update()
     {
         Rat* r = &rats[i];
 
-        float xadd = cos(r->angle)*5;
-        float yadd = sin(r->angle)*5;
+        float xadd = cos(r->angle)*3;
+        float yadd = sin(r->angle)*3;
         r->x += xadd;
         r->y += yadd;
         rats[i].rotate += 2;
@@ -205,8 +257,16 @@ void draw()
         //gfx_draw_image(rat_img,(int)rats[i].x,(int)rats[i].y, gfx_rgb_to_color(25,25,25),1.0,0.0,1.0);
     }
 
-    int x = mouse_x;
-    int y = mouse_y;
+    int rx = window_center_x;
+    int ry = window_center_y;
+    float rot = DEG(calc_angle_rad(rx, ry, mouse_x, mouse_y))-90;
+    gfx_draw_image(rat_img,rx,ry, 0x0000FFFF,1.0,rot,1.0); //rats[i].rotate,1.0);
+
+
+    int x = mouse_x-rat_img_data->w/2.0;
+    int y = mouse_y+rat_img_data->h/2.0;
+    // x = mouse_x;
+    // y = mouse_y;
     gfx_draw_image(rat_img,x,y,0xFFFF00FF,1.0,0.0,1.0);
 }
 
