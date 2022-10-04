@@ -1,8 +1,8 @@
-# Rat FX
+# Zombie Simulator
 
-:rat:
+:zombie:
 
-This is a work-in-progress 2D Graphics Library
+This is a work-in-progress 2D game
 
 ## Build and Run Example
 
