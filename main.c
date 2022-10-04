@@ -16,7 +16,7 @@
 
 // Settings
 #define TARGET_FPS 60.0f
-#define NUM_RATS   1000
+#define NUM_RATS   100
 
 // =========================
 // Global Vars
@@ -89,7 +89,7 @@ void start_game()
         draw();
 
         timer_wait_for_frame(&game_timer);
-        printf("fps: %f\n",timer_get_prior_frame_fps(&game_timer));
+        //printf("fps: %f\n",timer_get_prior_frame_fps(&game_timer));
         window_swap_buffers();
 
         t1 = timer_get_time();
@@ -128,6 +128,7 @@ void init()
 {
     bool success;
 
+    printf("resolution: %d %d\n",VIEW_WIDTH, VIEW_HEIGHT);
     success = window_init(VIEW_WIDTH, VIEW_HEIGHT);
 
     if(!success)
@@ -178,6 +179,7 @@ void update()
         float yadd = sin(r->angle)*5;
         r->x += xadd;
         r->y += yadd;
+        rats[i].rotate += 2;
 
         handle_rat_border_collision(&r->x, &r->y, w, h, &r->angle);
     }
@@ -189,7 +191,7 @@ void update()
     {
         mouse_x = x;
         mouse_y = y;
-        // printf("X: %d, Y: %d\n",x,y);
+        //printf("X: %d, Y: %d\n",x,y);
     }
 }
 
@@ -199,12 +201,12 @@ void draw()
 
     for(int i = 0; i < NUM_RATS; ++i)
     {
-        gfx_draw_image(rat_img,(int)rats[i].x,(int)rats[i].y, COLOR_TINT_NONE,1.0,0.0,1.0); //rats[i].rotate,1.0);
+        gfx_draw_image(rat_img,(int)rats[i].x,(int)rats[i].y, COLOR_TINT_NONE,1.0,rats[i].rotate,1.0); //rats[i].rotate,1.0);
         //gfx_draw_image(rat_img,(int)rats[i].x,(int)rats[i].y, gfx_rgb_to_color(25,25,25),1.0,0.0,1.0);
     }
 
     int x = mouse_x;
     int y = mouse_y;
-    gfx_draw_image(rat_img,x-rat_img_data->w/2.0,y-rat_img_data->h/2.0,0xFFFF00FF,1.0,0.0,1.0);
+    gfx_draw_image(rat_img,x,y,0xFFFF00FF,1.0,0.0,1.0);
 }
 

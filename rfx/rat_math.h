@@ -34,6 +34,6 @@ typedef struct
     float m[4][4];
 } Matrix;
 
-void ortho(Matrix* m, float left, float right, float bottom, float top, float znear, float zfar);
+void ortho(Matrix* m, float left, float right, float bottom, float top);
 void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Matrix* model);
 void print_matrix(Matrix* mat);

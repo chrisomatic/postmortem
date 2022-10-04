@@ -15,8 +15,8 @@ static void shader_add(GLuint program, GLenum shader_type, const char* shader_fi
 void shader_load_all()
 {
     shader_build_program(&program,
-        "shaders/basic.vert.glsl",
-        "shaders/basic.frag.glsl"
+        "rfx/shaders/basic.vert.glsl",
+        "rfx/shaders/basic.frag.glsl"
     );
 
     // Get uniform locations

@@ -19,16 +19,14 @@ static void get_rotation_transform(Matrix* mat, Vector3f* rotation);
 static void get_translate_transform(Matrix* mat, Vector3f* position);
 static void dot_product_mat(Matrix a, Matrix b, Matrix* result);
 
-void ortho(Matrix* m, float left, float right, float bottom, float top, float znear, float zfar)
+void ortho(Matrix* m, float left, float right, float bottom, float top)
 {
     memcpy(m,&IDENTITY_MATRIX,sizeof(Matrix));
 
     m->m[0][0] = 2.0f/(right-left);
     m->m[1][1] = 2.0f/(top-bottom);
-    m->m[2][2] = 1.0f /(zfar-znear);
-    m->m[3][0] = -(right+left) / (right - left);
-    m->m[3][1] = -(top+bottom) / (top-bottom);
-    m->m[3][2] = -znear / (zfar-znear);
+    m->m[0][3] = -(right+left) / (right - left);
+    m->m[1][3] = -(top+bottom) / (top-bottom);
 }
 
 void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Matrix* model)
