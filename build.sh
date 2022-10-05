@@ -2,12 +2,14 @@
 rm -rf bin
 mkdir bin
 
-gcc main.c \
-    rfx/gfx.c \
+gcc rfx/gfx.c \
     rfx/shader.c \
     rfx/timer.c \
     rfx/rat_math.c \
     rfx/window.c \
+    main.c \
+    world.c \
+    player.c \
     -Irfx \
     -lglfw -lGLU -lGLEW -lGL -lm \
     -o bin/example

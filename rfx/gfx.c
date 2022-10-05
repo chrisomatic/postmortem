@@ -21,11 +21,19 @@ GFXImage gfx_images[MAX_GFX_IMAGES] = {0};
 
 static Matrix proj_matrix;
 
-static GLint location_image = 0;
-static GLint location_tint_color = 0;
-static GLint location_opacity = 0;
-static GLint location_model = 0;
-static GLint location_proj = 0;
+static GLint loc_basic_image;
+static GLint loc_basic_tint_color;
+static GLint loc_basic_opacity;
+static GLint loc_basic_model;
+static GLint loc_basic_proj;
+
+static GLint loc_sprite_image;
+static GLint loc_sprite_tint_color;
+static GLint loc_sprite_opacity;
+static GLint loc_sprite_model;
+static GLint loc_sprite_proj;
+static GLint loc_sprite_num_in_row;
+static GLint loc_sprite_index;
 
 void gfx_init(int width, int height)
 {
@@ -59,17 +67,21 @@ void gfx_init(int width, int height)
     glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vertex), (void*)0);
     glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(Vertex), (const GLvoid*)8);
 
-    location_image = glGetUniformLocation(program, "image");
-    location_tint_color = glGetUniformLocation(program, "tint_color");
-    location_opacity = glGetUniformLocation(program, "opacity");
-    location_model = glGetUniformLocation(program, "model");
-    location_proj = glGetUniformLocation(program, "projection");
+    loc_basic_image      = glGetUniformLocation(program_basic, "image");
+    loc_basic_tint_color = glGetUniformLocation(program_basic, "tint_color");
+    loc_basic_opacity    = glGetUniformLocation(program_basic, "opacity");
+    loc_basic_model      = glGetUniformLocation(program_basic, "model");
+    loc_basic_proj       = glGetUniformLocation(program_basic, "projection");
 
-    printf("%d %d %d %d %d\n",location_image, location_tint_color, location_opacity, location_model, location_proj);
+    loc_sprite_image      = glGetUniformLocation(program_sprite, "image");
+    loc_sprite_tint_color = glGetUniformLocation(program_sprite, "tint_color");
+    loc_sprite_opacity    = glGetUniformLocation(program_sprite, "opacity");
+    loc_sprite_model      = glGetUniformLocation(program_sprite, "model");
+    loc_sprite_proj       = glGetUniformLocation(program_sprite, "projection");
+    loc_sprite_num_in_row = glGetUniformLocation(program_sprite, "num_sprites_in_row");
+    loc_sprite_index      = glGetUniformLocation(program_sprite, "sprite_index");
 
-    glUniform1i(location_image, 0);
-
-    ortho(&proj_matrix,0.0,width,0.0,height);
+    ortho(&proj_matrix,0.0,(float)width,(float)height,0.0, -1.0, 1.0);
 
     print_matrix(&proj_matrix);
 
@@ -106,8 +118,8 @@ int gfx_load_image(const char* image_path)
             glBindTexture(GL_TEXTURE_2D, img->texture);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -145,7 +157,6 @@ GFXImage* gfx_get_image_data(int img_index)
     return &gfx_images[img_index];
 }
 
-
 bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale, float rotation, float opacity)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
@@ -157,13 +168,13 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
     GFXImage* img = &gfx_images[img_index];
 
     // int total = img->w*img->h*img->n;
-    glUseProgram(program);
+    glUseProgram(program_basic);
 
     Matrix model = {0};
 
-    Vector3f pos = {x+img->w/2.0,y-img->h/2.0,0.0};
+    Vector3f pos = {x+img->w/2.0,y+img->h/2.0,0.0};
     Vector3f rot = {0.0,0.0,rotation};
-    Vector3f sca = {img->w,img->h,1.0};
+    Vector3f sca = {img->w,-img->h,1.0};
 
     get_model_transform(&pos,&rot,&sca,&model);
 
@@ -174,13 +185,15 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
     uint8_t g = color >> 8;
     uint8_t b = color >> 0;
 
-    glUniform3f(location_tint_color,r/255.0,g/255.0,b/255.0);
-    glUniform1f(location_opacity,opacity);
-    glUniformMatrix4fv(location_model,1,GL_TRUE,&model.m[0][0]);
-    glUniformMatrix4fv(location_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
+    glUniform3f(loc_basic_tint_color,r/255.0,g/255.0,b/255.0);
+    glUniform1f(loc_basic_opacity,opacity);
+    glUniformMatrix4fv(loc_basic_model,1,GL_TRUE,&model.m[0][0]);
+    glUniformMatrix4fv(loc_basic_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, img->texture);
+
+    glUniform1i(loc_basic_image, 0);
 
     glBindVertexArray(vao);
     glEnableVertexAttribArray(0);
@@ -195,4 +208,62 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
     glUseProgram(0);
 
     return true;
+}
+
+bool gfx_draw_sub_image(int img_index, int sprite_index, int num_in_row, float w, float h, float x, float y, uint32_t color, float scale, float rotation, float opacity)
+{
+    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
+    {
+        printf("%s: Invalid image index!\n", __func__);
+        return false;
+    }
+
+    GFXImage* img = &gfx_images[img_index];
+
+    glUseProgram(program_sprite);
+
+    Matrix model = {0};
+
+    Vector3f pos = {x+w/2.0,y+h/2.0,0.0};
+    Vector3f rot = {0.0,0.0,rotation};
+    Vector3f sca = {w,-h,1.0};
+
+    get_model_transform(&pos,&rot,&sca,&model);
+
+    uint8_t r = color >> 16;
+    uint8_t g = color >> 8;
+    uint8_t b = color >> 0;
+
+    //int num_in_row = (img->w / w); 
+    //int sprite_index = (img_y / img->h)*num_in_row + (img_x/img->w);
+
+    //printf("num_in_row: %d, sprite_index: %d\n",num_in_row, sprite_index);
+
+    glUniform3f(loc_sprite_tint_color,r/255.0,g/255.0,b/255.0);
+    glUniform1f(loc_sprite_opacity,opacity);
+    glUniform1i(loc_sprite_num_in_row,num_in_row);
+    glUniform1i(loc_sprite_index,sprite_index);
+
+    glUniformMatrix4fv(loc_sprite_model,1,GL_TRUE,&model.m[0][0]);
+    glUniformMatrix4fv(loc_sprite_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, img->texture);
+
+    glUniform1i(loc_sprite_image, 0);
+
+    glBindVertexArray(vao);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+
+    glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+
+    glBindTexture(GL_TEXTURE_2D,0);
+    glUseProgram(0);
+
+    return true;
+
 }

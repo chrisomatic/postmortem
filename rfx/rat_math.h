@@ -9,9 +9,13 @@
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define RANGE(x,y,z) MIN(MAX((x),(y)),(z))
+
 #define SQ(x) ((x)*(x))
+#define FEQ(a, b) (ABS(a-b) <= 0.00001f)
 
 #define BOUND(a,l,u)    MAX(MIN(a,u),l)
+#define IS_BIT_SET(x,b) (((x) & (b)) == (b))
 
 typedef struct
 {
@@ -34,6 +38,7 @@ typedef struct
     float m[4][4];
 } Matrix;
 
-void ortho(Matrix* m, float left, float right, float bottom, float top);
+void ortho(Matrix* m, float left, float right, float bottom, float top, float znear, float zfar);
+float calc_angle_rad(float x0, float y0, float x1, float y1);
 void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Matrix* model);
 void print_matrix(Matrix* mat);

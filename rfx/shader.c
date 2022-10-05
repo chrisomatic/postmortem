@@ -7,25 +7,28 @@
 
 #include "shader.h"
 
-GLuint program;
-GLuint sampler;
+GLuint program_basic;
+GLuint program_sprite;
 
 static void shader_add(GLuint program, GLenum shader_type, const char* shader_file_path);
 
 void shader_load_all()
 {
-    shader_build_program(&program,
+    shader_build_program(&program_basic,
         "rfx/shaders/basic.vert.glsl",
         "rfx/shaders/basic.frag.glsl"
     );
 
-    // Get uniform locations
-    sampler = glGetUniformLocation(program, "sampler");
+    shader_build_program(&program_sprite,
+        "rfx/shaders/sprite.vert.glsl",
+        "rfx/shaders/sprite.frag.glsl"
+    );
 }
 
 void shader_deinit()
 {
-    glDeleteProgram(program);
+    glDeleteProgram(program_basic);
+    glDeleteProgram(program_sprite);
 }
 
 void shader_build_program(GLuint* p, const char* vert_shader_path, const char* frag_shader_path)

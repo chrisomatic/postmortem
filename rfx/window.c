@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -156,11 +157,44 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
     window_coord_y = ypos;
 }
 
-static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+typedef struct
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-    {
-    }
+    uint32_t* keys;
+    int key;
+    int bit_num;
+} WindowKey;
+
+static WindowKey window_keys[32];
+static int window_keys_count = 0;
+
+static WindowKey window_mouse_buttons[10];
+static int window_mouse_buttons_count = 0;
+
+
+void window_controls_clear_keys()
+{
+    memset(window_keys, 0, sizeof(WindowKey)*32);
+    memset(window_mouse_buttons, 0, sizeof(WindowKey)*10);
+    window_keys_count = 0;
+    window_mouse_buttons_count = 0;
+}
+
+void window_controls_add_key(uint32_t* keys, int key, int bit_num)
+{
+    window_keys[window_keys_count].keys = keys;
+    window_keys[window_keys_count].key = key;
+    window_keys[window_keys_count].bit_num = bit_num;
+
+    window_keys_count++;
+}
+
+void window_controls_add_mouse_button(uint32_t* keys, int key, int bit_num)
+{
+    window_mouse_buttons[window_mouse_buttons_count].keys = keys;
+    window_mouse_buttons[window_mouse_buttons_count].key = key;
+    window_mouse_buttons[window_mouse_buttons_count].bit_num = bit_num;
+
+    window_mouse_buttons_count++;
 }
 
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods)
@@ -180,61 +214,38 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
         }
     }
 
-    /*
-    if(action == GLFW_PRESS)
+    if(action == GLFW_PRESS || action == GLFW_RELEASE)
     {
-        switch(key)
+        for(int i = 0; i < window_keys_count; ++i)
         {
-            case GLFW_KEY_W:
-                break;
-            case GLFW_KEY_S:
-                player.back = true;
-                break;
-            case GLFW_KEY_A:
-                player.left = true;
-                break;
-            case GLFW_KEY_D:
-                player.right = true;
-                break;
-            case GLFW_KEY_SPACE:
-                player.jump = true;
-                break;
-            case GLFW_KEY_LEFT_SHIFT:
-                player.run = true;
-                break;
-            case GLFW_KEY_ESCAPE:
+            WindowKey* wk = &window_keys[i];
+            if(key == wk->key)
             {
-                int mode = glfwGetInputMode(window,GLFW_CURSOR);
-                if(mode == GLFW_CURSOR_DISABLED)
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                if(action == GLFW_PRESS)
+                    (*wk->keys) |= wk->bit_num;
                 else
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            }   break;
+                    (*wk->keys) &= ~(wk->bit_num);
+            }
         }
     }
-    else if(action == GLFW_RELEASE)
-    {
-        switch(key)
-        {
-            case GLFW_KEY_W:
-                player.forward = false;
-                break;
-            case GLFW_KEY_S:
-                player.back = false;
-                break;
-            case GLFW_KEY_A:
-                player.left = false;
-                break;
-            case GLFW_KEY_D:
-                player.right = false;
-                break;
-            case GLFW_KEY_SPACE:
-                player.jump = false;
-                break;
-            case GLFW_KEY_LEFT_SHIFT:
-                player.run = false;
-                break;
-        }
-    }
-    */
 }
+
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if(action == GLFW_PRESS || action == GLFW_RELEASE)
+    {
+        for(int i = 0; i < window_mouse_buttons_count; ++i)
+        {
+            WindowKey* wk = &window_mouse_buttons[i];
+
+            if(button == wk->key)
+            {
+                if(action == GLFW_PRESS)
+                    (*wk->keys) |= wk->bit_num;
+                else
+                    (*wk->keys) &= ~(wk->bit_num);
+            }
+        }
+    }
+}
+

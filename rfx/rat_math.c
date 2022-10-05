@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <math.h>
 
 #include "rat_math.h"
@@ -19,14 +20,16 @@ static void get_rotation_transform(Matrix* mat, Vector3f* rotation);
 static void get_translate_transform(Matrix* mat, Vector3f* position);
 static void dot_product_mat(Matrix a, Matrix b, Matrix* result);
 
-void ortho(Matrix* m, float left, float right, float bottom, float top)
+void ortho(Matrix* m, float left, float right, float bottom, float top, float znear, float zfar)
 {
     memcpy(m,&IDENTITY_MATRIX,sizeof(Matrix));
 
     m->m[0][0] = 2.0f/(right-left);
     m->m[1][1] = 2.0f/(top-bottom);
+    m->m[2][2] = -2.0f/(zfar-znear);
     m->m[0][3] = -(right+left) / (right - left);
     m->m[1][3] = -(top+bottom) / (top-bottom);
+    m->m[3][2] = -(zfar+znear) / (zfar-znear);
 }
 
 void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Matrix* model)
@@ -45,6 +48,56 @@ void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Mat
     dot_product_mat(*model, rotation_trans,  model);
     dot_product_mat(*model, scale_trans,     model);
 
+}
+
+float calc_angle_rad(float x0, float y0, float x1, float y1)
+{
+    // printf("x: %f | %f        y: %f | %f\n", x0, x1, y0, y1);
+    bool xeq = FEQ(x0, x1);
+    bool yeq = FEQ(y0, y1);
+
+    if(xeq && yeq)
+    {
+        return 0.0f;
+    }
+
+    if(xeq)
+    {
+        if(y1 > y0)
+            return PI_OVER_2;
+        else
+            return PI_OVER_2*3;
+    }
+    else if(yeq)
+    {
+        if(x1 > x0)
+            return 0;
+        else
+            return PI;
+    }
+    else
+    {
+        if(y1 > y0)
+        {
+            float opp = y1-y0;
+            float adj = x1-x0;
+            float a = atanf(opp/adj);
+            if(x1 > x0)
+            {
+                return a;
+            }
+            return PI+a;
+        }
+
+        float opp = x1-x0;
+        float adj = y1-y0;
+        float a = atanf(opp/adj);
+        if(x1 > x0)
+        {
+            return PI_OVER_2*3-a;
+        }
+        return PI_OVER_2*3-a;
+    }
 }
 
 void print_matrix(Matrix* mat)
