@@ -9,7 +9,7 @@ uniform float opacity;
 
 void main() {
     vec4 tex_color = texture2D(image,tex_coord0.xy);
-    if(tex_color == vec4(1.0,0.0,1.0,1.0))
-        discard;
+    //if(tex_color == vec4(1.0,0.0,1.0,1.0))
+    //    discard;
     color = vec4(tint_color.xyz, opacity)*tex_color;
 }

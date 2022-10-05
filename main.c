@@ -126,7 +126,7 @@ void update(double delta_t)
 
 void draw()
 {
-    gfx_clear_buffer(50,50,50);
+    gfx_clear_buffer(0,0,0);
 
     world_draw();
     player_draw();

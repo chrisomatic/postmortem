@@ -25,11 +25,15 @@ void world_update()
 
 void world_draw()
 {
+    //gfx_draw_image(ground_sheet,0,0,COLOR_TINT_NONE,1.0,0.0,1.0);
+
+#if 1
     for(int i = 0; i < 32; ++i)
     {
         for(int j = 0; j < 32; ++j)
         {
-            gfx_draw_sub_image(ground_sheet,ground_tiles[i][j],6,32,32,i*32,j*32,COLOR_TINT_NONE,1.0,0.0,1.0);
+            gfx_draw_sub_image(ground_sheet,ground_tiles[i][j],32,32,i*32,j*32,COLOR_TINT_NONE,1.0,0.0,1.0);
         }
     }
+#endif
 }

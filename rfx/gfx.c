@@ -81,6 +81,17 @@ void gfx_init(int width, int height)
     loc_sprite_num_in_row = glGetUniformLocation(program_sprite, "num_sprites_in_row");
     loc_sprite_index      = glGetUniformLocation(program_sprite, "sprite_index");
 
+    /*
+    printf("%d %d %d %d %d %d %d\n",
+            loc_sprite_image,
+            loc_sprite_tint_color,
+            loc_sprite_opacity,
+            loc_sprite_model,
+            loc_sprite_proj,
+            loc_sprite_num_in_row,
+            loc_sprite_index);
+            */
+
     ortho(&proj_matrix,0.0,(float)width,(float)height,0.0, -1.0, 1.0);
 
     print_matrix(&proj_matrix);
@@ -210,7 +221,7 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
     return true;
 }
 
-bool gfx_draw_sub_image(int img_index, int sprite_index, int num_in_row, float w, float h, float x, float y, uint32_t color, float scale, float rotation, float opacity)
+bool gfx_draw_sub_image(int img_index, int sprite_index, float w, float h, float x, float y, uint32_t color, float scale, float rotation, float opacity)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
@@ -234,9 +245,7 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, int num_in_row, float w
     uint8_t g = color >> 8;
     uint8_t b = color >> 0;
 
-    //int num_in_row = (img->w / w); 
-    //int sprite_index = (img_y / img->h)*num_in_row + (img_x/img->w);
-
+    int num_in_row = (img->w / w); 
     //printf("num_in_row: %d, sprite_index: %d\n",num_in_row, sprite_index);
 
     glUniform3f(loc_sprite_tint_color,r/255.0,g/255.0,b/255.0);
