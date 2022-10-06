@@ -34,6 +34,7 @@ static GLint loc_sprite_model;
 static GLint loc_sprite_view;
 static GLint loc_sprite_proj;
 static GLint loc_sprite_num_in_row;
+static GLint loc_sprite_num_in_col;
 static GLint loc_sprite_index;
 
 void gfx_init(int width, int height)
@@ -82,6 +83,7 @@ void gfx_init(int width, int height)
     loc_sprite_view       = glGetUniformLocation(program_sprite, "view");
     loc_sprite_proj       = glGetUniformLocation(program_sprite, "projection");
     loc_sprite_num_in_row = glGetUniformLocation(program_sprite, "num_sprites_in_row");
+    loc_sprite_num_in_col = glGetUniformLocation(program_sprite, "num_sprites_in_col");
     loc_sprite_index      = glGetUniformLocation(program_sprite, "sprite_index");
 
     /*
@@ -188,7 +190,7 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
 
     Vector3f pos = {x+img->w/2.0,y+img->h/2.0,0.0};
     Vector3f rot = {0.0,0.0,rotation};
-    Vector3f sca = {img->w,-img->h,1.0};
+    Vector3f sca = {scale*img->w,-scale*img->h,1.0};
 
     get_model_transform(&pos,&rot,&sca,&model);
     Matrix* view = get_camera_transform();
@@ -244,7 +246,7 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float w, float h, float
 
     Vector3f pos = {x+w/2.0,y+h/2.0,0.0};
     Vector3f rot = {0.0,0.0,rotation};
-    Vector3f sca = {w,-h,1.0};
+    Vector3f sca = {scale*w,-scale*h,1.0};
 
     get_model_transform(&pos,&rot,&sca,&model);
     Matrix* view = get_camera_transform();
@@ -254,11 +256,13 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float w, float h, float
     uint8_t b = color >> 0;
 
     int num_in_row = (img->w / w); 
+    int num_in_col = (img->h / h); 
     //printf("num_in_row: %d, sprite_index: %d\n",num_in_row, sprite_index);
 
     glUniform3f(loc_sprite_tint_color,r/255.0,g/255.0,b/255.0);
     glUniform1f(loc_sprite_opacity,opacity);
     glUniform1i(loc_sprite_num_in_row,num_in_row);
+    glUniform1i(loc_sprite_num_in_col,num_in_col);
     glUniform1i(loc_sprite_index,sprite_index);
 
     glUniformMatrix4fv(loc_sprite_model,1,GL_TRUE,&model.m[0][0]);

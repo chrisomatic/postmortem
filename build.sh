@@ -11,6 +11,7 @@ gcc rfx/gfx.c \
     main.c \
     world.c \
     player.c \
+    zombie.c \
     -Irfx \
     -lglfw -lGLU -lGLEW -lGL -lm \
     -o bin/example

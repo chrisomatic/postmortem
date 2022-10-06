@@ -16,6 +16,7 @@
 #include "world.h"
 #include "camera.h"
 #include "player.h"
+#include "zombie.h"
 
 // Settings
 #define VIEW_WIDTH   800
@@ -114,6 +115,9 @@ void init()
 
     printf(" - Player.\n");
     player_init();
+
+    printf(" - Zombies.\n");
+    zombie_init();
 }
 
 void deinit()
@@ -125,11 +129,12 @@ void deinit()
 void update(double delta_t)
 {
     Vector2f offset = {
-        gfx_images[player.image].w/2.0,
-        gfx_images[player.image].h/2.0
+        player.w/2.0,
+        player.h/2.0
     };
     camera_move(player.pos.x + offset.x, player.pos.y + offset.y);
     world_update();
+    zombie_update(delta_t);
     player_update(delta_t);
 }
 
@@ -138,6 +143,7 @@ void draw()
     gfx_clear_buffer(0,0,0);
 
     world_draw();
+    zombie_draw();
     player_draw();
 }
 

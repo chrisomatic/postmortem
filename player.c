@@ -15,12 +15,16 @@ void player_init()
 
     player.vel.x = 0.0;
     player.vel.y = 0.0;
+    player.w = 32;
+    player.h = 48;
+    player.sprite_index = 0;
 
     player.speed = 32.0;
     player.max_base_speed = 128.0;
     player.max_speed = player.max_base_speed;
 
-    player.image = gfx_load_image("img/soldier_f1.png");
+    player.image = gfx_load_image("img/human_set_small.png");
+    //player.image = gfx_load_image("img/soldier_f1.png");
 
     window_controls_clear_keys();
 
@@ -55,10 +59,27 @@ void player_update(double delta_t)
 
     Vector2f accel = {0};
 
-    if(up)    accel.y -= player.speed;
-    if(down)  accel.y += player.speed;
-    if(left)  accel.x -= player.speed;
-    if(right) accel.x += player.speed;
+    if(up)    { accel.y -= player.speed; }
+    if(down)  { accel.y += player.speed; }
+    if(left)  { accel.x -= player.speed; }
+    if(right) { accel.x += player.speed; }
+
+    if(up && left)
+        player.sprite_index = 3;
+    else if(up && right)
+        player.sprite_index = 5;
+    else if(down && left)
+        player.sprite_index = 1;
+    else if(down && right)
+        player.sprite_index = 7;
+    else if(up)
+        player.sprite_index = 4;
+    else if(down)
+        player.sprite_index = 0;
+    else if(left)
+        player.sprite_index = 2;
+    else if(right)
+        player.sprite_index = 6;
 
     player.max_speed = player.max_base_speed;
 
@@ -112,5 +133,6 @@ void player_update(double delta_t)
 
 void player_draw()
 {
-    gfx_draw_image(player.image,(int)player.pos.x,(int)player.pos.y, COLOR_TINT_NONE,1.0,0.0,1.0);
+    //gfx_draw_image(player.image,(int)player.pos.x,(int)player.pos.y, COLOR_TINT_NONE,0.16,0.0,1.0);
+    gfx_draw_sub_image(player.image,player.sprite_index,32,64,player.pos.x,player.pos.y, COLOR_TINT_NONE,1.5,0.0,1.0);
 }

@@ -18,11 +18,14 @@ typedef struct
     Vector2f pos;
     Vector2f vel;
 
+    float w,h;
+
     float speed;
     float max_base_speed;
     float max_speed;
 
     int image;
+    int sprite_index;
     uint32_t keys;
 } Player;
 
