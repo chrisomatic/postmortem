@@ -6,6 +6,7 @@ gcc rfx/gfx.c \
     rfx/shader.c \
     rfx/timer.c \
     rfx/rat_math.c \
+    rfx/camera.c \
     rfx/window.c \
     main.c \
     world.c \

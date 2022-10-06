@@ -11,9 +11,8 @@
 #include "shader.h"
 #include "window.h"
 #include "gfx.h"
+#include "camera.h"
 #include "rat_math.h"
-
-#define MAX_GFX_IMAGES 32
 
 static GLuint vao, vbo, ibo;
 
@@ -25,12 +24,14 @@ static GLint loc_basic_image;
 static GLint loc_basic_tint_color;
 static GLint loc_basic_opacity;
 static GLint loc_basic_model;
+static GLint loc_basic_view;
 static GLint loc_basic_proj;
 
 static GLint loc_sprite_image;
 static GLint loc_sprite_tint_color;
 static GLint loc_sprite_opacity;
 static GLint loc_sprite_model;
+static GLint loc_sprite_view;
 static GLint loc_sprite_proj;
 static GLint loc_sprite_num_in_row;
 static GLint loc_sprite_index;
@@ -71,12 +72,14 @@ void gfx_init(int width, int height)
     loc_basic_tint_color = glGetUniformLocation(program_basic, "tint_color");
     loc_basic_opacity    = glGetUniformLocation(program_basic, "opacity");
     loc_basic_model      = glGetUniformLocation(program_basic, "model");
+    loc_basic_view       = glGetUniformLocation(program_basic, "view");
     loc_basic_proj       = glGetUniformLocation(program_basic, "projection");
 
     loc_sprite_image      = glGetUniformLocation(program_sprite, "image");
     loc_sprite_tint_color = glGetUniformLocation(program_sprite, "tint_color");
     loc_sprite_opacity    = glGetUniformLocation(program_sprite, "opacity");
     loc_sprite_model      = glGetUniformLocation(program_sprite, "model");
+    loc_sprite_view       = glGetUniformLocation(program_sprite, "view");
     loc_sprite_proj       = glGetUniformLocation(program_sprite, "projection");
     loc_sprite_num_in_row = glGetUniformLocation(program_sprite, "num_sprites_in_row");
     loc_sprite_index      = glGetUniformLocation(program_sprite, "sprite_index");
@@ -94,7 +97,7 @@ void gfx_init(int width, int height)
 
     ortho(&proj_matrix,0.0,(float)width,(float)height,0.0, -1.0, 1.0);
 
-    print_matrix(&proj_matrix);
+    //print_matrix(&proj_matrix);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -188,9 +191,11 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
     Vector3f sca = {img->w,-img->h,1.0};
 
     get_model_transform(&pos,&rot,&sca,&model);
+    Matrix* view = get_camera_transform();
 
-    //print_matrix(&proj_matrix);
     //print_matrix(&model);
+    //print_matrix(view);
+    //print_matrix(&proj_matrix);
 
     uint8_t r = color >> 16;
     uint8_t g = color >> 8;
@@ -198,7 +203,9 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
 
     glUniform3f(loc_basic_tint_color,r/255.0,g/255.0,b/255.0);
     glUniform1f(loc_basic_opacity,opacity);
+
     glUniformMatrix4fv(loc_basic_model,1,GL_TRUE,&model.m[0][0]);
+    glUniformMatrix4fv(loc_basic_view,1,GL_TRUE,&view->m[0][0]);
     glUniformMatrix4fv(loc_basic_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
 
     glActiveTexture(GL_TEXTURE0);
@@ -240,6 +247,7 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float w, float h, float
     Vector3f sca = {w,-h,1.0};
 
     get_model_transform(&pos,&rot,&sca,&model);
+    Matrix* view = get_camera_transform();
 
     uint8_t r = color >> 16;
     uint8_t g = color >> 8;
@@ -254,6 +262,7 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float w, float h, float
     glUniform1i(loc_sprite_index,sprite_index);
 
     glUniformMatrix4fv(loc_sprite_model,1,GL_TRUE,&model.m[0][0]);
+    glUniformMatrix4fv(loc_sprite_view,1,GL_TRUE,&view->m[0][0]);
     glUniformMatrix4fv(loc_sprite_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
 
     glActiveTexture(GL_TEXTURE0);

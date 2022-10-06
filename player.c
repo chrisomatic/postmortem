@@ -103,6 +103,10 @@ void player_update(double delta_t)
     player.pos.x += delta_t*player.vel.x;
     player.pos.y += delta_t*player.vel.y;
 
+    // limit range
+    player.pos.x = MAX(player.pos.x, 0.0);
+    player.pos.y = MAX(player.pos.y, 0.0);
+
     //printf("player pos: %f %f\n", player.pos.x, player.pos.y);
 }
 

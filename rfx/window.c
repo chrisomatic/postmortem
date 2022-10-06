@@ -10,13 +10,6 @@
 
 static GLFWwindow* window;
 
-int window_center_x = 0;
-int window_center_y = 0;
-
-// int window_width = VIEW_WIDTH;
-// int window_height = VIEW_HEIGHT;
-// int view_width = VIEW_WIDTH;
-// int view_height = VIEW_HEIGHT;
 int window_width = 0;
 int window_height = 0;
 int view_width = 0;
@@ -130,9 +123,6 @@ static void window_size_callback(GLFWwindow* window, int width, int height)
 
     int start_x = (window_width + window_width) / 2.0f - window_width;
     int start_y = (window_height + window_height) / 2.0f - window_height;
-
-    window_center_x = window_width / 2;
-    window_center_y = window_height / 2;
 
     glViewport(start_x,start_y,window_width,window_height);
 }

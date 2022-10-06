@@ -1,5 +1,6 @@
 #pragma once
 
+#define MAX_GFX_IMAGES 256
 #define COLOR_TINT_NONE (0xFFFFFFFF)
 
 typedef struct
@@ -8,6 +9,8 @@ typedef struct
     int w,h,n;
     GLuint texture;
 } GFXImage;
+
+extern GFXImage gfx_images[MAX_GFX_IMAGES];
 
 void gfx_init(int width, int height);
 void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b);

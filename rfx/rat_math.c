@@ -15,11 +15,6 @@ Matrix IDENTITY_MATRIX = {
     }
 };
 
-static void get_scale_transform(Matrix* mat, Vector3f* scale);
-static void get_rotation_transform(Matrix* mat, Vector3f* rotation);
-static void get_translate_transform(Matrix* mat, Vector3f* position);
-static void dot_product_mat(Matrix a, Matrix b, Matrix* result);
-
 void ortho(Matrix* m, float left, float right, float bottom, float top, float znear, float zfar)
 {
     memcpy(m,&IDENTITY_MATRIX,sizeof(Matrix));
@@ -115,7 +110,7 @@ void print_matrix(Matrix* mat)
     }
 }
 
-static void dot_product_mat(Matrix a, Matrix b, Matrix* result)
+void dot_product_mat(Matrix a, Matrix b, Matrix* result)
 {
     for(int i = 0; i < 4; ++i)
     {
@@ -130,7 +125,7 @@ static void dot_product_mat(Matrix a, Matrix b, Matrix* result)
     }
 }
 
-static void get_scale_transform(Matrix* mat, Vector3f* scale)
+void get_scale_transform(Matrix* mat, Vector3f* scale)
 {
     memset(mat,0,sizeof(Matrix));
 
@@ -140,7 +135,7 @@ static void get_scale_transform(Matrix* mat, Vector3f* scale)
     mat->m[3][3] = 1.0f;
 }
 
-static void get_rotation_transform(Matrix* mat, Vector3f* rotation)
+void get_rotation_transform(Matrix* mat, Vector3f* rotation)
 {
     Matrix rx = {0};
     Matrix ry = {0};
@@ -178,7 +173,7 @@ static void get_rotation_transform(Matrix* mat, Vector3f* rotation)
     dot_product_mat(*mat,rx,mat);
 }
 
-static void get_translate_transform(Matrix* mat, Vector3f* position)
+void get_translate_transform(Matrix* mat, Vector3f* position)
 {
     memset(mat,0,sizeof(Matrix));
 

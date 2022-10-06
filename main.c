@@ -14,11 +14,12 @@
 #include "gfx.h"
 #include "rat_math.h"
 #include "world.h"
-
+#include "camera.h"
 #include "player.h"
 
 // Settings
-#define NUM_RATS   10
+#define VIEW_WIDTH   800
+#define VIEW_HEIGHT  600
 
 // =========================
 // Global Vars
@@ -105,6 +106,9 @@ void init()
     printf(" - Graphics.\n");
     gfx_init(VIEW_WIDTH, VIEW_HEIGHT);
 
+    printf(" - Camera.\n");
+    camera_init();
+
     printf(" - World.\n");
     world_init();
 
@@ -120,6 +124,11 @@ void deinit()
 
 void update(double delta_t)
 {
+    Vector2f offset = {
+        gfx_images[player.image].w/2.0,
+        gfx_images[player.image].h/2.0
+    };
+    camera_move(player.pos.x + offset.x, player.pos.y + offset.y);
     world_update();
     player_update(delta_t);
 }

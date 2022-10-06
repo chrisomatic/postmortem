@@ -38,7 +38,14 @@ typedef struct
     float m[4][4];
 } Matrix;
 
+extern Matrix IDENTITY_MATRIX;
+
+void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Matrix* model);
 void ortho(Matrix* m, float left, float right, float bottom, float top, float znear, float zfar);
 float calc_angle_rad(float x0, float y0, float x1, float y1);
-void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Matrix* model);
+void get_scale_transform(Matrix* mat, Vector3f* scale);
+void get_rotation_transform(Matrix* mat, Vector3f* rotation);
+void get_translate_transform(Matrix* mat, Vector3f* position);
+void dot_product_mat(Matrix a, Matrix b, Matrix* result);
 void print_matrix(Matrix* mat);
+

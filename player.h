@@ -26,6 +26,8 @@ typedef struct
     uint32_t keys;
 } Player;
 
+extern Player player;
+
 void player_init();
 void player_update(double delta_t);
 void player_draw();
