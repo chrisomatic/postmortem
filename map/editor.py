@@ -28,6 +28,20 @@ class BoardTile:
         self.tile_index = -1
 
 
+class Object:
+    def __init__(self):
+        self.name = ""
+        self.img = None
+        self.img_scaled = None
+
+
+class BoardObject():
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.obj_index = -1
+
+
 class Editor(QWidget):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
@@ -82,15 +96,26 @@ class Editor(QWidget):
         self.tool = ""
         self.bsize = 1
 
-        self.tile_set_name = ""
+        self.tile_set_path = ""
+        # self.tile_set_name = ""
         self.tile_set = []
+
+        self.object_set_path = ""
+        self.object_set = []
+
+        # 0: terrain, 1: objects
+        self.curr_layer = 0
+
+        # tiles or objects
+        self.selected_index = 0
 
         self.board = [[BoardTile() for c in range(self.board_width)] for r in range(self.board_height)]
         # reference --> self.board[row][col]
+        self.objects = []
 
         self.setMouseTracking(True)
 
-    def sub_img_color(self, img, find, replace, idx):
+    def sub_img_color(self, img, find, replace):
         count = 0
         for y in range(img.height()):
             for x in range(img.width()):
@@ -100,18 +125,58 @@ class Editor(QWidget):
                     count += 1
         return img,count
 
-    def build_tiles(self, path):
-        if(not os.path.isfile(path)):
-            printf("File path does not exist: %s\n", path)
+    def build_objects(self):
+        if(not os.path.isdir(self.object_set_path)):
+            printf("Folder does not exist: %s\n", self.tile_set_path)
             return
 
-        img = QImage(path,"PNG")
+        pngs = [x for x in os.listdir(self.object_set_path) if os.path.isfile(self.object_set_path+x) and x.endswith(".png")]
+
+        if(len(pngs) == 0):
+            printf("No objects found")
+            return
+
+        self.object_set = []
+
+        for p in pngs:
+            print(p)
+            path = self.object_set_path + p
+            img = QImage(path,"PNG")
+            o = Object()
+            o.name = p
+            o.img,count = self.sub_img_color(img, self.color_rep_clear, self.color_clear)
+            o.img_scaled = o.img.scaledToHeight(int(self.zoom_ratio*o.img.height()))
+            self.object_set.append(o)
+
+        x = 100
+        y = 100
+        # w = 0
+        # h = 0
+        for i in range(len(self.object_set)):
+            bo = BoardObject()
+            bo.obj_index = i
+            bo.x = x
+            bo.y = y
+            self.objects.append(bo)
+
+            x += 100+self.object_set[i].img_scaled.width()
+            y += 100+self.object_set[i].img_scaled.height()
+
+
+
+
+    def build_tiles(self):
+        if(not os.path.isfile(self.tile_set_path)):
+            printf("File path does not exist: %s\n", self.tile_set_path)
+            return
+
+        img = QImage(self.tile_set_path,"PNG")
 
         if(img.width() != self.tile_img_set_width or img.height() != self.tile_img_set_height):
             printf("Expected %d x %d image size, actual: %d x %d\n", self.tile_img_set_width, self.tile_img_set_height, img.width, img.height)
             return
 
-        self.tile_set_name = path.split("\\")[-1]
+        # self.tile_set_name = self.tile_set_path.split("\\")[-1]
         self.tile_set = []
 
         nrow = int(self.tile_img_set_height/self.tile_size_actual)
@@ -123,7 +188,7 @@ class Editor(QWidget):
                 t = Tile()
                 idx = i*nrow + j
                 t.img = img.copy(self.tile_size_actual*j,self.tile_size_actual*i,self.tile_size_actual,self.tile_size_actual)
-                t.img,count = self.sub_img_color(t.img, self.color_rep_clear, self.color_clear, idx)
+                t.img,count = self.sub_img_color(t.img, self.color_rep_clear, self.color_clear,)
                 t.empty = (count == num_pixels)
                 if(t.empty):
                     # printf("index %d is empty\n", idx)
@@ -133,15 +198,15 @@ class Editor(QWidget):
                 self.tile_set.append(t)
 
         # TEST
-        # row = 0
-        # col = 0
-        # for i in range(len(self.tile_set)):
-        #     # if(self.tile_set[i].empty): continue
-        #     self.board[row][col].tile_index = i
-        #     col += 1
-        #     if(col >= 16):
-        #         row += 1
-        #         col = 0
+        row = 0
+        col = 0
+        for i in range(len(self.tile_set)):
+            # if(self.tile_set[i].empty): continue
+            self.board[row][col].tile_index = i
+            col += 1
+            if(col >= 16):
+                row += 1
+                col = 0
 
         # for row in range(0,self.board_height):
         #     for col in range(0,self.board_width):
@@ -153,7 +218,6 @@ class Editor(QWidget):
         if(len(choices) == 0):
             return None
         return choice(choices)
-
 
     def set_tile(self, row, col, tile_index):
         if(row >= self.board_height or row < 0):
@@ -197,6 +261,11 @@ class Editor(QWidget):
                 if(not(t.empty) and not(t.img is None)):
                     t.img_scaled = t.img.scaledToHeight(self.tile_size)
 
+        if(len(self.object_set) > 0):
+            for i in range(len(self.object_set)):
+                o = self.object_set[i]
+                if(not(o.img is None)):
+                    o.img_scaled = o.img.scaledToHeight(int(self.zoom_ratio*o.img.height()))
 
     def xy_to_rc(self, x, y):
         col = int(x/self.tile_size)
@@ -209,55 +278,54 @@ class Editor(QWidget):
         return x,y
 
 
-
     def paintEvent(self, event):
+        # print("paint event")
 
         painter = QPainter(self)
 
-        font_size = 14
-
-        # # draw tiles
-        # for row in range(0,self.board_height):
-        #     for col in range(0,self.board_width):
-        #         ti = self.board[row][col].tile_index
-        #         if(ti < 0): continue
-        #         t = self.tile_set[ti]
-        #         if(t.empty or t.img_scaled is None): continue
-        #         x,y = self.rc_to_xy(row,col)
-        #         # print(x,y,row,col,ti)
-        #         painter.drawImage(x, y, t.img_scaled)
 
         self.draw_tiles(painter)
-
-        # grid
+        self.draw_objects(painter)
         self.draw_grid(painter)
 
+        font_size = 14
 
         # mouse coordinates
         self.draw_text(painter, self.view_tl_x+5, self.view_tl_y+5, self.TOP_LEFT, Qt.black, font_size, "%d,%d", self.mouse_x, self.mouse_y)
         # grid coordinates
         self.draw_text(painter, self.view_tl_x+5, self.view_bl_y-10, self.BOTTOM_LEFT, Qt.black, font_size, "%d,%d", self.mouse_row, self.mouse_col)
 
-        # t = self.tile_set[1]
-        # if(not t.img_scaled is None and not t.empty):
-        #     painter.drawImage(self.view_tl_x, self.view_tl_y, t.img_scaled)
-
-
-
-
-        # self.draw_rect_wh(self.h_lbound,self.v_lbound)
-        # self.draw_coords(self.h_lbound+2,self.v_ubound-5,int(int(self.mouse_x) * self.tile_size),int(int(self.mouse_y) * self.tile_size))
-        # self.draw_coords(self.h_ubound-55,self.v_ubound-5,int(self.mouse_x), int(self.mouse_y))
-        
-        # self.draw_copy_status(self.h_lbound + (self.h_ubound - self.h_lbound)*.45,self.v_ubound-5)
-        # self.draw_get_zone(self.h_lbound + (self.h_ubound - self.h_lbound)*.45,self.v_ubound-5)
-        # self.drawGhostRect()
 
     def mouseMoveEvent(self, event):
         self.mouse_x = event.pos().x()
         self.mouse_y = event.pos().y()
         self.mouse_row, self.mouse_col = self.xy_to_rc(self.mouse_x, self.mouse_y)
         self.update()
+
+
+    def draw_objects(self, painter):
+        for bo in self.objects:
+            if(bo.obj_index < 0 or bo.obj_index >= len(self.objects)):
+                continue
+
+            o = self.object_set[bo.obj_index]
+            if(o.img is None):
+                continue
+
+            x = int(bo.x*self.zoom_ratio)
+            y = int(bo.y*self.zoom_ratio)
+
+            w = o.img_scaled.width()
+            h = o.img_scaled.height()
+
+            if((x + w) < self.view_tl_x or x > self.view_tr_x):
+                continue
+
+            if((y + h) < self.view_tl_y or y > self.view_bl_y):
+                continue
+
+            painter.drawImage(x, y, o.img_scaled)
+
 
 
     def draw_grid(self, painter):
@@ -284,7 +352,7 @@ class Editor(QWidget):
         w = (ncols)*self.tile_size
         h = (nrows)*self.tile_size
 
-        print(br_row, tl_row, h, nrows)
+        # print(br_row, tl_row, h, nrows)
 
         # horizontal lines
         x0,_ = self.rc_to_xy(0,tl_col)
@@ -299,21 +367,6 @@ class Editor(QWidget):
         for col in range(0,ncols+1):
             x,_ = self.rc_to_xy(0,tl_col+col)
             painter.drawLine(x, y0, x, y1)
-
-        # # horizontal lines
-        # for y in range(0,nrows+1):
-        #     x0 = int(self.view_tl_x-1)
-        #     x1 = int(x0+w+1)
-        #     y0 = self.view_tl_y+(y*self.tile_size)
-        #     painter.drawLine(x0, y0, x1, y0)
-
-        # # vertical lines
-        # for x in range(0,ncols+1):
-        #     y0 = int(self.view_tl_y-1)
-        #     y1 = int(y0+h+1)
-        #     x0 = self.view_tl_x+(x*self.tile_size)
-        #     painter.drawLine(x0, y0, x0, y1)
-
 
 
     def draw_tiles(self, painter):
@@ -434,7 +487,8 @@ class MainWindow(QMainWindow):
         self.first_resize = False
         self.initialized = False
         self.scroll = None
-
+        self.scroll_v_ratio = 0
+        self.scroll_h_ratio = 0
 
         self.r = 128
         self.g = self.r
@@ -466,7 +520,7 @@ class MainWindow(QMainWindow):
         # self.setAcceptDrops(True)
 
         self.root = os.path.dirname(os.path.abspath(__file__))  + "/"
-        
+
         self.font_name = "Courier"
         font = QFont(self.font_name, 12)
         self.setFont(font)
@@ -480,8 +534,8 @@ class MainWindow(QMainWindow):
         self.editor.setMinimumHeight(self.editor.height+self.editor.tile_size)
         self.editor.setMaximumHeight(self.editor.height+self.editor.tile_size)
         self.scroll = self.scroll_area(self.editor)
-        self.scroll.verticalScrollBar().valueChanged.connect(self.repaint)
-        self.scroll.horizontalScrollBar().valueChanged.connect(self.repaint)
+        self.scroll.verticalScrollBar().valueChanged.connect(self.scrolled)
+        self.scroll.horizontalScrollBar().valueChanged.connect(self.scrolled)
 
 
         self.tool_combo = QComboBox(self)
@@ -557,18 +611,31 @@ class MainWindow(QMainWindow):
         self.lbl_zoom = QLabel('Zoom: ', self)
 
 
-        # self.list_tiles("tiles")
+        self.layer_list = ["Terrain","Objects"]
+        self.layer_combo = QComboBox(self)
+        for i in self.layer_list:
+            self.layer_combo.addItem(i)
+        self.layer_combo.setCurrentIndex(0)
+        self.layer_combo.activated[str].connect(self.show_set_selector)
+        self.layer_combo.setToolTip("Ctrl + T")
 
-        self.ts_combo_grid_row = 0
-        self.ts_combo_grid_col = 0
+        self.tile_selector = QListWidget(self)
+        self.tile_selector_text = []
+        self.tile_selector_grid_row = 0
+        self.tile_selector_grid_col = 0
+        self.tile_selector_grid_cs = 0
+        self.tile_selector_grid_rs = 0
 
+        self.editor.tile_set_path = self.root + "../img/ground_set.png"
+        self.editor.build_tiles()
+        self.editor.object_set_path = self.root + "../img/objects/"
+        self.editor.build_objects()
 
         self.grid = QGridLayout()
         self.grid.setSpacing(10)
 
         self.scroll_cs = 30
         self.scroll_rs = 30
-
 
         r = 0
         c = 0
@@ -600,13 +667,15 @@ class MainWindow(QMainWindow):
         r += 1
         self.grid.addWidget(self.align_grid_chk, r, c, rs, 1)
 
-        self.ts_combo_grid_row = r+1
-        self.ts_combo_grid_col = c
-        # print(self.ts_combo_grid_row, self.ts_combo_grid_col)
+        r += 2
+        self.grid.addWidget(self.layer_combo, r, c, rs, 2)
 
-        #TODO
-        # self.grid.addWidget(self.ts_combo, 4, 1)
-        # self.grid.addWidget(self.qlist, 5, 1, 6, 1) # also change in load_tileset()
+        r += 1
+        self.tile_selector_grid_row = r
+        self.tile_selector_grid_col = c
+        self.tile_selector_grid_cs = 2
+        self.tile_selector_grid_rs = 10
+        self.grid.addWidget(self.tile_selector, r, c, self.tile_selector_grid_rs, self.tile_selector_grid_cs)
 
         r = 0
         c = cs+c+1
@@ -622,30 +691,13 @@ class MainWindow(QMainWindow):
         self.grid.addWidget(self.undo_btn, r, c, rs, cs)
 
 
-
-        # r += 1
-        # self.grid.addWidget(self.lbl_zoom, r, c, rs, cs)
-        # r += 1
-        # self.grid.addWidget(self.sld_zoom, r, c, rs, cs)
-
-        # rs = 1
-        # cs = 5
-        # c = self.scroll_cs+1
-        # r = self.scroll_rs-2
-        # self.grid.addWidget(self.lbl_zoom, r, c, rs, cs)
-        # r += 1
-        # self.grid.addWidget(self.sld_zoom, r, c, rs, cs)
-
-
-
-
-
         self.widget.setLayout(self.grid)
         self.setCentralWidget(self.widget)
 
-        self.sld_zoom.setValue(self.zoom_values.index(1)+1)
 
-        self.editor.build_tiles(self.root + "../img/ground_set.png")
+        self.show_set_selector("")
+
+        self.sld_zoom.setValue(self.zoom_values.index(1)+1)
 
         self.initialized = True
 
@@ -662,7 +714,29 @@ class MainWindow(QMainWindow):
         self.editor.view_bl_y = self.editor.view_tl_y+self.editor.view_height
         self.editor.view_tl_x = self.scroll.horizontalScrollBar().value()
         self.editor.view_tr_x = self.editor.view_tl_x + self.editor.view_width
-        # print("bl_y",self.editor.view_bl_y)
+
+
+
+        # print(self.editor.vkiew_tl_y)
+
+        # v = self.scroll.verticalScrollBar().value()
+        # m = self.scroll.verticalScrollBar().maximum()
+        # if(m <= 0):
+        #     self.scroll_v_ratio = 0
+        # else:
+        #     self.scroll_v_ratio = v/m
+        # # print("self.scroll_v_ratio", self.scroll_v_ratio)
+
+        # v = self.scroll.horizontalScrollBar().value()
+        # m = self.scroll.horizontalScrollBar().maximum()
+        # if(m <= 0):
+        #     self.scroll_h_ratio = 0
+        # else:
+        #     self.scroll_h_ratio = v/m
+
+    def scrolled(self):
+        self.repaint()
+
 
     def repaint(self):
         # print("repaint")
@@ -767,12 +841,85 @@ class MainWindow(QMainWindow):
     def load_map(self,fname=""):
         return
 
-    def build_ts_combo(self):
-        return
+    def create_eraser_item(self):
+        self.eraser_item = QListWidgetItem()
+        self.eraser_item.setText("Eraser")
+        if os.path.isfile("eraser.png"):
+            self.eraser_item.setIcon(QIcon("eraser.png"))
+
+    def show_set_selector(self,text):
+        sel = self.layer_combo.currentText()
+
+        items = []
+        text = []
+
+        self.tile_selector.clear()
+        self.tile_selector_text = []
+        self.tile_selector_indexes = []
+        self.editor.selected_index = -1
+        self.create_eraser_item()
+        self.tile_selector.addItem(self.eraser_item)
+
+        if(sel == "Terrain"):
+            self.editor.curr_layer = 0
+            if(len(self.editor.tile_set) > 0):
+                for i in range(len(self.editor.tile_set)):
+                    t = self.editor.tile_set[i]
+                    if(t.img is None or t.empty): continue
+                    item = QListWidgetItem()
+                    _str = 'Tile ' + str(i)
+                    item.setText(_str)
+                    item.setIcon(QIcon(QPixmap.fromImage(t.img)))
+                    items.append(item)
+                    text.append(_str)
+                    self.tile_selector_indexes.append(i)
+
+        elif(sel == "Objects"):
+            self.editor.curr_layer = 1
+            if(len(self.editor.object_set) > 0):
+                for i in range(len(self.editor.object_set)):
+                    o = self.editor.object_set[i]
+                    item = QListWidgetItem()
+                    _str = o.name
+                    item.setText(_str)
+                    item.setIcon(QIcon(QPixmap.fromImage(o.img)))
+                    items.append(item)
+                    text.append(_str)
+                    self.tile_selector_indexes.append(i)
 
 
-    def load_tileset(self,text):
-        return
+        for i in range(len(items)):
+            self.tile_selector.addItem(items[i])
+            self.tile_selector_text.append(text[i])
+
+        self.tile_selector.itemClicked.connect(self.tile_selector_clicked)
+
+        self.grid.addWidget(self.tile_selector, self.tile_selector_grid_row, self.tile_selector_grid_col, self.tile_selector_grid_rs, self.tile_selector_grid_cs)
+        self.widget.setLayout(self.grid)
+        self.setCentralWidget(self.widget)
+
+    def tile_selector_clicked(self,curr):
+    
+        self.tile_selector.selectedItems()
+        itext = curr.text()
+        idx = -1
+
+        if(itext == "Eraser"):
+            idx = -1
+        else:
+            if(self.editor.curr_layer == 0):
+                idx = self.tile_selector_text.index(itext)
+            else:
+                idx = self.tile_selector_text.index(itext)
+
+
+        if(idx < 0):
+            self.editor.selected_index = idx
+        else:
+            self.editor.selected_index = self.tile_selector_indexes[idx]
+
+        # print(itext, "|", self.editor.selected_index)
+
 
     def change_zoom(self):
         value = self.sld_zoom.value()
@@ -792,20 +939,28 @@ class MainWindow(QMainWindow):
         self.lbl_zoom.setText("Zoom: x" + l)
 
 
-        self.scroll = self.scroll_area(self.editor)
-        self.scroll.verticalScrollBar().valueChanged.connect(self.repaint)
-        self.scroll.horizontalScrollBar().valueChanged.connect(self.repaint)
-        self.grid.addWidget(self.scroll, 0, 0, self.scroll_rs, self.scroll_rs)
-        self.widget.setLayout(self.grid)
-        self.setCentralWidget(self.widget)
+        # self.scroll = self.scroll_area(self.editor)
+
+        # # v = int(self.scroll_v_ratio*self.scroll.verticalScrollBar().maximum())
+        # # print("setting v", v)
+        # # print("height", self.scroll.viewport().height())
+
+
+        # self.scroll.verticalScrollBar().valueChanged.connect(self.scrolled)
+        # self.scroll.horizontalScrollBar().valueChanged.connect(self.scrolled)
+
+
+        # v = self.editor.view_tl_y*self.editor.zoom_ratio
+        # self.scroll.verticalScrollBar().setValue(int(v))
+        # print("new value:", v)
+
+        # self.grid.addWidget(self.scroll, 0, 0, self.scroll_rs, self.scroll_rs)
+        # self.widget.setLayout(self.grid)
+        # self.setCentralWidget(self.widget)
 
         self.editor.update_zoom(zoom)
-
+        # self.editor.update()
         self.repaint()
-
-        # k = self.editor.tiles.keys()
-        # for t in k:
-        #     self.editor.build_tiles(self.ts_path + t)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
