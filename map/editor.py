@@ -84,24 +84,37 @@ class Editor(QWidget):
 
         self.mouse_row, self.mouse_col = self.xy_to_rc(self.mouse_x, self.mouse_y)
 
+
         # of the grid
-        self.view_tr_x = 0
-        self.view_tl_x = 0
-        self.view_tl_y = 0
-        self.view_bl_y = 0
+        self.view_c1_x = 0
+        self.view_c1_y = 0
+        self.view_c4_x = 0
+        self.view_c4_y = 0
         self.view_height = 0
         self.view_width = 0
 
-        self.show_grid = True
-        self.tool = ""
-        self.bsize = 1
-
         self.tile_set_path = ""
-        # self.tile_set_name = ""
         self.tile_set = []
 
         self.object_set_path = ""
         self.object_set = []
+        self.object_opacity = 100
+
+        self.show_grid = True
+        self.show_objects = True
+        self.show_terrain = True
+        self.align_objects = True
+        self.draw_over = True
+
+        # self.show_ghost = True
+        self.ghost_c1_x = 0
+        self.ghost_c1_y = 0
+        self.ghost_c4_x = 0
+        self.ghost_c4_y = 0
+
+        self.drawing = False
+        self.tool = "pen"
+        self.pen_size = 1
 
         # 0: terrain, 1: objects
         self.curr_layer = 0
@@ -109,7 +122,9 @@ class Editor(QWidget):
         # tiles or objects
         self.selected_index = 0
 
+
         self.board = [[BoardTile() for c in range(self.board_width)] for r in range(self.board_height)]
+        self.board_prev = self.board.copy() #TODO
         # reference --> self.board[row][col]
         self.objects = []
 
@@ -219,16 +234,24 @@ class Editor(QWidget):
             return None
         return choice(choices)
 
-    def set_tile(self, row, col, tile_index):
+    def set_tile(self, row, col, tile_index, force):
         if(row >= self.board_height or row < 0):
             return
         if(col >= self.board_width or col < 0):
             return
-        if(tile_index >= len(self.tile_set) or tile_index < 0):
+        if(tile_index >= len(self.tile_set)):
             return
 
         t = self.tile_set[tile_index]
         if(t.img_scaled is None or t.empty):
+            return
+
+        # erase
+        if(tile_index < 0):
+            self.clear_tile(row, col)
+            return
+
+        if(self.board[row][col].tile_index != -1 and not(self.draw_over) and not(force)):
             return
 
         self.board[row][col].tile_index = tile_index
@@ -277,6 +300,24 @@ class Editor(QWidget):
         x = col*self.tile_size
         return x,y
 
+    def draw_ghost(self, painter):
+
+        # if(self.tool in ["pen","rectangle","rectangle fill","copy range","get zone"]):
+        # if(not(self.drawing)):
+        if(True):
+            minx = bound(min(self.ghost_c1_x, self.ghost_c4_x), 0, self.width-1)
+            maxx = bound(max(self.ghost_c1_x, self.ghost_c4_x), 0, self.width-1)
+            miny = bound(min(self.ghost_c1_y, self.ghost_c4_y), 0, self.height-1)
+            maxy = bound(max(self.ghost_c1_y, self.ghost_c4_y), 0, self.height-1)
+            # print(minx, maxx, miny, maxy)
+            x = minx
+            y = miny
+            w = maxx-minx
+            h = maxy-miny
+            # print(x,y,w,h)
+            brush = QBrush(QColor(128, 128, 255, 128))
+            painter.fillRect(x,y,w,h,brush)
+
 
     def paintEvent(self, event):
         # print("paint event")
@@ -284,26 +325,247 @@ class Editor(QWidget):
         painter = QPainter(self)
 
 
-        self.draw_tiles(painter)
+        self.draw_terrain(painter)
         self.draw_objects(painter)
+        self.draw_ghost(painter)
         self.draw_grid(painter)
 
         font_size = 14
 
         # mouse coordinates
-        self.draw_text(painter, self.view_tl_x+5, self.view_tl_y+5, self.TOP_LEFT, Qt.black, font_size, "%d,%d", self.mouse_x, self.mouse_y)
+        self.draw_text(painter, self.view_c1_x+5, self.view_c1_y+5, self.TOP_LEFT, Qt.black, font_size, "%d,%d", self.mouse_x, self.mouse_y)
         # grid coordinates
-        self.draw_text(painter, self.view_tl_x+5, self.view_bl_y-10, self.BOTTOM_LEFT, Qt.black, font_size, "%d,%d", self.mouse_row, self.mouse_col)
+        self.draw_text(painter, self.view_c1_x+5, self.view_c4_y-10, self.BOTTOM_LEFT, Qt.black, font_size, "%d,%d", self.mouse_row, self.mouse_col)
 
+    def draw_area(self, row1, col1, row2, col2):
+        rows = range(min([row1,row2]),max([row1,row2]))
+        cols = range(min([col1,col2]),max([col1,col2]))
+        for r in rows:
+            for c in cols:
+                self.set_tile(r,c, self.selected_index, False)
+
+
+
+    def check_object_erase(self):
+
+        ex = self.ghost_c1_x
+        ey = self.ghost_c1_y
+        ew = self.ghost_c4_x - self.ghost_c1_x
+        eh = self.ghost_c4_y - self.ghost_c1_y
+
+        new_lst = []
+        for i in range(len(self.objects)):
+            ob = self.objects[i]
+            o = self.object_set[ob.obj_index]
+            ow = o.img_scaled.width()
+            oh = o.img_scaled.height()
+            ox = ob.x*self.zoom_ratio
+            oy = ob.y*self.zoom_ratio
+
+            collide = ((ox + ow) > ex and (oy + oh) > ey and (ex + ew) > ox and (ey + eh) > oy)
+            if(not(collide)):
+                new_lst.append(ob)
+
+        self.objects = new_lst
+
+
+    def object_tool(self, action):
+
+        eraser = (self.selected_index == -1)
+
+        if(self.selected_index >= len(self.object_set)):
+            return
+
+        if(eraser):
+            x1,x2,y1,y2 = self.get_pen_rect(self.align_objects)
+            self.ghost_c1_x = x1
+            self.ghost_c1_y = y1
+            self.ghost_c4_x = x2
+            self.ghost_c4_y = y2
+        else:
+            if(self.align_objects):
+                ox = self.mouse_col*self.tile_size
+                oy = self.mouse_row*self.tile_size
+            else:
+                ox = self.mouse_x
+                oy = self.mouse_y
+            o = self.object_set[self.selected_index]
+            w = o.img_scaled.width()
+            h = o.img_scaled.height()
+            self.ghost_c1_x = ox
+            self.ghost_c1_y = oy
+            self.ghost_c4_x = ox+w
+            self.ghost_c4_y = oy+h
+
+
+        if(action == "press"):
+            self.drawing = True
+
+            if(eraser):
+                self.check_object_erase()
+            else:
+                self.drawing = True
+                ob = BoardObject()
+                ob.obj_index = self.selected_index
+                ob.x = int(ox/self.zoom_ratio)
+                ob.y = int(oy/self.zoom_ratio)
+                self.objects.append(ob)
+
+        elif(action == "move"):
+
+            if(eraser):
+                self.drawing = False
+            else:
+                self.drawing = False
+        
+        elif(action == "release"):
+            self.drawing = False
+
+    def get_pen_rect(self, aligned):
+
+        if(aligned):
+            x = self.mouse_col*self.tile_size
+            y = self.mouse_row*self.tile_size
+        else:
+            x = self.mouse_x
+            y = self.mouse_y
+
+        side = int((self.pen_size-1)/2)*self.tile_size
+        rem = ((self.pen_size-1) % 2)*self.tile_size
+        x1 = x-side
+        x2 = x+side+rem+self.tile_size
+        y1 = y-side
+        y2 = y+side+rem+self.tile_size
+        return (x1,x2,y1,y2)
+
+
+    def pen_tool(self, action):
+
+        x1,x2,y1,y2 = self.get_pen_rect(True)
+        self.ghost_c1_x = x1
+        self.ghost_c1_y = y1
+        self.ghost_c4_x = x2
+        self.ghost_c4_y = y2
+
+        r1 = int(y1/self.tile_size)
+        r2 = int(y2/self.tile_size)
+        c1 = int(x1/self.tile_size)
+        c2 = int(x2/self.tile_size)
+
+
+        # col = self.mouse_col
+        # row = self.mouse_row
+        # side = int((self.pen_size-1)/2)
+        # rem = (self.pen_size-1) % 2
+        # c1 = col-side
+        # c2 = col+side+rem+1
+        # r1 = row-side
+        # r2 = row+side+rem+1
+        # self.ghost_c1_x = c1*self.tile_size
+        # self.ghost_c1_y = r1*self.tile_size
+        # self.ghost_c4_x = c2*self.tile_size
+        # self.ghost_c4_y = r2*self.tile_size
+
+        if(action == "press"):
+            # print("drawing")
+            self.drawing = True
+            self.draw_area(r1, c1, r2, c2)
+
+        elif(action == "move"):
+            # print("moving")
+            if(self.drawing):
+                self.draw_area(r1, c1, r2, c2)
+
+        elif(action == "release"):
+            # print("released")
+            self.drawing = False
+
+
+    def mousePressEvent(self, event):
+
+        if(event.button() == Qt.LeftButton):
+
+            self.board_prev = self.board.copy() #TODO
+
+            # if(self.selected_index == -1):
+            #     self.eraser_tool()
+
+            if(self.curr_layer == 0):
+                if(self.tool == "pen"):
+                    self.pen_tool("press")
+
+            elif(self.curr_layer == 1):
+                self.object_tool("press")
+
+
+
+            # for j in range(0,self.board_height):
+            #     for i in range(0,self.board_width):
+            #         self.board_prev[j][i].tile_index = self.board[j][i].tile_index
+            #         self.board_prev[j][i].tile_set_name = self.board[j][i].tile_set_name
+
+            # if self.tool == "pen":
+            #     self.pen_tool("press")
+
+            # elif self.tool == "rectangle":
+            #     self.rectangle_tool("press")
+
+            # elif self.tool == "rectangle fill":
+            #     self.rectangle_tool("press")
+
+            # elif self.tool == "copy range":
+            #     self.copy_tool("press")
+
+            # elif self.tool == "fill":
+            #     self.flood_fill(x,y)
+
+            # elif self.tool == "objects":
+            #     self.objects_tool("press")
+
+            # elif self.tool == "get zone":
+            #     self.zone_tool("press")
+
+        self.update()
 
     def mouseMoveEvent(self, event):
-        self.mouse_x = event.pos().x()
-        self.mouse_y = event.pos().y()
-        self.mouse_row, self.mouse_col = self.xy_to_rc(self.mouse_x, self.mouse_y)
+        if(not(event is None)):
+            self.mouse_x = event.pos().x()
+            self.mouse_y = event.pos().y()
+            self.mouse_row, self.mouse_col = self.xy_to_rc(self.mouse_x, self.mouse_y)
+
+        # if(self.selected_index == -1):
+        #     self.eraser_tool()
+
+        if(self.curr_layer == 0):
+            if(self.tool == "pen"):
+                self.pen_tool("move")
+
+        elif(self.curr_layer == 1):
+            self.object_tool("move")
+
+
         self.update()
 
 
+    def mouseReleaseEvent(self, event):
+
+        if(event.button() == Qt.LeftButton):
+
+            # if(self.selected_index == -1):
+            #     self.eraser_tool()
+
+            if(self.curr_layer == 0):
+                if(self.tool == "pen"):
+                    self.pen_tool("release")
+
+            elif(self.curr_layer == 1):
+                self.object_tool("release")
+
+
+        self.update()
+
     def draw_objects(self, painter):
+        if(not(self.show_objects)): return
         for bo in self.objects:
             if(bo.obj_index < 0 or bo.obj_index >= len(self.objects)):
                 continue
@@ -318,13 +580,17 @@ class Editor(QWidget):
             w = o.img_scaled.width()
             h = o.img_scaled.height()
 
-            if((x + w) < self.view_tl_x or x > self.view_tr_x):
+            if((x + w) < self.view_c1_x or x > self.view_c4_x):
                 continue
 
-            if((y + h) < self.view_tl_y or y > self.view_bl_y):
+            if((y + h) < self.view_c1_y or y > self.view_c4_y):
                 continue
+
+            painter.setOpacity(self.object_opacity)
 
             painter.drawImage(x, y, o.img_scaled)
+
+        painter.setOpacity(1)
 
 
 
@@ -340,8 +606,8 @@ class Editor(QWidget):
         #     painter.drawLine(int(x*self.tile_size), 0, int(x*self.tile_size), int(self.height))
         # return
 
-        tl_row, tl_col = self.xy_to_rc(self.view_tl_x, self.view_tl_y)
-        br_row, br_col = self.xy_to_rc(self.view_tr_x, self.view_bl_y)
+        tl_row, tl_col = self.xy_to_rc(self.view_c1_x, self.view_c1_y)
+        br_row, br_col = self.xy_to_rc(self.view_c4_x, self.view_c4_y)
 
 
         br_col = min(self.board_width-1, br_col+1)
@@ -369,7 +635,8 @@ class Editor(QWidget):
             painter.drawLine(x, y0, x, y1)
 
 
-    def draw_tiles(self, painter):
+    def draw_terrain(self, painter):
+        if(not(self.show_terrain)): return
 
         # # draw all tiles
         # for row in range(0,self.board_height):
@@ -382,8 +649,8 @@ class Editor(QWidget):
         #         # print(x,y,row,col,ti)
         #         painter.drawImage(x, y, t.img_scaled)
 
-        tl_row, tl_col = self.xy_to_rc(self.view_tl_x, self.view_tl_y)
-        br_row, br_col = self.xy_to_rc(self.view_tr_x, self.view_bl_y)
+        tl_row, tl_col = self.xy_to_rc(self.view_c1_x, self.view_c1_y)
+        br_row, br_col = self.xy_to_rc(self.view_c4_x, self.view_c4_y)
 
         br_col = min(self.board_width-1, br_col+1)
         br_row = min(self.board_height-1, br_row+1)
@@ -546,20 +813,23 @@ class MainWindow(QMainWindow):
         self.tool_combo.setToolTip("Ctrl + D")
 
 
-        self.sld = QSlider(Qt.Horizontal, self)
-        self.sld.setMinimum(1)
-        self.sld.setMaximum(64)
-        # self.sld.setMaximumWidth(600)
-        self.sld.valueChanged.connect(self.change_size)
-        self.sld.setToolTip("Change the brush size for the pen tool.")
+        self.sld_pen = QSlider(Qt.Horizontal, self)
+        self.sld_pen.setMinimum(1)
+        self.sld_pen.setMaximum(64)
+        # self.sld_pen.setMaximumWidth(600)
+        self.sld_pen.valueChanged.connect(self.change_size)
+        self.sld_pen.setToolTip("Change the brush size for the pen tool.")
 
         self.sld_zoom = QSlider(Qt.Horizontal, self)
         self.zoom_values = [1/32,1/16,1/8,.25,.5,1,2,4,8,16]
-
         self.sld_zoom.setMinimum(1)
         self.sld_zoom.setMaximum(len(self.zoom_values))
-        # self.sld_zoom.setMaximumWidth(100)
         self.sld_zoom.valueChanged.connect(self.change_zoom)
+
+        self.sld_opacity = QSlider(Qt.Horizontal, self)
+        self.sld_opacity.setMinimum(1)
+        self.sld_opacity.setMaximum(100)
+        self.sld_opacity.valueChanged.connect(self.change_opacity)
 
         self.save_btn = QPushButton('Save', self)
         self.save_btn.clicked.connect(lambda x: self.save_map(""))
@@ -601,6 +871,11 @@ class MainWindow(QMainWindow):
         self.draw_objs_chk.setToolTip("Unselect this to hide objects.")
         self.draw_objs_chk.installEventFilter(self)
 
+        self.draw_terrain_chk = QCheckBox("Show Terrain",self)
+        self.draw_terrain_chk.setChecked(True)
+        self.draw_terrain_chk.setToolTip("Unselect this to hide terrain.")
+        self.draw_terrain_chk.installEventFilter(self)
+
         self.align_grid_chk = QCheckBox("Align To Grid",self)
         self.align_grid_chk.setChecked(True)
         self.align_grid_chk.setToolTip("Select this if you wish to draw objects aligned to the grid.")
@@ -609,6 +884,7 @@ class MainWindow(QMainWindow):
         self.lbl_pen_size = QLabel('Pen Size: 1', self)
 
         self.lbl_zoom = QLabel('Zoom: ', self)
+        self.lbl_opacity = QLabel('Object Opacity: ', self)
 
 
         self.layer_list = ["Terrain","Objects"]
@@ -650,22 +926,29 @@ class MainWindow(QMainWindow):
         r += 2
         self.grid.addWidget(self.lbl_pen_size, r, c, rs, cs)
         r += 1
-        self.grid.addWidget(self.sld, r, c, rs, cs)
+        self.grid.addWidget(self.sld_pen, r, c, rs, cs)
 
         r += 2
         self.grid.addWidget(self.lbl_zoom, r, c, rs, cs)
         r += 1
         self.grid.addWidget(self.sld_zoom, r, c, rs, cs)
 
+        r += 2
+        self.grid.addWidget(self.lbl_opacity, r, c, rs, cs)
+        r += 1
+        self.grid.addWidget(self.sld_opacity, r, c, rs, cs)
+
 
         r += 2
-        self.grid.addWidget(self.draw_over_chk, r, c, rs, 1)
-        r += 1
         self.grid.addWidget(self.draw_grid_chk, r, c, rs, 1)
+        r += 1
+        self.grid.addWidget(self.draw_terrain_chk, r, c, rs, 1)
         r += 1
         self.grid.addWidget(self.draw_objs_chk, r, c, rs, 1)
         r += 1
         self.grid.addWidget(self.align_grid_chk, r, c, rs, 1)
+        r += 1
+        self.grid.addWidget(self.draw_over_chk, r, c, rs, 1)
 
         r += 2
         self.grid.addWidget(self.layer_combo, r, c, rs, 2)
@@ -699,6 +982,8 @@ class MainWindow(QMainWindow):
 
         self.sld_zoom.setValue(self.zoom_values.index(1)+1)
 
+        self.sld_opacity.setValue(100)
+
         self.initialized = True
 
         # print("before repaint")
@@ -710,36 +995,16 @@ class MainWindow(QMainWindow):
         # print(self.scroll.viewport().height())
         self.editor.view_height = self.scroll.viewport().height()
         self.editor.view_width = self.scroll.viewport().width()
-        self.editor.view_tl_y = self.scroll.verticalScrollBar().value()
-        self.editor.view_bl_y = self.editor.view_tl_y+self.editor.view_height
-        self.editor.view_tl_x = self.scroll.horizontalScrollBar().value()
-        self.editor.view_tr_x = self.editor.view_tl_x + self.editor.view_width
-
-
-
-        # print(self.editor.vkiew_tl_y)
-
-        # v = self.scroll.verticalScrollBar().value()
-        # m = self.scroll.verticalScrollBar().maximum()
-        # if(m <= 0):
-        #     self.scroll_v_ratio = 0
-        # else:
-        #     self.scroll_v_ratio = v/m
-        # # print("self.scroll_v_ratio", self.scroll_v_ratio)
-
-        # v = self.scroll.horizontalScrollBar().value()
-        # m = self.scroll.horizontalScrollBar().maximum()
-        # if(m <= 0):
-        #     self.scroll_h_ratio = 0
-        # else:
-        #     self.scroll_h_ratio = v/m
+        self.editor.view_c1_y = self.scroll.verticalScrollBar().value()
+        self.editor.view_c4_y = self.editor.view_c1_y+self.editor.view_height
+        self.editor.view_c1_x = self.scroll.horizontalScrollBar().value()
+        self.editor.view_c4_x = self.editor.view_c1_x + self.editor.view_width
 
     def scrolled(self):
         self.repaint()
 
 
     def repaint(self):
-        # print("repaint")
         self.update_scroll_info()
         self.editor.update()
 
@@ -768,6 +1033,7 @@ class MainWindow(QMainWindow):
 
     def eventFilter(self, source, event):
         if(event is None): return 0
+
         # if(event.type() == QEvent.Scroll):
         #     print("scroll")
 
@@ -780,15 +1046,19 @@ class MainWindow(QMainWindow):
         elif source is self.scroll:
             print("scroll")
 
-        # elif source is self.draw_over_chk:
-        #     self.editor.draw_over = self.draw_over_chk.isChecked()
+        elif source is self.draw_over_chk:
+            self.editor.draw_over = self.draw_over_chk.isChecked()
 
-        # elif source is self.draw_objs_chk:
-        #     self.editor.draw_objs = self.draw_objs_chk.isChecked()
-        #     self.editor.update()
+        elif source is self.draw_objs_chk:
+            self.editor.show_objects = self.draw_objs_chk.isChecked()
+            self.repaint()
 
-        # elif source is self.align_grid_chk:
-        #     self.editor.align_objs = self.align_grid_chk.isChecked()
+        elif source is self.draw_terrain_chk:
+            self.editor.show_terrain = self.draw_terrain_chk.isChecked()
+            self.repaint()
+
+        elif source is self.align_grid_chk:
+            self.editor.align_objects = self.align_grid_chk.isChecked()
 
 
 
@@ -818,12 +1088,13 @@ class MainWindow(QMainWindow):
 
 
     def change_size(self):
-        self.editor.bsize = max(1,int(self.sld.value()))
-        self.lbl_pen_size.setText("Pen Size: " + str(self.editor.bsize))
+        self.editor.pen_size = max(1,int(self.sld_pen.value()))
+        self.lbl_pen_size.setText("Pen Size: " + str(self.editor.pen_size))
 
     def change_size(self):
-        self.editor.bsize = max(1,int(self.sld.value()))
-        self.lbl_pen_size.setText("Pen Size: " + str(self.editor.bsize))
+        self.editor.pen_size = max(1,int(self.sld_pen.value()))
+        self.lbl_pen_size.setText("Pen Size: " + str(self.editor.pen_size))
+        self.editor.mouseMoveEvent(None)
 
 
     def save_png(self):
@@ -897,6 +1168,8 @@ class MainWindow(QMainWindow):
         self.grid.addWidget(self.tile_selector, self.tile_selector_grid_row, self.tile_selector_grid_col, self.tile_selector_grid_rs, self.tile_selector_grid_cs)
         self.widget.setLayout(self.grid)
         self.setCentralWidget(self.widget)
+        self.eraser_item.setSelected(True)
+        # self.tile_selector.setSelection(0)
 
     def tile_selector_clicked(self,curr):
     
@@ -938,29 +1211,15 @@ class MainWindow(QMainWindow):
             l = "1/32"
         self.lbl_zoom.setText("Zoom: x" + l)
 
-
-        # self.scroll = self.scroll_area(self.editor)
-
-        # # v = int(self.scroll_v_ratio*self.scroll.verticalScrollBar().maximum())
-        # # print("setting v", v)
-        # # print("height", self.scroll.viewport().height())
-
-
-        # self.scroll.verticalScrollBar().valueChanged.connect(self.scrolled)
-        # self.scroll.horizontalScrollBar().valueChanged.connect(self.scrolled)
-
-
-        # v = self.editor.view_tl_y*self.editor.zoom_ratio
-        # self.scroll.verticalScrollBar().setValue(int(v))
-        # print("new value:", v)
-
-        # self.grid.addWidget(self.scroll, 0, 0, self.scroll_rs, self.scroll_rs)
-        # self.widget.setLayout(self.grid)
-        # self.setCentralWidget(self.widget)
-
         self.editor.update_zoom(zoom)
-        # self.editor.update()
         self.repaint()
+
+    def change_opacity(self):
+        value = self.sld_opacity.value()
+        self.editor.object_opacity = value/100
+        self.lbl_opacity.setText("Object Opacity: " + str(value))
+        self.repaint()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
