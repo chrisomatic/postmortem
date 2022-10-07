@@ -1,3 +1,6 @@
+#pragma once
+
+#include "rat_math.h"
 
 typedef enum
 {
@@ -7,8 +10,21 @@ typedef enum
 
 typedef struct
 {
-    GunType type;
+    Vector2f pos;
+    float angle;
+
+    int projectile_type;
+
+    float fire_power;
+    float fire_period;
+    float fire_cooldown;
 
     int bullets;
     int bullets_max;
 } Gun;
+
+void gun_init();
+void gun_update(Gun* gun, float delta_t);
+void gun_draw();
+void gun_fire(Gun* gun);
+Gun gun_get(GunType type);

@@ -186,3 +186,26 @@ void get_translate_transform(Matrix* mat, Vector3f* position)
     mat->m[3][3] = 1.0f;
 }
 
+float vec_magn(Vector3f v)
+{
+    return sqrt(v.x * v.x + v.y*v.y + v.z*v.z);
+}
+
+float vec_dot(Vector3f a, Vector3f b)
+{
+    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
+}
+
+float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b)
+{
+    float ma = vec_magn(*a);
+    float mb = vec_magn(*b);
+
+    if(ma == 0.0 || mb == 0.0)
+        return 0.0;
+
+    float d  = vec_dot(*a,*b);
+    
+    float angle = acosf(d/(ma*mb));
+    return angle;
+}

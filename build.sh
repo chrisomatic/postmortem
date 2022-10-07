@@ -12,6 +12,8 @@ gcc rfx/gfx.c \
     world.c \
     player.c \
     zombie.c \
+    gun.c \
+    projectile.c \
     -Irfx \
     -lglfw -lGLU -lGLEW -lGL -lm \
     -o bin/example

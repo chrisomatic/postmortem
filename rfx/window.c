@@ -6,6 +6,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "camera.h"
 #include "window.h"
 
 static GLFWwindow* window;
@@ -81,10 +82,11 @@ bool window_init(int _view_width, int _view_height)
     return true;
 }
 
+
 void window_get_mouse_coords(int* x, int* y)
 {
     *x = (int)(window_coord_x);
-    *y = (int)(window_height - window_coord_y);
+    *y = (int)(window_coord_y);
 }
 
 void window_get_mouse_view_coords(int* x, int* y)
@@ -92,6 +94,20 @@ void window_get_mouse_view_coords(int* x, int* y)
     window_get_mouse_coords(x,y);
     *x *= (view_width/(float)window_width);
     *y *= (view_height/(float)window_height);
+}
+
+void window_get_mouse_world_coords(float* x, float* y)
+{
+    int mouse_x, mouse_y;
+    window_get_mouse_view_coords(&mouse_x, &mouse_y);
+
+    Matrix* view = get_camera_transform();
+
+    float cam_x = view->m[0][3];
+    float cam_y = view->m[1][3];
+
+    *x = mouse_x - cam_x;
+    *y = mouse_y - cam_y;
 }
 
 void window_deinit()

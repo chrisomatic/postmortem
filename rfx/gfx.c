@@ -150,6 +150,17 @@ int gfx_load_image(const char* image_path)
     return -1;
 }
 
+int gfx_load_image_set(const char* image_path, int element_width, int element_height)
+{
+    int img = gfx_load_image(image_path);
+
+    gfx_images[img].is_set = true;
+    gfx_images[img].element_width = element_width;
+    gfx_images[img].element_height = element_height;
+
+    return img;
+}
+
 void gfx_free_image(int img_index)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
@@ -230,7 +241,7 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
     return true;
 }
 
-bool gfx_draw_sub_image(int img_index, int sprite_index, float w, float h, float x, float y, uint32_t color, float scale, float rotation, float opacity)
+bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
@@ -244,9 +255,9 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float w, float h, float
 
     Matrix model = {0};
 
-    Vector3f pos = {x+w/2.0,y+h/2.0,0.0};
+    Vector3f pos = {x+img->element_width/2.0,y+img->element_height/2.0,0.0};
     Vector3f rot = {0.0,0.0,rotation};
-    Vector3f sca = {scale*w,-scale*h,1.0};
+    Vector3f sca = {scale*img->element_width,-scale*img->element_height,1.0};
 
     get_model_transform(&pos,&rot,&sca,&model);
     Matrix* view = get_camera_transform();
@@ -255,8 +266,8 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float w, float h, float
     uint8_t g = color >> 8;
     uint8_t b = color >> 0;
 
-    int num_in_row = (img->w / w); 
-    int num_in_col = (img->h / h); 
+    int num_in_row = (img->w / img->element_width); 
+    int num_in_col = (img->h / img->element_height); 
     //printf("num_in_row: %d, sprite_index: %d\n",num_in_row, sprite_index);
 
     glUniform3f(loc_sprite_tint_color,r/255.0,g/255.0,b/255.0);

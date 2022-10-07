@@ -12,7 +12,7 @@ uint32_t ground_tiles[32][32] = {0};
 
 void world_init()
 {
-    ground_sheet = gfx_load_image("img/ground_set.png");
+    ground_sheet = gfx_load_image_set("img/ground_set.png",32,32);
 
     ground_tiles[10][10] = 1;
     ground_tiles[10][11] = 2;
@@ -25,15 +25,11 @@ void world_update()
 
 void world_draw()
 {
-    //gfx_draw_image(ground_sheet,0,0,COLOR_TINT_NONE,1.0,0.0,1.0);
-
-#if 1
     for(int i = 0; i < 32; ++i)
     {
         for(int j = 0; j < 32; ++j)
         {
-            gfx_draw_sub_image(ground_sheet,ground_tiles[i][j],32,32,i*32,j*32,COLOR_TINT_NONE,1.0,0.0,1.0);
+            gfx_draw_sub_image(ground_sheet,ground_tiles[i][j],i*32,j*32,COLOR_TINT_NONE,1.0,0.0,1.0);
         }
     }
-#endif
 }

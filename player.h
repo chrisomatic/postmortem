@@ -1,5 +1,7 @@
 #pragma once
 
+#include "gun.h"
+
 enum PlayerAction
 {
     PLAYER_ACTION_UP               = 1<<0,
@@ -11,6 +13,7 @@ enum PlayerAction
     PLAYER_ACTION_INTERACT         = 1<<6,
     PLAYER_ACTION_PRIMARY_ACTION   = 1<<7,
     PLAYER_ACTION_SECONDARY_ACTION = 1<<8,
+    PLAYER_ACTION_TOGGLE_FIRE      = 1<<9,
 };
 
 typedef struct
@@ -23,10 +26,14 @@ typedef struct
     float speed;
     float max_base_speed;
     float max_speed;
+    float angle;
 
     int image;
     int sprite_index;
     uint32_t keys;
+
+    Gun gun;
+    bool gun_ready;
 } Player;
 
 extern Player player;

@@ -48,4 +48,5 @@ void get_rotation_transform(Matrix* mat, Vector3f* rotation);
 void get_translate_transform(Matrix* mat, Vector3f* position);
 void dot_product_mat(Matrix a, Matrix b, Matrix* result);
 void print_matrix(Matrix* mat);
+float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b);
 

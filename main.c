@@ -16,6 +16,8 @@
 #include "world.h"
 #include "camera.h"
 #include "player.h"
+#include "gun.h"
+#include "projectile.h"
 #include "zombie.h"
 
 // Settings
@@ -113,11 +115,17 @@ void init()
     printf(" - World.\n");
     world_init();
 
+    printf(" - Guns.\n");
+    gun_init();
+
     printf(" - Player.\n");
     player_init();
 
     printf(" - Zombies.\n");
     zombie_init();
+
+    printf(" - Projectiles.\n");
+    projectile_init();
 }
 
 void deinit()
@@ -136,6 +144,7 @@ void update(double delta_t)
     world_update();
     zombie_update(delta_t);
     player_update(delta_t);
+    projectile_update(delta_t);
 }
 
 void draw()
@@ -145,5 +154,6 @@ void draw()
     world_draw();
     zombie_draw();
     player_draw();
+    projectile_draw();
 }
 
