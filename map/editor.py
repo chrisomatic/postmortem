@@ -7,6 +7,7 @@ import struct
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QKeyEvent, QPainter,QImage, QPen, QIcon, QPixmap, QColor, QBrush, QCursor, QFont, QPalette, QTransform, QLinearGradient, QFontMetrics, QStaticText
 from PyQt5.QtCore import Qt, QPoint, QPointF, QSize, QEvent, QTimer, QCoreApplication, QRect
+import copy
 
 slash = "/"
 if sys.platform == "win32":
@@ -131,11 +132,32 @@ class Editor(QWidget):
 
 
         self.board = [[BoardTile() for c in range(self.board_width)] for r in range(self.board_height)]
-        self.board_prev = self.board.copy() #TODO
+        # self.board_prev = self.board.copy() #TODO
+        self.board_prev = []
+        self.copy_board_to_prev()
+        
+        self.board[0][0].tile_index = 1
+        print(self.board_prev[0][0].tile_index)
         # reference --> self.board[row][col]
         self.objects = []
 
         self.setMouseTracking(True)
+
+    def copy_board_to_prev(self):
+        return
+        # self.board_prev = copy.deepcopy(self.board)
+        self.board_prev = [[BoardTile() for c in range(self.board_width)] for r in range(self.board_height)]
+        for r in range(self.board_height):
+            for c in range(self.board_width):
+                self.board_prev[r][c].tile_index = self.board[r][c].tile_index+0
+
+    def swap_prev_board(self):
+        # temp = [[BoardTile() for c in range(self.board_width)] for r in range(self.board_height)]
+        for r in range(self.board_height):
+            for c in range(self.board_width):
+                ti = (self.board[r][c].tile_index+0)
+                self.board[r][c].tile_index = (self.board_prev[r][c].tile_index+0)
+                self.board_prev[r][c].tile_index = ti
 
     def sub_img_color(self, img, find, replace):
         count = 0
@@ -658,8 +680,10 @@ class Editor(QWidget):
     def mousePressEvent(self, event):
 
         if(event.button() == Qt.LeftButton):
+            print("press")
 
-            self.board_prev = self.board.copy()
+            # self.board_prev = self.board.copy()
+            self.copy_board_to_prev()
 
             self.mouse_handle_tool("press")
 
@@ -1232,6 +1256,16 @@ class MainWindow(QMainWindow):
         return
 
     def undo(self):
+        print("undo")
+        print(self.editor.board == self.editor.board_prev)
+        print(self.editor.board[0][0].tile_index, self.editor.board_prev[0][0].tile_index)
+        # print(self.editor.board[0][0].tile_index)
+        # print(self.editor.board_prev[0][0].tile_index)
+        # temp = self.editor.board.copy()
+        # self.editor.board = self.editor.board_prev.copy()
+        # self.editor.board_prev = temp.copy()
+        self.editor.swap_prev_board()
+        self.editor.update()
         return
 
     def clear_map(self):
@@ -1248,7 +1282,6 @@ class MainWindow(QMainWindow):
 
     def str_to_bytes(self, _str):
         return _str.encode()
-        # return struct.pack("s", bytes(_str))
 
     def save_map(self, fname=""):
         if(fname == ""):
@@ -1282,8 +1315,6 @@ class MainWindow(QMainWindow):
                 f.write(self.num_to_uint8_bytes(ti))
 
         f.close()
-
-        return
 
     def load_map(self, fname=""):
         return
