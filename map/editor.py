@@ -1,11 +1,17 @@
 from time import time, sleep
 from random import choice
+from datetime import datetime
 import sys, os
 import math
+import struct
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QKeyEvent, QPainter,QImage, QPen, QIcon, QPixmap, QColor, QBrush, QCursor, QFont, QPalette, QTransform, QLinearGradient, QFontMetrics, QStaticText
 from PyQt5.QtCore import Qt, QPoint, QPointF, QSize, QEvent, QTimer, QCoreApplication, QRect
-from datetime import datetime
+
+slash = "/"
+if sys.platform == "win32":
+    slash = "\\"
+
 
 def bound(_val, _min, _max):
     return max(min(_val, _max), _min)
@@ -92,6 +98,7 @@ class Editor(QWidget):
         self.view_height = 0
         self.view_width = 0
 
+        self.tile_set_name = "" #file name
         self.tile_set_path = ""
         self.tile_set = []
 
@@ -105,19 +112,13 @@ class Editor(QWidget):
         self.align_objects = True
         self.draw_over = True
 
-        self.rectangling = False
-
-        # self.show_ghost = True
-        self.ghost_c1_x = 0
-        self.ghost_c1_y = 0
-        self.ghost_c4_x = 0
-        self.ghost_c4_y = 0
 
         self.rect_c1_r = 0
         self.rect_c1_c = 0
         self.rect_c4_r = 0
         self.rect_c4_c = 0
 
+        self.rectangling = False
         self.drawing = False
         self.tool = "pen"
         self.pen_size = 1
@@ -197,7 +198,7 @@ class Editor(QWidget):
             printf("Expected %d x %d image size, actual: %d x %d\n", self.tile_img_set_width, self.tile_img_set_height, img.width, img.height)
             return
 
-        # self.tile_set_name = self.tile_set_path.split("\\")[-1]
+        self.tile_set_name = self.tile_set_path.split(slash)[-1]
         self.tile_set = []
 
         nrow = int(self.tile_img_set_height/self.tile_size_actual)
@@ -218,27 +219,15 @@ class Editor(QWidget):
                     t.img_scaled = t.img.scaledToHeight(self.tile_size)
                 self.tile_set.append(t)
 
-        # TEST
-        row = 0
-        col = 0
-        for i in range(len(self.tile_set)):
-            # if(self.tile_set[i].empty): continue
-            self.board[row][col].tile_index = i
-            col += 1
-            if(col >= 16):
-                row += 1
-                col = 0
-
-        # for row in range(0,self.board_height):
-        #     for col in range(0,self.board_width):
-        #         rti = self.rand_tile_index()
-        #         self.set_tile(row,col,rti)
 
     def rand_tile_index(self):
         choices = [x for x in range(len(self.tile_set)) if not(self.tile_set[x].img_scaled is None) and not(self.tile_set[x].empty)]
         if(len(choices) == 0):
             return None
         return choice(choices)
+
+    def set_tile_fast(self, row, col, tile_index):
+        self.board[row][col].tile_index = tile_index
 
     def set_tile(self, row, col, tile_index, force):
         if(row >= self.board_height or row < 0):
@@ -319,7 +308,14 @@ class Editor(QWidget):
 
         erasing_objects = (self.curr_layer == 1 and self.selected_index == -1)
 
-        if(self.tool == "rectangle" and not(erasing_objects or cs == 1 or rs == 1)):
+        if(self.tool == "fill" and erasing_objects):
+
+            x,y,x2,y2 = self.get_pen_area(self.align_objects)
+            w = abs(x2-x)
+            h = abs(y2-y)
+            painter.fillRect(x,y,w,h,brush)
+
+        elif(self.tool == "rectangle" and not(erasing_objects or cs == 1 or rs == 1)):
             # top
             painter.fillRect(x,y,w,self.tile_size,brush)
             # bottom
@@ -334,77 +330,7 @@ class Editor(QWidget):
             painter.fillRect(x,y,w,h,brush)
 
 
-        return
 
-
-        # if(True):
-
-        #     # print(x,y,w,h)
-        #     brush = QBrush(QColor(128, 128, 255, 128))
-
-        #     if(self.tool in ["rectangle","rectangle fill"]):
-
-        #         x,y,x2,y2 = self.get_rectangle_area()
-        #         w = abs(x2-x)
-        #         h = abs(y2-y)
-        #         # row span, col span
-        #         rs = int(w/self.tile_size)
-        #         cs = int(h/self.tile_size)
-
- 
-        #         # r1 = self.rect_c1_r
-        #         # c1 = self.rect_c1_c
-        #         # r4 = self.rect_c4_r
-        #         # c4 = self.rect_c4_c
-
-        #         # # same adjustments in rectangle_tool("release")
-        #         # if(r4 >= r1):
-        #         #     r4 += 1
-        #         # else:
-        #         #     r1 += 1
-
-        #         # if(c4 >= c1):
-        #         #     c4 += 1
-        #         # else:
-        #         #     c1 += 1
-
-        #         # cs = abs(c4-c1)
-        #         # rs = abs(r4-r1)
-
-        #         # x = min(c1,c4)*self.tile_size
-        #         # y = min(r1,r4)*self.tile_size
-        #         # w = self.tile_size*cs
-        #         # h = self.tile_size*rs
-
-
-        #         filled = self.tool == "rectangle fill"
-
-        #         erasing_objects = (self.curr_layer == 1 and self.selected_index == -1)
-
-
-        #         if(filled or (cs == 1 or rs == 1) or erasing_objects):
-        #             painter.fillRect(x,y,w,h,brush)
-        #         else:
-        #             # top
-        #             painter.fillRect(x,y,w,self.tile_size,brush)
-        #             # bottom
-        #             painter.fillRect(x,y+h-self.tile_size,w,self.tile_size,brush)
-
-        #             # left
-        #             painter.fillRect(x,y+self.tile_size,self.tile_size,h-self.tile_size*2,brush)
-        #             # right
-        #             painter.fillRect(x+w-self.tile_size,y+self.tile_size,self.tile_size,h-self.tile_size*2,brush)
-        #     else:
-        #         minx = bound(min(self.ghost_c1_x, self.ghost_c4_x), 0, self.width-1)
-        #         maxx = bound(max(self.ghost_c1_x, self.ghost_c4_x), 0, self.width-1)
-        #         miny = bound(min(self.ghost_c1_y, self.ghost_c4_y), 0, self.height-1)
-        #         maxy = bound(max(self.ghost_c1_y, self.ghost_c4_y), 0, self.height-1)
-        #         # print(minx, maxx, miny, maxy)
-        #         x = minx
-        #         y = miny
-        #         w = maxx-minx
-        #         h = maxy-miny
-        #         painter.fillRect(x,y,w,h,brush)
 
 
     def paintEvent(self, event):
@@ -429,10 +355,6 @@ class Editor(QWidget):
 
     def check_object_erase(self, x1, y1, x2, y2):
 
-        # ex = self.ghost_c1_x
-        # ey = self.ghost_c1_y
-        # ew = self.ghost_c4_x - self.ghost_c1_x
-        # eh = self.ghost_c4_y - self.ghost_c1_y
         ex = min(x1,x2)
         ey = min(y1,y2)
         ew = abs(x1-x2)
@@ -453,21 +375,6 @@ class Editor(QWidget):
 
         self.objects = new_lst
 
-    # def object_erase_tool(self, action):
-    #     x1,y1,x2,y2 = self.get_tool_area()
-    #     self.ghost_c1_x = x1
-    #     self.ghost_c1_y = y1
-    #     self.ghost_c4_x = x2
-    #     self.ghost_c4_y = y2
-    #     r1,c1 = self.xy_to_rc(x1,y1)
-    #     r2,c2 = self.xy_to_rc(x2,y2)
-
-    #     if(action == "press"):
-
-    #         if(self.tool == "pen"):
-    #             self.drawing = True
-    #             # self.check_object_erase()
-
 
 
     def object_tool(self, action):
@@ -476,29 +383,10 @@ class Editor(QWidget):
             return
 
         x1,y1,x2,y2 = self.get_tool_area()
-        # self.ghost_c1_x = x1
-        # self.ghost_c1_y = y1
-        # self.ghost_c4_x = x2
-        # self.ghost_c4_y = y2
-
-        # if(self.align_objects):
-        #     ox = self.mouse_col*self.tile_size
-        #     oy = self.mouse_row*self.tile_size
-        # else:
-        #     ox = self.mouse_x
-        #     oy = self.mouse_y
-        # o = self.object_set[self.selected_index]
-        # w = o.img_scaled.width()
-        # h = o.img_scaled.height()
-        # self.ghost_c1_x = ox
-        # self.ghost_c1_y = oy
-        # self.ghost_c4_x = ox+w
-        # self.ghost_c4_y = oy+h
 
 
         if(action == "press"):
             self.drawing = True
-
 
             self.drawing = True
             ob = BoardObject()
@@ -514,83 +402,38 @@ class Editor(QWidget):
             self.drawing = False
 
 
-    # def object_tool(self, action):
+    def mouse_handle_tool(self, action):
 
-    #     eraser = (self.selected_index == -1)
+        erasing_objects = (self.curr_layer == 1 and self.selected_index == -1)
 
-    #     if(self.selected_index >= len(self.object_set)):
-    #         return
+        # drawing tiles, or erasing objects
+        if(self.curr_layer == 0 or erasing_objects):
 
-    #     if(eraser):
-    #         x1,y1,x2,y2 = self.get_pen_area(self.align_objects)
-    #         self.ghost_c1_x = x1
-    #         self.ghost_c1_y = y1
-    #         self.ghost_c4_x = x2
-    #         self.ghost_c4_y = y2
-    #     else:
-    #         if(self.align_objects):
-    #             ox = self.mouse_col*self.tile_size
-    #             oy = self.mouse_row*self.tile_size
-    #         else:
-    #             ox = self.mouse_x
-    #             oy = self.mouse_y
-    #         o = self.object_set[self.selected_index]
-    #         w = o.img_scaled.width()
-    #         h = o.img_scaled.height()
-    #         self.ghost_c1_x = ox
-    #         self.ghost_c1_y = oy
-    #         self.ghost_c4_x = ox+w
-    #         self.ghost_c4_y = oy+h
+            if(self.tool == "pen"):
+                self.pen_tool(action)
 
+            elif(self.tool in ["rectangle","rectangle fill"]):
+                self.rectangle_tool(action)
 
-    #     if(action == "press"):
-    #         self.drawing = True
+            elif(self.tool == "fill"):
+                self.fill_tool(action)
 
-    #         if(eraser):
-    #             self.check_object_erase()
-    #         else:
-    #             self.drawing = True
-    #             ob = BoardObject()
-    #             ob.obj_index = self.selected_index
-    #             ob.x = int(ox/self.zoom_ratio)
-    #             ob.y = int(oy/self.zoom_ratio)
-    #             self.objects.append(ob)
-
-    #     elif(action == "move"):
-
-    #         if(eraser):
-    #             self.drawing = False
-    #         else:
-    #             self.drawing = False
-        
-    #     elif(action == "release"):
-    #         self.drawing = False
-
+        else:
+            self.object_tool(action)
 
 
     def get_tool_area(self):
+        erasing_objects = (self.curr_layer == 1 and self.selected_index == -1)
 
         align = True
         if(self.curr_layer == 1 and not(self.align_objects)):
             align = False
 
         if(self.curr_layer == 1 and self.selected_index >= 0):
-
             return self.get_object_area(align)
 
-            # if(align):
-            #     x1 = self.mouse_col*self.tile_size
-            #     y1 = self.mouse_row*self.tile_size
-            # else:
-            #     x1 = self.mouse_x
-            #     y1 = self.mouse_y
-
-            # o = self.object_set[self.selected_index]
-            # w = o.img_scaled.width()
-            # h = o.img_scaled.height()
-
-            # # area of object image
-            # return (x1,y1,x1+w,y1+h)
+        elif(self.curr_layer == 1 and erasing_objects):
+            return self.get_pen_area(self.align_objects)
 
         else:
             if(self.tool == "pen"):
@@ -599,7 +442,17 @@ class Editor(QWidget):
             elif(self.tool in ["rectangle","rectangle fill"]):
                 return self.get_rectangle_area()
 
+            elif(self.tool == "fill"):
+                return self.get_fill_area()
+
         return (0,0,0,0)
+
+    def get_fill_area(self):
+        x1 = self.mouse_col*self.tile_size
+        y1 = self.mouse_row*self.tile_size
+        x2 = x1+self.tile_size
+        y2 = y1+self.tile_size
+        return (x1,y1,x2,y2)
 
     def get_object_area(self, aligned):
 
@@ -674,18 +527,67 @@ class Editor(QWidget):
                         self.set_tile(r,c, self.selected_index, False)
 
 
+    def fill_tool(self, action):
+        erasing_objects = (self.curr_layer == 1 and self.selected_index == -1)
+
+        if(erasing_objects):
+            self.pen_tool(action)
+
+        x1,y1,x2,y2 = self.get_tool_area()
+        r1,c1 = self.xy_to_rc(x1,y1)
+        # r2,c2 = self.xy_to_rc(x2,y2)
+
+        if(action == "press"):
+
+            target_tile_index = self.board[r1][c1].tile_index
+
+            if(target_tile_index == self.selected_index):
+                return
+
+            self.set_tile_fast(r1,c1,self.selected_index)
+
+            node = (r1,c1)
+            queue = []
+            queue.append(node)
+
+            while(queue != []):
+                n = queue[0]
+                queue = queue[1:]
+
+                r = n[0]
+                c = n[1]
+
+
+                # right
+                if(c+1 < self.board_width):
+                    if(self.board[r][c+1].tile_index == target_tile_index):
+                        self.set_tile_fast(r,c+1,self.selected_index)
+                        queue.append((r,c+1))
+
+                # left
+                if(c-1 >= 0):
+                    if(self.board[r][c-1].tile_index == target_tile_index):
+                        self.set_tile_fast(r,c-1,self.selected_index)
+                        queue.append((r,c-1))
+
+                # up
+                if(r-1 >= 0):
+                    if(self.board[r-1][c].tile_index == target_tile_index):
+                        self.set_tile_fast(r-1,c,self.selected_index)
+                        queue.append((r-1,c))
+
+                # down
+                if(r+1 < self.board_height):
+                    if(self.board[r+1][c].tile_index == target_tile_index):
+                        self.set_tile_fast(r+1,c,self.selected_index)
+                        queue.append((r+1,c))
+
 
     def pen_tool(self, action):
 
         erasing_objects = (self.curr_layer == 1 and self.selected_index == -1)
 
-        # x1,y1,x2,y2 = self.get_pen_area(True)
-
         x1,y1,x2,y2 = self.get_tool_area()
-        # self.ghost_c1_x = x1
-        # self.ghost_c1_y = y1
-        # self.ghost_c4_x = x2
-        # self.ghost_c4_y = y2
         r1,c1 = self.xy_to_rc(x1,y1)
         r2,c2 = self.xy_to_rc(x2,y2)
 
@@ -752,31 +654,6 @@ class Editor(QWidget):
             self.rect_c1_c = self.mouse_col
             self.rect_c4_r = self.rect_c1_r
             self.rect_c4_c = self.rect_c1_c
-
-
-
-    def mouse_handle_tool(self, action):
-
-        # if(self.curr_layer == 0):
-        #     if(self.tool == "pen"):
-        #         self.pen_tool(action)
-
-        #     elif(self.tool in ["rectangle","rectangle fill"]):
-        #         self.rectangle_tool(action)
-
-        # elif(self.curr_layer == 1):
-        #     self.object_tool(action)
-
-        # drawing tiles, or erasing objects
-        if(self.curr_layer == 0 or (self.curr_layer == 1 and self.selected_index == -1)):
-            if(self.tool == "pen"):
-                self.pen_tool(action)
-
-            elif(self.tool in ["rectangle","rectangle fill"]):
-                self.rectangle_tool(action)
-
-        else:
-            self.object_tool(action)
 
     def mousePressEvent(self, event):
 
@@ -1029,7 +906,7 @@ class MainWindow(QMainWindow):
         self.installEventFilter(self)
         # self.setAcceptDrops(True)
 
-        self.root = os.path.dirname(os.path.abspath(__file__))  + "/"
+        self.root = os.path.dirname(os.path.abspath(__file__))  + slash
 
         self.font_name = "Courier"
         font = QFont(self.font_name, 12)
@@ -1050,7 +927,7 @@ class MainWindow(QMainWindow):
 
         self.tool_combo = QComboBox(self)
         # self.tool_list = ['Pen','Rectangle','Rectangle Fill','Fill','Copy Range','Objects','Get Zone']
-        self.tool_list = ["Pen","Rectangle Fill","Rectangle"]
+        self.tool_list = ["Pen","Rectangle Fill","Rectangle","Fill"]
         self.tool_combo.addItems(self.tool_list)
         self.tool_combo.activated[str].connect(self.change_tool)
         self.tool_combo.setToolTip("Ctrl + D")
@@ -1306,15 +1183,26 @@ class MainWindow(QMainWindow):
 
 
 
-
-
         if(event.type() == QEvent.KeyPress):
             key = event.key()
             modifiers = QApplication.keyboardModifiers()
+
             if(modifiers == Qt.ControlModifier):
                 if(key == Qt.Key_C):
                     self.custom_close()
+
             elif(modifiers == Qt.NoModifier):
+                if(key == Qt.Key_T):
+                    row = 0
+                    col = 0
+                    for i in range(len(self.editor.tile_set)):
+                        # if(self.tile_set[i].empty): continue
+                        self.editor.board[row][col].tile_index = i
+                        col += 1
+                        if(col >= 16):
+                            row += 1
+                            col = 0
+
                 if(key == Qt.Key_Q):
                     self.custom_close()
         return 0
@@ -1349,10 +1237,55 @@ class MainWindow(QMainWindow):
     def clear_map(self):
         return
 
-    def save_map(self,fname = ""):
+    def num_to_uint8_bytes(self, num):
+        return struct.pack("<B", num)
+
+    def num_to_uint16_bytes(self, num):
+        return struct.pack("<H", num)
+
+    def num_to_uint32_bytes(self, num):
+        return struct.pack("<L", num)
+
+    def str_to_bytes(self, _str):
+        return _str.encode()
+        # return struct.pack("s", bytes(_str))
+
+    def save_map(self, fname=""):
+        if(fname == ""):
+            path = self.root+"test.map"
+        else:
+            path = self.root+fname
+
+        f = open(path,'wb')
+
+        # id (1), data len (4), name len (1), name..., rows (2), cols (2), data...
+
+        _id = 0
+        name_len = len(self.editor.tile_set_name)
+        board_len = self.editor.board_height*self.editor.board_width
+        total_len = 2+2+1+name_len+board_len
+
+        f.write(self.num_to_uint8_bytes(_id))
+        f.write(self.num_to_uint32_bytes(total_len))
+
+        f.write(self.num_to_uint8_bytes(name_len))
+        f.write(self.str_to_bytes(self.editor.tile_set_name))
+
+        f.write(self.num_to_uint16_bytes(self.editor.board_width))
+        f.write(self.num_to_uint16_bytes(self.editor.board_height))
+
+        for r in range(self.editor.board_height):
+            for c in range(self.editor.board_width):
+                ti = self.editor.board[r][c].tile_index
+                if(ti < 0):
+                    ti = 0xFF
+                f.write(self.num_to_uint8_bytes(ti))
+
+        f.close()
+
         return
 
-    def load_map(self,fname=""):
+    def load_map(self, fname=""):
         return
 
     def create_eraser_item(self):
