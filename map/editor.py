@@ -84,7 +84,6 @@ class Editor(QWidget):
 
         self.mouse_row, self.mouse_col = self.xy_to_rc(self.mouse_x, self.mouse_y)
 
-
         # of the grid
         self.view_c1_x = 0
         self.view_c1_y = 0
@@ -106,11 +105,18 @@ class Editor(QWidget):
         self.align_objects = True
         self.draw_over = True
 
+        self.rectangling = False
+
         # self.show_ghost = True
         self.ghost_c1_x = 0
         self.ghost_c1_y = 0
         self.ghost_c4_x = 0
         self.ghost_c4_y = 0
+
+        self.rect_c1_r = 0
+        self.rect_c1_c = 0
+        self.rect_c4_r = 0
+        self.rect_c4_c = 0
 
         self.drawing = False
         self.tool = "pen"
@@ -302,21 +308,103 @@ class Editor(QWidget):
 
     def draw_ghost(self, painter):
 
-        # if(self.tool in ["pen","rectangle","rectangle fill","copy range","get zone"]):
-        # if(not(self.drawing)):
-        if(True):
-            minx = bound(min(self.ghost_c1_x, self.ghost_c4_x), 0, self.width-1)
-            maxx = bound(max(self.ghost_c1_x, self.ghost_c4_x), 0, self.width-1)
-            miny = bound(min(self.ghost_c1_y, self.ghost_c4_y), 0, self.height-1)
-            maxy = bound(max(self.ghost_c1_y, self.ghost_c4_y), 0, self.height-1)
-            # print(minx, maxx, miny, maxy)
-            x = minx
-            y = miny
-            w = maxx-minx
-            h = maxy-miny
-            # print(x,y,w,h)
-            brush = QBrush(QColor(128, 128, 255, 128))
+        x,y,x2,y2 = self.get_tool_area()
+        w = abs(x2-x)
+        h = abs(y2-y)
+        # row span, col span
+        rs = int(w/self.tile_size)
+        cs = int(h/self.tile_size)
+
+        brush = QBrush(QColor(128, 128, 255, 128))
+
+        erasing_objects = (self.curr_layer == 1 and self.selected_index == -1)
+
+        if(self.tool == "rectangle" and not(erasing_objects or cs == 1 or rs == 1)):
+            # top
+            painter.fillRect(x,y,w,self.tile_size,brush)
+            # bottom
+            painter.fillRect(x,y+h-self.tile_size,w,self.tile_size,brush)
+
+            # left
+            painter.fillRect(x,y+self.tile_size,self.tile_size,h-self.tile_size*2,brush)
+            # right
+            painter.fillRect(x+w-self.tile_size,y+self.tile_size,self.tile_size,h-self.tile_size*2,brush)
+
+        else:
             painter.fillRect(x,y,w,h,brush)
+
+
+        return
+
+
+        # if(True):
+
+        #     # print(x,y,w,h)
+        #     brush = QBrush(QColor(128, 128, 255, 128))
+
+        #     if(self.tool in ["rectangle","rectangle fill"]):
+
+        #         x,y,x2,y2 = self.get_rectangle_area()
+        #         w = abs(x2-x)
+        #         h = abs(y2-y)
+        #         # row span, col span
+        #         rs = int(w/self.tile_size)
+        #         cs = int(h/self.tile_size)
+
+ 
+        #         # r1 = self.rect_c1_r
+        #         # c1 = self.rect_c1_c
+        #         # r4 = self.rect_c4_r
+        #         # c4 = self.rect_c4_c
+
+        #         # # same adjustments in rectangle_tool("release")
+        #         # if(r4 >= r1):
+        #         #     r4 += 1
+        #         # else:
+        #         #     r1 += 1
+
+        #         # if(c4 >= c1):
+        #         #     c4 += 1
+        #         # else:
+        #         #     c1 += 1
+
+        #         # cs = abs(c4-c1)
+        #         # rs = abs(r4-r1)
+
+        #         # x = min(c1,c4)*self.tile_size
+        #         # y = min(r1,r4)*self.tile_size
+        #         # w = self.tile_size*cs
+        #         # h = self.tile_size*rs
+
+
+        #         filled = self.tool == "rectangle fill"
+
+        #         erasing_objects = (self.curr_layer == 1 and self.selected_index == -1)
+
+
+        #         if(filled or (cs == 1 or rs == 1) or erasing_objects):
+        #             painter.fillRect(x,y,w,h,brush)
+        #         else:
+        #             # top
+        #             painter.fillRect(x,y,w,self.tile_size,brush)
+        #             # bottom
+        #             painter.fillRect(x,y+h-self.tile_size,w,self.tile_size,brush)
+
+        #             # left
+        #             painter.fillRect(x,y+self.tile_size,self.tile_size,h-self.tile_size*2,brush)
+        #             # right
+        #             painter.fillRect(x+w-self.tile_size,y+self.tile_size,self.tile_size,h-self.tile_size*2,brush)
+        #     else:
+        #         minx = bound(min(self.ghost_c1_x, self.ghost_c4_x), 0, self.width-1)
+        #         maxx = bound(max(self.ghost_c1_x, self.ghost_c4_x), 0, self.width-1)
+        #         miny = bound(min(self.ghost_c1_y, self.ghost_c4_y), 0, self.height-1)
+        #         maxy = bound(max(self.ghost_c1_y, self.ghost_c4_y), 0, self.height-1)
+        #         # print(minx, maxx, miny, maxy)
+        #         x = minx
+        #         y = miny
+        #         w = maxx-minx
+        #         h = maxy-miny
+        #         painter.fillRect(x,y,w,h,brush)
 
 
     def paintEvent(self, event):
@@ -337,21 +425,18 @@ class Editor(QWidget):
         # grid coordinates
         self.draw_text(painter, self.view_c1_x+5, self.view_c4_y-10, self.BOTTOM_LEFT, Qt.black, font_size, "%d,%d", self.mouse_row, self.mouse_col)
 
-    def draw_area(self, row1, col1, row2, col2):
-        rows = range(min([row1,row2]),max([row1,row2]))
-        cols = range(min([col1,col2]),max([col1,col2]))
-        for r in rows:
-            for c in cols:
-                self.set_tile(r,c, self.selected_index, False)
 
 
+    def check_object_erase(self, x1, y1, x2, y2):
 
-    def check_object_erase(self):
-
-        ex = self.ghost_c1_x
-        ey = self.ghost_c1_y
-        ew = self.ghost_c4_x - self.ghost_c1_x
-        eh = self.ghost_c4_y - self.ghost_c1_y
+        # ex = self.ghost_c1_x
+        # ey = self.ghost_c1_y
+        # ew = self.ghost_c4_x - self.ghost_c1_x
+        # eh = self.ghost_c4_y - self.ghost_c1_y
+        ex = min(x1,x2)
+        ey = min(y1,y2)
+        ew = abs(x1-x2)
+        eh = abs(y1-y2)
 
         new_lst = []
         for i in range(len(self.objects)):
@@ -368,60 +453,171 @@ class Editor(QWidget):
 
         self.objects = new_lst
 
+    # def object_erase_tool(self, action):
+    #     x1,y1,x2,y2 = self.get_tool_area()
+    #     self.ghost_c1_x = x1
+    #     self.ghost_c1_y = y1
+    #     self.ghost_c4_x = x2
+    #     self.ghost_c4_y = y2
+    #     r1,c1 = self.xy_to_rc(x1,y1)
+    #     r2,c2 = self.xy_to_rc(x2,y2)
+
+    #     if(action == "press"):
+
+    #         if(self.tool == "pen"):
+    #             self.drawing = True
+    #             # self.check_object_erase()
+
+
 
     def object_tool(self, action):
-
-        eraser = (self.selected_index == -1)
 
         if(self.selected_index >= len(self.object_set)):
             return
 
-        if(eraser):
-            x1,x2,y1,y2 = self.get_pen_rect(self.align_objects)
-            self.ghost_c1_x = x1
-            self.ghost_c1_y = y1
-            self.ghost_c4_x = x2
-            self.ghost_c4_y = y2
-        else:
-            if(self.align_objects):
-                ox = self.mouse_col*self.tile_size
-                oy = self.mouse_row*self.tile_size
-            else:
-                ox = self.mouse_x
-                oy = self.mouse_y
-            o = self.object_set[self.selected_index]
-            w = o.img_scaled.width()
-            h = o.img_scaled.height()
-            self.ghost_c1_x = ox
-            self.ghost_c1_y = oy
-            self.ghost_c4_x = ox+w
-            self.ghost_c4_y = oy+h
+        x1,y1,x2,y2 = self.get_tool_area()
+        # self.ghost_c1_x = x1
+        # self.ghost_c1_y = y1
+        # self.ghost_c4_x = x2
+        # self.ghost_c4_y = y2
+
+        # if(self.align_objects):
+        #     ox = self.mouse_col*self.tile_size
+        #     oy = self.mouse_row*self.tile_size
+        # else:
+        #     ox = self.mouse_x
+        #     oy = self.mouse_y
+        # o = self.object_set[self.selected_index]
+        # w = o.img_scaled.width()
+        # h = o.img_scaled.height()
+        # self.ghost_c1_x = ox
+        # self.ghost_c1_y = oy
+        # self.ghost_c4_x = ox+w
+        # self.ghost_c4_y = oy+h
 
 
         if(action == "press"):
             self.drawing = True
 
-            if(eraser):
-                self.check_object_erase()
-            else:
-                self.drawing = True
-                ob = BoardObject()
-                ob.obj_index = self.selected_index
-                ob.x = int(ox/self.zoom_ratio)
-                ob.y = int(oy/self.zoom_ratio)
-                self.objects.append(ob)
+
+            self.drawing = True
+            ob = BoardObject()
+            ob.obj_index = self.selected_index
+            ob.x = int(x1/self.zoom_ratio)
+            ob.y = int(y1/self.zoom_ratio)
+            self.objects.append(ob)
 
         elif(action == "move"):
+            self.drawing = False
 
-            if(eraser):
-                self.drawing = False
-            else:
-                self.drawing = False
-        
         elif(action == "release"):
             self.drawing = False
 
-    def get_pen_rect(self, aligned):
+
+    # def object_tool(self, action):
+
+    #     eraser = (self.selected_index == -1)
+
+    #     if(self.selected_index >= len(self.object_set)):
+    #         return
+
+    #     if(eraser):
+    #         x1,y1,x2,y2 = self.get_pen_area(self.align_objects)
+    #         self.ghost_c1_x = x1
+    #         self.ghost_c1_y = y1
+    #         self.ghost_c4_x = x2
+    #         self.ghost_c4_y = y2
+    #     else:
+    #         if(self.align_objects):
+    #             ox = self.mouse_col*self.tile_size
+    #             oy = self.mouse_row*self.tile_size
+    #         else:
+    #             ox = self.mouse_x
+    #             oy = self.mouse_y
+    #         o = self.object_set[self.selected_index]
+    #         w = o.img_scaled.width()
+    #         h = o.img_scaled.height()
+    #         self.ghost_c1_x = ox
+    #         self.ghost_c1_y = oy
+    #         self.ghost_c4_x = ox+w
+    #         self.ghost_c4_y = oy+h
+
+
+    #     if(action == "press"):
+    #         self.drawing = True
+
+    #         if(eraser):
+    #             self.check_object_erase()
+    #         else:
+    #             self.drawing = True
+    #             ob = BoardObject()
+    #             ob.obj_index = self.selected_index
+    #             ob.x = int(ox/self.zoom_ratio)
+    #             ob.y = int(oy/self.zoom_ratio)
+    #             self.objects.append(ob)
+
+    #     elif(action == "move"):
+
+    #         if(eraser):
+    #             self.drawing = False
+    #         else:
+    #             self.drawing = False
+        
+    #     elif(action == "release"):
+    #         self.drawing = False
+
+
+
+    def get_tool_area(self):
+
+        align = True
+        if(self.curr_layer == 1 and not(self.align_objects)):
+            align = False
+
+        if(self.curr_layer == 1 and self.selected_index >= 0):
+
+            return self.get_object_area(align)
+
+            # if(align):
+            #     x1 = self.mouse_col*self.tile_size
+            #     y1 = self.mouse_row*self.tile_size
+            # else:
+            #     x1 = self.mouse_x
+            #     y1 = self.mouse_y
+
+            # o = self.object_set[self.selected_index]
+            # w = o.img_scaled.width()
+            # h = o.img_scaled.height()
+
+            # # area of object image
+            # return (x1,y1,x1+w,y1+h)
+
+        else:
+            if(self.tool == "pen"):
+                return self.get_pen_area(align)
+
+            elif(self.tool in ["rectangle","rectangle fill"]):
+                return self.get_rectangle_area()
+
+        return (0,0,0,0)
+
+    def get_object_area(self, aligned):
+
+        if(aligned):
+            x1 = self.mouse_col*self.tile_size
+            y1 = self.mouse_row*self.tile_size
+        else:
+            x1 = self.mouse_x
+            y1 = self.mouse_y
+
+        o = self.object_set[self.selected_index]
+        w = o.img_scaled.width()
+        h = o.img_scaled.height()
+
+        # area of object image
+        return (x1,y1,x1+w,y1+h)
+
+    def get_pen_area(self, aligned):
 
         if(aligned):
             x = self.mouse_col*self.tile_size
@@ -436,94 +632,159 @@ class Editor(QWidget):
         x2 = x+side+rem+self.tile_size
         y1 = y-side
         y2 = y+side+rem+self.tile_size
-        return (x1,x2,y1,y2)
+        return (x1,y1,x2,y2)
+
+    def get_rectangle_area(self):
+        r1 = self.rect_c1_r
+        c1 = self.rect_c1_c
+        r4 = self.rect_c4_r
+        c4 = self.rect_c4_c
+        if(r4 >= r1):
+            r4 += 1
+        else:
+            r1 += 1
+
+        if(c4 >= c1):
+            c4 += 1
+        else:
+            c1 += 1
+
+        cs = abs(c4-c1)
+        rs = abs(r4-r1)
+
+        x1 = min(c1,c4)*self.tile_size
+        y1 = min(r1,r4)*self.tile_size
+        w = self.tile_size*cs
+        h = self.tile_size*rs
+        x2 = x1+w
+        y2 = y1+h
+
+        return x1,y1,x2,y2
+
+    # also erases tiles
+    def draw_tiles(self, row1, col1, row2, col2, filled):
+        rows = range(min([row1,row2]),max([row1,row2]))
+        cols = range(min([col1,col2]),max([col1,col2]))
+        for r in rows:
+            for c in cols:
+                if(filled):
+                    self.set_tile(r,c, self.selected_index, False)
+                else:
+                    if(r in [rows[0],rows[-1]] or c in [cols[0],cols[-1]]):
+                        self.set_tile(r,c, self.selected_index, False)
+
 
 
     def pen_tool(self, action):
 
-        x1,x2,y1,y2 = self.get_pen_rect(True)
-        self.ghost_c1_x = x1
-        self.ghost_c1_y = y1
-        self.ghost_c4_x = x2
-        self.ghost_c4_y = y2
+        erasing_objects = (self.curr_layer == 1 and self.selected_index == -1)
 
-        r1 = int(y1/self.tile_size)
-        r2 = int(y2/self.tile_size)
-        c1 = int(x1/self.tile_size)
-        c2 = int(x2/self.tile_size)
+        # x1,y1,x2,y2 = self.get_pen_area(True)
 
-
-        # col = self.mouse_col
-        # row = self.mouse_row
-        # side = int((self.pen_size-1)/2)
-        # rem = (self.pen_size-1) % 2
-        # c1 = col-side
-        # c2 = col+side+rem+1
-        # r1 = row-side
-        # r2 = row+side+rem+1
-        # self.ghost_c1_x = c1*self.tile_size
-        # self.ghost_c1_y = r1*self.tile_size
-        # self.ghost_c4_x = c2*self.tile_size
-        # self.ghost_c4_y = r2*self.tile_size
+        x1,y1,x2,y2 = self.get_tool_area()
+        # self.ghost_c1_x = x1
+        # self.ghost_c1_y = y1
+        # self.ghost_c4_x = x2
+        # self.ghost_c4_y = y2
+        r1,c1 = self.xy_to_rc(x1,y1)
+        r2,c2 = self.xy_to_rc(x2,y2)
 
         if(action == "press"):
             # print("drawing")
             self.drawing = True
-            self.draw_area(r1, c1, r2, c2)
+            if(erasing_objects):
+                self.check_object_erase(x1,y1,x2,y2)
+            else:
+                self.draw_tiles(r1, c1, r2, c2, True)
 
         elif(action == "move"):
             # print("moving")
             if(self.drawing):
-                self.draw_area(r1, c1, r2, c2)
+
+                if(erasing_objects):
+                    self.check_object_erase(x1,y1,x2,y2)
+                else:
+                    self.draw_tiles(r1, c1, r2, c2, True)
 
         elif(action == "release"):
             # print("released")
             self.drawing = False
 
+    def rectangle_tool(self, action):
+
+        erasing_objects = (self.curr_layer == 1 and self.selected_index == -1)
+
+        if(action == "press"):
+            self.rectangling = True
+            self.rect_c1_r = self.mouse_row
+            self.rect_c1_c = self.mouse_col
+            self.rect_c4_r = self.rect_c1_r
+            self.rect_c4_c = self.rect_c1_c
+
+        elif(action == "move"):
+            if(self.rectangling):
+                self.rect_c4_r = self.mouse_row
+                self.rect_c4_c = self.mouse_col
+            else:
+                self.rect_c1_r = self.mouse_row
+                self.rect_c1_c = self.mouse_col
+                self.rect_c4_r = self.rect_c1_r
+                self.rect_c4_c = self.rect_c1_c
+
+        elif(action == "release"):
+            if(self.rectangling):
+
+                self.rect_c4_r = self.mouse_row
+                self.rect_c4_c = self.mouse_col
+
+                x1,y1,x2,y2 = self.get_rectangle_area()
+                r1,c1 = self.xy_to_rc(x1,y1)
+                r2,c2 = self.xy_to_rc(x2,y2)
+
+                filled = (self.tool == "rectangle fill")
+                if(erasing_objects):
+                    self.check_object_erase(x1,y1,x2,y2)
+                else:
+                    self.draw_tiles(r1, c1, r2, c2, filled)
+
+            self.rectangling = False
+            self.rect_c1_r = self.mouse_row
+            self.rect_c1_c = self.mouse_col
+            self.rect_c4_r = self.rect_c1_r
+            self.rect_c4_c = self.rect_c1_c
+
+
+
+    def mouse_handle_tool(self, action):
+
+        # if(self.curr_layer == 0):
+        #     if(self.tool == "pen"):
+        #         self.pen_tool(action)
+
+        #     elif(self.tool in ["rectangle","rectangle fill"]):
+        #         self.rectangle_tool(action)
+
+        # elif(self.curr_layer == 1):
+        #     self.object_tool(action)
+
+        # drawing tiles, or erasing objects
+        if(self.curr_layer == 0 or (self.curr_layer == 1 and self.selected_index == -1)):
+            if(self.tool == "pen"):
+                self.pen_tool(action)
+
+            elif(self.tool in ["rectangle","rectangle fill"]):
+                self.rectangle_tool(action)
+
+        else:
+            self.object_tool(action)
 
     def mousePressEvent(self, event):
 
         if(event.button() == Qt.LeftButton):
 
-            self.board_prev = self.board.copy() #TODO
+            self.board_prev = self.board.copy()
 
-            # if(self.selected_index == -1):
-            #     self.eraser_tool()
-
-            if(self.curr_layer == 0):
-                if(self.tool == "pen"):
-                    self.pen_tool("press")
-
-            elif(self.curr_layer == 1):
-                self.object_tool("press")
-
-
-
-            # for j in range(0,self.board_height):
-            #     for i in range(0,self.board_width):
-            #         self.board_prev[j][i].tile_index = self.board[j][i].tile_index
-            #         self.board_prev[j][i].tile_set_name = self.board[j][i].tile_set_name
-
-            # if self.tool == "pen":
-            #     self.pen_tool("press")
-
-            # elif self.tool == "rectangle":
-            #     self.rectangle_tool("press")
-
-            # elif self.tool == "rectangle fill":
-            #     self.rectangle_tool("press")
-
-            # elif self.tool == "copy range":
-            #     self.copy_tool("press")
-
-            # elif self.tool == "fill":
-            #     self.flood_fill(x,y)
-
-            # elif self.tool == "objects":
-            #     self.objects_tool("press")
-
-            # elif self.tool == "get zone":
-            #     self.zone_tool("press")
+            self.mouse_handle_tool("press")
 
         self.update()
 
@@ -533,16 +794,7 @@ class Editor(QWidget):
             self.mouse_y = event.pos().y()
             self.mouse_row, self.mouse_col = self.xy_to_rc(self.mouse_x, self.mouse_y)
 
-        # if(self.selected_index == -1):
-        #     self.eraser_tool()
-
-        if(self.curr_layer == 0):
-            if(self.tool == "pen"):
-                self.pen_tool("move")
-
-        elif(self.curr_layer == 1):
-            self.object_tool("move")
-
+        self.mouse_handle_tool("move")
 
         self.update()
 
@@ -551,16 +803,7 @@ class Editor(QWidget):
 
         if(event.button() == Qt.LeftButton):
 
-            # if(self.selected_index == -1):
-            #     self.eraser_tool()
-
-            if(self.curr_layer == 0):
-                if(self.tool == "pen"):
-                    self.pen_tool("release")
-
-            elif(self.curr_layer == 1):
-                self.object_tool("release")
-
+            self.mouse_handle_tool("release")
 
         self.update()
 
@@ -807,7 +1050,7 @@ class MainWindow(QMainWindow):
 
         self.tool_combo = QComboBox(self)
         # self.tool_list = ['Pen','Rectangle','Rectangle Fill','Fill','Copy Range','Objects','Get Zone']
-        self.tool_list = ['Pen']
+        self.tool_list = ["Pen","Rectangle Fill","Rectangle"]
         self.tool_combo.addItems(self.tool_list)
         self.tool_combo.activated[str].connect(self.change_tool)
         self.tool_combo.setToolTip("Ctrl + D")
