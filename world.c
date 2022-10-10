@@ -7,6 +7,7 @@
 #include "gfx.h"
 #include "log.h"
 #include "world.h"
+#include "camera.h"
 
 int ground_sheet;
 
@@ -45,78 +46,36 @@ static void load_map_file(const char* file_path)
     int byte_count = 0;
 
     uint8_t bytes[1024*1024] = {0};
-        
     for(;;)
     {
         int c = fgetc(fp);
-        if(c == EOF || prop_index > 7)
-            break;
-
+        if(c == EOF) break;
         bytes[byte_count++] = (uint8_t)c;
-
-        switch(prop_index)
-        {
-            case 0: // id
-                map.id = bytes[0];
-                byte_count = 0;
-                prop_index++;
-                break;
-            case 1: // data len
-                if(byte_count >= 4)
-                {
-                    map.data_len = (uint32_t)((bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | (bytes[0] << 0));
-                    byte_count = 0;
-                    prop_index++;
-                }
-                break;
-            case 2: // version
-                map.version = bytes[0];
-                byte_count = 0;
-                prop_index++;
-                break;
-            case 3: // name len
-                map.name_len = bytes[0];
-                byte_count = 0;
-                prop_index++;
-                break;
-            case 4: // name
-                if(byte_count >= map.name_len)
-                {
-                    map.name = malloc(map.name_len*sizeof(char));
-                    memcpy(map.name, bytes, byte_count*sizeof(char));
-                    map.name[byte_count] = '\0';
-                    byte_count = 0;
-                    prop_index++;
-                }
-                break;
-            case 5: // rows
-                if(byte_count >= 2)
-                {
-                    map.rows = bytes[1] << 8 | bytes[0] << 0;
-                    byte_count = 0;
-                    prop_index++;
-                }
-                break;
-            case 6: // cols
-                if(byte_count >= 2)
-                {
-                    map.cols = bytes[1] << 8 | bytes[0] << 0;
-                    prop_index++;
-                }
-                break;
-            case 7: // data
-                if(byte_count >= (map.rows*map.cols))
-                {
-                    map.data = malloc(map.rows*map.cols*sizeof(uint8_t));
-                    memcpy(map.data, bytes, byte_count*sizeof(uint8_t));
-                    byte_count = 0;
-                    prop_index++;
-                }
-                break;
-            default:
-                break;
-        }
     }
+
+    int idx = 0;
+
+    map.id = bytes[idx++];
+
+    map.data_len = (uint32_t)((bytes[idx+3] << 24) | (bytes[idx+2] << 16) | (bytes[idx+1] << 8) | (bytes[idx] << 0));
+    idx += 4;
+
+    map.version = bytes[idx++];
+
+    map.name_len = bytes[idx++];
+
+    map.name = malloc((map.name_len+1)*sizeof(char));
+    memcpy(map.name, &bytes[idx], map.name_len*sizeof(char));
+    idx += map.name_len;
+   
+    map.rows = bytes[idx+1] << 8 | bytes[idx] << 0;
+    idx += 2;
+
+    map.cols = bytes[idx+1] << 8 | bytes[idx] << 0;
+    idx += 2;
+
+    map.data = malloc(map.rows*map.cols*sizeof(uint8_t));
+    memcpy(map.data, &bytes[idx], byte_count*sizeof(uint8_t));
 
     // print map
     LOGI("Map Loaded (%s):", file_path);
@@ -144,12 +103,46 @@ void world_update()
 
 void world_draw()
 {
-    for(int i = 0; i < 100; ++i)
+
+    Rect r;
+    get_camera_rect(&r);
+    // printf("%.2f, %.2f, %.2f, %.2f\n", r.x,r.y,r.w,r.h);
+    int r1,c1,r2,c2;
+    world_xy_to_grid(r.x, r.y, &r1, &c1);
+    world_xy_to_grid(r.x+r.w, r.y+r.h, &r2, &c2);
+
+    for(int r = (r1-1); r < (r2+1); ++r)
     {
-        for(int j = 0; j < 100; ++j)
+        for(int c = (c1-1); c < (c2+1); ++c)
         {
-            int index = i*1000+j;
-            gfx_draw_sub_image(ground_sheet,map.data[index],j*32,i*32,COLOR_TINT_NONE,1.0,0.0,1.0);
+            uint8_t index = map_get_tile_index(r,c);
+            if(index == 0xFF) continue;
+
+            float x,y;
+            world_grid_to_xy(r, c, &x, &y);
+
+            gfx_draw_sub_image(ground_sheet,index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0);
         }
     }
+
+
+}
+
+void world_xy_to_grid(float x, float y, int* row, int* col)
+{
+    *row = (int)y/WORLD_GRID_SIZE;
+    *col = (int)x/WORLD_GRID_SIZE;
+}
+
+void world_grid_to_xy(int row, int col, float* x, float* y)
+{
+    *x = (float)col*WORLD_GRID_SIZE;
+    *y = (float)row*WORLD_GRID_SIZE;
+}
+
+uint8_t map_get_tile_index(int row, int col)
+{
+    if(row >= map.rows || col >= map.cols || row < 0 || col < 0)
+        return 0xFF;
+    return map.data[row*map.cols+col];
 }

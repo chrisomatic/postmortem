@@ -9,5 +9,5 @@ typedef struct
 
 void camera_init();
 void camera_move(float x, float y);
-void get_camera_pos(float* x, float* y);
 Matrix* get_camera_transform();
+void get_camera_rect(Rect* rect);

@@ -82,6 +82,12 @@ void player_update(double delta_t)
     float mouse_x, mouse_y;
     window_get_mouse_world_coords(&mouse_x, &mouse_y);
 
+    // // DEBUG
+    // if(primary_action)
+    // {
+    //     printf("mouse_pos: %f,%f\n", mouse_x, mouse_y);
+    // }
+
     Vector3f player_pos = {player.pos.x + (player.w*player.scale)/2.0, (player.pos.y + (player.h*player.scale)/2.0), 0.0};
     Vector3f mouse_pos = {mouse_x, mouse_y, 0.0};
     Vector3f dist = {mouse_pos.x - player_pos.x, mouse_pos.y - player_pos.y, 0.0};

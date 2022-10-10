@@ -18,6 +18,7 @@ void camera_init()
     camera.pos.y = 0.0;
 }
 
+
 void camera_move(float x, float y)
 {
     camera.pos.x = x;
@@ -31,9 +32,19 @@ void camera_move(float x, float y)
         -(camera.pos.y - vh),
         0.0
     };
-    
+
+
+
     cam_pos.x = MIN(cam_pos.x, 0.0);
     cam_pos.y = MIN(cam_pos.y, 0.0);
+
+    // Rect r;
+    // get_camera_rect(&r);
+    // printf("%.2f, %.2f, %.2f, %.2f\n", r.x,r.y,r.w,r.h);
+
+
+
+    // printf("camera: %.2f, %.2f    %d,%d   \n", camera.pos.x, camera.pos.y, view_width, view_height);
 
     get_translate_transform(&view_matrix,&cam_pos);
 }
@@ -41,4 +52,18 @@ void camera_move(float x, float y)
 Matrix* get_camera_transform()
 {
     return &view_matrix;
+}
+
+void get_camera_rect(Rect* rect)
+{
+    float vw = view_width / 2.0;
+    float vh = view_height / 2.0;
+
+    float x = MAX(0,camera.pos.x-vw);
+    float y = MAX(0,camera.pos.y-vh);
+
+    rect->x = x;
+    rect->y = y;
+    rect->w = vw*2.0;
+    rect->h = vh*2.0;
 }
