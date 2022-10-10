@@ -1,4 +1,4 @@
-# Zombie Simulator
+# Postmortem
 
 :zombie:
 
