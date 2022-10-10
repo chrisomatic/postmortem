@@ -130,34 +130,37 @@ class Editor(QWidget):
         # tiles or objects
         self.selected_index = 0
 
-
-        self.board = [[BoardTile() for c in range(self.board_width)] for r in range(self.board_height)]
-        # self.board_prev = self.board.copy() #TODO
-        self.board_prev = []
-        self.copy_board_to_prev()
-        
-        self.board[0][0].tile_index = 1
-        print(self.board_prev[0][0].tile_index)
         # reference --> self.board[row][col]
+        self.board = [[BoardTile() for c in range(self.board_width)] for r in range(self.board_height)]
+
+        self.change_list = []
+        self.change_list_disabled = False
+
         self.objects = []
+
+        self.editor_undo()
 
         self.setMouseTracking(True)
 
-    def copy_board_to_prev(self):
-        return
-        # self.board_prev = copy.deepcopy(self.board)
-        self.board_prev = [[BoardTile() for c in range(self.board_width)] for r in range(self.board_height)]
-        for r in range(self.board_height):
-            for c in range(self.board_width):
-                self.board_prev[r][c].tile_index = self.board[r][c].tile_index+0
+    def change_list_add(self, r, c, ti):
+        # if(self.tool == "fill"): return
+        if(self.change_list_disabled): return
+        if(r >= self.board_height): return
+        if(c >= self.board_width): return
+        for i in range(len(self.change_list)):
+            _r,_c,_ti = self.change_list[i]
+            if(_r == r and _c == c):
+                return
+        self.change_list.append((r,c,ti))
 
-    def swap_prev_board(self):
-        # temp = [[BoardTile() for c in range(self.board_width)] for r in range(self.board_height)]
-        for r in range(self.board_height):
-            for c in range(self.board_width):
-                ti = (self.board[r][c].tile_index+0)
-                self.board[r][c].tile_index = (self.board_prev[r][c].tile_index+0)
-                self.board_prev[r][c].tile_index = ti
+
+    def editor_undo(self):
+        for i in range(len(self.change_list)):
+            r,c,ti = self.change_list[i]
+            ti_prev = self.board[r][c].tile_index
+            self.change_list[i] = (r,c,ti_prev)
+            self.board[r][c].tile_index = ti
+
 
     def sub_img_color(self, img, find, replace):
         count = 0
@@ -171,7 +174,7 @@ class Editor(QWidget):
 
     def build_objects(self):
         if(not os.path.isdir(self.object_set_path)):
-            printf("Folder does not exist: %s\n", self.tile_set_path)
+            printf("Folder does not exist: %s\n", self.object_set_path)
             return
 
         pngs = [x for x in os.listdir(self.object_set_path) if os.path.isfile(self.object_set_path+x) and x.endswith(".png")]
@@ -192,35 +195,33 @@ class Editor(QWidget):
             o.img_scaled = o.img.scaledToHeight(int(self.zoom_ratio*o.img.height()))
             self.object_set.append(o)
 
-        x = 100
-        y = 100
-        # w = 0
-        # h = 0
-        for i in range(len(self.object_set)):
-            bo = BoardObject()
-            bo.obj_index = i
-            bo.x = x
-            bo.y = y
-            self.objects.append(bo)
-
-            x += 100+self.object_set[i].img_scaled.width()
-            y += 100+self.object_set[i].img_scaled.height()
-
-
+        # x = 100
+        # y = 100
+        # # w = 0
+        # # h = 0
+        # for i in range(len(self.object_set)):
+        #     bo = BoardObject()
+        #     bo.obj_index = i
+        #     bo.x = x
+        #     bo.y = y
+        #     self.objects.append(bo)
+        #     x += 100+self.object_set[i].img_scaled.width()
+        #     y += 100+self.object_set[i].img_scaled.height()
 
 
     def build_tiles(self):
-        if(not os.path.isfile(self.tile_set_path)):
-            printf("File path does not exist: %s\n", self.tile_set_path)
+        fpath = self.tile_set_path + self.tile_set_name
+        if(not os.path.isfile(fpath)):
+            printf("File path does not exist: %s\n", fpath)
             return
 
-        img = QImage(self.tile_set_path,"PNG")
+        img = QImage(fpath,"PNG")
 
         if(img.width() != self.tile_img_set_width or img.height() != self.tile_img_set_height):
             printf("Expected %d x %d image size, actual: %d x %d\n", self.tile_img_set_width, self.tile_img_set_height, img.width, img.height)
             return
 
-        self.tile_set_name = self.tile_set_path.split(slash)[-1]
+        # self.tile_set_name = self.tile_set_path.split(slash)[-1]
         self.tile_set = []
 
         nrow = int(self.tile_img_set_height/self.tile_size_actual)
@@ -249,7 +250,9 @@ class Editor(QWidget):
         return choice(choices)
 
     def set_tile_fast(self, row, col, tile_index):
+        ti_prev = self.board[row][col].tile_index
         self.board[row][col].tile_index = tile_index
+        self.change_list_add(row,col,ti_prev)
 
     def set_tile(self, row, col, tile_index, force):
         if(row >= self.board_height or row < 0):
@@ -271,7 +274,10 @@ class Editor(QWidget):
         if(self.board[row][col].tile_index != -1 and not(self.draw_over) and not(force)):
             return
 
+        ti_prev = self.board[row][col].tile_index+0
         self.board[row][col].tile_index = tile_index
+        # printf("set tile: %d,%d  %d -> %d\n", row,col,ti_prev,tile_index)
+        self.change_list_add(row,col,ti_prev)
 
 
     def clear_tile(self, row, col):
@@ -279,8 +285,11 @@ class Editor(QWidget):
             return
         if(col >= self.board_width or col < 0):
             return
+        ti_prev = self.board[row][col].tile_index+0
         new = BoardTile()
         self.board[row][col] = new
+        self.change_list_add(row,col,ti_prev)
+
 
     def update_zoom(self, zoom):
         self.zoom_ratio = zoom
@@ -680,10 +689,12 @@ class Editor(QWidget):
     def mousePressEvent(self, event):
 
         if(event.button() == Qt.LeftButton):
-            print("press")
+            # print("press")
+
+            self.change_list = []
 
             # self.board_prev = self.board.copy()
-            self.copy_board_to_prev()
+            # self.copy_board_to_prev()
 
             self.mouse_handle_tool("press")
 
@@ -1030,6 +1041,7 @@ class MainWindow(QMainWindow):
         self.lbl_zoom = QLabel('Zoom: ', self)
         self.lbl_opacity = QLabel('Object Opacity: ', self)
 
+        self.lbl_map = QLabel('', self)
 
         self.layer_list = ["Terrain","Objects"]
         self.layer_combo = QComboBox(self)
@@ -1046,10 +1058,30 @@ class MainWindow(QMainWindow):
         self.tile_selector_grid_cs = 0
         self.tile_selector_grid_rs = 0
 
-        self.editor.tile_set_path = self.root + "../img/ground_set.png"
+        self.editor.tile_set_name = "ground_set.png"
+        # self.editor.tile_set_name = "ground_set2.png"
+        self.editor.tile_set_path = self.root + ".."+slash+".."+slash+"img"+slash
+        # self.editor.tile_set_path = self.root + "../../img/ground_set.png"
         self.editor.build_tiles()
-        self.editor.object_set_path = self.root + "../img/objects/"
+
+        self.editor.object_set_path = self.root + ".."+slash+".."+slash+"img"+slash+"objects"+slash #TODO
         self.editor.build_objects()
+
+        # directory
+        self.map_dir = self.root+".."+slash
+
+        # full path
+        # self.map_path = self.map_dir+"test.map"
+        self.map_path = ""
+
+        self.auto_save_dir = self.root+"autosave"+slash
+
+        if(not(os.path.isdir(self.map_dir))):
+            os.makedirs(self.map_dir)
+
+        if(not(os.path.isdir(self.auto_save_dir))):
+            os.makedirs(self.auto_save_dir)
+
 
         self.grid = QGridLayout()
         self.grid.setSpacing(10)
@@ -1063,7 +1095,12 @@ class MainWindow(QMainWindow):
         cs = self.scroll_cs
         self.grid.addWidget(self.scroll, r, c, rs, cs)
 
+        r += rs+1
+        self.grid.addWidget(self.lbl_map, r, c, 1, cs)
+
+
         c = cs+c+1
+        r = 0
         rs = 1
         cs = 2
         self.grid.addWidget(self.tool_combo, r, c, rs, cs)
@@ -1130,9 +1167,15 @@ class MainWindow(QMainWindow):
 
         self.initialized = True
 
-        # print("before repaint")
         self.repaint()
 
+        self.save_timer = QTimer()
+        # self.save_timer.timeout.connect(lambda x = self.appd + "temp_save.board":self.save_map(x))
+        self.save_timer.timeout.connect(self.save_timer_cb)
+        self.save_timer.start(1000*60)
+
+    def save_timer_cb(self):
+        self.auto_save("auto_save")
 
     def update_scroll_info(self):
         if(self.scroll is None): return
@@ -1178,33 +1221,28 @@ class MainWindow(QMainWindow):
     def eventFilter(self, source, event):
         if(event is None): return 0
 
-        # if(event.type() == QEvent.Scroll):
-        #     print("scroll")
-
         if(not(self.initialized)): return 0
 
-        if source is self.draw_grid_chk:
+        if(source is self.draw_grid_chk):
             self.editor.show_grid = self.draw_grid_chk.isChecked()
             self.repaint()
 
-        elif source is self.scroll:
+        elif(source is self.scroll):
             print("scroll")
 
-        elif source is self.draw_over_chk:
+        elif(source is self.draw_over_chk):
             self.editor.draw_over = self.draw_over_chk.isChecked()
 
-        elif source is self.draw_objs_chk:
+        elif(source is self.draw_objs_chk):
             self.editor.show_objects = self.draw_objs_chk.isChecked()
             self.repaint()
 
-        elif source is self.draw_terrain_chk:
+        elif(source is self.draw_terrain_chk):
             self.editor.show_terrain = self.draw_terrain_chk.isChecked()
             self.repaint()
 
-        elif source is self.align_grid_chk:
+        elif(source is self.align_grid_chk):
             self.editor.align_objects = self.align_grid_chk.isChecked()
-
-
 
 
         if(event.type() == QEvent.KeyPress):
@@ -1220,8 +1258,9 @@ class MainWindow(QMainWindow):
                     row = 0
                     col = 0
                     for i in range(len(self.editor.tile_set)):
+                        self.editor.set_tile(row,col, i, True)
                         # if(self.tile_set[i].empty): continue
-                        self.editor.board[row][col].tile_index = i
+                        # self.editor.board[row][col].tile_index = i
                         col += 1
                         if(col >= 16):
                             row += 1
@@ -1232,6 +1271,7 @@ class MainWindow(QMainWindow):
         return 0
 
     def custom_close(self):
+        self.auto_save("on_close")
         QCoreApplication.instance().quit()
 
     def closeEvent(self, event):
@@ -1240,6 +1280,10 @@ class MainWindow(QMainWindow):
 
     def change_tool(self,text):
         self.editor.tool = text.lower()
+        if(self.editor.tool == "fill"):
+            self.editor.change_list_disabled = True
+        else:
+            self.editor.change_list_disabled = False
 
 
     def change_size(self):
@@ -1256,20 +1300,18 @@ class MainWindow(QMainWindow):
         return
 
     def undo(self):
-        print("undo")
-        print(self.editor.board == self.editor.board_prev)
-        print(self.editor.board[0][0].tile_index, self.editor.board_prev[0][0].tile_index)
-        # print(self.editor.board[0][0].tile_index)
-        # print(self.editor.board_prev[0][0].tile_index)
-        # temp = self.editor.board.copy()
-        # self.editor.board = self.editor.board_prev.copy()
-        # self.editor.board_prev = temp.copy()
-        self.editor.swap_prev_board()
+        # print(self.editor.change_list)
+        self.editor.editor_undo()
         self.editor.update()
         return
 
     def clear_map(self):
-        return
+        self.auto_save("before_clear")
+        self.editor.change_list_disabled = True
+        for r in range(self.editor.board_height):
+            for c in range(self.editor.board_width):
+                self.editor.clear_tile(r, c)
+        self.editor.change_list_disabled = False
 
     def num_to_uint8_bytes(self, num):
         return struct.pack("<B", num)
@@ -1283,23 +1325,62 @@ class MainWindow(QMainWindow):
     def str_to_bytes(self, _str):
         return _str.encode()
 
-    def save_map(self, fname=""):
-        if(fname == ""):
-            path = self.root+"test.map"
-        else:
-            path = self.root+fname
+    def uint8_bytes_to_num(self, _bytes):
+        return struct.unpack("<B", bytes([_bytes]))[0]
 
-        f = open(path,'wb')
+    def uint16_bytes_to_num(self, _bytes):
+        return struct.unpack("<H", bytes(_bytes))[0]
 
-        # id (1), data len (4), name len (1), name..., rows (2), cols (2), data...
+    def uint32_bytes_to_num(self, _bytes):
+        return struct.unpack("<L", bytes(_bytes))[0]
+
+    def bytes_to_str(self, _bytes):
+        return _bytes.decode()
+
+    def auto_save(self, fname):
+        _add = ".map"
+        if(fname.endswith(_add)):
+            _add = ""
+        self.save_map(self.auto_save_dir+fname+_add)
+
+
+    def save_map(self, fpath=""):
+
+        if(fpath == ""):
+
+            _start = self.map_dir
+            if(os.path.isfile(self.map_path)):
+                _start = self.map_path
+
+            options = QFileDialog.Options()
+            fileName, _ = QFileDialog.getSaveFileName(self,"Save",_start,"Map Files (*.map);;All Files (*)", options=options)
+            if(not fileName):
+                return
+
+            fpath = fileName
+
+            self.map_path = fileName+""
+            self.map_dir = slash.join(self.map_path.split(slash)[:-1]) + slash
+
+            self.lbl_map.setText(self.map_path)
+
+
+        printf("Saving map: %s\n", fpath)
+
+        f = open(fpath, "wb")
+
+        # id (1), data len (4), version (1), name len (1), name..., rows (2), cols (2), data...
 
         _id = 0
+        _version = 0
         name_len = len(self.editor.tile_set_name)
         board_len = self.editor.board_height*self.editor.board_width
-        total_len = 2+2+1+name_len+board_len
+        total_len = 1+1+name_len+2+2+board_len
 
         f.write(self.num_to_uint8_bytes(_id))
         f.write(self.num_to_uint32_bytes(total_len))
+
+        f.write(self.num_to_uint8_bytes(_version))
 
         f.write(self.num_to_uint8_bytes(name_len))
         f.write(self.str_to_bytes(self.editor.tile_set_name))
@@ -1316,7 +1397,103 @@ class MainWindow(QMainWindow):
 
         f.close()
 
-    def load_map(self, fname=""):
+        printf("Saved map: %s\n", fpath)
+
+
+    def load_map(self, fpath=""):
+
+        self.auto_save("before_load")
+
+        if(fpath == "" or not(os.path.isfile(fpath))):
+            options = QFileDialog.Options()
+            fileName, _ = QFileDialog.getOpenFileName(self,"Save",self.map_dir,"Map Files (*.map);;All Files (*)", options=options)
+            if(not fileName):
+                return
+
+            self.map_path = fileName+""
+            self.map_dir = slash.join(fileName.split(slash)[:-1]) + slash
+
+            self.lbl_map.setText(self.map_path)
+
+            fpath = fileName
+
+        printf("Loading map: %s\n", fpath)
+
+        f = open(fpath, "rb")
+        b = f.read()
+        f.close()
+
+        idx = 0
+
+        _id = self.uint8_bytes_to_num(b[idx])
+        idx += 1
+
+        total_len = self.uint32_bytes_to_num(b[idx:idx+4])
+        idx += 4
+
+        version = self.uint8_bytes_to_num(b[idx])
+        idx += 1
+
+        name_len = self.uint8_bytes_to_num(b[idx])
+        idx += 1
+
+        tile_set_name = self.bytes_to_str(b[idx:idx+name_len])
+        idx += name_len
+
+        brows = self.uint16_bytes_to_num(b[idx:idx+2])
+        idx += 2
+
+        bcols = self.uint16_bytes_to_num(b[idx:idx+2])
+        idx += 2
+
+        # data_len = len(b[idx:])
+        data_len = total_len - (1 + 1 + name_len + 2 + 2)
+
+        if(brows != self.editor.board_height):
+            printf("[map load] ERROR: rows %d\n", brows)
+            return
+
+        if(bcols != self.editor.board_width):
+            printf("[map load] ERROR: cols %d\n", bcols)
+            return
+
+        num_spaces = self.editor.board_height*self.editor.board_width
+        if(data_len != num_spaces):
+            printf("[map load] ERROR: data_len %d\n", data_len)
+            return
+
+        tpath = self.editor.tile_set_path + tile_set_name
+        if(not(os.path.isfile(tpath))):
+            printf("[map load] ERROR: file does not exist %s\n", tpath)
+            return
+
+
+        self.editor.change_list_disabled = True
+
+
+        r = 0
+        c = 0
+        for i in range(num_spaces):
+            ti = self.uint8_bytes_to_num(b[idx])
+            if(ti == 0xFF): ti = -1
+            idx += 1
+            self.editor.set_tile_fast(r, c, ti)
+
+            c += 1
+            if(c >= self.editor.board_width):
+                r += 1
+                c = 0
+
+
+        self.editor.change_list_disabled = False
+
+
+        if(tile_set_name != self.editor.tile_set_name):
+            self.editor.tile_set_name = tile_set_name
+            self.editor.build_tiles()
+            self.show_set_selector("")
+
+        printf("Loaded map: %s\n", fpath)
         return
 
     def create_eraser_item(self):
