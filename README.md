@@ -4,6 +4,9 @@
 
 This is a work-in-progress 2D game
 
+![](screenshot.png)
+
+
 ## TODO
 
 - Create hitboxes for Zombies
