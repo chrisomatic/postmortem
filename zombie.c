@@ -8,10 +8,8 @@
 
 #include "zombie.h"
 
-#define MAX_ZOMBIES 1024
-
-static Zombie zombies[MAX_ZOMBIES] = {0};
-static int num_zombies = 0;
+Zombie zombies[MAX_ZOMBIES] = {0};
+int num_zombies = 0;
 
 static int zombie_image;
 
@@ -74,6 +72,8 @@ void zombie_init()
     {
         zombies[i].pos.x = rand() % 800;
         zombies[i].pos.y = rand() % 600;
+        zombies[i].w = gfx_images[zombie_image].w;
+        zombies[i].h = gfx_images[zombie_image].h;
         zombies[i].action = ZOMBIE_ACTION_NONE;
         zombies[i].action_timer = 0;
         zombies[i].action_timer_max = (rand() % 100)/20.0 + 0.5;
@@ -81,6 +81,31 @@ void zombie_init()
     }
 
     num_zombies = 100;
+}
+
+static void update_zombie_boxes(Zombie* zom)
+{
+    const float shrink_factor = 0.80;
+
+    zom->collision_box.x = zom->pos.x;
+    zom->collision_box.y = zom->pos.y + (2.0*zom->h / 3.0);
+    zom->collision_box.w = zom->w;
+    zom->collision_box.h = (zom->h / 3.0);
+
+    zom->collision_box.x += 0.5*zom->collision_box.w*(1.00 - shrink_factor);
+    zom->collision_box.y += 0.5*zom->collision_box.h*(1.00 - shrink_factor);
+    zom->collision_box.w *= shrink_factor;
+    zom->collision_box.h *= shrink_factor;
+
+    zom->hit_box.x = zom->pos.x;
+    zom->hit_box.y = zom->pos.y;
+    zom->hit_box.w = zom->w;
+    zom->hit_box.h = (zom->h / 1.5);
+
+    zom->hit_box.x += 0.5*zom->hit_box.w*(1.00 - shrink_factor);
+    zom->hit_box.y += 0.5*zom->hit_box.h*(1.00 - shrink_factor);
+    zom->hit_box.w *= shrink_factor;
+    zom->hit_box.h *= shrink_factor;
 }
 
 void zombie_update(float delta_t)
@@ -91,6 +116,8 @@ void zombie_update(float delta_t)
 
         zombies[i].pos.x = MAX(zombies[i].pos.x, 0.0);
         zombies[i].pos.y = MAX(zombies[i].pos.y, 0.0);
+
+        update_zombie_boxes(&zombies[i]);
     }
 
     sort_zombies(zombies,num_zombies);
@@ -100,6 +127,14 @@ void zombie_draw()
 {
     for(int i = 0; i < num_zombies; ++i)
     {
-        gfx_draw_image(zombie_image,(int)zombies[i].pos.x,(int)zombies[i].pos.y, COLOR_TINT_NONE,1.0,0.0,1.0);
+        Zombie* zom = &zombies[i];
+
+        Rect* cbox  = &zom->collision_box;
+        Rect* hbox  = &zom->hit_box;
+
+        gfx_draw_image(zombie_image,(int)zom->pos.x,(int)zom->pos.y, COLOR_TINT_NONE,1.0,0.0,1.0);
+        gfx_draw_rect(cbox->x, cbox->y, cbox->w, cbox->h, 0x0000FF00, 1.0,1.0);
+        gfx_draw_rect(hbox->x, hbox->y, hbox->w, hbox->h, 0x00FFFF00, 1.0,1.0);
     }
+
 }

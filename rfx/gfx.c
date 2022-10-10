@@ -37,6 +37,12 @@ static GLint loc_sprite_num_in_row;
 static GLint loc_sprite_num_in_col;
 static GLint loc_sprite_index;
 
+static GLint loc_shape_color;
+static GLint loc_shape_opacity;
+static GLint loc_shape_model;
+static GLint loc_shape_view;
+static GLint loc_shape_proj;
+
 void gfx_init(int width, int height)
 {
     printf("GL version: %s\n",glGetString(GL_VERSION));
@@ -85,6 +91,12 @@ void gfx_init(int width, int height)
     loc_sprite_num_in_row = glGetUniformLocation(program_sprite, "num_sprites_in_row");
     loc_sprite_num_in_col = glGetUniformLocation(program_sprite, "num_sprites_in_col");
     loc_sprite_index      = glGetUniformLocation(program_sprite, "sprite_index");
+
+    loc_shape_color      = glGetUniformLocation(program_shape, "color");
+    loc_shape_opacity    = glGetUniformLocation(program_shape, "opacity");
+    loc_shape_model      = glGetUniformLocation(program_shape, "model");
+    loc_shape_view       = glGetUniformLocation(program_shape, "view");
+    loc_shape_proj       = glGetUniformLocation(program_shape, "projection");
 
     /*
     printf("%d %d %d %d %d %d %d\n",
@@ -182,6 +194,45 @@ GFXImage* gfx_get_image_data(int img_index)
         return NULL;
     }
     return &gfx_images[img_index];
+}
+
+void gfx_draw_rect(float x, float y, float w, float h, uint32_t color, float scale, float opacity)
+{
+    glUseProgram(program_shape);
+
+    Matrix model = {0};
+
+    Vector3f pos = {x+w/2.0,y+h/2.0,0.0};
+    Vector3f rot = {0.0,0.0,0.0};
+    Vector3f sca = {scale*w,-scale*h,1.0};
+
+    get_model_transform(&pos,&rot,&sca,&model);
+    Matrix* view = get_camera_transform();
+
+    uint8_t r = color >> 16;
+    uint8_t g = color >> 8;
+    uint8_t b = color >> 0;
+
+    glUniform3f(loc_shape_color,r/255.0,g/255.0,b/255.0);
+    glUniform1f(loc_shape_opacity,opacity);
+
+    glUniformMatrix4fv(loc_shape_model,1,GL_TRUE,&model.m[0][0]);
+    glUniformMatrix4fv(loc_shape_view,1,GL_TRUE,&view->m[0][0]);
+    glUniformMatrix4fv(loc_shape_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
+    
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    glBindVertexArray(vao);
+    glEnableVertexAttribArray(0);
+
+    glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
+
+    glDisableVertexAttribArray(0);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glBindTexture(GL_TEXTURE_2D,0);
+    glUseProgram(0);
 }
 
 bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale, float rotation, float opacity)

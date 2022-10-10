@@ -9,6 +9,7 @@
 
 GLuint program_basic;
 GLuint program_sprite;
+GLuint program_shape;
 
 static void shader_add(GLuint program, GLenum shader_type, const char* shader_file_path);
 
@@ -23,12 +24,18 @@ void shader_load_all()
         "rfx/shaders/sprite.vert.glsl",
         "rfx/shaders/sprite.frag.glsl"
     );
+
+    shader_build_program(&program_shape,
+        "rfx/shaders/shape.vert.glsl",
+        "rfx/shaders/shape.frag.glsl"
+    );
 }
 
 void shader_deinit()
 {
     glDeleteProgram(program_basic);
     glDeleteProgram(program_sprite);
+    glDeleteProgram(program_shape);
 }
 
 void shader_build_program(GLuint* p, const char* vert_shader_path, const char* frag_shader_path)

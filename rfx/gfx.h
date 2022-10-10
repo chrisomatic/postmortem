@@ -19,6 +19,7 @@ void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b);
 // Image
 int gfx_load_image(const char* image_path);
 int gfx_load_image_set(const char* image_path, int element_width, int element_height);
+void gfx_draw_rect(float x, float y, float w, float h, uint32_t color, float scale, float opacity);
 bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale, float rotation, float opacity);
 bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity);
 void gfx_free_image(int img_index);

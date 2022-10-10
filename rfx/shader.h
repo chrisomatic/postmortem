@@ -5,6 +5,7 @@
 
 extern GLuint program_basic;
 extern GLuint program_sprite;
+extern GLuint program_shape;
 
 void shader_load_all();
 void shader_build_program(GLuint* p, const char* vert_shader_path, const char* frag_shader_path);

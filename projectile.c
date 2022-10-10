@@ -8,6 +8,7 @@
 #include "gfx.h"
 #include "log.h"
 #include "gun.h"
+#include "zombie.h"
 #include "projectile.h"
 
 #define MAX_PROJECTILES 1024
@@ -17,6 +18,7 @@ typedef struct
     ProjectileType type;
     Vector2f pos;
     Vector2f vel;
+    float w,h;
     float angle_deg;
     int damage;
     int sprite_index;
@@ -64,11 +66,23 @@ void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle)
     proj->damage = gun->fire_power;
     proj->pos.x = x;
     proj->pos.y = y;
+    proj->w = 2;
+    proj->h = 2;
     proj->angle_deg = DEG(angle-PI);
     proj->vel.x = speed*cos(angle-PI);
     proj->vel.y = speed*sin(angle-PI);
 
 
+}
+
+static bool is_colliding(Rect* a, Rect* b)
+{
+    bool overlap = (
+        a->x < (b->x+b->w) && (a->x+a->w) > b->x &&
+        a->y < (b->y+b->h) && (a->y+a->h) > b->y
+    );
+
+    return overlap;
 }
 
 void projectile_update(float delta_t)
@@ -79,7 +93,24 @@ void projectile_update(float delta_t)
 
         proj->pos.x += delta_t*proj->vel.x;
         proj->pos.y += delta_t*proj->vel.y;
+
+        for(int j = 0; j < num_zombies; ++j)
+        {
+            Rect p = {
+                .x = proj->pos.x,
+                .y = proj->pos.y,
+                .w = proj->w,
+                .h = proj->h
+            };
+
+            if(is_colliding(&p, &zombies[j].hit_box))
+            {
+                projectile_remove(i);
+            }
+        }
+
     }
+
 }
 
 void projectile_draw()
