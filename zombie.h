@@ -20,6 +20,8 @@ typedef struct
 
     float hp;
     float hp_max;
+
+    Rect collision_box;
 } Zombie;
 
 void zombie_init();

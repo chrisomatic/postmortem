@@ -12,8 +12,8 @@ Player player;
 
 void player_init()
 {
-    player.pos.x = 0.0;
-    player.pos.y = 0.0;
+    player.pos.x = 400.0;
+    player.pos.y = 300.0;
 
     player.vel.x = 0.0;
     player.vel.y = 0.0;
@@ -25,10 +25,11 @@ void player_init()
     player.speed = 32.0;
     player.max_base_speed = 128.0;
     player.max_speed = player.max_base_speed;
+    player.scale = 1.0;
 
     player.gun = gun_get(GUN_TYPE_HANDGUN);
 
-    player.image = gfx_load_image_set("img/human_set_small.png",32,64);
+    player.image = gfx_load_image_set("img/human_set_small.png",32,48);
     //player.image = gfx_load_image("img/soldier_f1.png");
 
     window_controls_clear_keys();
@@ -68,6 +69,7 @@ void player_update(double delta_t)
 
     if(toggle_fire && !prior_toggle_fire)
         player.gun_ready = !player.gun_ready;
+
     prior_toggle_fire = toggle_fire;
 
     Vector2f accel = {0};
@@ -80,7 +82,7 @@ void player_update(double delta_t)
     float mouse_x, mouse_y;
     window_get_mouse_world_coords(&mouse_x, &mouse_y);
 
-    Vector3f player_pos = {player.pos.x + player.w/2.0, (player.pos.y + player.h/2.0), 0.0};
+    Vector3f player_pos = {player.pos.x + (player.w*player.scale)/2.0, (player.pos.y + (player.h*player.scale)/2.0), 0.0};
     Vector3f mouse_pos = {mouse_x, mouse_y, 0.0};
     Vector3f dist = {mouse_pos.x - player_pos.x, mouse_pos.y - player_pos.y, 0.0};
 
@@ -198,5 +200,5 @@ void player_update(double delta_t)
 void player_draw()
 {
     //gfx_draw_image(player.image,(int)player.pos.x,(int)player.pos.y, COLOR_TINT_NONE,0.16,0.0,1.0);
-    gfx_draw_sub_image(player.image,player.sprite_index,player.pos.x,player.pos.y, COLOR_TINT_NONE,1.5,0.0,1.0);
+    gfx_draw_sub_image(player.image,player.sprite_index,player.pos.x,player.pos.y, COLOR_TINT_NONE,player.scale,0.0,1.0);
 }

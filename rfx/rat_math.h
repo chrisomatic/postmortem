@@ -38,6 +38,12 @@ typedef struct
     float m[4][4];
 } Matrix;
 
+typedef struct
+{
+    float x,y;
+    float w,h;
+} Rect;
+
 extern Matrix IDENTITY_MATRIX;
 
 void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Matrix* model);

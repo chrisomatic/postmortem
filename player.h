@@ -27,6 +27,7 @@ typedef struct
     float max_base_speed;
     float max_speed;
     float angle;
+    float scale;
 
     int image;
     int sprite_index;

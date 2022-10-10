@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "rat_math.h"
 #include "timer.h"
 
 
@@ -64,3 +65,18 @@ static void print_log(char* fmt, ...)
 #define LOGI(format,...) LOG(LOG_FMT(I, format), ##__VA_ARGS__) // info
 #define LOGV(format,...) LOG(LOG_FMT(V, format), ##__VA_ARGS__) // verbose
 #define LOGN(format,...) LOG(LOG_FMT(N, format), ##__VA_ARGS__) // network
+
+
+static void print_hex(uint8_t* data, int data_len)
+{
+    char data_str[1024] = {0};
+    char byte[4] = {0};
+
+    for(int i = 0; i < data_len; ++i)
+    {
+        sprintf(byte,"%02X ",data[i]);
+        memcpy(data_str+(3*i), byte,3);
+    }
+
+    LOGI("%s",data_str);
+}
