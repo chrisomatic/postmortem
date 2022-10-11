@@ -9,6 +9,8 @@ typedef struct
 {
     //unsigned char* data;
     int w,h,n;
+    int vw,vh;  //visible
+    int vx,vy;  //visible
     bool is_set;
     int element_width, element_height;
     uint32_t texture;

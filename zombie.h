@@ -17,6 +17,8 @@ typedef struct
     Vector2f pos;
     ZombieAction action;
     float w,h;
+    float vw,vh;
+    float vx,vy;
     float speed;
     float action_timer;
     float action_timer_max;
@@ -26,6 +28,7 @@ typedef struct
 
     Rect collision_box;
     Rect hit_box;
+
 } Zombie;
 
 extern Zombie zombies[MAX_ZOMBIES];

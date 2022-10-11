@@ -140,6 +140,79 @@ void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
+// get last row or col that's empty
+// side: 0=top,1=left,2=bottom,3=right
+int scan_image_data(int side, GFXImage* img, unsigned char* data)
+{
+    // x,y (0,0) is the bottom of bottom left of the image data
+    if(side == 0 || side == 2)
+    {
+        bool prior_empty = false;
+        for(int _y = 0; _y < img->h; ++_y)
+        {
+            int y = _y;
+            if(side == 0)
+                y = img->h-1-_y;
+
+            bool row_empty = true;
+
+            for(int x = 0; x < img->w; ++x)
+            {
+                int index = (y*img->w + x);
+                uint8_t a = *(data + (img->n*index) + 3);
+                if(a != 0)
+                {
+                    row_empty = false;
+                    break;
+                }
+            }
+
+            if(prior_empty && !row_empty)
+            {
+                return y;
+            }
+            prior_empty = row_empty;
+        }
+
+        if(side == 0) return img->h-1;
+        return 0;
+    }
+    else if(side == 1 || side == 3)
+    {
+        bool prior_empty = false;
+        for(int _x = 0; _x < img->w; ++_x)
+        {
+            int x = _x;
+            if(side == 3)
+                x = img->w-1-_x;
+
+            bool col_empty = true;
+
+            for(int y = 0; y < img->h; ++y)
+            {
+
+                int index = (y*img->w + x);
+                uint8_t a = *(data + (img->n*index) + 3);
+                if(a != 0)
+                {
+                    col_empty = false;
+                    break;
+                }
+            }
+
+            if(prior_empty && !col_empty)
+            {
+                return x;
+            }
+            prior_empty = col_empty;
+        }
+
+        if(side == 3) return img->w-1;
+        return 0;
+    }
+    return -1;
+}
+
 int gfx_load_image(const char* image_path)
 {
     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
@@ -148,9 +221,30 @@ int gfx_load_image(const char* image_path)
         {
             GFXImage* img = &gfx_images[i];
             unsigned char* data = stbi_load(image_path,&img->w,&img->h,&img->n,4);
-
             if(data == NULL)
                 return -1;
+
+            int top = scan_image_data(0, img, data);
+            int bottom = scan_image_data(2, img, data);
+            int vh = top-bottom+1;
+
+
+            int left = scan_image_data(1, img, data);
+            int right = scan_image_data(3, img, data);
+            int vw = right-left+1;
+
+            // if(i == 2)
+            // {
+            // printf("top: %d, bottom: %d\n", top, bottom);
+            // printf("vh: %d\n", vh);
+            // printf("left: %d, right: %d\n", left, right);
+            // printf("vw: %d\n", vw);
+            }
+
+            img->vw = vw;
+            img->vh = vh;
+            img->vx = left;
+            img->vy = bottom;
 
             glGenTextures(1, &img->texture);
             glBindTexture(GL_TEXTURE_2D, img->texture);
