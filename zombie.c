@@ -4,6 +4,7 @@
 #include <string.h>
 #include "window.h"
 #include "rat_math.h"
+#include "player.h"
 #include "gfx.h"
 
 #include "zombie.h"
@@ -68,10 +69,12 @@ void zombie_init()
 {
     zombie_image = gfx_load_image("img/zombie_f1.png");
 
-    for(int i = 0; i < 100; ++i)
+    num_zombies = 100;
+
+    for(int i = 0; i < num_zombies; ++i)
     {
-        zombies[i].pos.x = rand() % 800;
-        zombies[i].pos.y = rand() % 600;
+        zombies[i].pos.x = rand() % view_width;
+        zombies[i].pos.y = rand() % view_height;
         zombies[i].w = gfx_images[zombie_image].w;
         zombies[i].h = gfx_images[zombie_image].h;
         zombies[i].action = ZOMBIE_ACTION_NONE;
@@ -80,7 +83,6 @@ void zombie_init()
         zombies[i].speed = 32.0;
     }
 
-    num_zombies = 100;
 }
 
 static void update_zombie_boxes(Zombie* zom)
@@ -133,8 +135,12 @@ void zombie_draw()
         Rect* hbox  = &zom->hit_box;
 
         gfx_draw_image(zombie_image,(int)zom->pos.x,(int)zom->pos.y, COLOR_TINT_NONE,1.0,0.0,1.0);
-        gfx_draw_rect(cbox->x, cbox->y, cbox->w, cbox->h, 0x0000FF00, 1.0,1.0);
-        gfx_draw_rect(hbox->x, hbox->y, hbox->w, hbox->h, 0x00FFFF00, 1.0,1.0);
+
+        if(debug_enabled)
+        {
+            gfx_draw_rect(cbox, 0x0000FF00, 1.0,1.0);
+            gfx_draw_rect(hbox, 0x00FFFF00, 1.0,1.0);
+        }
     }
 
 }

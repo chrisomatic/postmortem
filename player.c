@@ -10,6 +10,8 @@
 
 Player player;
 
+bool debug_enabled; // weird place for this variable
+
 void player_init()
 {
     player.pos.x = 400.0;
@@ -43,12 +45,14 @@ void player_init()
     window_controls_add_key(&player.keys, GLFW_KEY_SPACE, PLAYER_ACTION_JUMP);
     window_controls_add_key(&player.keys, GLFW_KEY_E, PLAYER_ACTION_INTERACT);
     window_controls_add_key(&player.keys, GLFW_KEY_R, PLAYER_ACTION_TOGGLE_FIRE);
+    window_controls_add_key(&player.keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_DEBUG);
 
     window_controls_add_mouse_button(&player.keys, GLFW_MOUSE_BUTTON_LEFT, PLAYER_ACTION_PRIMARY_ACTION);
     window_controls_add_mouse_button(&player.keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
 }
 
 bool prior_toggle_fire;
+bool prior_toggle_debug;
 
 void player_update(double delta_t)
 {
@@ -64,6 +68,7 @@ void player_update(double delta_t)
     bool primary_action   = IS_BIT_SET(player.keys,PLAYER_ACTION_PRIMARY_ACTION);
     bool secondary_action = IS_BIT_SET(player.keys,PLAYER_ACTION_SECONDARY_ACTION);
     bool toggle_fire      = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_FIRE);
+    bool toggle_debug     = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_DEBUG);
 
     //printf("%d %d %d %d %d %d %d %d %d\n", up, down, left, right, run, jump, interact, primary_action, secondary_action);
 
@@ -71,6 +76,11 @@ void player_update(double delta_t)
         player.gun_ready = !player.gun_ready;
 
     prior_toggle_fire = toggle_fire;
+
+    if(toggle_debug && !prior_toggle_debug)
+        debug_enabled = !debug_enabled;
+
+    prior_toggle_debug = toggle_debug;
 
     Vector2f accel = {0};
 
@@ -207,4 +217,5 @@ void player_draw()
 {
     //gfx_draw_image(player.image,(int)player.pos.x,(int)player.pos.y, COLOR_TINT_NONE,0.16,0.0,1.0);
     gfx_draw_sub_image(player.image,player.sprite_index,player.pos.x,player.pos.y, COLOR_TINT_NONE,player.scale,0.0,1.0);
+    //gfx_draw_line2(100.0,50.0,200.0,200.0);
 }

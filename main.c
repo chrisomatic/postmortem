@@ -136,6 +136,8 @@ void deinit()
 
 void update(double delta_t)
 {
+    gfx_clear_lines();
+
     Vector2f offset = {
         player.w/2.0,
         player.h/2.0
@@ -151,9 +153,10 @@ void draw()
 {
     gfx_clear_buffer(0,0,0);
 
-    world_draw();
+    //world_draw();
     zombie_draw();
     player_draw();
     projectile_draw();
+    gfx_draw_lines();
 }
 

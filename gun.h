@@ -15,7 +15,10 @@ typedef struct
 
     int projectile_type;
 
-    float fire_power;
+    float power;
+
+    float fire_range;
+    float fire_speed;
     float fire_period;
     float fire_cooldown;
 

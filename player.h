@@ -14,6 +14,7 @@ enum PlayerAction
     PLAYER_ACTION_PRIMARY_ACTION   = 1<<7,
     PLAYER_ACTION_SECONDARY_ACTION = 1<<8,
     PLAYER_ACTION_TOGGLE_FIRE      = 1<<9,
+    PLAYER_ACTION_TOGGLE_DEBUG     = 1<<10,
 };
 
 typedef struct
@@ -38,6 +39,7 @@ typedef struct
 } Player;
 
 extern Player player;
+extern bool debug_enabled;
 
 void player_init();
 void player_update(double delta_t);

@@ -6,7 +6,9 @@ Gun gun_arsenal[GUN_TYPE_MAX] = {0};
 
 void gun_init()
 {
-    gun_arsenal[GUN_TYPE_HANDGUN].fire_power = 1000.0;
+    gun_arsenal[GUN_TYPE_HANDGUN].power = 1.0;
+    gun_arsenal[GUN_TYPE_HANDGUN].fire_range = 500.0;
+    gun_arsenal[GUN_TYPE_HANDGUN].fire_speed = 1000.0;
     gun_arsenal[GUN_TYPE_HANDGUN].fire_period = 100.0; // milliseconds
     gun_arsenal[GUN_TYPE_HANDGUN].fire_cooldown = 0.0;
     gun_arsenal[GUN_TYPE_HANDGUN].bullets = 100;

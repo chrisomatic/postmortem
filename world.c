@@ -42,7 +42,6 @@ static void load_map_file(const char* file_path)
 
     memset(&map, 0, sizeof(WorldMap));
 
-    int prop_index = 0;
     int byte_count = 0;
 
     uint8_t bytes[1024*1024] = {0};

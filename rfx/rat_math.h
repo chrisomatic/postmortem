@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+
 #define PI        3.14159265358f
 #define PI_OVER_2 1.57079632679f
 
@@ -24,6 +26,12 @@ typedef struct
 
 typedef struct
 {
+    Vector2f a;
+    Vector2f b;
+} LineSeg;
+
+typedef struct
+{
     float x,y,z;
 } Vector3f;
 
@@ -32,6 +40,12 @@ typedef struct
     Vector2f position;
     Vector2f tex_coord;
 } Vertex;
+
+typedef struct
+{
+    Vector2f pos;
+    Vector3f color;
+} LinePoint;
 
 typedef struct 
 {
@@ -43,6 +57,14 @@ typedef struct
     float x,y;
     float w,h;
 } Rect;
+
+typedef struct
+{
+    Vector2f p0;
+    Vector2f p1;
+    Vector2f p2;
+    Vector2f p3;
+} Rect2;
 
 extern Matrix IDENTITY_MATRIX;
 
@@ -56,3 +78,6 @@ void dot_product_mat(Matrix a, Matrix b, Matrix* result);
 void print_matrix(Matrix* mat);
 float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b);
 
+bool are_line_segs_intersecting(LineSeg* l1, LineSeg* l2);
+bool is_line_seg_intersecting_rect(LineSeg* l, Rect* r);
+bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check);

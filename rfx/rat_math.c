@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <math.h>
 
+#include "gfx.h"
+
 #include "rat_math.h"
 
 Matrix IDENTITY_MATRIX = {
@@ -123,6 +125,104 @@ void dot_product_mat(Matrix a, Matrix b, Matrix* result)
                 a.m[i][3] * b.m[3][j];
         }
     }
+}
+
+
+void mult_v2f_mat4(Vector2f* v, Matrix* m, Vector2f* result)
+{
+    // assuming w is 1.0 for Vector
+    result->x = (m->m[0][0] * v->x + m->m[0][1] * v->y + m->m[0][3]);
+    result->y = (m->m[1][0] * v->x + m->m[1][1] * v->y + m->m[1][3]);
+}
+
+
+bool onSegment(Vector2f p, Vector2f q, Vector2f r)
+{
+    if (q.x <= MAX(p.x, r.x) && q.x >= MIN(p.x, r.x) &&
+        q.y <= MAX(p.y, r.y) && q.y >= MIN(p.y, r.y))
+       return true;
+  
+    return false;
+}
+  
+int orientation(Vector2f p, Vector2f q, Vector2f r)
+{
+    int val = (q.y - p.y) * (r.x - q.x) -
+              (q.x - p.x) * (r.y - q.y);
+  
+    if (val == 0) return 0;  // collinear
+  
+    return (val > 0)? 1: 2; // clock or counterclock wise
+}
+  
+bool doIntersect(Vector2f p1, Vector2f q1, Vector2f p2, Vector2f q2)
+{
+    // Find the four orientations needed for general and
+    // special cases
+    int o1 = orientation(p1, q1, p2);
+    int o2 = orientation(p1, q1, q2);
+    int o3 = orientation(p2, q2, p1);
+    int o4 = orientation(p2, q2, q1);
+  
+    // General case
+    if (o1 != o2 && o3 != o4)
+        return true;
+  
+    // Special Cases
+    if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+    if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+    if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+    if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+  
+    return false; // Doesn't fall in any of the above cases
+}
+
+bool is_line_seg_intersecting_rect(LineSeg* l, Rect* r)
+{
+    // rect segs
+    LineSeg r00 = {{r->x,r->y},{r->x+r->w,r->y}}; // top
+    LineSeg r01 = {{r->x,r->y},{r->x,r->y+r->h}}; // left
+    LineSeg r10 = {{r->x+r->w,r->y},{r->x+r->w,r->y+r->h}}; // right
+    LineSeg r11 = {{r->x,r->y+r->h},{r->x+r->w,r->y+r->h}}; // bottom
+
+    bool b00 = doIntersect(r00.a,r00.b,l->a,l->b);//are_line_segs_intersecting(&r00,l);
+    if(b00) return true;
+
+    bool b01 = doIntersect(r01.a,r01.b,l->a,l->b);//are_line_segs_intersecting(&r01,l);
+    if(b01) return true;
+
+    bool b10 = doIntersect(r10.a,r10.b,l->a,l->b);//are_line_segs_intersecting(&r10,l);
+    if(b10) return true;
+
+    bool b11 = doIntersect(r11.a,r11.b,l->a,l->b);//are_line_segs_intersecting(&r11,l);
+    if(b11) return true;
+
+    return false;
+}
+
+bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check)
+{
+    // prior_s is the rect for t-1
+    // check rect is the thing we're checking to see if s is intersecting it
+
+    LineSeg s00 = {{prior_s->x, prior_s->y},{curr_s->x, curr_s->y}};
+    LineSeg s01 = {{prior_s->x+prior_s->w, prior_s->y},{curr_s->x+curr_s->w, curr_s->y}};
+    LineSeg s10 = {{prior_s->x, prior_s->y+prior_s->h},{curr_s->x, curr_s->y+curr_s->h}};
+    LineSeg s11 = {{prior_s->x+prior_s->w, prior_s->y+prior_s->h},{curr_s->x+curr_s->w, curr_s->y+curr_s->h}};
+
+    bool b00 = is_line_seg_intersecting_rect(&s00, check);
+    if(b00) return true;
+
+    bool b01 = is_line_seg_intersecting_rect(&s01, check);
+    if(b01) return true;
+    
+    bool b10 = is_line_seg_intersecting_rect(&s10, check);
+    if(b10) return true;
+
+    bool b11 = is_line_seg_intersecting_rect(&s11, check);
+    if(b11) return true;
+
+    return false;
 }
 
 void get_scale_transform(Matrix* mat, Vector3f* scale)
