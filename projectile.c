@@ -5,6 +5,7 @@
 #include <math.h>
 #include "rat_math.h"
 #include "window.h"
+#include "world.h"
 #include "gfx.h"
 #include "log.h"
 #include "gun.h"
@@ -75,16 +76,6 @@ void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle)
 
 }
 
-static bool is_colliding(Rect* a, Rect* b)
-{
-    bool overlap = (
-        a->x < (b->x+b->w) && (a->x+a->w) > b->x &&
-        a->y < (b->y+b->h) && (a->y+a->h) > b->y
-    );
-
-    return overlap;
-}
-
 void projectile_update(float delta_t)
 {
     for(int i = 0; i < projectile_count; ++i)
@@ -103,7 +94,7 @@ void projectile_update(float delta_t)
                 .h = proj->h
             };
 
-            if(is_colliding(&p, &zombies[j].hit_box))
+            if(rectangles_colliding(&p, &zombies[j].hit_box))
             {
                 projectile_remove(i);
             }
@@ -118,6 +109,17 @@ void projectile_draw()
     for(int i = 0; i < projectile_count; ++i)
     {
         Projectile* proj = &projectiles[i];
-        gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0,proj->angle_deg,1.0);
+
+        Rect p = {
+            .x = proj->pos.x,
+            .y = proj->pos.y,
+            .w = proj->w,
+            .h = proj->h
+        };
+
+        if(is_in_camera_view(&p))
+        {
+            gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0,proj->angle_deg,1.0);
+        }
     }
 }

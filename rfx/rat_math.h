@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdbool.h>
+
+
 #define PI        3.14159265358f
 #define PI_OVER_2 1.57079632679f
 
@@ -56,3 +59,4 @@ void dot_product_mat(Matrix a, Matrix b, Matrix* result);
 void print_matrix(Matrix* mat);
 float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b);
 
+bool rectangles_colliding(Rect* a, Rect* b);

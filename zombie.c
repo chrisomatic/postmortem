@@ -5,6 +5,7 @@
 #include "window.h"
 #include "rat_math.h"
 #include "gfx.h"
+#include "world.h"
 
 #include "zombie.h"
 
@@ -132,9 +133,19 @@ void zombie_draw()
         Rect* cbox  = &zom->collision_box;
         Rect* hbox  = &zom->hit_box;
 
-        gfx_draw_image(zombie_image,(int)zom->pos.x,(int)zom->pos.y, COLOR_TINT_NONE,1.0,0.0,1.0);
-        gfx_draw_rect(cbox->x, cbox->y, cbox->w, cbox->h, 0x0000FF00, 1.0,1.0);
-        gfx_draw_rect(hbox->x, hbox->y, hbox->w, hbox->h, 0x00FFFF00, 1.0,1.0);
-    }
+        Rect r = {
+            .x = zom->pos.x,
+            .y = zom->pos.y,
+            .w = zom->w,
+            .h = zom->h
+        };
 
+        if(is_in_camera_view(&r))
+        {
+            gfx_draw_image(zombie_image,(int)zom->pos.x,(int)zom->pos.y, COLOR_TINT_NONE,1.0,0.0,1.0);
+            gfx_draw_rect(cbox->x, cbox->y, cbox->w, cbox->h, 0x0000FF00, 1.0,1.0);
+            gfx_draw_rect(hbox->x, hbox->y, hbox->w, hbox->h, 0x00FFFF00, 1.0,1.0);
+        }
+
+    }
 }

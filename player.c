@@ -7,6 +7,7 @@
 #include "camera.h"
 #include "projectile.h"
 #include "player.h"
+#include "world.h"
 
 Player player;
 
@@ -87,6 +88,12 @@ void player_update(double delta_t)
     // {
     //     printf("mouse_pos: %f,%f\n", mouse_x, mouse_y);
     // }
+
+    // int mr,mc,wr,wc;
+    // coords_to_map_grid(player.pos.x, player.pos.y, &mr, &mc);
+    // coords_to_world_grid(player.pos.x, player.pos.y, &wr, &wc);
+    // printf("Player x,y: %.1f,%.1f  |  Map row,col: %d,%d  |  World row,col: %d,%d\n", player.pos.x, player.pos.y, mr, mc, wr, wc);
+
 
     Vector3f player_pos = {player.pos.x + (player.w*player.scale)/2.0, (player.pos.y + (player.h*player.scale)/2.0), 0.0};
     Vector3f mouse_pos = {mouse_x, mouse_y, 0.0};

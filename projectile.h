@@ -8,6 +8,7 @@ typedef enum
     PROJECTILE_TYPE_MAX,
 } ProjectileType;
 
+
 void projectile_init();
 void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle);
 void projectile_update(float delta_t);
