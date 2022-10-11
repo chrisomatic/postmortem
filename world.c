@@ -107,8 +107,8 @@ void world_draw()
     get_camera_rect(&r);
     // printf("%.2f, %.2f, %.2f, %.2f\n", r.x,r.y,r.w,r.h);
     int r1,c1,r2,c2;
-    world_xy_to_grid(r.x, r.y, &r1, &c1);
-    world_xy_to_grid(r.x+r.w, r.y+r.h, &r2, &c2);
+    coords_to_map_grid(r.x, r.y, &r1, &c1);
+    coords_to_map_grid(r.x+r.w, r.y+r.h, &r2, &c2);
 
     for(int r = (r1-1); r < (r2+1); ++r)
     {
@@ -118,25 +118,12 @@ void world_draw()
             if(index == 0xFF) continue;
 
             float x,y;
-            world_grid_to_xy(r, c, &x, &y);
+            map_grid_to_coords(r, c, &x, &y);
 
             gfx_draw_sub_image(ground_sheet,index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0);
         }
     }
 
-
-}
-
-void world_xy_to_grid(float x, float y, int* row, int* col)
-{
-    *row = (int)y/WORLD_GRID_SIZE;
-    *col = (int)x/WORLD_GRID_SIZE;
-}
-
-void world_grid_to_xy(int row, int col, float* x, float* y)
-{
-    *x = (float)col*WORLD_GRID_SIZE;
-    *y = (float)row*WORLD_GRID_SIZE;
 }
 
 uint8_t map_get_tile_index(int row, int col)
@@ -144,4 +131,49 @@ uint8_t map_get_tile_index(int row, int col)
     if(row >= map.rows || col >= map.cols || row < 0 || col < 0)
         return 0xFF;
     return map.data[row*map.cols+col];
+}
+
+void coords_to_map_grid(float x, float y, int* row, int* col)
+{
+    *row = (int)y/MAP_GRID_PXL_SIZE;
+    *col = (int)x/MAP_GRID_PXL_SIZE;
+}
+
+void map_grid_to_coords(int row, int col, float* x, float* y)
+{
+    *x = (float)col*MAP_GRID_PXL_SIZE;
+    *y = (float)row*MAP_GRID_PXL_SIZE;
+}
+
+void coords_to_world_grid(float x, float y, int* row, int* col)
+{
+    *row = (int)y/(MAP_GRID_PXL_SIZE*WORLD_GRID_HEIGHT);
+    *col = (int)x/(MAP_GRID_PXL_SIZE*WORLD_GRID_WIDTH);
+}
+
+void world_grid_to_coords(int row, int col, float* x, float* y)
+{
+    *x = (float)col*(MAP_GRID_PXL_SIZE*WORLD_GRID_WIDTH);
+    *y = (float)row*(MAP_GRID_PXL_SIZE*WORLD_GRID_HEIGHT);
+}
+
+bool is_in_camera_view(Rect* r)
+{
+    Rect r1 = {0};
+    get_camera_rect(&r1);
+    return rectangles_colliding(&r1, r);
+}
+
+bool is_in_camera_view_xywh(float x, float y, float w, float h)
+{
+    Rect r1 = {0};
+    get_camera_rect(&r1);
+
+    Rect r2 = {0};
+    r2.x = x;
+    r2.y = y;
+    r2.w = w;
+    r2.h = h;
+
+    return rectangles_colliding(&r1, &r2);
 }

@@ -81,3 +81,5 @@ float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b);
 bool are_line_segs_intersecting(LineSeg* l1, LineSeg* l2);
 bool is_line_seg_intersecting_rect(LineSeg* l, Rect* r);
 bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check);
+
+bool rectangles_colliding(Rect* a, Rect* b);

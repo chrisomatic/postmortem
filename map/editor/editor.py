@@ -138,6 +138,11 @@ class Editor(QWidget):
 
         self.objects = []
 
+        self.right_click_cb = None
+
+        self.save_png = False
+        self.png_path = ""
+
         self.editor_undo()
 
         self.setMouseTracking(True)
@@ -326,6 +331,45 @@ class Editor(QWidget):
         x = col*self.tile_size
         return x,y
 
+
+    def draw_png(self):
+        if(not(self.save_png)): return
+
+        # size = self.editor.tile_size_actual
+        size = 2
+
+        tile_set = []
+        for i in range(len(self.tile_set)):
+            #  = self.editor.tile_set[i].scaledToHeight(int(self.zoom_ratio*o.img.height()))
+            img = self.tile_set[i].img.scaledToHeight(size)
+            # print(img.width(), img.height())
+            tile_set.append(img)
+
+        rows = self.board_height
+        cols = self.board_width
+
+        width = cols * size
+        height = rows * size
+        # print(width,height)
+        image = QImage(width, height, QImage.Format_RGB32)
+
+        painter = QPainter(image)
+        # painter.begin(image)
+
+        for r in range(rows):
+            for c in range(cols):
+                x = c*size
+                y = r*size
+                ti = self.board[r][c].tile_index
+                if(ti == 0xFF or ti == -1): continue
+                painter.drawImage(x,y,tile_set[ti])
+
+        painter.end()
+        image.save(self.png_path)
+
+        self.png_path = ""
+        self.save_png = False
+
     def draw_ghost(self, painter):
 
         x,y,x2,y2 = self.get_tool_area()
@@ -367,9 +411,10 @@ class Editor(QWidget):
     def paintEvent(self, event):
         # print("paint event")
 
+
+        self.draw_png()
+
         painter = QPainter(self)
-
-
         self.draw_terrain(painter)
         self.draw_objects(painter)
         self.draw_ghost(painter)
@@ -698,6 +743,17 @@ class Editor(QWidget):
 
             self.mouse_handle_tool("press")
 
+        elif(event.button() ==  Qt.RightButton):
+            if(self.curr_layer == 0):
+                self.mouse_x = event.pos().x()
+                self.mouse_y = event.pos().y()
+                self.mouse_row, self.mouse_col = self.xy_to_rc(self.mouse_x, self.mouse_y)
+                if(self.mouse_row < self.board_height and self.mouse_col < self.board_width):
+                    ti = self.board[self.mouse_row][self.mouse_col].tile_index
+                    if(not(self.right_click_cb is None)):
+                        self.right_click_cb(ti)
+
+
         self.update()
 
     def mouseMoveEvent(self, event):
@@ -971,9 +1027,8 @@ class MainWindow(QMainWindow):
         self.sld_pen = QSlider(Qt.Horizontal, self)
         self.sld_pen.setMinimum(1)
         self.sld_pen.setMaximum(64)
-        # self.sld_pen.setMaximumWidth(600)
-        self.sld_pen.valueChanged.connect(self.change_size)
-        self.sld_pen.setToolTip("Change the brush size for the pen tool.")
+        self.sld_pen.valueChanged.connect(self.change_pen_size)
+        self.sld_pen.setToolTip("Change the brush size for the pen tool\nPress '-' to decrease the size, '=' to increase")
 
         self.sld_zoom = QSlider(Qt.Horizontal, self)
         self.zoom_values = [1/32,1/16,1/8,.25,.5,1,2,4,8,16]
@@ -1174,6 +1229,32 @@ class MainWindow(QMainWindow):
         self.save_timer.timeout.connect(self.save_timer_cb)
         self.save_timer.start(1000*60)
 
+        self.editor.right_click_cb = self.right_click_cb
+
+    def right_click_cb(self, tile_index):
+        if(tile_index is None): return
+        if(tile_index == -1):
+            item = self.tile_selector.item(0)
+            item.setSelected(True)
+            self.tile_selector_clicked(None)
+        else:
+            item = self.tile_selector.item(tile_index+1)
+            item.setSelected(True)
+            self.tile_selector_clicked(None)
+
+    def incr_tile_selection(self, incr):
+        selected = self.tile_selector.selectedItems()
+        if(len(selected) == 0): return
+
+        model_index = self.tile_selector.indexFromItem(selected[0])
+        idx = model_index.row()
+
+        new_idx = bound(idx+incr, 0, self.tile_selector.count())
+        item = self.tile_selector.item(new_idx)
+        item.setSelected(True)
+        self.tile_selector_clicked(None)
+
+
     def save_timer_cb(self):
         self.auto_save("auto_save")
 
@@ -1189,7 +1270,6 @@ class MainWindow(QMainWindow):
 
     def scrolled(self):
         self.repaint()
-
 
     def repaint(self):
         self.update_scroll_info()
@@ -1250,10 +1330,56 @@ class MainWindow(QMainWindow):
             modifiers = QApplication.keyboardModifiers()
 
             if(modifiers == Qt.ControlModifier):
-                if(key == Qt.Key_C):
+                if(key == Qt.Key_S):
+                    if(os.path.isfile(self.map_path)):
+                        self.save_map(self.map_path)
+                    else:
+                        self.save_map("")
+
+                elif(key == Qt.Key_O):
+                    self.load_map("")
+
+                elif(key == Qt.Key_T):
+                    next_layer = self.editor.curr_layer+1
+                    if(next_layer >= len(self.layer_list)):
+                        next_layer = 0
+                    self.layer_combo.setCurrentIndex(next_layer)
+                    self.show_set_selector("")
+
+                elif(key == Qt.Key_D):
+                    lst = [x.lower() for x in self.tool_list]
+
+                    next_index = lst.index(self.editor.tool)+1
+                    if(next_index >= len(self.tool_list)):
+                        next_index = 0
+
+                    self.tool_combo.setCurrentIndex(next_index)
+                    self.change_tool("")
+
+                elif(key == Qt.Key_Z):
+                    self.undo()
+
+                elif(key == Qt.Key_C):
                     self.custom_close()
 
+
             elif(modifiers == Qt.NoModifier):
+                # print(key)
+
+                if(key == Qt.Key_Minus):
+                    self.incr_pen_slider(-1)
+
+                elif(key == Qt.Key_Equal):
+                    self.incr_pen_slider(1)
+
+                elif(key == Qt.Key_1):
+                    self.incr_tile_selection(-1)
+                elif(key == Qt.Key_2):
+                    self.incr_tile_selection(1)
+
+                elif(key == Qt.Key_Q):
+                    self.custom_close()
+
                 if(key == Qt.Key_T):
                     row = 0
                     col = 0
@@ -1266,8 +1392,7 @@ class MainWindow(QMainWindow):
                             row += 1
                             col = 0
 
-                if(key == Qt.Key_Q):
-                    self.custom_close()
+
         return 0
 
     def custom_close(self):
@@ -1277,27 +1402,35 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         self.custom_close()
 
-
     def change_tool(self,text):
-        self.editor.tool = text.lower()
+        sel = self.tool_combo.currentText()
+        self.editor.tool = sel.lower()
+
         if(self.editor.tool == "fill"):
             self.editor.change_list_disabled = True
         else:
             self.editor.change_list_disabled = False
 
 
-    def change_size(self):
-        self.editor.pen_size = max(1,int(self.sld_pen.value()))
-        self.lbl_pen_size.setText("Pen Size: " + str(self.editor.pen_size))
+    def incr_pen_slider(self, incr):
+        value = self.sld_pen.value()
+        new_value = bound(value+incr, self.sld_pen.minimum(), self.sld_pen.maximum())
+        if(new_value == value): return
+        self.sld_pen.setValue(new_value)
 
-    def change_size(self):
+    def change_pen_size(self):
         self.editor.pen_size = max(1,int(self.sld_pen.value()))
         self.lbl_pen_size.setText("Pen Size: " + str(self.editor.pen_size))
         self.editor.mouseMoveEvent(None)
 
-
     def save_png(self):
-        return
+        options = QFileDialog.Options()
+        fileName, _ = QFileDialog.getSaveFileName(self,"Save",self.root,"PNG File (*.png);;All Files (*)", options=options)
+        if(not fileName):
+            return
+        self.editor.png_path = fileName
+        self.editor.save_png = True
+
 
     def undo(self):
         # print(self.editor.change_list)
@@ -1522,7 +1655,7 @@ class MainWindow(QMainWindow):
                     t = self.editor.tile_set[i]
                     if(t.img is None or t.empty): continue
                     item = QListWidgetItem()
-                    _str = 'Tile ' + str(i)
+                    _str = "Tile " + str(i)
                     item.setText(_str)
                     item.setIcon(QIcon(QPixmap.fromImage(t.img)))
                     items.append(item)
@@ -1549,16 +1682,21 @@ class MainWindow(QMainWindow):
 
         self.tile_selector.itemClicked.connect(self.tile_selector_clicked)
 
-        self.grid.addWidget(self.tile_selector, self.tile_selector_grid_row, self.tile_selector_grid_col, self.tile_selector_grid_rs, self.tile_selector_grid_cs)
-        self.widget.setLayout(self.grid)
-        self.setCentralWidget(self.widget)
-        self.eraser_item.setSelected(True)
-        # self.tile_selector.setSelection(0)
+        if(len(items) > 0):
+            item = self.tile_selector.item(1)
+            item.setSelected(True)
+            self.editor.selected_index = 0
+
 
     def tile_selector_clicked(self,curr):
-    
-        self.tile_selector.selectedItems()
-        itext = curr.text()
+
+        if(curr is None):
+            items = self.tile_selector.selectedItems()
+            if(len(items) == 0): return
+            itext = items[0].text()
+        else:
+            itext = curr.text()
+
         idx = -1
 
         if(itext == "Eraser"):
@@ -1568,7 +1706,6 @@ class MainWindow(QMainWindow):
                 idx = self.tile_selector_text.index(itext)
             else:
                 idx = self.tile_selector_text.index(itext)
-
 
         if(idx < 0):
             self.editor.selected_index = idx

@@ -153,7 +153,7 @@ void draw()
 {
     gfx_clear_buffer(0,0,0);
 
-    //world_draw();
+    world_draw();
     zombie_draw();
     player_draw();
     projectile_draw();

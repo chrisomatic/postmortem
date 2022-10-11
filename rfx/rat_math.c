@@ -309,3 +309,13 @@ float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b)
     float angle = acosf(d/(ma*mb));
     return angle;
 }
+
+bool rectangles_colliding(Rect* a, Rect* b)
+{
+    bool overlap = (
+        a->x < (b->x+b->w) && (a->x+a->w) > b->x &&
+        a->y < (b->y+b->h) && (a->y+a->h) > b->y
+    );
+
+    return overlap;
+}

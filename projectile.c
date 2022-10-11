@@ -5,6 +5,7 @@
 #include <math.h>
 #include "rat_math.h"
 #include "window.h"
+#include "world.h"
 #include "gfx.h"
 #include "log.h"
 #include "gun.h"
@@ -165,10 +166,22 @@ void projectile_draw()
     for(int i = 0; i < projectile_count; ++i)
     {
         Projectile* proj = &projectiles[i];
-        gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0,proj->angle_deg,1.0);
-        if(debug_enabled)
+
+        Rect p = {
+            .x = proj->pos.x,
+            .y = proj->pos.y,
+            .w = proj->w,
+            .h = proj->h
+        };
+
+        if(is_in_camera_view(&p))
         {
-            gfx_draw_rect(&proj->hurt_box, 0x0000FFFF, 1.0,1.0);
+            gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0,proj->angle_deg,1.0);
+
+            if(debug_enabled)
+            {
+                gfx_draw_rect(&proj->hurt_box, 0x0000FFFF, 1.0,1.0);
+            }
         }
     }
 }
