@@ -17,8 +17,8 @@ typedef struct
     //unsigned char* data;
     int w,h,n;
     Rect visible_rect;
-    bool is_set;
-    int element_width, element_height;
+    // bool is_set;
+    // int element_width, element_height;
     uint32_t texture;
     GFXSubImageData* sub_img_data;
 } GFXImage;
@@ -29,7 +29,6 @@ void gfx_init(int width, int height);
 void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b);
 // Image
 int gfx_load_image(const char* image_path);
-// void gfx_get_image_visible_rect(GFXImage* img, unsigned char* img_data, Rect* ret);
 void gfx_get_image_visible_rect(int img_w, int img_h, int img_n, unsigned char* img_data, Rect* ret);
 int gfx_load_image_set(const char* image_path, int element_width, int element_height);
 void gfx_draw_rect(Rect* r, uint32_t color, float scale, float opacity);

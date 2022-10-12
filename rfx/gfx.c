@@ -49,7 +49,17 @@ static GLint loc_line_view;
 static GLint loc_line_proj;
 
 
-// static int image_find_first_visible_rowcol(int side, GFXImage* img, unsigned char* data);
+
+typedef struct
+{
+    int w,h,n;
+    unsigned char* data;
+    unsigned char* upright_data;
+} _Image;
+
+static bool load_image(const char* image_path, _Image* image);
+static int assign_image(GFXSubImageData* sub_image_data, _Image* image);
+
 static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int img_n, unsigned char* data);
 
 
@@ -73,7 +83,7 @@ void gfx_init(int width, int height)
         {{-0.5, +0.5},{0.0,1.0}},
         {{+0.5, +0.5},{1.0,1.0}},
         {{+0.5, -0.5},{1.0,0.0}},
-    }; 
+    };
 
     glGenBuffers(1, &quad_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
@@ -145,22 +155,75 @@ void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-int gfx_load_image(const char* image_path)
+static bool load_image(const char* image_path, _Image* image)
+{
+    image->data = stbi_load(image_path,&image->w,&image->h,&image->n,4);
+
+    if(image->data != NULL)
+    {
+        printf("Loaded image: %s (x: %d, y: %d, n: %d)\n", image_path, image->w, image->h, image->n);
+        image->upright_data = malloc(image->w*image->h*image->n*sizeof(image->data[0]));
+
+        for(int _y = 0; _y < image->h; ++_y)
+        {
+            int y = image->h - _y - 1;
+            for(int x = 0; x < image->w; ++x)
+            {
+                int index = (y*image->w + x)*image->n;
+                int upright_index = (_y*image->w + x)*image->n;
+                image->upright_data[upright_index+0] = image->data[index+0];
+                image->upright_data[upright_index+1] = image->data[index+1];
+                image->upright_data[upright_index+2] = image->data[index+2];
+                image->upright_data[upright_index+3] = image->data[index+3];
+            }
+        }
+
+        return true;
+    }
+    else
+    {
+        printf("Image data is NULL: %s\n", image_path);
+        return false;
+    }
+}
+
+static int assign_image(GFXSubImageData* sub_image_data, _Image* image)
 {
     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
     {
         if(gfx_images[i].texture == -1)
         {
             GFXImage* img = &gfx_images[i];
-            unsigned char* data = stbi_load(image_path,&img->w,&img->h,&img->n,4);
-            if(data == NULL)
-                return -1;
 
-            gfx_get_image_visible_rect(img->w, img->h, img->n, data, &img->visible_rect);
+            img->w = image->w;
+            img->h = image->h;
+            img->n = image->n;
+
+            printf("Assigning image to index: %d\n", i);
+
+            if(sub_image_data != NULL)
+            {
+                img->sub_img_data = calloc(1,sizeof(GFXSubImageData));
+                img->sub_img_data->element_count = sub_image_data->element_count;
+                img->sub_img_data->element_width = sub_image_data->element_width;
+                img->sub_img_data->element_height = sub_image_data->element_height;
+                img->sub_img_data->visible_rects = calloc(img->sub_img_data->element_count, sizeof(Rect));
+                for(int e = 0; e < img->sub_img_data->element_count; ++e)
+                {
+                    memcpy(&img->sub_img_data->visible_rects[e], &sub_image_data->visible_rects[e], sizeof(Rect));
+                }
+
+                printf("Image set: width: %d, height: %d, count: %d\n", img->sub_img_data->element_width, img->sub_img_data->element_height, img->sub_img_data->element_count);
+            }
+            else
+            {
+                gfx_get_image_visible_rect(img->w, img->h, img->n, image->upright_data, &img->visible_rect);
+                printf("Visible Rectangle: x: %.0f, y: %.0f, w: %.0f, h: %.0f\n", img->visible_rect.x, img->visible_rect.y, img->visible_rect.w, img->visible_rect.h);
+            }
 
             glGenTextures(1, &img->texture);
             glBindTexture(GL_TEXTURE_2D, img->texture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->data);
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -168,10 +231,6 @@ int gfx_load_image(const char* image_path)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
             glBindTexture(GL_TEXTURE_2D, 0);
-            stbi_image_free(data);
-
-            printf("Loaded image: %s (x: %d, y: %d, n: %d)\n",image_path,img->w,img->h,img->n);
-            printf("Visible Rectangle: x: %.0f, y: %.0f, w: %.0f, h: %.0f\n", img->visible_rect.x, img->visible_rect.y, img->visible_rect.w, img->visible_rect.h);
             return i;
         }
     }
@@ -179,7 +238,68 @@ int gfx_load_image(const char* image_path)
     return -1;
 }
 
-// void gfx_get_image_visible_rect(GFXImage* img, unsigned char* img_data, Rect* ret)
+int gfx_load_image(const char* image_path)
+{
+    _Image image = {0};
+    bool load = load_image(image_path, &image);
+    if(!load) return -1;
+
+    int idx = assign_image(NULL, &image);
+    free(image.data);
+    free(image.upright_data);
+
+    return idx;
+}
+
+int gfx_load_image_set(const char* image_path, int element_width, int element_height)
+{
+    _Image image = {0};
+    bool load = load_image(image_path, &image);
+    if(!load) return -1;
+
+    int num_in_row = (image.w / element_width);     //cols
+    int num_in_col = (image.h / element_height);    //rows
+    int element_count = num_in_row*num_in_col;
+
+    GFXSubImageData sid = {0};
+    sid.element_width = element_width;
+    sid.element_height = element_height;
+    sid.element_count = element_count;
+    sid.visible_rects = malloc(sid.element_count * sizeof(Rect));
+
+    int n = image.n;
+    unsigned char* temp_data = malloc(element_width*element_height*n*sizeof(unsigned char));
+
+    for(int i = 0; i < sid.element_count; ++i)
+    {
+        int start_x = (i % num_in_row) * element_width;
+        int start_y = (i / num_in_row) * element_height;
+        for(int y = 0; y < element_height; ++y)
+        {
+            for(int x = 0; x < element_width; ++x)
+            {
+                int index = ((start_y+y)*image.w + (start_x+x)) * n;
+                int sub_index = (y*element_width + x) * n;
+                temp_data[sub_index] = image.upright_data[index];
+                temp_data[sub_index+1] = image.upright_data[index+1];
+                temp_data[sub_index+2] = image.upright_data[index+2];
+                temp_data[sub_index+3] = image.upright_data[index+3];
+            }
+        }
+        gfx_get_image_visible_rect(element_width, element_height, 4, temp_data, &sid.visible_rects[i]);
+    }
+
+    int idx = assign_image(&sid, &image);
+
+    free(temp_data);
+    free(image.data);
+    free(image.upright_data);
+    free(sid.visible_rects);
+
+    return idx;
+}
+
+
 void gfx_get_image_visible_rect(int img_w, int img_h, int img_n, unsigned char* img_data, Rect* ret)
 {
     int top = image_find_first_visible_rowcol(0, img_w, img_h, img_n, img_data);
@@ -196,17 +316,6 @@ void gfx_get_image_visible_rect(int img_w, int img_h, int img_n, unsigned char* 
     ret->y = (float)top;
 }
 
-int gfx_load_image_set(const char* image_path, int element_width, int element_height)
-{
-    int img = gfx_load_image(image_path);
-
-    gfx_images[img].is_set = true;
-    gfx_images[img].element_width = element_width;
-    gfx_images[img].element_height = element_height;
-
-    return img;
-}
-
 void gfx_free_image(int img_index)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
@@ -215,6 +324,14 @@ void gfx_free_image(int img_index)
         return;
     }
     GFXImage* img = &gfx_images[img_index];
+
+    GFXSubImageData* sid = img->sub_img_data;
+    if(sid != NULL)
+    {
+        if(sid->visible_rects != NULL) free(sid->visible_rects);
+        free(sid);
+    }
+
     //stbi_image_free(img->data);
     memset(img, 0, sizeof(GFXImage));
     img->texture = -1;
@@ -253,7 +370,7 @@ void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, floa
     glUniformMatrix4fv(loc_shape_model,1,GL_TRUE,&model.m[0][0]);
     glUniformMatrix4fv(loc_shape_view,1,GL_TRUE,&view->m[0][0]);
     glUniformMatrix4fv(loc_shape_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
-    
+
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     glBindVertexArray(quad_vao);
@@ -342,14 +459,27 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint3
     }
 
     GFXImage* img = &gfx_images[img_index];
+    GFXSubImageData* sid = img->sub_img_data;
+
+    if(sid == NULL)
+    {
+        printf("Not a sub image set (%d)\n", img_index);
+        return false;
+    }
+
+    if(sprite_index >= sid->element_count)
+    {
+        printf("Invalid sprite index: %d (%d, %d)\n", sprite_index, img_index, sid->element_count);
+        return false;
+    }
 
     glUseProgram(program_sprite);
 
     Matrix model = {0};
 
-    Vector3f pos = {x+img->element_width/2.0,y+img->element_height/2.0,0.0};
+    Vector3f pos = {x+sid->element_width/2.0,y+sid->element_height/2.0,0.0};
     Vector3f rot = {0.0,0.0,rotation};
-    Vector3f sca = {scale*img->element_width,-scale*img->element_height,1.0};
+    Vector3f sca = {scale*sid->element_width,-scale*sid->element_height,1.0};
 
     get_model_transform(&pos,&rot,&sca,&model);
     Matrix* view = get_camera_transform();
@@ -358,8 +488,8 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint3
     uint8_t g = color >> 8;
     uint8_t b = color >> 0;
 
-    int num_in_row = (img->w / img->element_width); 
-    int num_in_col = (img->h / img->element_height); 
+    int num_in_row = (img->w / sid->element_width);
+    int num_in_col = (img->h / sid->element_height);
     //printf("num_in_row: %d, sprite_index: %d\n",num_in_row, sprite_index);
 
     glUniform3f(loc_sprite_tint_color,r/255.0,g/255.0,b/255.0);
@@ -456,7 +586,6 @@ void gfx_draw_lines()
 // side: 0=top,1=left,2=bottom,3=right
 static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int img_n, unsigned char* data)
 {
-    // NOTE: image data is flipped vertically when loaded
     if(side == 0 || side == 2)
     {
         bool prior_empty = true;
@@ -465,7 +594,7 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
 
             int y = _y;
             // change scan direction
-            if(side == 0)
+            if(side == 2)
                 y = img_h - _y - 1;
 
             bool row_empty = true;
@@ -473,26 +602,24 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
             for(int x = 0; x < img_w; ++x)
             {
                 int index = (y*img_w + x);
+                uint8_t r = *(data + (img_n*index) + 0);
+                uint8_t g = *(data + (img_n*index) + 1);
+                uint8_t b = *(data + (img_n*index) + 2);
                 uint8_t a = *(data + (img_n*index) + 3);
-                // if(img_w == 32) printf("%02x ", a);
-                if(a != 0)
+                if(a != 0 && !(r == 0xFF && g == 0 &&  b == 0xFF))
                 {
                     row_empty = false;
                     break;
                 }
             }
-            // if(img_w == 32) printf("\n");
 
             if(prior_empty && !row_empty)
             {
-                // 'flip' the y value so that y=0 is top of image (first row of data)
-                // printf("(tb) returning %d\n", y);
-                return (img_h - y - 1);
+                return y;
             }
             prior_empty = row_empty;
         }
 
-        // printf("(tb) returning from bottom\n");
         if(side == 2) return img_h-1;  //bottom
         return 0;   //top
     }
@@ -511,8 +638,11 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
             {
 
                 int index = (y*img_w + x);
+                uint8_t r = *(data + (img_n*index) + 0);
+                uint8_t g = *(data + (img_n*index) + 1);
+                uint8_t b = *(data + (img_n*index) + 2);
                 uint8_t a = *(data + (img_n*index) + 3);
-                if(a != 0)
+                if(a != 0 && !(r == 0xFF && g == 0 &&  b == 0xFF))
                 {
                     col_empty = false;
                     break;
@@ -521,13 +651,11 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
 
             if(prior_empty && !col_empty)
             {
-                // printf("(lr) returning %d\n", x);
                 return x;
             }
             prior_empty = col_empty;
         }
 
-        // printf("(lr) returning from bottom\n");
         if(side == 3) return img_w-1;
         return 0;
     }

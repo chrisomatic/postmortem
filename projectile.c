@@ -52,8 +52,11 @@ static void projectile_remove(int index)
 
 static void update_hurt_box(Projectile* proj)
 {
-    float img_w = gfx_images[projectile_image_set].element_width;
-    float img_h = gfx_images[projectile_image_set].element_height;
+    GFXSubImageData* sid = gfx_images[projectile_image_set].sub_img_data;
+    float img_w = sid->element_width;
+    float img_h = sid->element_height;
+    Rect* vr = &sid->visible_rects[proj->sprite_index];
+    // printf("%.0f, %.0f, %.0f, %.0f\n", vr->x, vr->y, vr->w, vr->h);
 
     memcpy(&proj->hurt_box_prior,&proj->hurt_box,sizeof(Rect));
 
