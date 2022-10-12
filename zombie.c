@@ -78,10 +78,7 @@ void zombie_init()
         zombies[i].pos.y = rand() % view_height;
         zombies[i].w = gfx_images[zombie_image].w;
         zombies[i].h = gfx_images[zombie_image].h;
-        zombies[i].vw = gfx_images[zombie_image].vw;
-        zombies[i].vh = gfx_images[zombie_image].vh;
-        zombies[i].vx = gfx_images[zombie_image].vx;
-        zombies[i].vy = gfx_images[zombie_image].vy;
+        memcpy(&zombies[i].visible_rect, &gfx_images[zombie_image].visible_rect, sizeof(Rect));
         zombies[i].action = ZOMBIE_ACTION_NONE;
         zombies[i].action_timer = 0;
         zombies[i].action_timer_max = (rand() % 100)/20.0 + 0.5;
@@ -105,10 +102,10 @@ static void update_zombie_boxes(Zombie* zom)
     zom->collision_box.w *= shrink_factor;
     zom->collision_box.h *= shrink_factor;
 
-    zom->hit_box.x = zom->pos.x+zom->vx;
-    zom->hit_box.y = zom->pos.y+zom->vy;
-    zom->hit_box.w = zom->vw;
-    zom->hit_box.h = zom->vh;
+    zom->hit_box.x = zom->pos.x+zom->visible_rect.x;
+    zom->hit_box.y = zom->pos.y+zom->visible_rect.y;
+    zom->hit_box.w = zom->visible_rect.w;
+    zom->hit_box.h = zom->visible_rect.h;
 
     // zom->hit_box.x = zom->pos.x;
     // zom->hit_box.y = zom->pos.y;

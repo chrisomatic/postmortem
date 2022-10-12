@@ -48,6 +48,10 @@ static GLint loc_line_opacity;
 static GLint loc_line_view;
 static GLint loc_line_proj;
 
+
+static int image_find_first_visible_rowcol(int side, GFXImage* img, unsigned char* data);
+
+
 #define MAX_LINES 100
 
 LinePoint line_points[2*MAX_LINES];
@@ -140,79 +144,6 @@ void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-// get last row or col that's empty
-// side: 0=top,1=left,2=bottom,3=right
-int scan_image_data(int side, GFXImage* img, unsigned char* data)
-{
-    // x,y (0,0) is the bottom of bottom left of the image data
-    if(side == 0 || side == 2)
-    {
-        bool prior_empty = false;
-        for(int _y = 0; _y < img->h; ++_y)
-        {
-            int y = _y;
-            if(side == 0)
-                y = img->h-1-_y;
-
-            bool row_empty = true;
-
-            for(int x = 0; x < img->w; ++x)
-            {
-                int index = (y*img->w + x);
-                uint8_t a = *(data + (img->n*index) + 3);
-                if(a != 0)
-                {
-                    row_empty = false;
-                    break;
-                }
-            }
-
-            if(prior_empty && !row_empty)
-            {
-                return y;
-            }
-            prior_empty = row_empty;
-        }
-
-        if(side == 0) return img->h-1;
-        return 0;
-    }
-    else if(side == 1 || side == 3)
-    {
-        bool prior_empty = false;
-        for(int _x = 0; _x < img->w; ++_x)
-        {
-            int x = _x;
-            if(side == 3)
-                x = img->w-1-_x;
-
-            bool col_empty = true;
-
-            for(int y = 0; y < img->h; ++y)
-            {
-
-                int index = (y*img->w + x);
-                uint8_t a = *(data + (img->n*index) + 3);
-                if(a != 0)
-                {
-                    col_empty = false;
-                    break;
-                }
-            }
-
-            if(prior_empty && !col_empty)
-            {
-                return x;
-            }
-            prior_empty = col_empty;
-        }
-
-        if(side == 3) return img->w-1;
-        return 0;
-    }
-    return -1;
-}
-
 int gfx_load_image(const char* image_path)
 {
     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
@@ -224,27 +155,7 @@ int gfx_load_image(const char* image_path)
             if(data == NULL)
                 return -1;
 
-            int top = scan_image_data(0, img, data);
-            int bottom = scan_image_data(2, img, data);
-            int vh = top-bottom+1;
-
-
-            int left = scan_image_data(1, img, data);
-            int right = scan_image_data(3, img, data);
-            int vw = right-left+1;
-
-            // if(i == 2)
-            // {
-            // printf("top: %d, bottom: %d\n", top, bottom);
-            // printf("vh: %d\n", vh);
-            // printf("left: %d, right: %d\n", left, right);
-            // printf("vw: %d\n", vw);
-            }
-
-            img->vw = vw;
-            img->vh = vh;
-            img->vx = left;
-            img->vy = bottom;
+            gfx_get_image_visible_rect(img, data, &img->visible_rect);
 
             glGenTextures(1, &img->texture);
             glBindTexture(GL_TEXTURE_2D, img->texture);
@@ -259,11 +170,28 @@ int gfx_load_image(const char* image_path)
             stbi_image_free(data);
 
             printf("Loaded image: %s (x: %d, y: %d, n: %d)\n",image_path,img->w,img->h,img->n);
+            printf("Visible Rectangle: x: %.0f, y: %.0f, w: %.0f, h: %.0f\n", img->visible_rect.x, img->visible_rect.y, img->visible_rect.w, img->visible_rect.h);
             return i;
         }
     }
 
     return -1;
+}
+
+void gfx_get_image_visible_rect(GFXImage* img, unsigned char* img_data, Rect* ret)
+{
+    int top = image_find_first_visible_rowcol(0, img, img_data);
+    int bottom = image_find_first_visible_rowcol(2, img, img_data);
+    int left = image_find_first_visible_rowcol(1, img, img_data);
+    int right = image_find_first_visible_rowcol(3, img, img_data);
+
+    int height = bottom - top + 1;  //top left is origin
+    int width = right - left + 1;
+
+    ret->w = (float)width;
+    ret->h = (float)height;
+    ret->x = (float)left;
+    ret->y = (float)top;
 }
 
 int gfx_load_image_set(const char* image_path, int element_width, int element_height)
@@ -519,4 +447,87 @@ void gfx_draw_lines()
 
     glUseProgram(0);
 
+}
+
+
+// get first row or col that's not empty
+// side: 0=top,1=left,2=bottom,3=right
+static int image_find_first_visible_rowcol(int side, GFXImage* img, unsigned char* data)
+{
+    // NOTE: image data is flipped vertically when loaded
+    if(side == 0 || side == 2)
+    {
+        bool prior_empty = true;
+        for(int _y = 0; _y < img->h; ++_y)
+        {
+
+            int y = _y;
+            // change scan direction
+            if(side == 0)
+                y = img->h - _y - 1;
+
+            bool row_empty = true;
+
+            for(int x = 0; x < img->w; ++x)
+            {
+                int index = (y*img->w + x);
+                uint8_t a = *(data + (img->n*index) + 3);
+                // if(img->w == 32) printf("%02x ", a);
+                if(a != 0)
+                {
+                    row_empty = false;
+                    break;
+                }
+            }
+            // if(img->w == 32) printf("\n");
+
+            if(prior_empty && !row_empty)
+            {
+                // 'flip' the y value so that y=0 is top of image (first row of data)
+                // printf("(tb) returning %d\n", y);
+                return (img->h - y - 1);
+            }
+            prior_empty = row_empty;
+        }
+
+        // printf("(tb) returning from bottom\n");
+        if(side == 2) return img->h-1;  //bottom
+        return 0;   //top
+    }
+    else if(side == 1 || side == 3)
+    {
+        bool prior_empty = true;
+        for(int _x = 0; _x < img->w; ++_x)
+        {
+            int x = _x;
+            if(side == 3)
+                x = img->w-_x-1;
+
+            bool col_empty = true;
+
+            for(int y = 0; y < img->h; ++y)
+            {
+
+                int index = (y*img->w + x);
+                uint8_t a = *(data + (img->n*index) + 3);
+                if(a != 0)
+                {
+                    col_empty = false;
+                    break;
+                }
+            }
+
+            if(prior_empty && !col_empty)
+            {
+                // printf("(lr) returning %d\n", x);
+                return x;
+            }
+            prior_empty = col_empty;
+        }
+
+        // printf("(lr) returning from bottom\n");
+        if(side == 3) return img->w-1;
+        return 0;
+    }
+    return -1;
 }
