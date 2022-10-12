@@ -6,7 +6,7 @@
 
 #include "gfx.h"
 
-#include "rat_math.h"
+#include "math2d.h"
 
 Matrix IDENTITY_MATRIX = {
     .m = {

@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "rat_math.h"
 #include "window.h"
 #include "camera.h"
 

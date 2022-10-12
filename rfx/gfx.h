@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rat_math.h"
+#include "math2d.h"
 
 #define MAX_GFX_IMAGES 256
 #define COLOR_TINT_NONE (0xFFFFFFFF)

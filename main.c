@@ -12,7 +12,7 @@
 #include "shader.h"
 #include "timer.h"
 #include "gfx.h"
-#include "rat_math.h"
+#include "math2d.h"
 #include "world.h"
 #include "camera.h"
 #include "player.h"
@@ -138,11 +138,9 @@ void update(double delta_t)
 {
     gfx_clear_lines();
 
-    Vector2f offset = {
-        player.w/2.0,
-        player.h/2.0
-    };
-    camera_move(player.pos.x + offset.x, player.pos.y + offset.y);
+    Vector2f offset = {player.w/2.0,player.h/2.0};
+    camera_move(player.phys.pos.x + offset.x, player.phys.pos.y + offset.y);
+
     world_update();
     zombie_update(delta_t);
     player_update(delta_t);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "physics.h"
 #include "gun.h"
 
 enum PlayerAction
@@ -19,14 +20,12 @@ enum PlayerAction
 
 typedef struct
 {
-    Vector2f pos;
-    Vector2f vel;
+    Physics phys;
 
     float w,h;
 
     float speed;
     float max_base_speed;
-    float max_speed;
     float angle;
     float scale;
 

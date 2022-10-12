@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "rat_math.h"
+#include "math2d.h"
 #include "timer.h"
 
 

@@ -5,7 +5,8 @@ mkdir bin
 gcc rfx/gfx.c \
     rfx/shader.c \
     rfx/timer.c \
-    rfx/rat_math.c \
+    rfx/physics.c \
+    rfx/math2d.c \
     rfx/camera.c \
     rfx/window.c \
     main.c \

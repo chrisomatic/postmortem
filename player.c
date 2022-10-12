@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "window.h"
-#include "rat_math.h"
+#include "math2d.h"
 #include "gfx.h"
 #include "camera.h"
 #include "projectile.h"
@@ -15,11 +15,11 @@ bool debug_enabled; // weird place for this variable
 
 void player_init()
 {
-    player.pos.x = 400.0;
-    player.pos.y = 300.0;
+    player.phys.pos.x = 400.0;
+    player.phys.pos.y = 300.0;
 
-    player.vel.x = 0.0;
-    player.vel.y = 0.0;
+    player.phys.vel.x = 0.0;
+    player.phys.vel.y = 0.0;
     player.w = 32;
     player.h = 48;
     player.sprite_index = 0;
@@ -27,7 +27,7 @@ void player_init()
 
     player.speed = 32.0;
     player.max_base_speed = 128.0;
-    player.max_speed = player.max_base_speed;
+    player.phys.max_linear_vel = player.max_base_speed;
     player.scale = 1.0;
 
     player.gun = gun_get(GUN_TYPE_HANDGUN);
@@ -57,8 +57,6 @@ bool prior_toggle_debug;
 
 void player_update(double delta_t)
 {
-    //printf("%u\n",player.keys);
-
     bool up               = IS_BIT_SET(player.keys,PLAYER_ACTION_UP);
     bool down             = IS_BIT_SET(player.keys,PLAYER_ACTION_DOWN);
     bool left             = IS_BIT_SET(player.keys,PLAYER_ACTION_LEFT);
@@ -100,18 +98,14 @@ void player_update(double delta_t)
     // }
 
     // int mr,mc,wr,wc;
-    // coords_to_map_grid(player.pos.x, player.pos.y, &mr, &mc);
-    // coords_to_world_grid(player.pos.x, player.pos.y, &wr, &wc);
-    // printf("Player x,y: %.1f,%.1f  |  Map row,col: %d,%d  |  World row,col: %d,%d\n", player.pos.x, player.pos.y, mr, mc, wr, wc);
+    // coords_to_map_grid(player.phys.pos.x, player.phys.pos.y, &mr, &mc);
+    // coords_to_world_grid(player.phys.pos.x, player.phys.pos.y, &wr, &wc);
+    // printf("Player x,y: %.1f,%.1f  |  Map row,col: %d,%d  |  World row,col: %d,%d\n", player.phys.pos.x, player.phys.pos.y, mr, mc, wr, wc);
 
 
-    Vector3f player_pos = {player.pos.x + (player.w*player.scale)/2.0, (player.pos.y + (player.h*player.scale)/2.0), 0.0};
+    Vector3f player_pos = {player.phys.pos.x + (player.w*player.scale)/2.0, (player.phys.pos.y + (player.h*player.scale)/2.0), 0.0};
     Vector3f mouse_pos = {mouse_x, mouse_y, 0.0};
     Vector3f dist = {mouse_pos.x - player_pos.x, mouse_pos.y - player_pos.y, 0.0};
-
-    //printf("mouse_pos: %f %f\n",mouse_pos.x, mouse_pos.y);
-    //printf("player pos: %f %f\n",player_pos.x, player_pos.y);
-    //printf("dist: %f, %f\n",dist.x, dist.y);
 
     //float angle = get_angle_between_vectors_rad(&dist, &x_axis);
     player.angle = calc_angle_rad(mouse_pos.x, mouse_pos.y, player_pos.x, player_pos.y);
@@ -139,8 +133,8 @@ void player_update(double delta_t)
             player.sprite_index = 1; // down-left
 
         // update gun
-        player.gun.pos.x = player.pos.x;
-        player.gun.pos.y = player.pos.y;
+        player.gun.pos.x = player.phys.pos.x;
+        player.gun.pos.y = player.phys.pos.y;
         player.gun.angle = player.angle;
 
         if(primary_action)
@@ -170,59 +164,22 @@ void player_update(double delta_t)
     
     gun_update(&player.gun,delta_t);
 
-    player.max_speed = player.max_base_speed;
+    player.phys.max_linear_vel = player.max_base_speed;
 
     if(run)
     {
         accel.x *= 2.0;
         accel.y *= 2.0;
-        player.max_speed *= 2.0;
+        player.phys.max_linear_vel *= 2.0;
     }
 
-    float friction = 16.0f;
-
-    if(accel.x == 0.0)
-    {
-        // apply friction in x direction
-        float abs_vel_x = ABS(player.vel.x);
-
-        if(abs_vel_x > 0.0)
-        {
-            float val_x = MIN(friction, abs_vel_x);
-            player.vel.x += (player.vel.x > 0 ? -val_x : val_x); // friction
-        }
-    }
-
-    if(accel.y == 0.0)
-    {
-        // apply friction in y direction
-        float abs_vel_y = ABS(player.vel.y);
-        if(abs_vel_y > 0.0)
-        {
-            float val_y = MIN(friction, abs_vel_y);
-            player.vel.y += (player.vel.y > 0 ? -val_y : val_y); // friction
-        }
-    }
-
-    player.vel.x += accel.x*delta_t*TARGET_FPS;
-    player.vel.y += accel.y*delta_t*TARGET_FPS;
-
-    player.vel.x = RANGE(player.vel.x, -player.max_speed,player.max_speed);
-    player.vel.y = RANGE(player.vel.y, -player.max_speed,player.max_speed);
-
-    player.pos.x += delta_t*player.vel.x;
-    player.pos.y += delta_t*player.vel.y;
-
-    // limit range
-    player.pos.x = MAX(player.pos.x, 0.0);
-    player.pos.y = MAX(player.pos.y, 0.0);
-
-    //printf("player pos: %f %f\n", player.pos.x, player.pos.y);
+    physics_begin(&player.phys);
+    physics_add_friction(&player.phys, 16.0);
+    physics_add_force(&player.phys, accel.x, accel.y);
+    physics_simulate(&player.phys, delta_t);
 }
 
 void player_draw()
 {
-    //gfx_draw_image(player.image,(int)player.pos.x,(int)player.pos.y, COLOR_TINT_NONE,0.16,0.0,1.0);
-    gfx_draw_sub_image(player.image,player.sprite_index,player.pos.x,player.pos.y, COLOR_TINT_NONE,player.scale,0.0,1.0);
-    //gfx_draw_line2(100.0,50.0,200.0,200.0);
+    gfx_draw_sub_image(player.image,player.sprite_index,player.phys.pos.x,player.phys.pos.y, COLOR_TINT_NONE,player.scale,0.0,1.0);
 }

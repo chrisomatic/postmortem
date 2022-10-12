@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rat_math.h"
+#include "math2d.h"
 
 typedef struct
 {

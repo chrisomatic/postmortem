@@ -239,7 +239,6 @@ int gfx_load_image(const char* image_path)
             // printf("vh: %d\n", vh);
             // printf("left: %d, right: %d\n", left, right);
             // printf("vw: %d\n", vw);
-            }
 
             img->vw = vw;
             img->vh = vh;

@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
-#include "rat_math.h"
+#include "math2d.h"
 #include "window.h"
 #include "world.h"
 #include "gfx.h"
@@ -62,17 +62,6 @@ static void update_hurt_box(Projectile* proj)
     proj->hurt_box.w = proj->w;
     proj->hurt_box.h = proj->h;
 }
-
-static bool is_colliding(Rect* a, Rect* b)
-{
-    bool overlap = (
-        a->x < (b->x+b->w) && (a->x+a->w) > b->x &&
-        a->y < (b->y+b->h) && (a->y+a->h) > b->y
-    );
-
-    return overlap;
-}
-
 
 void projectile_init()
 {
@@ -146,6 +135,14 @@ void projectile_update(float delta_t)
             {
                 //printf("Bullet collided!\n");
                 proj->dead = true;
+
+                Vector2f force = {
+                    100.0*cos(RAD(proj->angle_deg)),
+                    100.0*sin(RAD(proj->angle_deg))
+                };
+                //zombie_push(j,&force);
+
+                zombie_hurt(j,proj->damage);
             }
 #endif
         }
