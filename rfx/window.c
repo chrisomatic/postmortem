@@ -235,6 +235,12 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                     exit(0);
                 }
                 break;
+            case GLFW_KEY_ESCAPE:
+                if(!window_is_cursor_enabled())
+                {
+                    window_enable_cursor();
+                }
+                break;
         }
     }
 
@@ -265,7 +271,14 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
             if(button == wk->key)
             {
                 if(action == GLFW_PRESS)
+                {
                     (*wk->keys) |= wk->bit_num;
+
+                    if(window_is_cursor_enabled())
+                    {
+                        window_disable_cursor();
+                    }
+                }
                 else
                     (*wk->keys) &= ~(wk->bit_num);
             }

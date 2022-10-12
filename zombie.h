@@ -35,6 +35,12 @@ typedef struct
     Rect collision_box;
     Rect hit_box;
 
+    // based on bottom left of collision_box
+    int map_row;
+    int map_col;
+    int world_row;
+    int world_col;
+
 } Zombie;
 
 extern Zombie zombies[MAX_ZOMBIES];
