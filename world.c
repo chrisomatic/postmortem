@@ -145,6 +145,17 @@ void map_grid_to_coords(int row, int col, float* x, float* y)
     *y = (float)row*MAP_GRID_PXL_SIZE;
 }
 
+int map_grid_to_index(int row, int col)
+{
+    return row*map.cols+col;
+}
+
+void index_to_map_grid(int index, int* row, int* col)
+{
+    *row = (index / map.cols);
+    *col = (index % map.cols);
+}
+
 void coords_to_world_grid(float x, float y, int* row, int* col)
 {
     *row = (int)y/(MAP_GRID_PXL_SIZE*WORLD_GRID_HEIGHT);
@@ -156,6 +167,19 @@ void world_grid_to_coords(int row, int col, float* x, float* y)
     *x = (float)col*(MAP_GRID_PXL_SIZE*WORLD_GRID_WIDTH);
     *y = (float)row*(MAP_GRID_PXL_SIZE*WORLD_GRID_HEIGHT);
 }
+
+int world_grid_to_index(int row, int col)
+{
+    return row*WORLD_GRID_WIDTH+col;
+}
+
+void index_to_world_grid(int index, int* row, int* col)
+{
+    *row = (index / WORLD_GRID_WIDTH);
+    *col = (index % WORLD_GRID_WIDTH);
+    // printf("%d, %d, %d\n", index, *row, *col);
+}
+
 
 bool is_in_camera_view(Rect* r)
 {
