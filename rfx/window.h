@@ -25,3 +25,7 @@ void window_swap_buffers();
 void window_controls_clear_keys();
 void window_controls_add_key(uint32_t* keys, int key, int bit_num);
 void window_controls_add_mouse_button(uint32_t* keys, int key, int bit_num);
+
+bool window_is_cursor_enabled();
+void window_enable_cursor();
+void window_disable_cursor();

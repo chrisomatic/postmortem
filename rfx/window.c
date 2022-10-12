@@ -65,6 +65,8 @@ bool window_init(int _view_width, int _view_height)
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
@@ -201,6 +203,22 @@ void window_controls_add_mouse_button(uint32_t* keys, int key, int bit_num)
     window_mouse_buttons[window_mouse_buttons_count].bit_num = bit_num;
 
     window_mouse_buttons_count++;
+}
+
+bool window_is_cursor_enabled()
+{
+    int mode = glfwGetInputMode(window,GLFW_CURSOR);
+    return (mode == GLFW_CURSOR_NORMAL);
+}
+
+void window_enable_cursor()
+{
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
+void window_disable_cursor()
+{
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods)

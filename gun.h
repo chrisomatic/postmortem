@@ -13,6 +13,7 @@ typedef struct
     Vector2f pos;
     float angle;
 
+    int type;
     int projectile_type;
 
     float power;
@@ -24,6 +25,7 @@ typedef struct
 
     int bullets;
     int bullets_max;
+
 } Gun;
 
 void gun_init();

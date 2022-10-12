@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 #include "window.h"
 #include "math2d.h"
 #include "gfx.h"
@@ -12,6 +13,9 @@
 Player player;
 
 bool debug_enabled; // weird place for this variable
+
+static int crosshair_image;
+static float mouse_x, mouse_y;
 
 void player_init()
 {
@@ -33,7 +37,7 @@ void player_init()
     player.gun = gun_get(GUN_TYPE_HANDGUN);
 
     player.image = gfx_load_image_set("img/human_set_small.png",32,48);
-    //player.image = gfx_load_image("img/soldier_f1.png");
+    crosshair_image = gfx_load_image("img/crosshair.png");
 
     window_controls_clear_keys();
 
@@ -45,8 +49,8 @@ void player_init()
     window_controls_add_key(&player.keys, GLFW_KEY_LEFT_SHIFT, PLAYER_ACTION_RUN);
     window_controls_add_key(&player.keys, GLFW_KEY_SPACE, PLAYER_ACTION_JUMP);
     window_controls_add_key(&player.keys, GLFW_KEY_E, PLAYER_ACTION_INTERACT);
-    window_controls_add_key(&player.keys, GLFW_KEY_R, PLAYER_ACTION_TOGGLE_FIRE);
-    window_controls_add_key(&player.keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_DEBUG);
+    window_controls_add_key(&player.keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_FIRE);
+    window_controls_add_key(&player.keys, GLFW_KEY_F2, PLAYER_ACTION_TOGGLE_DEBUG);
 
     window_controls_add_mouse_button(&player.keys, GLFW_MOUSE_BUTTON_LEFT, PLAYER_ACTION_PRIMARY_ACTION);
     window_controls_add_mouse_button(&player.keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
@@ -72,7 +76,13 @@ void player_update(double delta_t)
     //printf("%d %d %d %d %d %d %d %d %d\n", up, down, left, right, run, jump, interact, primary_action, secondary_action);
 
     if(toggle_fire && !prior_toggle_fire)
+    {
         player.gun_ready = !player.gun_ready;
+        //if(player.gun_ready)
+        //    window_disable_cursor();
+        //else
+        //    window_enable_cursor();
+    }
 
     prior_toggle_fire = toggle_fire;
 
@@ -88,7 +98,6 @@ void player_update(double delta_t)
     if(left)  { accel.x -= player.speed; }
     if(right) { accel.x += player.speed; }
 
-    float mouse_x, mouse_y;
     window_get_mouse_world_coords(&mouse_x, &mouse_y);
 
     // // DEBUG
@@ -133,8 +142,8 @@ void player_update(double delta_t)
             player.sprite_index = 1; // down-left
 
         // update gun
-        player.gun.pos.x = player.phys.pos.x;
-        player.gun.pos.y = player.phys.pos.y;
+        player.gun.pos.x = player.phys.pos.x - (16*cosf(player.angle));
+        player.gun.pos.y = player.phys.pos.y - (16*sinf(player.angle));
         player.gun.angle = player.angle;
 
         if(primary_action)
@@ -181,5 +190,25 @@ void player_update(double delta_t)
 
 void player_draw()
 {
+    bool gun_drawn = false;
+    if(player.gun_ready)
+    {
+        if(player.sprite_index >= 3 && player.sprite_index <= 5)
+        {
+            // facing up, drawing gun first
+            gun_draw(&player.gun);
+            gun_drawn = true;
+        }
+    }
+
     gfx_draw_sub_image(player.image,player.sprite_index,player.phys.pos.x,player.phys.pos.y, COLOR_TINT_NONE,player.scale,0.0,1.0);
+
+    if(player.gun_ready)
+    {
+        if(!gun_drawn)
+            gun_draw(&player.gun);
+
+        GFXImage* img = &gfx_images[crosshair_image];
+        gfx_draw_image(crosshair_image,mouse_x-(img->w/2.0),mouse_y-(img->h/2.0), 0x00FF00FF,1.0,0.0,0.80);
+    }
 }
