@@ -24,8 +24,7 @@ typedef struct
 
     ZombieAction action;
     float w,h;
-    float vw,vh;
-    float vx,vy;
+    Rect visible_rect;
     float speed;
     float action_timer;
     float action_timer_max;
