@@ -73,6 +73,7 @@ void projectile_init()
 
 void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle)
 {
+    // angle += PI;
     if(projectile_count >= MAX_PROJECTILES)
     {
         LOGW("Too many projectiles!");
@@ -85,6 +86,7 @@ void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle)
     memset(proj,0, sizeof(Projectile));
 
     float speed = gun->fire_speed;
+    // speed = 0.1;
 
     proj->sprite_index = sprite_index;
     proj->damage = gun->power + proj->power;
@@ -92,9 +94,9 @@ void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle)
     proj->pos.y = y;
     proj->w = 4;
     proj->h = 4;
-    proj->angle_deg = DEG(angle-PI);
-    proj->vel.x = speed*cos(angle-PI);
-    proj->vel.y = speed*sin(angle-PI);
+    proj->angle_deg = DEG(angle);
+    proj->vel.x = speed*cosf(angle);
+    proj->vel.y = speed*sinf(angle);
     proj->dead = false;
 
     float vel = sqrt(proj->vel.x*proj->vel.x + proj->vel.y*proj->vel.y);
@@ -122,7 +124,7 @@ void projectile_update(float delta_t)
         }
 
         proj->pos.x += delta_t*proj->vel.x;
-        proj->pos.y += delta_t*proj->vel.y;
+        proj->pos.y -= delta_t*proj->vel.y; // @minus
 
         update_hurt_box(proj);
 
@@ -140,8 +142,8 @@ void projectile_update(float delta_t)
                 proj->dead = true;
 
                 Vector2f force = {
-                    100.0*cos(RAD(proj->angle_deg)),
-                    100.0*sin(RAD(proj->angle_deg))
+                    100.0*cosf(RAD(proj->angle_deg)),
+                    100.0*sinf(RAD(proj->angle_deg))
                 };
                 //zombie_push(j,&force);
 
@@ -176,7 +178,8 @@ void projectile_draw()
 
         if(is_in_camera_view(&p))
         {
-            gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0,proj->angle_deg,1.0);
+            // gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0,proj->angle_deg-180,1.0);
+            gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0);
 
             if(debug_enabled)
             {

@@ -197,7 +197,7 @@ void zombie_update(float delta_t)
         }
         if(zom->push_vel.y > 0.0)
         {
-            accel.y += zom->push_vel.y;
+            accel.y -= zom->push_vel.y;
         }
 
         physics_begin(&zom->phys);

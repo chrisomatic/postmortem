@@ -21,6 +21,10 @@ void gun_init()
     gun_arsenal[GUN_TYPE_HANDGUN].bullets_max = 100;
     gun_arsenal[GUN_TYPE_HANDGUN].projectile_type = PROJECTILE_TYPE_BULLET;
     gun_arsenal[GUN_TYPE_HANDGUN].type = GUN_TYPE_HANDGUN;
+
+    GFXSubImageData* sid = gfx_images[gun_image_set].sub_img_data;
+    Rect* vr = &sid->visible_rects[GUN_TYPE_HANDGUN];
+    memcpy(&gun_arsenal[GUN_TYPE_HANDGUN].visible_rect, vr, sizeof(Rect));
 }
 
 Gun gun_get(GunType type)
@@ -51,5 +55,6 @@ void gun_update(Gun* gun, float delta_t)
 
 void gun_draw(Gun* gun)
 {
+    // gfx_draw_sub_image(gun_image_set,gun->type,gun->pos.x,gun->pos.y, COLOR_TINT_NONE,1.0,DEG(gun->angle+PI),1.0);
     gfx_draw_sub_image(gun_image_set,gun->type,gun->pos.x,gun->pos.y, COLOR_TINT_NONE,1.0,DEG(gun->angle),1.0);
 }

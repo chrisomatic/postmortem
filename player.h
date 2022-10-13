@@ -21,6 +21,7 @@ enum PlayerAction
 typedef struct
 {
     Physics phys;
+    Rect visible_rect;
 
     float w,h;
 

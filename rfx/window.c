@@ -50,6 +50,8 @@ bool window_init(int _view_width, int _view_height)
 
     // printf("vw: %d, vh: %d\n", view_width, view_height);
     window = glfwCreateWindow(view_width,view_height,"Example",NULL,NULL);
+    glfwMaximizeWindow(window);
+    // window = glfwCreateWindow(view_width,view_height,"Postmortem",glfwGetPrimaryMonitor(),NULL);
 
     if(window == NULL)
     {

@@ -83,3 +83,5 @@ bool is_line_seg_intersecting_rect(LineSeg* l, Rect* r);
 bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check);
 
 bool rectangles_colliding(Rect* a, Rect* b);
+
+int angle_sector(float angle, int num_sectors);

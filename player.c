@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include <math.h>
 #include "window.h"
 #include "math2d.h"
@@ -20,7 +21,7 @@ static float mouse_x, mouse_y;
 void player_init()
 {
     player.phys.pos.x = 400.0;
-    player.phys.pos.y = 300.0;
+    player.phys.pos.y = 1000.0;
 
     player.phys.vel.x = 0.0;
     player.phys.vel.y = 0.0;
@@ -117,39 +118,68 @@ void player_update(double delta_t)
     Vector3f dist = {mouse_pos.x - player_pos.x, mouse_pos.y - player_pos.y, 0.0};
 
     //float angle = get_angle_between_vectors_rad(&dist, &x_axis);
-    player.angle = calc_angle_rad(mouse_pos.x, mouse_pos.y, player_pos.x, player_pos.y);
+    player.angle = calc_angle_rad(player_pos.x, player_pos.y, mouse_pos.x, mouse_pos.y);
     float angle_deg = DEG(player.angle);
-
+    printf("player angle: %.2f\n", angle_deg);
     //printf("angle_deg: %f\n",angle_deg);
+
 
     if(player.gun_ready)
     {
-        if(angle_deg >= 337.5 ||  angle_deg < 22.5)
-            player.sprite_index = 2; // left
-        else if(angle_deg >= 22.5 && angle_deg < 67.5)
-            player.sprite_index = 3; // up-left
-        else if(angle_deg >= 67.5 && angle_deg < 112.5)
-            player.sprite_index = 4; // up
-        else if(angle_deg >= 112.5 && angle_deg < 157.5)
-            player.sprite_index = 5; // up-right
-        else if(angle_deg >= 157.5 && angle_deg < 202.5)
-            player.sprite_index = 6; // right
-        else if(angle_deg >= 202.5 && angle_deg < 247.5)
-            player.sprite_index = 7; // down-right
-        else if(angle_deg >= 247.5 && angle_deg < 292.5)
-            player.sprite_index = 0; // down
-        else if(angle_deg >= 292.5 && angle_deg < 337.5)
-            player.sprite_index = 1; // down-left
 
-        // update gun
-        player.gun.pos.x = player.phys.pos.x - (16*cosf(player.angle));
-        player.gun.pos.y = player.phys.pos.y - (16*sinf(player.angle));
-        player.gun.angle = player.angle;
+        int sector = angle_sector(angle_deg, 16);
 
-        if(primary_action)
+        if(sector == 15 || sector == 0)  // right
         {
-            gun_fire(&player.gun);
+            player.sprite_index = 6;
         }
+        else if(sector == 1 || sector == 2)  // up-right
+        {
+            player.sprite_index = 5;
+        }
+        else if(sector == 3 || sector == 4)  // up
+        {
+            player.sprite_index = 4;
+        }
+        else if(sector == 5 || sector == 6)  // up-left
+        {
+            player.sprite_index = 3;
+        }
+        else if(sector == 7 || sector == 8)  // left
+        {
+            player.sprite_index = 2;
+        }
+        else if(sector == 9 || sector == 10)  // down-left
+        {
+            player.sprite_index = 1;
+        }
+        else if(sector == 11 || sector == 12)  // down
+        {
+            player.sprite_index = 0;
+        }
+        else if(sector == 13 || sector == 14)  // down-right
+        {
+            player.sprite_index = 7;
+        }
+
+        // if(angle_deg >= 337.5 ||  angle_deg < 22.5)
+        //     player.sprite_index = 2; // left
+        // else if(angle_deg >= 22.5 && angle_deg < 67.5)
+        //     player.sprite_index = 3; // up-left
+        // else if(angle_deg >= 67.5 && angle_deg < 112.5)
+        //     player.sprite_index = 4; // up
+        // else if(angle_deg >= 112.5 && angle_deg < 157.5)
+        //     player.sprite_index = 5; // up-right
+        // else if(angle_deg >= 157.5 && angle_deg < 202.5)
+        //     player.sprite_index = 6; // right
+        // else if(angle_deg >= 202.5 && angle_deg < 247.5)
+        //     player.sprite_index = 7; // down-right
+        // else if(angle_deg >= 247.5 && angle_deg < 292.5)
+        //     player.sprite_index = 0; // down
+        // else if(angle_deg >= 292.5 && angle_deg < 337.5)
+        //     player.sprite_index = 1; // down-left
+
+
     }
     else
     {
@@ -170,7 +200,28 @@ void player_update(double delta_t)
         else if(right)
             player.sprite_index = 6;
     }
-    
+
+    GFXSubImageData* sid = gfx_images[player.image].sub_img_data;
+    Rect* vr = &sid->visible_rects[player.sprite_index];
+    memcpy(&player.visible_rect, vr, sizeof(Rect));
+
+    if(player.gun_ready)
+    {
+
+        // update gun
+        // float gx = player.phys.pos.x + (-player.gun.visible_rect.x+player.gun.visible_rect.w+player.visible_rect.x+player.visible_rect.w/2.0)*cosf(player.angle);
+        // float gy = player.phys.pos.y - (-player.gun.visible_rect.y+player.gun.visible_rect.w+player.visible_rect.y+player.visible_rect.h/4.0)*sinf(player.angle);
+        float gx = player.phys.pos.x + 16*cosf(player.angle);
+        float gy = player.phys.pos.y - 16*sinf(player.angle);
+        player.gun.pos.x = gx;
+        player.gun.pos.y = gy;
+        player.gun.angle = player.angle;
+        if(primary_action)
+        {
+            gun_fire(&player.gun);
+        }
+    }
+
     gun_update(&player.gun,delta_t);
 
     player.phys.max_linear_vel = player.max_base_speed;

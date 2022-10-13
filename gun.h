@@ -11,6 +11,7 @@ typedef enum
 typedef struct
 {
     Vector2f pos;
+    Rect visible_rect;
     float angle;
 
     int type;
