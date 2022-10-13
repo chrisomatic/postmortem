@@ -76,6 +76,7 @@ void get_rotation_transform(Matrix* mat, Vector3f* rotation);
 void get_translate_transform(Matrix* mat, Vector3f* position);
 void dot_product_mat(Matrix a, Matrix b, Matrix* result);
 void print_matrix(Matrix* mat);
+void print_rect(Rect* r);
 float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b);
 
 bool are_line_segs_intersecting(LineSeg* l1, LineSeg* l2);
@@ -85,3 +86,6 @@ bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check);
 bool rectangles_colliding(Rect* a, Rect* b);
 
 int angle_sector(float angle, int num_sectors);
+float rangef(float arr[], int n, float* fmin, float* fmax);
+// double rangef(double arr[], int n, double* fmin, double* fmax);
+

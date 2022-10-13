@@ -13,7 +13,7 @@
 
 Player player;
 
-bool debug_enabled; // weird place for this variable
+bool debug_enabled = true; // weird place for this variable
 
 static int crosshair_image;
 static float mouse_x, mouse_y;
@@ -120,8 +120,7 @@ void player_update(double delta_t)
     //float angle = get_angle_between_vectors_rad(&dist, &x_axis);
     player.angle = calc_angle_rad(player_pos.x, player_pos.y, mouse_pos.x, mouse_pos.y);
     float angle_deg = DEG(player.angle);
-    printf("player angle: %.2f\n", angle_deg);
-    //printf("angle_deg: %f\n",angle_deg);
+    //printf("player angle_deg: %f\n",angle_deg);
 
 
     if(player.gun_ready)
@@ -161,24 +160,6 @@ void player_update(double delta_t)
         {
             player.sprite_index = 7;
         }
-
-        // if(angle_deg >= 337.5 ||  angle_deg < 22.5)
-        //     player.sprite_index = 2; // left
-        // else if(angle_deg >= 22.5 && angle_deg < 67.5)
-        //     player.sprite_index = 3; // up-left
-        // else if(angle_deg >= 67.5 && angle_deg < 112.5)
-        //     player.sprite_index = 4; // up
-        // else if(angle_deg >= 112.5 && angle_deg < 157.5)
-        //     player.sprite_index = 5; // up-right
-        // else if(angle_deg >= 157.5 && angle_deg < 202.5)
-        //     player.sprite_index = 6; // right
-        // else if(angle_deg >= 202.5 && angle_deg < 247.5)
-        //     player.sprite_index = 7; // down-right
-        // else if(angle_deg >= 247.5 && angle_deg < 292.5)
-        //     player.sprite_index = 0; // down
-        // else if(angle_deg >= 292.5 && angle_deg < 337.5)
-        //     player.sprite_index = 1; // down-left
-
 
     }
     else
@@ -252,7 +233,37 @@ void player_draw()
         }
     }
 
-    gfx_draw_sub_image(player.image,player.sprite_index,player.phys.pos.x,player.phys.pos.y, COLOR_TINT_NONE,player.scale,0.0,1.0);
+    // gfx_draw_sub_image(player.image,player.sprite_index,player.phys.pos.x,player.phys.pos.y, COLOR_TINT_NONE,player.scale,0.0,1.0);
+    // float px = player.phys.pos.x - player.visible_rect.x;
+    // float py = player.phys.pos.y - player.visible_rect.y;
+    float px = player.phys.pos.x;
+    float py = player.phys.pos.y;
+    gfx_draw_sub_image(player.image, player.sprite_index, px, py, COLOR_TINT_NONE,player.scale,0.0,1.0);
+
+
+    if(debug_enabled)
+    {
+        Rect r = {0};
+        // Rect r = {
+        //     .x = px,
+        //     .y = py,
+        //     .w = 5,
+        //     .h = 5
+        // };
+
+        // // gfx_draw_rect(&r, 0x0000FF00, 1.0,1.0);
+
+        // r.x = player.phys.pos.x+player.visible_rect.x;
+        // r.y = player.phys.pos.y+player.visible_rect.y;
+        r.x = player.phys.pos.x;
+        r.y = player.phys.pos.y;
+        r.w = player.visible_rect.w;
+        r.h = player.visible_rect.h;
+        gfx_draw_rect(&r, 0x00FF0000, 1.0,1.0);
+
+    }
+
+
 
     if(player.gun_ready)
     {

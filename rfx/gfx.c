@@ -407,7 +407,10 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
 
     Matrix model = {0};
 
-    Vector3f pos = {x+img->w/2.0,y+img->h/2.0,0.0};
+    float vx = img->visible_rect.x;
+    float vy = img->visible_rect.y;
+
+    Vector3f pos = {x-vx+img->w/2.0,y-vy+img->h/2.0,0.0};
     Vector3f rot = {0.0,0.0,360.0-rotation};
     Vector3f sca = {scale*img->w,-scale*img->h,1.0};
 
@@ -473,11 +476,15 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint3
         return false;
     }
 
+
+    float vx = sid->visible_rects[sprite_index].x;
+    float vy = sid->visible_rects[sprite_index].y;
+
     glUseProgram(program_sprite);
 
     Matrix model = {0};
 
-    Vector3f pos = {x+sid->element_width/2.0,y+sid->element_height/2.0,0.0};
+    Vector3f pos = {x-vx+sid->element_width/2.0,y-vy+sid->element_height/2.0,0.0};
     Vector3f rot = {0.0,0.0,360.0-rotation};
     Vector3f sca = {scale*sid->element_width,-scale*sid->element_height,1.0};
 

@@ -60,10 +60,87 @@ static void update_hurt_box(Projectile* proj)
 
     memcpy(&proj->hurt_box_prior,&proj->hurt_box,sizeof(Rect));
 
-    proj->hurt_box.x = proj->pos.x + (img_w - proj->w)/2.0;
-    proj->hurt_box.y = proj->pos.y + (img_h - proj->h)/2.0;
-    proj->hurt_box.w = proj->w;
-    proj->hurt_box.h = proj->h;
+    proj->hurt_box.x = proj->pos.x;
+    proj->hurt_box.y = proj->pos.y;
+    proj->hurt_box.w = vr->w;
+    proj->hurt_box.h = vr->h;
+
+
+    // proj->angle_deg = 45.0;
+    // speed = 0.1;
+
+    // proj->hurt_box.x = proj->pos.x;
+    // proj->hurt_box.y = proj->pos.y;
+    // proj->hurt_box.w = vr->w;
+    // proj->hurt_box.h = vr->h;
+
+    // // float a = RAD(360.0-proj->angle_deg);
+    // float a = RAD(proj->angle_deg);
+    // float xa = cos(a);
+    // float ya = sin(a);
+
+    // float x_lst[4] = {0};
+    // float y_lst[4] = {0};
+    // // top left, bottom left, top right, bottom right
+    // x_lst[0] = (-vr->w/2.0)*xa;
+    // x_lst[1] = x_lst[0];
+    // x_lst[2] = (vr->w/2.0)*xa;
+    // x_lst[3] = x_lst[2];
+
+    // y_lst[0] = (vr->h/2.0)*ya;
+    // y_lst[1] = (-vr->h/2.0)*ya;
+    // y_lst[2] = y_lst[0];
+    // y_lst[3] = y_lst[1];
+
+    // // x_lst[0] = (-vr->w/2.0);
+    // // x_lst[1] = x_lst[0];
+    // // x_lst[2] = (vr->w/2.0);
+    // // x_lst[3] = x_lst[2];
+
+    // // y_lst[0] = (vr->h/2.0);
+    // // y_lst[1] = (-vr->h/2.0);
+    // // y_lst[2] = y_lst[0];
+    // // y_lst[3] = y_lst[1];
+
+    // // x_lst[0] *= xa;
+    // // x_lst[1] *= xa;
+    // // x_lst[2] *= xa;
+    // // x_lst[3] *= xa;
+    // // y_lst[0] *= ya;
+    // // y_lst[1] *= ya;
+    // // y_lst[2] *= ya;
+    // // y_lst[3] *= ya;
+
+    // float xmin,xmax,ymin,ymax;
+    // float xrange = rangef(x_lst, 4, &xmin, &xmax);
+    // float yrange = rangef(y_lst, 4, &ymin, &ymax);
+
+    // // proj->hurt_box.x = proj->pos.x - (xmin + vr->w/2.0);
+    // // proj->hurt_box.y = proj->pos.y - (ymin + vr->h/2.0);
+    // // proj->hurt_box.w = xrange;
+    // // proj->hurt_box.h = yrange;
+
+
+
+    // proj->hurt_box.x = proj->pos.x - vr->w/2.0 - xmin;
+    // proj->hurt_box.y = proj->pos.y - vr->h/2.0 - ymin;
+    // // proj->hurt_box.y = proj->pos.y + ymin;
+    // // proj->hurt_box.w = MAX(yrange,xrange);
+    // // proj->hurt_box.h = MAX(yrange,xrange);
+    // proj->hurt_box.w = xrange;
+    // proj->hurt_box.h = yrange;
+
+    // if(&projectiles[0] == proj)
+    // {
+    //     // printf("x0 %.2f\n", (-vr->w/2.0)*xa);
+    //     printf("deg: %.2f (%.2f), xa: %.2f, ya: %.2f\n", proj->angle_deg, a, xa, ya);
+    //     printf("p: %.1f, %.1f, %.0f, %.0f\n", proj->pos.x, proj->pos.y, vr->w, vr->h);
+    //     printf("x: %.1f, %.1f, %.1f\n", xmin,xmax,xrange);
+    //     printf("y: %.1f, %.1f, %.1f\n", ymin,ymax,yrange);
+    //     printf("ys: %.2f, %.2f\n", y_lst[0], y_lst[1]);
+    // }
+
+
 }
 
 void projectile_init()
@@ -86,7 +163,6 @@ void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle)
     memset(proj,0, sizeof(Projectile));
 
     float speed = gun->fire_speed;
-    // speed = 0.1;
 
     proj->sprite_index = sprite_index;
     proj->damage = gun->power + proj->power;

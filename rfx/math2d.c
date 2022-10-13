@@ -135,6 +135,11 @@ void print_matrix(Matrix* mat)
     }
 }
 
+void print_rect(Rect* r)
+{
+    printf("Rectangle (x,y,w,h): %.1f, %.1f, %.1f, %.1f\n", r->x, r->y, r->w, r->h);
+}
+
 void dot_product_mat(Matrix a, Matrix b, Matrix* result)
 {
     for(int i = 0; i < 4; ++i)
@@ -347,19 +352,22 @@ bool rectangles_colliding(Rect* a, Rect* b)
 int angle_sector(float angle_deg, int num_sectors)
 {
     if(num_sectors <= 1) return 0;
-
     float sector_range = 360.0 / num_sectors;
-
-    // int sector = 0;
-    // float angle = sector_offset;
-    // for(int i = 0; i < num_sectors ++i)
-    // {
-    //     if(angle <= )
-    // }
-
     int sector = (angle_deg) / sector_range;
-
     // printf("Num sectors: %d (%.1f), angle: %.1f, sector: %d\n", num_sectors, sector_range, angle, sector);
     return sector;
 }
 
+float rangef(float arr[], int n, float* fmin, float* fmax)
+{
+    *fmin = arr[0];
+    *fmax = arr[0];
+    for(int i = 0; i < n; ++i)
+    {
+        if(arr[i] < *fmin)
+            *fmin = arr[i];
+        if(arr[i] > *fmax)
+            *fmax = arr[i];
+    }
+    return (*fmax-*fmin);
+}

@@ -88,8 +88,8 @@ static void update_zombie_boxes(Zombie* zom)
 
     Rect* vr = &zom->visible_rect;
 
-    float x0 = zom->phys.pos.x + vr->x;
-    float y0 = zom->phys.pos.y + vr->y;
+    float x0 = zom->phys.pos.x;// + vr->x;
+    float y0 = zom->phys.pos.y;// + vr->y;
     float w = vr->w;
     float h = vr->h;
 
