@@ -51,8 +51,6 @@ static void wander(Zombie* zom, float delta_t)
         zom->action = rand() % ZOMBIE_ACTION_MAX;
         zom->action_timer_max = (rand() % 100)/50.0 + 0.5; // 0.5 to 2.0 seconds
     }
-
-
 }
 
 void zombie_init()

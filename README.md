@@ -9,14 +9,21 @@ This is a work-in-progress 2D game
 
 ## TODO
 
+- Add tile properties
+- Add collision between entities
+- Add objects
+- Add building blocks
+- Add chests
+- Add basic GUI
+
+## DONE
+
+- Add font support
 - Create hitboxes for Zombies
 - Add projectile collision
 - Draw only what is visible
 - Add draw\_line function
 - Add draw\_rect function
-
-## DONE
-
 - Write map loader
 - Do simple world tile drawing using atlas lookup
 - Add projectile support
