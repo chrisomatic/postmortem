@@ -88,8 +88,8 @@ static void update_zombie_boxes(Zombie* zom)
 
     Rect* vr = &zom->visible_rect;
 
-    float x0 = zom->phys.pos.x + vr->x;
-    float y0 = zom->phys.pos.y + vr->y;
+    float x0 = zom->phys.pos.x;// + vr->x;
+    float y0 = zom->phys.pos.y;// + vr->y;
     float w = vr->w;
     float h = vr->h;
 
@@ -197,7 +197,7 @@ void zombie_update(float delta_t)
         }
         if(zom->push_vel.y > 0.0)
         {
-            accel.y += zom->push_vel.y;
+            accel.y -= zom->push_vel.y;
         }
 
         physics_begin(&zom->phys);

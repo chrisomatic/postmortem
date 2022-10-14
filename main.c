@@ -48,6 +48,23 @@ void draw();
 
 int main(int argc, char* argv[])
 {
+    // float a;
+    // float deg = 0.0;
+    // deg = 0.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
+    // deg = 45.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
+    // deg = 90.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
+    // deg = 180.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
+    // deg = 270.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
+    // exit(0);
+
+
+    // angle_sector(0.0, 2);
+    // angle_sector(0.0, 2);
+    // exit(0);
+
+
+
+
     start_game();
     return 0;
 }

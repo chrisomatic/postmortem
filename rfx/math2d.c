@@ -49,28 +49,45 @@ void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Mat
 
 float calc_angle_rad(float x0, float y0, float x1, float y1)
 {
-    // printf("x: %f | %f        y: %f | %f\n", x0, x1, y0, y1);
+
+    // printf("%.2f, %.2f   %.2f, %.2f", x0, y0, x1, y1);
+    y0 = 10000.0-y0;
+    y1 = 10000.0-y1;
+    // printf("--->    %.2f, %.2f   %.2f, %.2f\n", x0, y0, x1, y1);
     bool xeq = FEQ(x0, x1);
     bool yeq = FEQ(y0, y1);
 
     if(xeq && yeq)
     {
+        // printf("ret: %d\n",__LINE__);
         return 0.0f;
     }
 
     if(xeq)
     {
         if(y1 > y0)
+        {
+            // printf("ret: %d\n",__LINE__);
             return PI_OVER_2;
+        }
         else
+        {
+            // printf("ret: %d\n",__LINE__);
             return PI_OVER_2*3;
+        }
     }
     else if(yeq)
     {
         if(x1 > x0)
+        {
+            // printf("ret: %d\n",__LINE__);
             return 0;
+        }
         else
+        {
+            // printf("ret: %d\n",__LINE__);
             return PI;
+        }
     }
     else
     {
@@ -81,8 +98,11 @@ float calc_angle_rad(float x0, float y0, float x1, float y1)
             float a = atanf(opp/adj);
             if(x1 > x0)
             {
+                // printf("opp: %.2f, adj: %.2f\n", opp, adj);
+                // printf("ret: %d\n",__LINE__);
                 return a;
             }
+            // printf("ret: %d\n",__LINE__);
             return PI+a;
         }
 
@@ -91,8 +111,11 @@ float calc_angle_rad(float x0, float y0, float x1, float y1)
         float a = atanf(opp/adj);
         if(x1 > x0)
         {
+            // printf("opp: %.2f, adj: %.2f\n", opp, adj);
+            // printf("ret: %d\n",__LINE__);
             return PI_OVER_2*3-a;
         }
+        // printf("ret: %d\n",__LINE__);
         return PI_OVER_2*3-a;
     }
 }
@@ -110,6 +133,11 @@ void print_matrix(Matrix* mat)
               );
         printf("\n");
     }
+}
+
+void print_rect(Rect* r)
+{
+    printf("Rectangle (x,y,w,h): %.1f, %.1f, %.1f, %.1f\n", r->x, r->y, r->w, r->h);
 }
 
 void dot_product_mat(Matrix a, Matrix b, Matrix* result)
@@ -318,4 +346,28 @@ bool rectangles_colliding(Rect* a, Rect* b)
     );
 
     return overlap;
+}
+
+// angle_deg: 0-360
+int angle_sector(float angle_deg, int num_sectors)
+{
+    if(num_sectors <= 1) return 0;
+    float sector_range = 360.0 / num_sectors;
+    int sector = (angle_deg) / sector_range;
+    // printf("Num sectors: %d (%.1f), angle: %.1f, sector: %d\n", num_sectors, sector_range, angle, sector);
+    return sector;
+}
+
+float rangef(float arr[], int n, float* fmin, float* fmax)
+{
+    *fmin = arr[0];
+    *fmax = arr[0];
+    for(int i = 0; i < n; ++i)
+    {
+        if(arr[i] < *fmin)
+            *fmin = arr[i];
+        if(arr[i] > *fmax)
+            *fmax = arr[i];
+    }
+    return (*fmax-*fmin);
 }
