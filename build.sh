@@ -14,7 +14,8 @@ gcc rfx/gfx.c \
     player.c \
     zombie.c \
     gun.c \
+    gui.c \
     projectile.c \
     -Irfx \
     -lglfw -lGLU -lGLEW -lGL -lm \
-    -o bin/example
+    -o bin/postmortem

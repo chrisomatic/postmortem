@@ -2,8 +2,8 @@
 
 #include <GLFW/glfw3.h>
 
-#define ASPECT_NUM 16.0f
-#define ASPECT_DEM  9.0f
+#define ASPECT_NUM  4.0f
+#define ASPECT_DEM  3.0f
 #define ASPECT_RATIO (ASPECT_NUM / ASPECT_DEM)
 
 #define TARGET_FPS 60.0f

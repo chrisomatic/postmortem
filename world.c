@@ -52,6 +52,8 @@ static void load_map_file(const char* file_path)
         bytes[byte_count++] = (uint8_t)c;
     }
 
+    fclose(fp);
+
     int idx = 0;
 
     map.id = bytes[idx++];
@@ -123,7 +125,6 @@ void world_draw()
             gfx_draw_sub_image(ground_sheet,index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0);
         }
     }
-
 }
 
 uint8_t map_get_tile_index(int row, int col)

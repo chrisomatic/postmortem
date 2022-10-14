@@ -8,6 +8,7 @@ out vec2 tex_coord0;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform vec4 tex;
 
 void main()
 {

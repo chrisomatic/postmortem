@@ -19,6 +19,8 @@
 #include "gun.h"
 #include "projectile.h"
 #include "zombie.h"
+#include "gui.h"
+#include "main.h"
 
 // Settings
 #define VIEW_WIDTH   800
@@ -27,6 +29,8 @@
 // =========================
 // Global Vars
 // =========================
+
+Timer game_timer = {0};
 
 // =========================
 // Function Prototypes
@@ -56,7 +60,6 @@ void start_game()
 {
     init();
 
-    Timer game_timer = {0};
     timer_set_fps(&game_timer,TARGET_FPS);
     timer_begin(&game_timer);
 
@@ -76,7 +79,6 @@ void start_game()
         draw();
 
         timer_wait_for_frame(&game_timer);
-        //printf("fps: %f\n",timer_get_prior_frame_fps(&game_timer));
         window_swap_buffers();
         t0 = t1;
 
@@ -149,12 +151,13 @@ void update(double delta_t)
 
 void draw()
 {
-    gfx_clear_buffer(0,0,0);
+    gfx_clear_buffer(50,50,50);
 
     world_draw();
     zombie_draw();
     player_draw();
     projectile_draw();
     gfx_draw_lines();
+    gui_draw();
 }
 

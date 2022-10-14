@@ -37,7 +37,7 @@ void player_init()
     player.gun = gun_get(GUN_TYPE_HANDGUN);
 
     player.image = gfx_load_image_set("img/human_set_small.png",32,48);
-    crosshair_image = gfx_load_image("img/crosshair.png");
+    crosshair_image = gfx_load_image("img/crosshair.png", true, false);
 
     window_controls_clear_keys();
 
@@ -73,7 +73,6 @@ void player_update(double delta_t)
     bool toggle_fire      = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_FIRE);
     bool toggle_debug     = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_DEBUG);
 
-    //printf("%d %d %d %d %d %d %d %d %d\n", up, down, left, right, run, jump, interact, primary_action, secondary_action);
 
     if(toggle_fire && !prior_toggle_fire)
     {

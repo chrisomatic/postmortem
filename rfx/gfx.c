@@ -15,6 +15,7 @@
 #include "gfx.h"
 
 static GLuint quad_vao, quad_vbo;
+static GLuint font_vao, font_vbo;
 static GLuint line_vao,line_vbo;
 
 GFXImage gfx_images[MAX_GFX_IMAGES] = {0};
@@ -48,6 +49,15 @@ static GLint loc_line_opacity;
 static GLint loc_line_view;
 static GLint loc_line_proj;
 
+static GLint loc_font_image;
+static GLint loc_font_fg_color;
+static GLint loc_font_bg_color;
+static GLint loc_font_tex;
+static GLint loc_font_px_range;
+static GLint loc_font_opacity;
+static GLint loc_font_model;
+static GLint loc_font_view;
+static GLint loc_font_proj;
 
 
 typedef struct
@@ -57,16 +67,84 @@ typedef struct
     unsigned char* upright_data;
 } _Image;
 
-static bool load_image(const char* image_path, _Image* image);
-static int assign_image(GFXSubImageData* sub_image_data, _Image* image);
+static bool load_image(const char* image_path, _Image* image, bool flip);
+static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool linear_filter);
 
 static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int img_n, unsigned char* data);
-
 
 #define MAX_LINES 100
 
 LinePoint line_points[2*MAX_LINES];
 int num_line_points = 0;
+
+typedef struct
+{
+    float l,b,r,t;
+} CharBox;
+
+typedef struct
+{
+    float advance;
+    CharBox plane_box;
+    CharBox pixel_box;
+    CharBox tex_coords;
+    float w,h;
+} FontChar;
+
+int font_image;
+FontChar font_chars[255];
+
+static void load_font()
+{
+    font_image = gfx_load_image("rfx/fonts/atlas.png", false, true);
+    printf("font image index: %d\n",font_image);
+
+    FILE* fp = fopen("rfx/fonts/atlas_layout.csv","r");
+
+    if(!fp)
+    {
+        LOGW("Failed to load font layout file");
+        return;
+    }
+
+    char line[256] = {0};
+
+    while(fgets(line,255,fp) != NULL)
+    {
+        int char_index = 0;
+        float advance, pl_l, pl_b, pl_r, pl_t,  px_l, px_b, px_r, px_t;
+
+        int n = sscanf(line,"%d,%f,%f,%f,%f,%f,%f,%f,%f,%f ",&char_index,&advance,&pl_l, &pl_b, &pl_r, &pl_t, &px_l, &px_b, &px_r, &px_t);
+
+        if(n != 10)
+            continue;
+
+        font_chars[char_index].advance = advance;
+
+        font_chars[char_index].plane_box.l = pl_l;
+        font_chars[char_index].plane_box.b = pl_b;
+        font_chars[char_index].plane_box.r = pl_r;
+        font_chars[char_index].plane_box.t = pl_t;
+
+        font_chars[char_index].pixel_box.l = px_l;
+        font_chars[char_index].pixel_box.b = px_b;
+        font_chars[char_index].pixel_box.r = px_r;
+        font_chars[char_index].pixel_box.t = px_t;
+
+        font_chars[char_index].tex_coords.l = px_l/404.0;
+        font_chars[char_index].tex_coords.b = 1.0 - (px_b/404.0);
+        font_chars[char_index].tex_coords.r = px_r/404.0;
+        font_chars[char_index].tex_coords.t = 1.0 - (px_t/404.0);
+
+        font_chars[char_index].w = px_r - px_l;
+        font_chars[char_index].h = px_b - px_t;
+
+        printf("font_char %d: %f [%f %f %f %f], [%f %f %f %f], [%f %f %f %f]\n",char_index,advance,pl_l,pl_b,pl_r,pl_t,px_l,px_b,px_r,px_t,px_l/512.0,px_b/512.0,px_r/512.0,px_t/512.0);
+    }
+
+    fclose(fp);
+}
+
 
 void gfx_init(int width, int height)
 {
@@ -75,6 +153,7 @@ void gfx_init(int width, int height)
     glGenVertexArrays(1, &quad_vao);
     glBindVertexArray(quad_vao);
 
+    // quad
     Vertex quad[] =
     {
         {{-0.5, +0.5},{0.0,1.0}},
@@ -87,6 +166,17 @@ void gfx_init(int width, int height)
 
     glGenBuffers(1, &quad_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vertex), (void*)0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(Vertex), (const GLvoid*)8);
+
+    // font char
+    glGenVertexArrays(1, &font_vao);
+    glBindVertexArray(font_vao);
+
+    glGenBuffers(1, &font_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, font_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vertex), (void*)0);
@@ -131,6 +221,15 @@ void gfx_init(int width, int height)
     loc_line_proj        = glGetUniformLocation(program_line, "projection");
     loc_line_opacity     = glGetUniformLocation(program_line, "opacity");
 
+    loc_font_image    = glGetUniformLocation(program_font, "image");
+    loc_font_fg_color = glGetUniformLocation(program_font, "fg_color");
+    loc_font_bg_color = glGetUniformLocation(program_font, "bg_color");
+    loc_font_px_range = glGetUniformLocation(program_font, "px_range");
+    loc_font_tex      = glGetUniformLocation(program_font, "tex");
+    loc_font_model    = glGetUniformLocation(program_font, "model");
+    loc_font_view     = glGetUniformLocation(program_font, "view");
+    loc_font_proj     = glGetUniformLocation(program_font, "projection");
+
     ortho(&proj_matrix,0.0,(float)width,(float)height,0.0, -1.0, 1.0);
 
     //print_matrix(&proj_matrix);
@@ -141,12 +240,12 @@ void gfx_init(int width, int height)
     glEnable(GL_LINE_SMOOTH);
     glLineWidth(5.0);
 
-    stbi_set_flip_vertically_on_load(1);
-
     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
     {
         gfx_images[i].texture = -1;
     }
+
+    load_font();
 }
 
 void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b)
@@ -155,8 +254,11 @@ void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static bool load_image(const char* image_path, _Image* image)
+static bool load_image(const char* image_path, _Image* image, bool flip)
 {
+    printf("%s\n",image_path);
+
+    stbi_set_flip_vertically_on_load(flip);
     image->data = stbi_load(image_path,&image->w,&image->h,&image->n,4);
 
     if(image->data != NULL)
@@ -187,7 +289,7 @@ static bool load_image(const char* image_path, _Image* image)
     }
 }
 
-static int assign_image(GFXSubImageData* sub_image_data, _Image* image)
+static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool linear_filter)
 {
     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
     {
@@ -225,8 +327,17 @@ static int assign_image(GFXSubImageData* sub_image_data, _Image* image)
             glBindTexture(GL_TEXTURE_2D, img->texture);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->data);
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            if(linear_filter)
+            {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+            else
+            {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            }
+
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -238,14 +349,15 @@ static int assign_image(GFXSubImageData* sub_image_data, _Image* image)
     return -1;
 }
 
-int gfx_load_image(const char* image_path)
+int gfx_load_image(const char* image_path, bool flip, bool linear_filter)
 {
     _Image image = {0};
-    bool load = load_image(image_path, &image);
+    bool load = load_image(image_path, &image, flip);
     if(!load) return -1;
 
-    int idx = assign_image(NULL, &image);
-    free(image.data);
+    int idx = assign_image(NULL, &image, linear_filter);
+
+    stbi_image_free(image.data);
     free(image.upright_data);
 
     return idx;
@@ -254,7 +366,7 @@ int gfx_load_image(const char* image_path)
 int gfx_load_image_set(const char* image_path, int element_width, int element_height)
 {
     _Image image = {0};
-    bool load = load_image(image_path, &image);
+    bool load = load_image(image_path, &image, true);
     if(!load) return -1;
 
     int num_in_row = (image.w / element_width);     //cols
@@ -289,10 +401,10 @@ int gfx_load_image_set(const char* image_path, int element_width, int element_he
         gfx_get_image_visible_rect(element_width, element_height, 4, temp_data, &sid.visible_rects[i]);
     }
 
-    int idx = assign_image(&sid, &image);
+    int idx = assign_image(&sid, &image, false);
 
     free(temp_data);
-    free(image.data);
+    stbi_image_free(image.data);
     free(image.upright_data);
     free(sid.visible_rects);
 
@@ -524,6 +636,157 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint3
 
 }
 
+void gfx_string_get_size(char* str, float scale, float* w, float* h)
+{
+    float tallest_h = 0.0;
+    float x_pos = 0.0;
+
+    char* c = str;
+
+    for(;;)
+    {
+        if(*c == '\0')
+            break;
+
+        FontChar* fc = &font_chars[*c];
+
+        float h = fc->h*scale;
+        if(ABS(h) > tallest_h)
+            tallest_h = ABS(h);
+
+        x_pos += scale*(fc->w + fc->advance);
+        c++;
+    }
+
+    if(w) *w = x_pos;
+    if(h) *h = tallest_h;
+}
+
+void gfx_stringf_get_size(float scale, float* w, float* h, char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char str[256] = {0};
+    vsprintf(str,fmt, args);
+    gfx_string_get_size(str, scale, w, h);
+    va_end(args);
+}
+
+void gfx_draw_string(char* str, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world)
+{
+    glUseProgram(program_font);
+
+    Matrix* view = get_camera_transform();
+
+    GFXImage* img = &gfx_images[font_image];
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, img->texture);
+    //glBindTexture(GL_TEXTURE_2D, gfx_images[1].texture);
+    glUniform1i(loc_font_image, 0);
+
+    glBindVertexArray(font_vao);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+
+    uint8_t r = color >> 16;
+    uint8_t g = color >> 8;
+    uint8_t b = color >> 0;
+
+    glUniform4f(loc_font_fg_color,r/255.0,g/255.0,b/255.0,opacity);
+    glUniform4f(loc_font_bg_color,0.0,0.0,0.0,1.0);
+    glUniform1f(loc_font_px_range,4.0);
+
+    char* c = str;
+
+    float x_pos = x;
+
+    // used to draw the string at top left of first character
+    float tallest_h = 0.0;
+
+    for(;;)
+    {
+        if(*c == '\0')
+            break;
+
+        FontChar* fc = &font_chars[*c];
+
+        float h = fc->h*scale;
+        if(ABS(h) > tallest_h)
+            tallest_h = ABS(h);
+
+        c++;
+    }
+
+    c = str;
+
+    for(;;)
+    {
+        if(*c == '\0')
+            break;
+
+        FontChar* fc = &font_chars[*c];
+
+        float x_loc = x_pos+(fc->w*scale/2.0)+(fc->plane_box.l*fc->w*scale);
+        float y_loc = y+tallest_h+(fc->h*scale/2.0)+(fc->plane_box.b*fc->h*scale);
+
+        Vector3f pos = {x_loc,y_loc,0.0};
+        Vector3f rot = {0.0,0.0,rotation};
+        Vector3f sca = {scale*fc->w,-scale*fc->h,1.0};
+
+        Matrix model = {0};
+        get_model_transform(&pos,&rot,&sca,&model);
+
+        Vertex fontchar[] =
+        {
+            {{-0.5, +0.5},{fc->tex_coords.l,fc->tex_coords.b}},
+            {{+0.5, -0.5},{fc->tex_coords.r,fc->tex_coords.t}},
+            {{-0.5, -0.5},{fc->tex_coords.l,fc->tex_coords.t}},
+            {{-0.5, +0.5},{fc->tex_coords.l,fc->tex_coords.b}},
+            {{+0.5, +0.5},{fc->tex_coords.r,fc->tex_coords.b}},
+            {{+0.5, -0.5},{fc->tex_coords.r,fc->tex_coords.t}},
+        };
+        
+        //printf("%c: [%f %f, %f, %f %f %f %f]\n",*c, fc->w, fc->h, fc->advance, fc->plane_box.l, fc->plane_box.b, fc->plane_box.r, fc->plane_box.t);
+
+        glBindBuffer(GL_ARRAY_BUFFER, font_vbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(fontchar), fontchar);
+        glUniformMatrix4fv(loc_font_model,1,GL_TRUE,&model.m[0][0]);
+
+        if(in_world)
+            glUniformMatrix4fv(loc_font_view,1,GL_TRUE,&view->m[0][0]);
+        else
+            glUniformMatrix4fv(loc_font_view,1,GL_TRUE,&IDENTITY_MATRIX.m[0][0]);
+
+        glUniformMatrix4fv(loc_font_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
+
+        glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
+
+        if(*c == ' ')
+            x_pos += 16*scale;
+        else
+            x_pos += scale*(fc->w + fc->advance);
+
+        c++;
+    }
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+
+    glBindTexture(GL_TEXTURE_2D,0);
+    glUseProgram(0);
+}
+
+void gfx_draw_stringf(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char str[256] = {0};
+    vsprintf(str,fmt, args);
+    gfx_draw_string(str, x, y, color, scale, rotation, opacity, in_world);
+    va_end(args);
+}
+
 void gfx_clear_lines()
 {
     num_line_points = 0;
@@ -580,7 +843,6 @@ void gfx_draw_lines()
     glUseProgram(0);
 
 }
-
 
 // get first row or col that's not empty
 // side: 0=top,1=left,2=bottom,3=right

@@ -35,7 +35,6 @@ bool window_init(int _view_width, int _view_height)
         return false;
     }
 
-
     view_width = _view_width;
     view_height = _view_height;
 
@@ -49,7 +48,8 @@ bool window_init(int _view_width, int _view_height)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
 
     // printf("vw: %d, vh: %d\n", view_width, view_height);
-    window = glfwCreateWindow(view_width,view_height,"Example",NULL,NULL);
+    //window = glfwCreateWindow(view_width,view_height,"Postmortem",glfwGetPrimaryMonitor(),NULL);
+    window = glfwCreateWindow(view_width,view_height,"Postmortem",NULL,NULL);
 
     if(window == NULL)
     {

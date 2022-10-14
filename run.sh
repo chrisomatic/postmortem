@@ -1,2 +1,2 @@
 #!/bin/sh
-./build.sh && ./bin/example
+./build.sh && ./bin/postmortem
