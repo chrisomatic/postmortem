@@ -271,7 +271,7 @@ void player_draw()
         r.y = player.phys.pos.y;
         r.w = player.visible_rect.w;
         r.h = player.visible_rect.h;
-        gfx_draw_rect(&r, 0x00FF0000, 1.0,1.0);
+        gfx_draw_rect(&r, 0x00FF0000, player.scale,1.0);
 
     }
 

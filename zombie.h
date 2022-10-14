@@ -28,6 +28,7 @@ typedef struct
     float speed;
     float action_timer;
     float action_timer_max;
+    float scale;
 
     float hp;
     float hp_max;

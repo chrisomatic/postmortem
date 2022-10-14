@@ -70,6 +70,7 @@ void zombie_init()
         zombies[i].push_vel.y = 0.0;
         zombies[i].w = gfx_images[zombie_image].w;
         zombies[i].h = gfx_images[zombie_image].h;
+        zombies[i].scale = 1.0;
         memcpy(&zombies[i].visible_rect, &gfx_images[zombie_image].visible_rect, sizeof(Rect));
         zombies[i].hp_max = 3;
         zombies[i].hp = zombies[i].hp_max;
@@ -223,21 +224,21 @@ void zombie_draw()
         Rect r = {
             .x = zom->phys.pos.x,
             .y = zom->phys.pos.y,
-            .w = zom->w,
-            .h = zom->h
+            .w = zom->scale*zom->w,
+            .h = zom->scale*zom->h
         };
 
         if(is_in_camera_view(&r))
         {
-            gfx_draw_image(zombie_image,(int)zom->phys.pos.x,(int)zom->phys.pos.y, COLOR_TINT_NONE,1.0,0.0,1.0);
+            gfx_draw_image(zombie_image,(int)zom->phys.pos.x,(int)zom->phys.pos.y, COLOR_TINT_NONE,zom->scale,0.0,1.0);
 
             if(debug_enabled)
             {
                 Rect* cbox  = &zom->collision_box;
                 Rect* hbox  = &zom->hit_box;
 
-                gfx_draw_rect(cbox, 0x0000FF00, 1.0,1.0);
-                gfx_draw_rect(hbox, 0x00FFFF00, 1.0,1.0);
+                gfx_draw_rect(cbox, 0x0000FF00, zom->scale,1.0);
+                gfx_draw_rect(hbox, 0x00FFFF00, zom->scale,1.0);
             }
         }
 
