@@ -2,13 +2,13 @@
 rm -rf bin
 mkdir bin
 
-gcc rfx/gfx.c \
-    rfx/shader.c \
-    rfx/timer.c \
-    rfx/physics.c \
-    rfx/math2d.c \
-    rfx/camera.c \
-    rfx/window.c \
+gcc core/gfx.c \
+    core/shader.c \
+    core/timer.c \
+    core/physics.c \
+    core/math2d.c \
+    core/camera.c \
+    core/window.c \
     main.c \
     world.c \
     player.c \
@@ -16,6 +16,6 @@ gcc rfx/gfx.c \
     gun.c \
     gui.c \
     projectile.c \
-    -Irfx \
+    -Icore \
     -lglfw -lGLU -lGLEW -lGL -lm \
     -o bin/postmortem

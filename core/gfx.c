@@ -92,10 +92,10 @@ FontChar font_chars[255];
 
 static void load_font()
 {
-    font_image = gfx_load_image("rfx/fonts/atlas.png", false, true);
+    font_image = gfx_load_image("core/fonts/atlas.png", false, true);
     printf("font image index: %d\n",font_image);
 
-    FILE* fp = fopen("rfx/fonts/atlas_layout.csv","r");
+    FILE* fp = fopen("core/fonts/atlas_layout.csv","r");
 
     if(!fp)
     {

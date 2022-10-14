@@ -18,28 +18,28 @@ static void shader_add(GLuint program, GLenum shader_type, const char* shader_fi
 void shader_load_all()
 {
     shader_build_program(&program_basic,
-        "rfx/shaders/basic.vert.glsl",
-        "rfx/shaders/basic.frag.glsl"
+        "core/shaders/basic.vert.glsl",
+        "core/shaders/basic.frag.glsl"
     );
 
     shader_build_program(&program_sprite,
-        "rfx/shaders/sprite.vert.glsl",
-        "rfx/shaders/sprite.frag.glsl"
+        "core/shaders/sprite.vert.glsl",
+        "core/shaders/sprite.frag.glsl"
     );
 
     shader_build_program(&program_shape,
-        "rfx/shaders/shape.vert.glsl",
-        "rfx/shaders/shape.frag.glsl"
+        "core/shaders/shape.vert.glsl",
+        "core/shaders/shape.frag.glsl"
     );
 
     shader_build_program(&program_line,
-        "rfx/shaders/line.vert.glsl",
-        "rfx/shaders/line.frag.glsl"
+        "core/shaders/line.vert.glsl",
+        "core/shaders/line.frag.glsl"
     );
 
     shader_build_program(&program_font,
-        "rfx/shaders/font.vert.glsl",
-        "rfx/shaders/font.frag.glsl"
+        "core/shaders/font.vert.glsl",
+        "core/shaders/font.frag.glsl"
     );
 }
 
