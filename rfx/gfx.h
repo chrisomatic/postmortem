@@ -10,6 +10,7 @@ typedef struct
     int element_count;
     int element_width, element_height;
     Rect* visible_rects;
+    Rect* sprite_rects;
 } GFXSubImageData;
 
 typedef struct
@@ -17,6 +18,7 @@ typedef struct
     //unsigned char* data;
     int w,h,n;
     Rect visible_rect;
+    Rect sprite_rect;
     // bool is_set;
     // int element_width, element_height;
     uint32_t texture;
@@ -53,3 +55,4 @@ void gfx_stringf_get_size(float scale, float* w, float* h, char* fmt, ...);
 void gfx_clear_lines();
 void gfx_add_line(float x0, float y0, float x1, float y1, uint32_t color);
 void gfx_draw_lines();
+

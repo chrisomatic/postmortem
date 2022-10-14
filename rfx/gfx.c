@@ -35,9 +35,6 @@ static GLint loc_sprite_opacity;
 static GLint loc_sprite_model;
 static GLint loc_sprite_view;
 static GLint loc_sprite_proj;
-static GLint loc_sprite_num_in_row;
-static GLint loc_sprite_num_in_col;
-static GLint loc_sprite_index;
 
 static GLint loc_shape_color;
 static GLint loc_shape_opacity;
@@ -64,7 +61,6 @@ typedef struct
 {
     int w,h,n;
     unsigned char* data;
-    unsigned char* upright_data;
 } _Image;
 
 static bool load_image(const char* image_path, _Image* image, bool flip);
@@ -207,9 +203,6 @@ void gfx_init(int width, int height)
     loc_sprite_model      = glGetUniformLocation(program_sprite, "model");
     loc_sprite_view       = glGetUniformLocation(program_sprite, "view");
     loc_sprite_proj       = glGetUniformLocation(program_sprite, "projection");
-    loc_sprite_num_in_row = glGetUniformLocation(program_sprite, "num_sprites_in_row");
-    loc_sprite_num_in_col = glGetUniformLocation(program_sprite, "num_sprites_in_col");
-    loc_sprite_index      = glGetUniformLocation(program_sprite, "sprite_index");
 
     loc_shape_color      = glGetUniformLocation(program_shape, "color");
     loc_shape_opacity    = glGetUniformLocation(program_shape, "opacity");
@@ -240,6 +233,8 @@ void gfx_init(int width, int height)
     glEnable(GL_LINE_SMOOTH);
     glLineWidth(5.0);
 
+    stbi_set_flip_vertically_on_load(0);
+
     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
     {
         gfx_images[i].texture = -1;
@@ -264,23 +259,7 @@ static bool load_image(const char* image_path, _Image* image, bool flip)
     if(image->data != NULL)
     {
         printf("Loaded image: %s (x: %d, y: %d, n: %d)\n", image_path, image->w, image->h, image->n);
-        image->upright_data = malloc(image->w*image->h*image->n*sizeof(image->data[0]));
-
-        for(int _y = 0; _y < image->h; ++_y)
-        {
-            int y = image->h - _y - 1;
-            for(int x = 0; x < image->w; ++x)
-            {
-                int index = (y*image->w + x)*image->n;
-                int upright_index = (_y*image->w + x)*image->n;
-                image->upright_data[upright_index+0] = image->data[index+0];
-                image->upright_data[upright_index+1] = image->data[index+1];
-                image->upright_data[upright_index+2] = image->data[index+2];
-                image->upright_data[upright_index+3] = image->data[index+3];
-            }
-        }
-
-        return true;
+         return true;
     }
     else
     {
@@ -310,16 +289,24 @@ static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool lin
                 img->sub_img_data->element_width = sub_image_data->element_width;
                 img->sub_img_data->element_height = sub_image_data->element_height;
                 img->sub_img_data->visible_rects = calloc(img->sub_img_data->element_count, sizeof(Rect));
+                img->sub_img_data->sprite_rects = calloc(img->sub_img_data->element_count, sizeof(Rect));
                 for(int e = 0; e < img->sub_img_data->element_count; ++e)
                 {
                     memcpy(&img->sub_img_data->visible_rects[e], &sub_image_data->visible_rects[e], sizeof(Rect));
+                    memcpy(&img->sub_img_data->sprite_rects[e], &sub_image_data->sprite_rects[e], sizeof(Rect));
                 }
 
                 printf("Image set: width: %d, height: %d, count: %d\n", img->sub_img_data->element_width, img->sub_img_data->element_height, img->sub_img_data->element_count);
             }
             else
             {
-                gfx_get_image_visible_rect(img->w, img->h, img->n, image->upright_data, &img->visible_rect);
+                gfx_get_image_visible_rect(img->w, img->h, img->n, image->data, &img->visible_rect);
+
+                img->sprite_rect.x = img->visible_rect.x / img->w;
+                img->sprite_rect.y = img->visible_rect.y / img->h;
+                img->sprite_rect.w = img->visible_rect.w / img->w;
+                img->sprite_rect.h = img->visible_rect.h / img->h;
+
                 printf("Visible Rectangle: x: %.0f, y: %.0f, w: %.0f, h: %.0f\n", img->visible_rect.x, img->visible_rect.y, img->visible_rect.w, img->visible_rect.h);
             }
 
@@ -358,7 +345,6 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter)
     int idx = assign_image(NULL, &image, linear_filter);
 
     stbi_image_free(image.data);
-    free(image.upright_data);
 
     return idx;
 }
@@ -366,47 +352,57 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter)
 int gfx_load_image_set(const char* image_path, int element_width, int element_height)
 {
     _Image image = {0};
-    bool load = load_image(image_path, &image, true);
+    bool load = load_image(image_path, &image, false);
     if(!load) return -1;
 
-    int num_in_row = (image.w / element_width);     //cols
-    int num_in_col = (image.h / element_height);    //rows
-    int element_count = num_in_row*num_in_col;
+    int num_cols = (image.w / element_width);     //cols
+    int num_rows = (image.h / element_height);    //rows
+    int element_count = num_cols*num_rows;
 
     GFXSubImageData sid = {0};
     sid.element_width = element_width;
     sid.element_height = element_height;
     sid.element_count = element_count;
     sid.visible_rects = malloc(sid.element_count * sizeof(Rect));
+    sid.sprite_rects = malloc(sid.element_count * sizeof(Rect));
 
     int n = image.n;
     unsigned char* temp_data = malloc(element_width*element_height*n*sizeof(unsigned char));
 
     for(int i = 0; i < sid.element_count; ++i)
     {
-        int start_x = (i % num_in_row) * element_width;
-        int start_y = (i / num_in_row) * element_height;
+        int start_x = (i % num_cols) * element_width;
+        int start_y = (i / num_cols) * element_height;
         for(int y = 0; y < element_height; ++y)
         {
             for(int x = 0; x < element_width; ++x)
             {
                 int index = ((start_y+y)*image.w + (start_x+x)) * n;
                 int sub_index = (y*element_width + x) * n;
-                temp_data[sub_index] = image.upright_data[index];
-                temp_data[sub_index+1] = image.upright_data[index+1];
-                temp_data[sub_index+2] = image.upright_data[index+2];
-                temp_data[sub_index+3] = image.upright_data[index+3];
+                temp_data[sub_index] = image.data[index];
+                temp_data[sub_index+1] = image.data[index+1];
+                temp_data[sub_index+2] = image.data[index+2];
+                temp_data[sub_index+3] = image.data[index+3];
             }
         }
+
+
         gfx_get_image_visible_rect(element_width, element_height, 4, temp_data, &sid.visible_rects[i]);
+
+        Rect* vr = &sid.visible_rects[i];
+        sid.sprite_rects[i].x = (float)(start_x+vr->x) / image.w;
+        sid.sprite_rects[i].y = (float)(start_y+vr->y) / image.h;
+        sid.sprite_rects[i].w = vr->w / image.w;
+        sid.sprite_rects[i].h = vr->h / image.h;
+
     }
 
     int idx = assign_image(&sid, &image, false);
 
     free(temp_data);
     stbi_image_free(image.data);
-    free(image.upright_data);
     free(sid.visible_rects);
+    free(sid.sprite_rects);
 
     return idx;
 }
@@ -441,6 +437,7 @@ void gfx_free_image(int img_index)
     if(sid != NULL)
     {
         if(sid->visible_rects != NULL) free(sid->visible_rects);
+        if(sid->sprite_rects != NULL) free(sid->sprite_rects);
         free(sid);
     }
 
@@ -519,12 +516,31 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
 
     Matrix model = {0};
 
-    float vx = img->visible_rect.x;
-    float vy = img->visible_rect.y;
+    float vw = img->visible_rect.w;
+    float vh = img->visible_rect.h;
 
-    Vector3f pos = {x-vx+img->w/2.0,y-vy+img->h/2.0,0.0};
+    Rect* sr = &img->sprite_rect;
+    float sprite_x = sr->x;
+    float sprite_y = sr->y;
+    float sprite_w = sr->w;
+    float sprite_h = sr->h;
+
+    Vertex quad[] =
+    {
+        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
+        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
+        {{-0.5, -0.5},{sprite_x,sprite_y}},
+        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
+        {{+0.5, +0.5},{sprite_x+sprite_w,sprite_y+sprite_h}},
+        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
+
+    Vector3f pos = {x+vw/2.0,y+vh/2.0,0.0};
     Vector3f rot = {0.0,0.0,360.0-rotation};
-    Vector3f sca = {scale*img->w,-scale*img->h,1.0};
+    Vector3f sca = {scale*vw,scale*vh,1.0};
 
     get_model_transform(&pos,&rot,&sca,&model);
     Matrix* view = get_camera_transform();
@@ -587,18 +603,35 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint3
         printf("Invalid sprite index: %d (%d, %d)\n", sprite_index, img_index, sid->element_count);
         return false;
     }
+    float vw = sid->visible_rects[sprite_index].w;
+    float vh = sid->visible_rects[sprite_index].h;
 
-
-    float vx = sid->visible_rects[sprite_index].x;
-    float vy = sid->visible_rects[sprite_index].y;
 
     glUseProgram(program_sprite);
+    Rect* sr = &sid->sprite_rects[sprite_index];
+    float sprite_x = sr->x;
+    float sprite_y = sr->y;
+    float sprite_w = sr->w;
+    float sprite_h = sr->h;
+
+    Vertex quad[] =
+    {
+        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
+        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
+        {{-0.5, -0.5},{sprite_x,sprite_y}},
+        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
+        {{+0.5, +0.5},{sprite_x+sprite_w,sprite_y+sprite_h}},
+        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
 
     Matrix model = {0};
 
-    Vector3f pos = {x-vx+sid->element_width/2.0,y-vy+sid->element_height/2.0,0.0};
+    Vector3f pos = {x+vw/2.0,y+vh/2.0,0.0};
     Vector3f rot = {0.0,0.0,360.0-rotation};
-    Vector3f sca = {scale*sid->element_width,-scale*sid->element_height,1.0};
+    Vector3f sca = {scale*vw,scale*vh,1.0};
 
     get_model_transform(&pos,&rot,&sca,&model);
     Matrix* view = get_camera_transform();
@@ -607,15 +640,10 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint3
     uint8_t g = color >> 8;
     uint8_t b = color >> 0;
 
-    int num_in_row = (img->w / sid->element_width);
-    int num_in_col = (img->h / sid->element_height);
     //printf("num_in_row: %d, sprite_index: %d\n",num_in_row, sprite_index);
 
     glUniform3f(loc_sprite_tint_color,r/255.0,g/255.0,b/255.0);
     glUniform1f(loc_sprite_opacity,opacity);
-    glUniform1i(loc_sprite_num_in_row,num_in_row);
-    glUniform1i(loc_sprite_num_in_col,num_in_col);
-    glUniform1i(loc_sprite_index,sprite_index);
 
     glUniformMatrix4fv(loc_sprite_model,1,GL_TRUE,&model.m[0][0]);
     glUniformMatrix4fv(loc_sprite_view,1,GL_TRUE,&view->m[0][0]);

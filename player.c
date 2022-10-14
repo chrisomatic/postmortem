@@ -38,7 +38,7 @@ void player_init()
     player.gun = gun_get(GUN_TYPE_HANDGUN);
 
     player.image = gfx_load_image_set("img/human_set_small.png",32,48);
-    crosshair_image = gfx_load_image("img/crosshair.png", true, false);
+    crosshair_image = gfx_load_image("img/crosshair.png", false, false);
 
     window_controls_clear_keys();
 
@@ -191,8 +191,21 @@ void player_update(double delta_t)
         // update gun
         // float gx = player.phys.pos.x + (-player.gun.visible_rect.x+player.gun.visible_rect.w+player.visible_rect.x+player.visible_rect.w/2.0)*cosf(player.angle);
         // float gy = player.phys.pos.y - (-player.gun.visible_rect.y+player.gun.visible_rect.w+player.visible_rect.y+player.visible_rect.h/4.0)*sinf(player.angle);
-        float gx = player.phys.pos.x + 16*cosf(player.angle);
-        float gy = player.phys.pos.y - 16*sinf(player.angle);
+        // float gx = player.phys.pos.x + 16*cosf(player.angle);
+        // float gy = player.phys.pos.y - 16*sinf(player.angle);
+
+        // float gx = player.phys.pos.x+(player.visible_rect.w/2.0) + 5*cosf(player.angle);
+        // float gx = player.phys.pos.x+(player.visible_rect.w/2.0);
+        // float gy = player.phys.pos.y+(player.visible_rect.h*0.6) - 5*sinf(player.angle);
+        
+        float gx = player.phys.pos.x;
+        float gy = player.phys.pos.y;
+
+
+        // -player.gun.visible_rect.w/2.0*cosf(player.angle);
+
+        // gx += 
+
         player.gun.pos.x = gx;
         player.gun.pos.y = gy;
         player.gun.angle = player.angle;

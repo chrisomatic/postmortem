@@ -57,7 +57,7 @@ static void wander(Zombie* zom, float delta_t)
 
 void zombie_init()
 {
-    zombie_image = gfx_load_image("img/zombie_f1.png", true, false);
+    zombie_image = gfx_load_image("img/zombie_f1.png", false, false);
 
     num_zombies = 100;
 

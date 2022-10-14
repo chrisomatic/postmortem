@@ -55,6 +55,5 @@ void gun_update(Gun* gun, float delta_t)
 
 void gun_draw(Gun* gun)
 {
-    // gfx_draw_sub_image(gun_image_set,gun->type,gun->pos.x,gun->pos.y, COLOR_TINT_NONE,1.0,DEG(gun->angle+PI),1.0);
     gfx_draw_sub_image(gun_image_set,gun->type,gun->pos.x,gun->pos.y, COLOR_TINT_NONE,1.0,DEG(gun->angle),1.0);
 }

@@ -173,6 +173,11 @@ void draw()
     world_draw();
     zombie_draw();
     player_draw();
+
+    // gfx_draw_sub_image(player.image, 5, player.phys.pos.x, player.phys.pos.y, 0, 1.0, 0, 1.0);
+
+
+
     projectile_draw();
     gfx_draw_lines();
     gui_draw();

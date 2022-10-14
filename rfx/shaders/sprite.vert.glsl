@@ -9,21 +9,9 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-uniform int num_sprites_in_row;
-uniform int num_sprites_in_col;
-
-uniform int sprite_index;
 
 void main()
 {
-    vec2 tex = tex_coord;
-
-    int row = sprite_index / num_sprites_in_row;
-    int col = sprite_index % num_sprites_in_row;
-
-    tex.x = (tex.x + col) / num_sprites_in_row;
-    tex.y = (tex.y + row  + (num_sprites_in_col -1)) / num_sprites_in_col;
-    
-    tex_coord0 = tex;
+    tex_coord0 = tex_coord;
     gl_Position = projection * view * model * vec4(position.xy,0.0,1.0);
 }
