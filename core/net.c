@@ -587,7 +587,7 @@ bool net_client_add_player_input(uint16_t input, double game_time)
     }
 
     net_player_inputs[input_count].game_time = game_time;
-    memcpy(&net_player_inputs[input_count].input, input, sizeof(uint16_t));
+    memcpy(&net_player_inputs[input_count].input, &input, sizeof(uint16_t));
 
     input_count++;
 

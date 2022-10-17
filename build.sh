@@ -9,6 +9,8 @@ gcc core/gfx.c \
     core/math2d.c \
     core/camera.c \
     core/window.c \
+    core/socket.c \
+    core/net.c \
     main.c \
     world.c \
     player.c \

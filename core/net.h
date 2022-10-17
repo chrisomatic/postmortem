@@ -1,7 +1,5 @@
 #pragma once
 
-#include "player.h"
-
 #define MAX_CLIENTS 8
 #define MAX_PACKET_DATA_SIZE 1024
 

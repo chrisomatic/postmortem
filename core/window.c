@@ -50,7 +50,6 @@ bool window_init(int _view_width, int _view_height)
     // printf("vw: %d, vh: %d\n", view_width, view_height);
     //window = glfwCreateWindow(view_width,view_height,"Postmortem",glfwGetPrimaryMonitor(),NULL);
     window = glfwCreateWindow(view_width,view_height,"Postmortem",NULL,NULL);
-    glfwMaximizeWindow(window);
 
     if(window == NULL)
     {
@@ -65,6 +64,8 @@ bool window_init(int _view_width, int _view_height)
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
+
+    glfwMaximizeWindow(window);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
