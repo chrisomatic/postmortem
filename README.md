@@ -9,6 +9,7 @@ This is a work-in-progress 2D game
 
 ## TODO
 
+- Add networking
 - Add tile properties
 - Add collision between entities
 - Add objects

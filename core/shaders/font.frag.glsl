@@ -25,6 +25,6 @@ void main() {
 
     //color = fg_color;
     //color = vec4(msd,1.0);
-    color = vec4(fg_color.rgb, opacity);
+    color = vec4(fg_color.rgb, opacity*fg_color.a);
     //color = vec4(1.0,0.0,0.0,1.0);
 }

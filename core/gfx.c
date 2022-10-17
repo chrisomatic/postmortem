@@ -707,7 +707,7 @@ void gfx_stringf_get_size(float scale, float* w, float* h, char* fmt, ...)
     va_end(args);
 }
 
-void gfx_draw_string(char* str, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world)
+void gfx_draw_string(char* str, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow)
 {
     glUseProgram(program_font);
 
@@ -728,7 +728,6 @@ void gfx_draw_string(char* str, float x, float y, uint32_t color, float scale, f
     uint8_t g = color >> 8;
     uint8_t b = color >> 0;
 
-    glUniform4f(loc_font_fg_color,r/255.0,g/255.0,b/255.0,opacity);
     glUniform4f(loc_font_bg_color,0.0,0.0,0.0,1.0);
     glUniform1f(loc_font_px_range,4.0);
 
@@ -753,8 +752,69 @@ void gfx_draw_string(char* str, float x, float y, uint32_t color, float scale, f
         c++;
     }
 
-    c = str;
 
+    if(drop_shadow)
+    {
+        glUniform4f(loc_font_fg_color,0.2,0.2,0.2,opacity);
+
+        c = str;
+
+        for(;;)
+        {
+            if(*c == '\0')
+                break;
+
+            FontChar* fc = &font_chars[*c];
+
+            float x_loc = x_pos+(fc->w*scale/2.0)+(fc->plane_box.l*fc->w*scale) -0.7;
+            float y_loc = y+tallest_h+(fc->h*scale/2.0)+(fc->plane_box.b*fc->h*scale)+0.7;
+
+            Vector3f pos = {x_loc,y_loc,0.0};
+            Vector3f rot = {0.0,0.0,rotation};
+            Vector3f sca = {scale*fc->w,-scale*fc->h,1.0};
+
+            Matrix model = {0};
+            get_model_transform(&pos,&rot,&sca,&model);
+
+            Vertex fontchar[] =
+            {
+                {{-0.5, +0.5},{fc->tex_coords.l,fc->tex_coords.b}},
+                {{+0.5, -0.5},{fc->tex_coords.r,fc->tex_coords.t}},
+                {{-0.5, -0.5},{fc->tex_coords.l,fc->tex_coords.t}},
+                {{-0.5, +0.5},{fc->tex_coords.l,fc->tex_coords.b}},
+                {{+0.5, +0.5},{fc->tex_coords.r,fc->tex_coords.b}},
+                {{+0.5, -0.5},{fc->tex_coords.r,fc->tex_coords.t}},
+            };
+            
+            //printf("%c: [%f %f, %f, %f %f %f %f]\n",*c, fc->w, fc->h, fc->advance, fc->plane_box.l, fc->plane_box.b, fc->plane_box.r, fc->plane_box.t);
+
+            glBindBuffer(GL_ARRAY_BUFFER, font_vbo);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(fontchar), fontchar);
+            glUniformMatrix4fv(loc_font_model,1,GL_TRUE,&model.m[0][0]);
+
+            if(in_world)
+                glUniformMatrix4fv(loc_font_view,1,GL_TRUE,&view->m[0][0]);
+            else
+                glUniformMatrix4fv(loc_font_view,1,GL_TRUE,&IDENTITY_MATRIX.m[0][0]);
+
+            glUniformMatrix4fv(loc_font_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
+
+            glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
+
+            if(*c == ' ')
+                x_pos += 16*scale;
+            else
+                x_pos += scale*(fc->w + fc->advance);
+
+            c++;
+        }
+
+    }
+
+    glUniform4f(loc_font_fg_color,r/255.0,g/255.0,b/255.0,opacity);
+
+    c = str;
+    x_pos = x;
     for(;;)
     {
         if(*c == '\0')
@@ -812,13 +872,13 @@ void gfx_draw_string(char* str, float x, float y, uint32_t color, float scale, f
     glUseProgram(0);
 }
 
-void gfx_draw_stringf(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, char* fmt, ...)
+void gfx_draw_stringf(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
     char str[256] = {0};
     vsprintf(str,fmt, args);
-    gfx_draw_string(str, x, y, color, scale, rotation, opacity, in_world);
+    gfx_draw_string(str, x, y, color, scale, rotation, opacity, in_world, drop_shadow);
     va_end(args);
 }
 

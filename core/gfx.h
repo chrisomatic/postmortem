@@ -46,8 +46,9 @@ void gfx_free_image(int img_index);
 GFXImage* gfx_get_image_data(int img_index);
 
 // Strings
-void gfx_draw_string(char* str, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world);
-void gfx_draw_stringf(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, char* fmt, ...);
+//void gfx_draw_string(char* str, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world);
+void gfx_draw_string(char* str, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow);
+void gfx_draw_stringf(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...);
 void gfx_string_get_size(char* str, float scale, float* w, float* h);
 void gfx_stringf_get_size(float scale, float* w, float* h, char* fmt, ...);
 
