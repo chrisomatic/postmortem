@@ -371,3 +371,31 @@ float rangef(float arr[], int n, float* fmin, float* fmax)
     }
     return (*fmax-*fmin);
 }
+
+void rotate_rect(Rect* rect, float rotation, float rotation_x, float rotation_y, RectXY* out_rect)
+{
+    // top left, bottom left, top right, bottom right
+    float xcoords[4] = {rect->x, rect->x,         rect->x+rect->w, rect->x+rect->w};
+    float ycoords[4] = {rect->y, rect->y+rect->h, rect->y,         rect->y+rect->h};
+
+    float a = RAD(360-rotation);
+    float xa = cos(a);
+    float ya = sin(a);
+
+    for(int i = 0; i < 4; ++i)
+    {
+        out_rect->x[i] = (xa * (xcoords[i] - rotation_x) - ya * (ycoords[i] - rotation_y)) + rotation_x;
+        out_rect->y[i] = (ya * (xcoords[i] - rotation_x) - xa * (ycoords[i] - rotation_y)) + rotation_y;
+    }
+}
+
+void rectxy_to_rect(RectXY* in, Rect* out)
+{
+    float xmin,xmax,ymin,ymax;
+    float xrange = rangef(in->x, 4, &xmin, &xmax);
+    float yrange = rangef(in->y, 4, &ymin, &ymax);
+    out->x = xmin;
+    out->y = ymin;
+    out->w = xrange;
+    out->h = yrange;
+}

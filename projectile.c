@@ -61,66 +61,25 @@ static void update_hurt_box(Projectile* proj)
 
     memcpy(&proj->hurt_box_prior,&proj->hurt_box,sizeof(Rect));
 
-    // proj->hurt_box.x = proj->pos.x;
-    // proj->hurt_box.y = proj->pos.y;
-    // proj->hurt_box.w = vr->w;
-    // proj->hurt_box.h = vr->h;
 
+    Rect r = {0};
+    r.x = proj->pos.x;
+    r.y = proj->pos.y;
+    r.w = vr->w;
+    r.h = vr->h;
 
-    //TODO: calculate this stuff once and then translate the box in here
-    //TODO: refactor this for 
+    RectXY r2 = {0};
 
-    // proj->angle_deg = 45.0;
-    // proj->angle_deg = 90.0;
-
-    // top left, bottom left, top right, bottom right
-    float xcoords[4] = {proj->pos.x, proj->pos.x,       proj->pos.x+vr->w,  proj->pos.x+vr->w};
-    float ycoords[4] = {proj->pos.y, proj->pos.y+vr->h, proj->pos.y,        proj->pos.y+vr->h};
-    float xmin,xmax,ymin,ymax;
-    float xrange = rangef(xcoords, 4, &xmin, &xmax);
-    float yrange = rangef(ycoords, 4, &ymin, &ymax);
-    float xcenter = xcoords[0]+xrange/2.0;
-    float ycenter = ycoords[0]+yrange/2.0;
-
-    float xrcoords[4] = {0};
-    float yrcoords[4] = {0};
-
-    float a = RAD(360-proj->angle_deg);
-    float xa = cos(a);
-    float ya = sin(a);
-
-    for(int i = 0; i < 4; ++i)
-    {
-        xrcoords[i] = (xa * (xcoords[i] - xcenter) - ya * (ycoords[i] - ycenter)) + xcenter;
-        yrcoords[i] = (ya * (xcoords[i] - xcenter) - xa * (ycoords[i] - ycenter)) + ycenter;
-    }
+    rotate_rect(&r, proj->angle_deg, r.x+r.w/2.0, r.y+r.h/2.0, &r2);
 
     float xrmin,xrmax,yrmin,yrmax;
-    float xrrange = rangef(xrcoords, 4, &xrmin, &xrmax);
-    float yrrange = rangef(yrcoords, 4, &yrmin, &yrmax);
+    float xrrange = rangef(r2.x, 4, &xrmin, &xrmax);
+    float yrrange = rangef(r2.y, 4, &yrmin, &yrmax);
 
     proj->hurt_box.x = xrmin;
     proj->hurt_box.y = yrmin;
     proj->hurt_box.w = xrrange;
     proj->hurt_box.h = yrrange;
-
-
-    // if(&projectiles[projectile_count-1] == proj)
-    // {
-    //     // printf("x0 %.2f\n", (-vr->w/2.0)*xa);
-    //     // printf("deg: %.2f (%.2f), xa: %.2f, ya: %.2f\n", proj->angle_deg, a, xa, ya);
-    //     printf("center: %.1f, %.1f\n", xcenter, ycenter);
-    //     printf("p: %.1f, %.1f, %.0f, %.0f\n", proj->pos.x, proj->pos.y, vr->w, vr->h);
-    //     printf("xcoords: %.1f, %.1f, %.1f, %.1f\n", xcoords[0], xcoords[1],xcoords[2],xcoords[3]);
-    //     printf("ycoords: %.1f, %.1f, %.1f, %.1f\n", ycoords[0], ycoords[1],ycoords[2],ycoords[3]);
-    //     printf("xrcoords: %.1f, %.1f, %.1f, %.1f\n", xrcoords[0], xrcoords[1],xrcoords[2],xrcoords[3]);
-    //     printf("yrcoords: %.1f, %.1f, %.1f, %.1f\n", yrcoords[0], yrcoords[1],yrcoords[2],yrcoords[3]);
-    //     printf("x: %.2f, %.2f, %.2f\n", xrmin,xrmax,xrrange);
-    //     printf("y: %.2f, %.2f, %.2f\n", yrmin,yrmax,yrrange);
-    //     // printf("xrmin: %.2f\n", floor(xrmin));
-    // }
-
-
 }
 
 void projectile_init()

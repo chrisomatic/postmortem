@@ -41,6 +41,10 @@ void gui_draw()
         gfx_draw_stringf(start_x+10,y   ,0x00FFFFFF,scale,0.0, 1.0, false,"Pos: %d, %d", (int)player.phys.pos.x, (int)player.phys.pos.y);
         gfx_draw_stringf(start_x+10,y+=h,0x00FFFFFF,scale,0.0, 1.0, false,"Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action);
         gfx_draw_stringf(start_x+10,y+=h,0x00FFFFFF,scale,0.0, 1.0, false,"Angle: %.2f, %.2f deg", player.angle, DEG(player.angle));
+        
+        float mx, my;
+        window_get_mouse_world_coords(&mx, &my);
+        gfx_draw_stringf(start_x+10,y+=h,0x00FFFFFF,scale,0.0, 1.0, false,"Mouse: %.2f, %.2f", mx, my);
 
         // fps
         float w;

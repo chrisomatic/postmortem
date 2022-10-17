@@ -60,6 +60,12 @@ typedef struct
 
 typedef struct
 {
+    float x[4];
+    float y[4];
+} RectXY;
+
+typedef struct
+{
     Vector2f p0;
     Vector2f p1;
     Vector2f p2;
@@ -89,3 +95,6 @@ int angle_sector(float angle, int num_sectors);
 float rangef(float arr[], int n, float* fmin, float* fmax);
 // double rangef(double arr[], int n, double* fmin, double* fmax);
 
+void rotate_rect(Rect* rect, float rotation, float rotation_x, float rotation_y, RectXY* out_rect);
+
+void rectxy_to_rect(RectXY* in, Rect* out);

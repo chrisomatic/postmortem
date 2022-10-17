@@ -189,26 +189,32 @@ void player_update(double delta_t)
     {
 
         // update gun
-        // float gx = player.phys.pos.x + (-player.gun.visible_rect.x+player.gun.visible_rect.w+player.visible_rect.x+player.visible_rect.w/2.0)*cosf(player.angle);
-        // float gy = player.phys.pos.y - (-player.gun.visible_rect.y+player.gun.visible_rect.w+player.visible_rect.y+player.visible_rect.h/4.0)*sinf(player.angle);
-        // float gx = player.phys.pos.x + 16*cosf(player.angle);
-        // float gy = player.phys.pos.y - 16*sinf(player.angle);
 
-        // float gx = player.phys.pos.x+(player.visible_rect.w/2.0) + 5*cosf(player.angle);
-        // float gx = player.phys.pos.x+(player.visible_rect.w/2.0);
-        // float gy = player.phys.pos.y+(player.visible_rect.h*0.6) - 5*sinf(player.angle);
-        
-        float gx = player.phys.pos.x;
-        float gy = player.phys.pos.y;
-
-
-        // -player.gun.visible_rect.w/2.0*cosf(player.angle);
-
-        // gx += 
-
-        player.gun.pos.x = gx;
-        player.gun.pos.y = gy;
         player.gun.angle = player.angle;
+        float gx = player.phys.pos.x + (player.visible_rect.w/2.0) + 10*cosf(player.gun.angle);
+        float gy = player.phys.pos.y + (player.visible_rect.h*0.50) - 10*sinf(player.gun.angle);
+
+        Rect r = {0};
+        r.x = gx;
+        r.y = gy;
+        r.w = player.gun.visible_rect.w;
+        r.h = player.gun.visible_rect.h;
+
+        RectXY rxy_rot = {0};
+
+        float xcenter = r.x+r.w/2.0;
+        float ycenter = r.y+r.h/2.0;
+        rotate_rect(&r, DEG(player.gun.angle), xcenter, ycenter, &rxy_rot);
+
+        Rect r_rot = {0};
+        rectxy_to_rect(&rxy_rot, &r_rot);
+
+        float dx = rxy_rot.x[0] - gx ;
+        float dy = rxy_rot.y[0] - gy ;
+
+        player.gun.pos.x = gx-dx;
+        player.gun.pos.y = gy-dy;
+
         if(primary_action)
         {
             gun_fire(&player.gun);
@@ -246,8 +252,6 @@ void player_draw()
     }
 
     // gfx_draw_sub_image(player.image,player.sprite_index,player.phys.pos.x,player.phys.pos.y, COLOR_TINT_NONE,player.scale,0.0,1.0);
-    // float px = player.phys.pos.x - player.visible_rect.x;
-    // float py = player.phys.pos.y - player.visible_rect.y;
     float px = player.phys.pos.x;
     float py = player.phys.pos.y;
     gfx_draw_sub_image(player.image, player.sprite_index, px, py, COLOR_TINT_NONE,player.scale,0.0,1.0);
@@ -256,22 +260,61 @@ void player_draw()
     if(debug_enabled)
     {
         Rect r = {0};
-        // Rect r = {
-        //     .x = px,
-        //     .y = py,
-        //     .w = 5,
-        //     .h = 5
-        // };
-
-        // // gfx_draw_rect(&r, 0x0000FF00, 1.0,1.0);
-
-        // r.x = player.phys.pos.x+player.visible_rect.x;
-        // r.y = player.phys.pos.y+player.visible_rect.y;
         r.x = player.phys.pos.x;
         r.y = player.phys.pos.y;
         r.w = player.visible_rect.w;
         r.h = player.visible_rect.h;
         gfx_draw_rect(&r, 0x00FF0000, player.scale,1.0);
+
+
+
+        // RectXY r2 = {0};
+        // Rect r_rot = {0};
+
+        // r.x = player.gun.pos.x;
+        // r.y = player.gun.pos.y;
+        // r.w = player.gun.visible_rect.w;
+        // r.h = player.gun.visible_rect.h;
+        // gfx_draw_rect(&r, 0x00FF00FF, 1.0,1.0);
+
+        // float xcenter = r.x+r.w/2.0;
+        // float ycenter = r.y+r.h/2.0;
+        // rotate_rect(&r, 90, xcenter, ycenter, &r2);
+        // rectxy_to_rect(&r2, &r_rot);
+        // gfx_draw_rect(&r_rot, 0x0000FFFF, 1.0,1.0);
+
+        // printf("============================================\n");
+        // {
+        //     Rect* rect = &r;
+        //     float xcoords[4] = {rect->x, rect->x,         rect->x+rect->w, rect->x+rect->w};
+        //     float ycoords[4] = {rect->y, rect->y+rect->h, rect->y,         rect->y+rect->h};
+
+        //     printf("x: ");
+        //     for(int i = 0; i < 4; ++i)
+        //         printf("%.2f, ", xcoords[i]);
+        //     printf("\n");
+
+        //     printf("y: ");
+        //     for(int i = 0; i < 4; ++i)
+        //         printf("%.2f, ", ycoords[i]);
+        //     printf("\n");
+        // }
+
+        // {
+        //     Rect* rect = &r_rot;
+        //     float xcoords[4] = {rect->x, rect->x,         rect->x+rect->w, rect->x+rect->w};
+        //     float ycoords[4] = {rect->y, rect->y+rect->h, rect->y,         rect->y+rect->h};
+
+        //     printf("rx: ");
+        //     for(int i = 0; i < 4; ++i)
+        //         printf("%.2f, ", xcoords[i]);
+        //     printf("\n");
+
+        //     printf("ry: ");
+        //     for(int i = 0; i < 4; ++i)
+        //         printf("%.2f, ", ycoords[i]);
+        //     printf("\n");
+        // }
 
     }
 
