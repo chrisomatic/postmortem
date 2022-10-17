@@ -32,8 +32,6 @@ void camera_move(float x, float y)
         0.0
     };
 
-
-
     cam_pos.x = MIN(cam_pos.x, 0.0);
     cam_pos.y = MIN(cam_pos.y, 0.0);
 

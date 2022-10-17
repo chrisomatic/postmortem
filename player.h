@@ -32,7 +32,7 @@ typedef struct
 
     int image;
     int sprite_index;
-    uint32_t keys;
+    uint16_t keys;
 
     Gun gun;
     bool gun_ready;

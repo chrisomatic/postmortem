@@ -168,7 +168,7 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 
 typedef struct
 {
-    uint32_t* keys;
+    uint16_t* keys;
     int key;
     int bit_num;
 } WindowKey;
@@ -188,7 +188,7 @@ void window_controls_clear_keys()
     window_mouse_buttons_count = 0;
 }
 
-void window_controls_add_key(uint32_t* keys, int key, int bit_num)
+void window_controls_add_key(uint16_t* keys, int key, int bit_num)
 {
     window_keys[window_keys_count].keys = keys;
     window_keys[window_keys_count].key = key;
@@ -197,7 +197,7 @@ void window_controls_add_key(uint32_t* keys, int key, int bit_num)
     window_keys_count++;
 }
 
-void window_controls_add_mouse_button(uint32_t* keys, int key, int bit_num)
+void window_controls_add_mouse_button(uint16_t* keys, int key, int bit_num)
 {
     window_mouse_buttons[window_mouse_buttons_count].keys = keys;
     window_mouse_buttons[window_mouse_buttons_count].key = key;
