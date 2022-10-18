@@ -23,4 +23,3 @@ int world_grid_to_index(int row, int col);
 void index_to_world_grid(int index, int* row, int* col);
 
 bool is_in_camera_view(Rect* r);
-bool is_in_camera_view_xywh(float x, float y, float w, float h);

@@ -20,12 +20,10 @@ typedef struct
     ProjectileType type;
     Vector2f pos;
     Vector2f vel;
-    float w,h;
     float angle_deg;
     float power;
     int damage;
     int sprite_index;
-    // Rect hurt_box_temp;  //TODO
     Rect hurt_box;
     Rect hurt_box_prior;
     float time;
@@ -53,33 +51,9 @@ static void projectile_remove(int index)
 
 static void update_hurt_box(Projectile* proj)
 {
-    GFXSubImageData* sid = gfx_images[projectile_image_set].sub_img_data;
-    float img_w = sid->element_width;
-    float img_h = sid->element_height;
-    Rect* vr = &sid->visible_rects[proj->sprite_index];
-    // printf("%.0f, %.0f, %.0f, %.0f\n", vr->x, vr->y, vr->w, vr->h);
-
     memcpy(&proj->hurt_box_prior,&proj->hurt_box,sizeof(Rect));
-
-
-    Rect r = {0};
-    r.x = proj->pos.x;
-    r.y = proj->pos.y;
-    r.w = vr->w;
-    r.h = vr->h;
-
-    RectXY r2 = {0};
-
-    rotate_rect(&r, proj->angle_deg, r.x+r.w/2.0, r.y+r.h/2.0, &r2);
-
-    float xrmin,xrmax,yrmin,yrmax;
-    float xrrange = rangef(r2.x, 4, &xrmin, &xrmax);
-    float yrrange = rangef(r2.y, 4, &yrmin, &yrmax);
-
-    proj->hurt_box.x = xrmin;
-    proj->hurt_box.y = yrmin;
-    proj->hurt_box.w = xrrange;
-    proj->hurt_box.h = yrrange;
+    proj->hurt_box.x = proj->pos.x;
+    proj->hurt_box.y = proj->pos.y;
 }
 
 void projectile_init()
@@ -87,9 +61,10 @@ void projectile_init()
     projectile_image_set = gfx_load_image_set("img/projectile_set.png",32,32);
 }
 
+
+//TODO: x and y args not used
 void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle)
 {
-    // angle += PI;
     if(projectile_count >= MAX_PROJECTILES)
     {
         LOGW("Too many projectiles!");
@@ -102,23 +77,38 @@ void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle)
     memset(proj,0, sizeof(Projectile));
 
     float speed = gun->fire_speed;
-    // speed = 0.1;
+    // speed = 10.0;
 
     proj->sprite_index = sprite_index;
     proj->damage = gun->power + proj->power;
-    proj->pos.x = x;
-    proj->pos.y = y;
-    proj->w = 4;
-    proj->h = 4;
+    proj->dead = false;
+
+    //spawn at the end of the gun, (could subtract bullet width/height to make spawn inside of gun)
+    float _x = gun->pos.x + (gun->visible_rect.w/2.0)*cosf(angle);
+    float _y = gun->pos.y + (gun->visible_rect.h/2.0)*sinf(PI*2-angle);
+    proj->pos.x = _x;
+    proj->pos.y = _y;
     proj->angle_deg = DEG(angle);
     proj->vel.x = speed*cosf(angle);
     proj->vel.y = speed*sinf(angle);
-    proj->dead = false;
-
-    float vel = sqrt(proj->vel.x*proj->vel.x + proj->vel.y*proj->vel.y);
-
     proj->time = 0.0;
+    float vel = sqrt(proj->vel.x*proj->vel.x + proj->vel.y*proj->vel.y);
     proj->ttl  = 1.0 / (vel / gun->fire_range);
+
+    GFXSubImageData* sid = gfx_images[projectile_image_set].sub_img_data;
+    Rect* vr = &sid->visible_rects[proj->sprite_index];
+
+    Rect r = {0};
+    Rect r_rot = {0};
+    RectXY rxy_rot = {0};
+    r.x = proj->pos.x;
+    r.y = proj->pos.y;
+    r.w = vr->w;
+    r.h = vr->h;
+
+    rotate_rect(&r, proj->angle_deg, r.x, r.y, &rxy_rot);
+    rectxy_to_rect(&rxy_rot, &proj->hurt_box);
+    memcpy(&proj->hurt_box_prior, &proj->hurt_box, sizeof(proj->hurt_box));
 
     update_hurt_box(proj);
 }
@@ -185,16 +175,8 @@ void projectile_draw()
     {
         Projectile* proj = &projectiles[i];
 
-        Rect p = {
-            .x = proj->pos.x,
-            .y = proj->pos.y,
-            .w = proj->w,
-            .h = proj->h
-        };
-
-        if(is_in_camera_view(&p))
+        if(is_in_camera_view(&proj->hurt_box))
         {
-            // gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0,proj->angle_deg-180,1.0);
             gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0);
 
             if(debug_enabled)

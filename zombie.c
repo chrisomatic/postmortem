@@ -86,59 +86,29 @@ static void update_zombie_boxes(Zombie* zom)
     const float shrink_factor = 0.80;
 
     Rect* vr = &zom->visible_rect;
-
-    float x0 = zom->phys.pos.x;// + vr->x;
-    float y0 = zom->phys.pos.y;// + vr->y;
     float w = vr->w;
     float h = vr->h;
+    float x0 = zom->phys.pos.x;
+    float y0 = zom->phys.pos.y;
+    float ytop = y0-h/2.0;
+    float ybot = y0+h/2.0;
 
     float collision_height = h*0.4;
     zom->collision_box.x = x0;
-    zom->collision_box.y = y0+h-collision_height;
+    zom->collision_box.y = ybot-collision_height/2.0;
     zom->collision_box.w = w;
     zom->collision_box.h = collision_height;
 
     float hit_box_height = h*0.5;
     zom->hit_box.x = x0;
-    zom->hit_box.y = y0;
+    zom->hit_box.y = ytop+hit_box_height/2.0;
     zom->hit_box.w = w;
     zom->hit_box.h = hit_box_height;
 
-    // zom->collision_box.y = zom->phys.pos.y + (2.0*zom->h / 3.0);
-    // zom->collision_box.w = zom->w;
-    // zom->collision_box.h = (zom->h / 3.0);
-
-    // zom->collision_box.x = zom->phys.pos.x;
-    // zom->collision_box.y = zom->phys.pos.y + (2.0*zom->h / 3.0);
-    // zom->collision_box.w = zom->w;
-    // zom->collision_box.h = (zom->h / 3.0);
-
-    // zom->collision_box.x += 0.5*zom->collision_box.w*(1.00 - shrink_factor);
-    // zom->collision_box.y += 0.5*zom->collision_box.h*(1.00 - shrink_factor);
-    // zom->collision_box.w *= shrink_factor;
-    // zom->collision_box.h *= shrink_factor;
-
-    // zom->hit_box.x = zom->phys.pos.x+zom->visible_rect.x;
-    // zom->hit_box.y = zom->phys.pos.y+zom->visible_rect.y;
-    // zom->hit_box.w = zom->visible_rect.w;
-    // zom->hit_box.h = zom->visible_rect.h;
-
-
-
-    float x = zom->collision_box.x + zom->collision_box.w/2.0;
-    float y = zom->collision_box.y + zom->collision_box.h;
+    float x = zom->collision_box.x;
+    float y = zom->collision_box.y;
     coords_to_map_grid(x, y, &zom->map_row, &zom->map_col);
     coords_to_map_grid(x, y, &zom->world_row, &zom->world_col);
-
-    // zom->hit_box.x = zom->phys.pos.x;
-    // zom->hit_box.y = zom->phys.pos.y;
-    // zom->hit_box.w = zom->w;
-    // zom->hit_box.h = (zom->h / 1.5);
-
-    // zom->hit_box.x += 0.5*zom->hit_box.w*(1.00 - shrink_factor);
-    // zom->hit_box.y += 0.5*zom->hit_box.h*(1.00 - shrink_factor);
-    // zom->hit_box.w *= shrink_factor;
-    // zom->hit_box.h *= shrink_factor;
 }
 
 static void zombie_die(int index)
@@ -148,6 +118,11 @@ static void zombie_die(int index)
 
 void zombie_update(float delta_t)
 {
+    // //TEMP
+    // for(int i = 0; i < num_zombies; ++i)
+    //     update_zombie_boxes(&zombies[i]);
+    // return;
+
     for(int i = 0; i < num_zombies; ++i)
     {
         Zombie* zom = &zombies[i];

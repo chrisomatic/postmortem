@@ -295,18 +295,15 @@ static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool lin
                     memcpy(&img->sub_img_data->visible_rects[e], &sub_image_data->visible_rects[e], sizeof(Rect));
                     memcpy(&img->sub_img_data->sprite_rects[e], &sub_image_data->sprite_rects[e], sizeof(Rect));
                 }
-
                 printf("Image set: width: %d, height: %d, count: %d\n", img->sub_img_data->element_width, img->sub_img_data->element_height, img->sub_img_data->element_count);
             }
             else
             {
                 gfx_get_image_visible_rect(img->w, img->h, img->n, image->data, &img->visible_rect);
-
-                img->sprite_rect.x = img->visible_rect.x / img->w;
-                img->sprite_rect.y = img->visible_rect.y / img->h;
                 img->sprite_rect.w = img->visible_rect.w / img->w;
                 img->sprite_rect.h = img->visible_rect.h / img->h;
-
+                img->sprite_rect.x = (img->visible_rect.x) / img->w;
+                img->sprite_rect.y = (img->visible_rect.y) / img->h;
                 printf("Visible Rectangle: x: %.0f, y: %.0f, w: %.0f, h: %.0f\n", img->visible_rect.x, img->visible_rect.y, img->visible_rect.w, img->visible_rect.h);
             }
 
@@ -386,7 +383,6 @@ int gfx_load_image_set(const char* image_path, int element_width, int element_he
             }
         }
 
-
         gfx_get_image_visible_rect(element_width, element_height, 4, temp_data, &sid.visible_rects[i]);
 
         Rect* vr = &sid.visible_rects[i];
@@ -394,7 +390,6 @@ int gfx_load_image_set(const char* image_path, int element_width, int element_he
         sid.sprite_rects[i].y = (float)(start_y+vr->y) / image.h;
         sid.sprite_rects[i].w = vr->w / image.w;
         sid.sprite_rects[i].h = vr->h / image.h;
-
     }
 
     int idx = assign_image(&sid, &image, false);
@@ -420,8 +415,8 @@ void gfx_get_image_visible_rect(int img_w, int img_h, int img_n, unsigned char* 
 
     ret->w = (float)width;
     ret->h = (float)height;
-    ret->x = (float)left;
-    ret->y = (float)top;
+    ret->x = (float)left + ret->w/2.0;
+    ret->y = (float)top + ret->h/2.0;
 }
 
 void gfx_free_image(int img_index)
@@ -441,7 +436,6 @@ void gfx_free_image(int img_index)
         free(sid);
     }
 
-    //stbi_image_free(img->data);
     memset(img, 0, sizeof(GFXImage));
     img->texture = -1;
 }
@@ -462,7 +456,7 @@ void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, floa
 
     Matrix model = {0};
 
-    Vector3f pos = {x+w/2.0,y+h/2.0,0.0};
+    Vector3f pos = {x,y,0.0};
     Vector3f rot = {0.0,0.0,0.0};
     Vector3f sca = {scale*w,-scale*h,1.0};
 
@@ -520,8 +514,8 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
     float vh = img->visible_rect.h;
 
     Rect* sr = &img->sprite_rect;
-    float sprite_x = sr->x;
-    float sprite_y = sr->y;
+    float sprite_x = sr->x-sr->w/2.0;
+    float sprite_y = sr->y-sr->h/2.0;
     float sprite_w = sr->w;
     float sprite_h = sr->h;
 
@@ -538,7 +532,7 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
     glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
 
-    Vector3f pos = {x+vw/2.0,y+vh/2.0,0.0};
+    Vector3f pos = {x,y,0.0};
     Vector3f rot = {0.0,0.0,360.0-rotation};
     Vector3f sca = {scale*vw,scale*vh,1.0};
 
@@ -609,8 +603,8 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint3
 
     glUseProgram(program_sprite);
     Rect* sr = &sid->sprite_rects[sprite_index];
-    float sprite_x = sr->x;
-    float sprite_y = sr->y;
+    float sprite_x = sr->x-sr->w/2.0;
+    float sprite_y = sr->y-sr->h/2.0;
     float sprite_w = sr->w;
     float sprite_h = sr->h;
 
@@ -629,7 +623,7 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint3
 
     Matrix model = {0};
 
-    Vector3f pos = {x+vw/2.0,y+vh/2.0,0.0};
+    Vector3f pos = {x,y,0.0};
     Vector3f rot = {0.0,0.0,360.0-rotation};
     Vector3f sca = {scale*vw,scale*vh,1.0};
 

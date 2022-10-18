@@ -56,6 +56,11 @@ int main(int argc, char* argv[])
     // deg = 180.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
     // deg = 270.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
     // exit(0);
+    
+    
+    // float a = calc_angle_rad(0,0,10,0);
+    // printf("%.2f, %.2f deg\n", a, DEG(a));
+    // exit(0);
 
 
     // angle_sector(0.0, 2);
@@ -153,7 +158,7 @@ void deinit()
     window_deinit();
 }
 
-int mx, my;
+int mx, my; //TODO
 void update(double delta_t)
 {
     gfx_clear_lines();
@@ -187,13 +192,13 @@ void draw()
 
     world_draw();
     zombie_draw();
+    projectile_draw();
     player_draw();
 
     // gfx_draw_sub_image(player.image, 5, player.phys.pos.x, player.phys.pos.y, 0, 1.0, 0, 1.0);
 
 
 
-    projectile_draw();
     gfx_draw_lines();
     gui_draw();
     gfx_draw_stringf(2.0,200.0,0x00FFFFFF,0.16,0.0, 1.0, false, true,"cam offset: %d %d", mx, my);

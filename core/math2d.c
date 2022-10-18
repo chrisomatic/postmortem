@@ -135,11 +135,6 @@ void print_matrix(Matrix* mat)
     }
 }
 
-void print_rect(Rect* r)
-{
-    printf("Rectangle (x,y,w,h): %.1f, %.1f, %.1f, %.1f\n", r->x, r->y, r->w, r->h);
-}
-
 void dot_product_mat(Matrix a, Matrix b, Matrix* result)
 {
     for(int i = 0; i < 4; ++i)
@@ -207,11 +202,15 @@ bool doIntersect(Vector2f p1, Vector2f q1, Vector2f p2, Vector2f q2)
 
 bool is_line_seg_intersecting_rect(LineSeg* l, Rect* r)
 {
+    float x0 = r->x - r->w/2.0;
+    float x1 = r->x + r->w/2.0;
+    float y0 = r->y - r->h/2.0;
+    float y1 = r->y + r->h/2.0;
     // rect segs
-    LineSeg r00 = {{r->x,r->y},{r->x+r->w,r->y}}; // top
-    LineSeg r01 = {{r->x,r->y},{r->x,r->y+r->h}}; // left
-    LineSeg r10 = {{r->x+r->w,r->y},{r->x+r->w,r->y+r->h}}; // right
-    LineSeg r11 = {{r->x,r->y+r->h},{r->x+r->w,r->y+r->h}}; // bottom
+    LineSeg r00 = {{x0,y0},{x1,y0}}; // top
+    LineSeg r01 = {{x0,y0},{x0,y1}}; // left
+    LineSeg r10 = {{x1,y0},{x1,y1}}; // right
+    LineSeg r11 = {{x0,y1},{x1,y1}}; // bottom
 
     bool b00 = doIntersect(r00.a,r00.b,l->a,l->b);//are_line_segs_intersecting(&r00,l);
     if(b00) return true;
@@ -233,17 +232,27 @@ bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check)
     // prior_s is the rect for t-1
     // check rect is the thing we're checking to see if s is intersecting it
 
-    LineSeg s00 = {{prior_s->x, prior_s->y},{curr_s->x, curr_s->y}};
-    LineSeg s01 = {{prior_s->x+prior_s->w, prior_s->y},{curr_s->x+curr_s->w, curr_s->y}};
-    LineSeg s10 = {{prior_s->x, prior_s->y+prior_s->h},{curr_s->x, curr_s->y+curr_s->h}};
-    LineSeg s11 = {{prior_s->x+prior_s->w, prior_s->y+prior_s->h},{curr_s->x+curr_s->w, curr_s->y+curr_s->h}};
+    float px0 = prior_s->x - prior_s->w/2.0;
+    float px1 = prior_s->x + prior_s->w/2.0;
+    float py0 = prior_s->y - prior_s->h/2.0;
+    float py1 = prior_s->y + prior_s->h/2.0;
+
+    float cx0 = curr_s->x - curr_s->w/2.0;
+    float cx1 = curr_s->x + curr_s->w/2.0;
+    float cy0 = curr_s->y - curr_s->h/2.0;
+    float cy1 = curr_s->y + curr_s->h/2.0;
+
+    LineSeg s00 = {{px0, py0},{cx0, cy0}};
+    LineSeg s01 = {{px1, py0},{cx1, cy0}};
+    LineSeg s10 = {{px0, py1},{cx0, cy1}};
+    LineSeg s11 = {{px1, py1},{cx1, cy1}};
 
     bool b00 = is_line_seg_intersecting_rect(&s00, check);
     if(b00) return true;
 
     bool b01 = is_line_seg_intersecting_rect(&s01, check);
     if(b01) return true;
-    
+
     bool b10 = is_line_seg_intersecting_rect(&s10, check);
     if(b10) return true;
 
@@ -251,6 +260,26 @@ bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check)
     if(b11) return true;
 
     return false;
+}
+
+bool rectangles_colliding(Rect* a, Rect* b)
+{
+    float ax0 = a->x - a->w/2.0;
+    float ax1 = a->x + a->w/2.0;
+    float ay0 = a->y - a->h/2.0;
+    float ay1 = a->y + a->h/2.0;
+
+    float bx0 = b->x - b->w/2.0;
+    float bx1 = b->x + b->w/2.0;
+    float by0 = b->y - b->h/2.0;
+    float by1 = b->y + b->h/2.0;
+
+    bool overlap = (
+        ax0 < (bx1) && (ax1) > bx0 &&
+        ay0 < (by1) && (ay1) > by0
+    );
+
+    return overlap;
 }
 
 void get_scale_transform(Matrix* mat, Vector3f* scale)
@@ -338,16 +367,6 @@ float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b)
     return angle;
 }
 
-bool rectangles_colliding(Rect* a, Rect* b)
-{
-    bool overlap = (
-        a->x < (b->x+b->w) && (a->x+a->w) > b->x &&
-        a->y < (b->y+b->h) && (a->y+a->h) > b->y
-    );
-
-    return overlap;
-}
-
 // angle_deg: 0-360
 int angle_sector(float angle_deg, int num_sectors)
 {
@@ -372,11 +391,15 @@ float rangef(float arr[], int n, float* fmin, float* fmax)
     return (*fmax-*fmin);
 }
 
-void rotate_rect(Rect* rect, float rotation, float rotation_x, float rotation_y, RectXY* out_rect)
+void rotate_rect(Rect* in, float rotation, float rotation_x, float rotation_y, RectXY* out)
 {
-    // top left, bottom left, top right, bottom right
-    float xcoords[4] = {rect->x, rect->x,         rect->x+rect->w, rect->x+rect->w};
-    float ycoords[4] = {rect->y, rect->y+rect->h, rect->y,         rect->y+rect->h};
+    float x0 = in->x - in->w/2.0;
+    float x1 = in->x + in->w/2.0;
+    float y0 = in->y - in->h/2.0;
+    float y1 = in->y + in->h/2.0;
+    // top left, top right, bottom right, bottom left
+    float xcoords[4] = {x0, x1, x1, x0};
+    float ycoords[4] = {y0, y0, y1, y1};
 
     float a = RAD(360-rotation);
     float xa = cos(a);
@@ -384,9 +407,22 @@ void rotate_rect(Rect* rect, float rotation, float rotation_x, float rotation_y,
 
     for(int i = 0; i < 4; ++i)
     {
-        out_rect->x[i] = (xa * (xcoords[i] - rotation_x) - ya * (ycoords[i] - rotation_y)) + rotation_x;
-        out_rect->y[i] = (ya * (xcoords[i] - rotation_x) - xa * (ycoords[i] - rotation_y)) + rotation_y;
+        out->x[i] = (xa * (xcoords[i] - rotation_x) - ya * (ycoords[i] - rotation_y)) + rotation_x;
+        out->y[i] = (ya * (xcoords[i] - rotation_x) - xa * (ycoords[i] - rotation_y)) + rotation_y;
     }
+}
+
+void rect_to_rectxy(Rect* in, RectXY* out)
+{
+    float x0 = in->x - in->w/2.0;
+    float x1 = in->x + in->w/2.0;
+    float y0 = in->y - in->h/2.0;
+    float y1 = in->y + in->h/2.0;
+    // top left, top right, bottom right, bottom left
+    float xcoords[4] = {x0, x1, x1, x0};
+    float ycoords[4] = {y0, y0, y1, y1};
+    memcpy(out->x, xcoords, 4*sizeof(out->x[0]));
+    memcpy(out->y, ycoords, 4*sizeof(out->y[0]));
 }
 
 void rectxy_to_rect(RectXY* in, Rect* out)
@@ -394,8 +430,26 @@ void rectxy_to_rect(RectXY* in, Rect* out)
     float xmin,xmax,ymin,ymax;
     float xrange = rangef(in->x, 4, &xmin, &xmax);
     float yrange = rangef(in->y, 4, &ymin, &ymax);
-    out->x = xmin;
-    out->y = ymin;
     out->w = xrange;
     out->h = yrange;
+    out->x = xmin + out->w/2.0;
+    out->y = ymin + out->h/2.0;
+}
+
+void print_rect(Rect* r)
+{
+    printf("Rectangle (x,y,w,h): %.1f, %.1f, %.1f, %.1f\n", r->x, r->y, r->w, r->h);
+}
+
+void print_rectxy(RectXY* r)
+{
+    printf("Rectangle XY:\n");
+
+    printf("  x: ");
+    for(int i = 0; i < 4; ++i)
+        printf("%.2f%s", r->x[i], i != 3 ? ", " : "\n");
+
+    printf("  y: ");
+    for(int i = 0; i < 4; ++i)
+        printf("%.2f%s", r->y[i], i != 3 ? ", " : "\n");
 }

@@ -59,8 +59,8 @@ void get_camera_rect(Rect* rect)
     float x = MAX(0,camera.pos.x-vw);
     float y = MAX(0,camera.pos.y-vh);
 
-    rect->x = x;
-    rect->y = y;
     rect->w = vw*2.0;
     rect->h = vh*2.0;
+    rect->x = x+rect->w/2.0;
+    rect->y = y+rect->h/2.0;
 }

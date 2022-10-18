@@ -15,12 +15,9 @@ typedef struct
 
 typedef struct
 {
-    //unsigned char* data;
     int w,h,n;
     Rect visible_rect;
     Rect sprite_rect;
-    // bool is_set;
-    // int element_width, element_height;
     uint32_t texture;
     GFXSubImageData* sub_img_data;
 } GFXImage;
@@ -38,7 +35,6 @@ void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, floa
 // Images
 int gfx_load_image(const char* image_path, bool flip, bool linear_filter);
 void gfx_get_image_visible_rect(int img_w, int img_h, int img_n, unsigned char* img_data, Rect* ret);
-// void gfx_get_image_visible_rect(GFXImage* img, unsigned char* img_data, Rect* ret);
 int gfx_load_image_set(const char* image_path, int element_width, int element_height);
 bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale, float rotation, float opacity);
 bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity);

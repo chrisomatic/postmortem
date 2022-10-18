@@ -13,6 +13,7 @@ typedef struct
     Vector2f pos;
     Rect visible_rect;
     float angle;
+    RectXY rectxy;  //rotated
 
     int type;
     int projectile_type;

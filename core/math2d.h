@@ -47,14 +47,14 @@ typedef struct
     Vector3f color;
 } LinePoint;
 
-typedef struct 
+typedef struct
 {
     float m[4][4];
 } Matrix;
 
 typedef struct
 {
-    float x,y;
+    float x,y;  //center
     float w,h;
 } Rect;
 
@@ -64,13 +64,6 @@ typedef struct
     float y[4];
 } RectXY;
 
-typedef struct
-{
-    Vector2f p0;
-    Vector2f p1;
-    Vector2f p2;
-    Vector2f p3;
-} Rect2;
 
 extern Matrix IDENTITY_MATRIX;
 
@@ -82,19 +75,19 @@ void get_rotation_transform(Matrix* mat, Vector3f* rotation);
 void get_translate_transform(Matrix* mat, Vector3f* position);
 void dot_product_mat(Matrix a, Matrix b, Matrix* result);
 void print_matrix(Matrix* mat);
-void print_rect(Rect* r);
+
 float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b);
 
 bool are_line_segs_intersecting(LineSeg* l1, LineSeg* l2);
 bool is_line_seg_intersecting_rect(LineSeg* l, Rect* r);
 bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check);
-
 bool rectangles_colliding(Rect* a, Rect* b);
 
 int angle_sector(float angle, int num_sectors);
 float rangef(float arr[], int n, float* fmin, float* fmax);
-// double rangef(double arr[], int n, double* fmin, double* fmax);
 
-void rotate_rect(Rect* rect, float rotation, float rotation_x, float rotation_y, RectXY* out_rect);
-
+void rotate_rect(Rect* in, float rotation, float rotation_x, float rotation_y, RectXY* out);
+void rect_to_rectxy(Rect* in, RectXY* out);
 void rectxy_to_rect(RectXY* in, Rect* out);
+void print_rect(Rect* r);
+void print_rectxy(RectXY* r);

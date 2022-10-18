@@ -100,27 +100,12 @@ void player_update(double delta_t)
 
     window_get_mouse_world_coords(&mouse_x, &mouse_y);
 
-    // // DEBUG
-    // if(primary_action)
-    // {
-    //     printf("mouse_pos: %f,%f\n", mouse_x, mouse_y);
-    // }
-
-    // int mr,mc,wr,wc;
-    // coords_to_map_grid(player.phys.pos.x, player.phys.pos.y, &mr, &mc);
-    // coords_to_world_grid(player.phys.pos.x, player.phys.pos.y, &wr, &wc);
-    // printf("Player x,y: %.1f,%.1f  |  Map row,col: %d,%d  |  World row,col: %d,%d\n", player.phys.pos.x, player.phys.pos.y, mr, mc, wr, wc);
-
-
-    Vector3f player_pos = {player.phys.pos.x + (player.w*player.scale)/2.0, (player.phys.pos.y + (player.h*player.scale)/2.0), 0.0};
+    Vector3f player_pos = {player.phys.pos.x, player.phys.pos.y, 0.0};
     Vector3f mouse_pos = {mouse_x, mouse_y, 0.0};
     Vector3f dist = {mouse_pos.x - player_pos.x, mouse_pos.y - player_pos.y, 0.0};
 
-    //float angle = get_angle_between_vectors_rad(&dist, &x_axis);
     player.angle = calc_angle_rad(player_pos.x, player_pos.y, mouse_pos.x, mouse_pos.y);
     float angle_deg = DEG(player.angle);
-    //printf("player angle_deg: %f\n",angle_deg);
-
 
     if(player.gun_ready)
     {
@@ -187,33 +172,46 @@ void player_update(double delta_t)
 
     if(player.gun_ready)
     {
-
         // update gun
 
+        // gun orientation X:
+        // +----------------------+
+        // |                      |
+        // X                      B
+        // |                      |
+        // +----------------------+
+        // bullet should spawn at B
+
         player.gun.angle = player.angle;
-        float gx = player.phys.pos.x + (player.visible_rect.w/2.0) + 10*cosf(player.gun.angle);
-        float gy = player.phys.pos.y + (player.visible_rect.h*0.50) - 10*sinf(player.gun.angle);
+        float gx0 = player.phys.pos.x;
+        float gy0 = player.phys.pos.y-vr->h*0.1;
 
         Rect r = {0};
-        r.x = gx;
-        r.y = gy;
+        RectXY rxy_rot = {0};
+        Rect r_rot = {0};
+
+        r.x = gx0;
+        r.y = gy0;
         r.w = player.gun.visible_rect.w;
         r.h = player.gun.visible_rect.h;
+        rotate_rect(&r, DEG(player.gun.angle), r.x, r.y, &rxy_rot);
 
-        RectXY rxy_rot = {0};
+        // 'push' the rotated rectangle out a bit from the player
+        for(int i = 0; i < 4; ++i)
+        {
+            rxy_rot.x[i] += vr->w/2.0*cosf(player.gun.angle);
+            // rxy_rot.y[i] -= vr->h/2.0*sinf(player.gun.angle);
 
-        float xcenter = r.x+r.w/2.0;
-        float ycenter = r.y+r.h/2.0;
-        rotate_rect(&r, DEG(player.gun.angle), xcenter, ycenter, &rxy_rot);
+            // rxy_rot.x[i] += 16*cosf(player.gun.angle);
+            // rxy_rot.y[i] -= 16*sinf(player.gun.angle);
+            // // rxy_rot.y[i] += 16*sinf(PI*2-player.gun.angle); //also works
+        }
 
-        Rect r_rot = {0};
+        // find center of rotated rectangle
         rectxy_to_rect(&rxy_rot, &r_rot);
-
-        float dx = rxy_rot.x[0] - gx ;
-        float dy = rxy_rot.y[0] - gy ;
-
-        player.gun.pos.x = gx-dx;
-        player.gun.pos.y = gy-dy;
+        player.gun.pos.x = r_rot.x;
+        player.gun.pos.y = r_rot.y;
+        memcpy(&player.gun.rectxy, &rxy_rot, sizeof(RectXY));
 
         if(primary_action)
         {
@@ -251,11 +249,9 @@ void player_draw()
         }
     }
 
-    // gfx_draw_sub_image(player.image,player.sprite_index,player.phys.pos.x,player.phys.pos.y, COLOR_TINT_NONE,player.scale,0.0,1.0);
     float px = player.phys.pos.x;
     float py = player.phys.pos.y;
     gfx_draw_sub_image(player.image, player.sprite_index, px, py, COLOR_TINT_NONE,player.scale,0.0,1.0);
-
 
     if(debug_enabled)
     {
@@ -265,59 +261,7 @@ void player_draw()
         r.w = player.visible_rect.w;
         r.h = player.visible_rect.h;
         gfx_draw_rect(&r, 0x00FF0000, player.scale,1.0);
-
-
-
-        // RectXY r2 = {0};
-        // Rect r_rot = {0};
-
-        // r.x = player.gun.pos.x;
-        // r.y = player.gun.pos.y;
-        // r.w = player.gun.visible_rect.w;
-        // r.h = player.gun.visible_rect.h;
-        // gfx_draw_rect(&r, 0x00FF00FF, 1.0,1.0);
-
-        // float xcenter = r.x+r.w/2.0;
-        // float ycenter = r.y+r.h/2.0;
-        // rotate_rect(&r, 90, xcenter, ycenter, &r2);
-        // rectxy_to_rect(&r2, &r_rot);
-        // gfx_draw_rect(&r_rot, 0x0000FFFF, 1.0,1.0);
-
-        // printf("============================================\n");
-        // {
-        //     Rect* rect = &r;
-        //     float xcoords[4] = {rect->x, rect->x,         rect->x+rect->w, rect->x+rect->w};
-        //     float ycoords[4] = {rect->y, rect->y+rect->h, rect->y,         rect->y+rect->h};
-
-        //     printf("x: ");
-        //     for(int i = 0; i < 4; ++i)
-        //         printf("%.2f, ", xcoords[i]);
-        //     printf("\n");
-
-        //     printf("y: ");
-        //     for(int i = 0; i < 4; ++i)
-        //         printf("%.2f, ", ycoords[i]);
-        //     printf("\n");
-        // }
-
-        // {
-        //     Rect* rect = &r_rot;
-        //     float xcoords[4] = {rect->x, rect->x,         rect->x+rect->w, rect->x+rect->w};
-        //     float ycoords[4] = {rect->y, rect->y+rect->h, rect->y,         rect->y+rect->h};
-
-        //     printf("rx: ");
-        //     for(int i = 0; i < 4; ++i)
-        //         printf("%.2f, ", xcoords[i]);
-        //     printf("\n");
-
-        //     printf("ry: ");
-        //     for(int i = 0; i < 4; ++i)
-        //         printf("%.2f, ", ycoords[i]);
-        //     printf("\n");
-        // }
-
     }
-
 
 
     if(player.gun_ready)
@@ -326,6 +270,6 @@ void player_draw()
             gun_draw(&player.gun);
 
         GFXImage* img = &gfx_images[crosshair_image];
-        gfx_draw_image(crosshair_image,mouse_x-(img->w/2.0),mouse_y-(img->h/2.0), 0x00FF00FF,1.0,0.0,0.80);
+        gfx_draw_image(crosshair_image,mouse_x,mouse_y, 0x00FF00FF,1.0,0.0,0.80);
     }
 }

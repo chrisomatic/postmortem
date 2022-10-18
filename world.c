@@ -109,8 +109,8 @@ void world_draw()
     get_camera_rect(&r);
     // printf("%.2f, %.2f, %.2f, %.2f\n", r.x,r.y,r.w,r.h);
     int r1,c1,r2,c2;
-    coords_to_map_grid(r.x, r.y, &r1, &c1);
-    coords_to_map_grid(r.x+r.w, r.y+r.h, &r2, &c2);
+    coords_to_map_grid(r.x-r.w/2.0, r.y-r.h/2.0, &r1, &c1);
+    coords_to_map_grid(r.x+r.w/2.0, r.y+r.h/2.0, &r2, &c2);
 
     for(int r = (r1-1); r < (r2+1); ++r)
     {
@@ -142,8 +142,8 @@ void coords_to_map_grid(float x, float y, int* row, int* col)
 
 void map_grid_to_coords(int row, int col, float* x, float* y)
 {
-    *x = (float)col*MAP_GRID_PXL_SIZE;
-    *y = (float)row*MAP_GRID_PXL_SIZE;
+    *x = (float)(col+0.5)*MAP_GRID_PXL_SIZE;
+    *y = (float)(row+0.5)*MAP_GRID_PXL_SIZE;
 }
 
 int map_grid_to_index(int row, int col)
@@ -165,8 +165,8 @@ void coords_to_world_grid(float x, float y, int* row, int* col)
 
 void world_grid_to_coords(int row, int col, float* x, float* y)
 {
-    *x = (float)col*(MAP_GRID_PXL_SIZE*WORLD_GRID_WIDTH);
-    *y = (float)row*(MAP_GRID_PXL_SIZE*WORLD_GRID_HEIGHT);
+    *x = (float)(col+0.5)*(MAP_GRID_PXL_SIZE*WORLD_GRID_WIDTH);
+    *y = (float)(row+0.5)*(MAP_GRID_PXL_SIZE*WORLD_GRID_HEIGHT);
 }
 
 int world_grid_to_index(int row, int col)
@@ -189,16 +189,3 @@ bool is_in_camera_view(Rect* r)
     return rectangles_colliding(&r1, r);
 }
 
-bool is_in_camera_view_xywh(float x, float y, float w, float h)
-{
-    Rect r1 = {0};
-    get_camera_rect(&r1);
-
-    Rect r2 = {0};
-    r2.x = x;
-    r2.y = y;
-    r2.w = w;
-    r2.h = h;
-
-    return rectangles_colliding(&r1, &r2);
-}
