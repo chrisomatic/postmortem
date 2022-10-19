@@ -34,6 +34,7 @@
 
 Timer game_timer = {0};
 GameRole role;
+Vector2f aim_camera_offset = {0};
 
 // =========================
 // Function Prototypes
@@ -244,32 +245,41 @@ void deinit()
     window_deinit();
 }
 
-Vector2f camera_offset = {0};
+// also checks if the mouse is off the screen
+void aim_camera_offset_update()
+{
+    int mx, my;
+    window_get_mouse_view_coords(&mx, &my);
 
-int mx, my; //TODO
+    if(player.gun_ready)
+    {
+        float r = 0.3;  //should be <= 0.5 to make sense
+        float ox = (mx - view_width/2.0);
+        float oy = (my - view_height/2.0);
+        float xr = view_width*r;
+        float yr = view_height*r;
+        ox = 2.0*xr*(ox/view_width);
+        oy = 2.0*yr*(oy/view_height);
+        ox = RANGE(ox, -1.0*xr, xr);
+        oy = RANGE(oy, -1.0*yr, yr);
+        aim_camera_offset.x = ox;
+        aim_camera_offset.y = oy;
+    }
+
+    if(mx >= view_width || mx <= 0 || my >= view_height || my <= 0)
+    {
+        int new_mx = RANGE(mx, 0, view_width);
+        int new_my = RANGE(my, 0, view_height);
+        window_set_mouse_view_coords(new_mx, new_my);
+    }
+    camera_move(player.phys.pos.x + aim_camera_offset.x, player.phys.pos.y + aim_camera_offset.y);
+}
+
 void update(double delta_t)
 {
     gfx_clear_lines();
 
-    // Vector2f offset = {player.w/2.0,player.h/2.0};
-    Vector2f offset = {0,0};
-    if(player.gun_ready)
-    {
-        window_get_mouse_view_coords(&mx, &my);
-
-        mx = (mx - view_width/2.0);
-        my = (my - view_height/2.0);
-        
-
-        mx = 200.0*((float)mx/view_width);
-        my = 200.0*((float)my/view_height);
-
-        offset.x += mx;
-        offset.y += my;
-    }
-
-    camera_move(player.phys.pos.x + offset.x, player.phys.pos.y + offset.y);
-
+    aim_camera_offset_update();
     world_update();
     zombie_update(delta_t);
     player_update(delta_t);
@@ -284,8 +294,6 @@ void draw()
     zombie_draw();
     projectile_draw();
     player_draw();
-
-    // gfx_draw_sub_image(player.image, 5, player.phys.pos.x, player.phys.pos.y, 0, 1.0, 0, 1.0);
 
     gfx_draw_lines();
     gui_draw();

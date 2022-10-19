@@ -135,7 +135,7 @@ static void load_font()
         font_chars[char_index].w = px_r - px_l;
         font_chars[char_index].h = px_b - px_t;
 
-        printf("font_char %d: %f [%f %f %f %f], [%f %f %f %f], [%f %f %f %f]\n",char_index,advance,pl_l,pl_b,pl_r,pl_t,px_l,px_b,px_r,px_t,px_l/512.0,px_b/512.0,px_r/512.0,px_t/512.0);
+        // printf("font_char %d: %f [%f %f %f %f], [%f %f %f %f], [%f %f %f %f]\n",char_index,advance,pl_l,pl_b,pl_r,pl_t,px_l,px_b,px_r,px_t,px_l/512.0,px_b/512.0,px_r/512.0,px_t/512.0);
     }
 
     fclose(fp);
@@ -721,7 +721,6 @@ Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float ro
     char str[256] = {0};
     vsprintf(str,fmt, args);
     va_end(args);
-    // gfx_draw_string(x, y, color, scale, rotation, opacity, in_world, drop_shadow, str);
 
     glUseProgram(program_font);
 
@@ -891,15 +890,6 @@ Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float ro
     return ret;
 }
 
-// void gfx_draw_stringf(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
-// {
-//     va_list args;
-//     va_start(args, fmt);
-//     char str[256] = {0};
-//     vsprintf(str,fmt, args);
-//     gfx_draw_string(x, y, color, scale, rotation, opacity, in_world, drop_shadow, str);
-//     va_end(args);
-// }
 
 void gfx_clear_lines()
 {

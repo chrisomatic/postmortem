@@ -101,6 +101,13 @@ void window_get_mouse_view_coords(int* x, int* y)
     *y *= (view_height/(float)window_height);
 }
 
+void window_set_mouse_view_coords(int x, int y)
+{
+    double _x = (double)x / (view_width/(float)window_width);
+    double _y = (double)y / (view_height/(float)window_height);
+    glfwSetCursorPos(window, _x, _y);
+}
+
 void window_get_mouse_world_coords(float* x, float* y)
 {
     int mouse_x, mouse_y;
@@ -165,6 +172,8 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 {
     window_coord_x = xpos;
     window_coord_y = ypos;
+    // glfwSetCursorPos(window, view_width/2.0, 0); //TODO
+
 }
 
 typedef struct

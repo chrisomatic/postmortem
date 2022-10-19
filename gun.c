@@ -26,7 +26,7 @@ void gun_init()
     gun_arsenal[idx].bullets_max = 100;
     gun_arsenal[idx].projectile_type = PROJECTILE_TYPE_BULLET;
     gun_arsenal[idx].type = idx;
-    gun_arsenal[idx].sprite_index = GUN_TYPE_HANDGUN;
+    gun_arsenal[idx].sprite_index = 0;
     memcpy(&gun_arsenal[idx].visible_rect, &sid->visible_rects[gun_arsenal[idx].sprite_index], sizeof(Rect));
 
     idx = GUN_TYPE_MACHINEGUN;
@@ -41,7 +41,7 @@ void gun_init()
     gun_arsenal[idx].bullets_max = 100;
     gun_arsenal[idx].projectile_type = PROJECTILE_TYPE_BULLET;
     gun_arsenal[idx].type = idx;
-    gun_arsenal[idx].sprite_index = GUN_TYPE_HANDGUN;
+    gun_arsenal[idx].sprite_index = 0;
     memcpy(&gun_arsenal[idx].visible_rect, &sid->visible_rects[gun_arsenal[idx].sprite_index], sizeof(Rect));
 
     idx = GUN_TYPE_SHOTGUN;
@@ -56,7 +56,7 @@ void gun_init()
     gun_arsenal[idx].bullets_max = 100;
     gun_arsenal[idx].projectile_type = PROJECTILE_TYPE_BULLET;
     gun_arsenal[idx].type = idx;
-    gun_arsenal[idx].sprite_index = idx;
+    gun_arsenal[idx].sprite_index = 1;
     memcpy(&gun_arsenal[idx].visible_rect, &sid->visible_rects[gun_arsenal[idx].sprite_index], sizeof(Rect));
 
 }

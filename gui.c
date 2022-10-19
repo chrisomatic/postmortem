@@ -8,6 +8,7 @@
 #include "player.h"
 #include "gui.h"
 #include "world.h"
+#include "camera.h"
 
 void gui_draw()
 {
@@ -21,8 +22,6 @@ void gui_draw()
         // -----
         // Player
         // ------
-
-        gfx_draw_rect_xywh(80,78,120,120, 0x001F1F1F, 1.0, 0.4, true, false);
 
         bool up               = IS_BIT_SET(player.keys,PLAYER_ACTION_UP);
         bool down             = IS_BIT_SET(player.keys,PLAYER_ACTION_DOWN);
@@ -43,10 +42,18 @@ void gui_draw()
         float scale = 0.1;
         float scale_big = 0.16;
         bool drop_shadow = true;
+
+        Rect gui_bg = {0};
+        gui_bg.w = 120;
+        gui_bg.h = 150;
+        gui_bg.x = start_x-5 + gui_bg.w/2.0;
+        gui_bg.y = start_y-5 + gui_bg.h/2.0;
+        gfx_draw_rect(&gui_bg, 0x001F1F1F, 1.0, 0.4, true, false);
+
         Vector2f size = {0};
 
-        // player stats
-        size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Player"); y += size.y+5;
+        // player
+        size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Player"); y += size.y+ypad;
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Pos: %d, %d", (int)player.phys.pos.x, (int)player.phys.pos.y); y += size.y+ypad;
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action); y += size.y+ypad;
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", player.angle, DEG(player.angle)); y += size.y+ypad;
@@ -67,10 +74,20 @@ void gui_draw()
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Map Grid:   %d, %d", mr, mc); y += size.y+ypad;
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "World Grid: %d, %d", wr, wc); y += size.y+ypad;
 
+        // camera
+        Rect camera_rect = {0};
+        get_camera_rect(&camera_rect);
+        y += ypad;
+        size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Camera"); y += size.y+ypad;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Pos: %.2f, %.2f", camera_rect.x, camera_rect.y); y += size.y+ypad;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "w,h: %.2f, %.2f", camera_rect.w, camera_rect.h); y += size.y+ypad;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Offset: %.2f, %.2f", aim_camera_offset.x, aim_camera_offset.y); y += size.y+ypad;
+
 
         float fps = timer_get_prior_frame_fps(&game_timer);
         size = gfx_string_get_size(scale, "fps: %.2f", fps);
         gfx_draw_string(view_width-size.x,0,0x00FFFF00,scale,0.0, 1.0, false,drop_shadow,"fps: %.2f", fps);
+
 
         // -----
         // Server
