@@ -182,9 +182,12 @@ void player_update(double delta_t)
         // +----------------------+
         // bullet should spawn at B
 
-        player.gun.angle = player.angle;
+        // player.gun.angle = player.angle;
         float gx0 = player.phys.pos.x;
         float gy0 = player.phys.pos.y-vr->h*0.1;
+
+        player.gun.angle = calc_angle_rad(gx0, gy0, mouse_pos.x, mouse_pos.y);
+
 
         Rect r = {0};
         RectXY rxy_rot = {0};

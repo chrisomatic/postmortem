@@ -1,6 +1,6 @@
 #pragma once
 
-#define MAX_ZOMBIES 1024
+#define MAX_ZOMBIES 2000
 
 typedef enum
 {

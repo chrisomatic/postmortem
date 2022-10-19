@@ -107,7 +107,6 @@ void window_get_mouse_world_coords(float* x, float* y)
     window_get_mouse_view_coords(&mouse_x, &mouse_y);
 
     Matrix* view = get_camera_transform();
-
     float cam_x = view->m[0][3];
     float cam_y = view->m[1][3];
 

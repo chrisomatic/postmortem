@@ -7,12 +7,14 @@
 #include "timer.h"
 #include "player.h"
 #include "gui.h"
+#include "world.h"
 
 void gui_draw()
 {
     // test print
-    gfx_draw_stringf(0,view_height-22,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
-    gfx_draw_string("Kameron",player.phys.pos.x,player.phys.pos.y + player.h,0x0000FFFF,0.1,0.0, 0.8, true, true);
+
+    gfx_draw_string(0,view_height-22,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
+    gfx_draw_string(player.phys.pos.x - player.w/2.0, player.phys.pos.y + player.h/2.0,0x0000FFFF,0.1,0.0, 0.8, true, true, "Kameron");
 
     if(debug_enabled)
     {
@@ -34,34 +36,42 @@ void gui_draw()
         bool toggle_fire      = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_FIRE);
         bool toggle_debug     = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_DEBUG);
 
+
         float start_x = 20.0, start_y = 20.0;
-
+        float y = start_y;
+        float ypad = 3.0;
         float scale = 0.1;
+        float scale_big = 0.16;
         bool drop_shadow = true;
-
-        float h;
-        gfx_string_get_size("Hello",scale,NULL, &h);
-        h+=4;
+        Vector2f size = {0};
 
         // player stats
-        float y = start_y;
-        gfx_draw_string("Player",start_x+2.0,y,0x00FFFFFF,0.16,0.0, 1.0, false, drop_shadow); y += 12;
-        gfx_draw_stringf(start_x+10,y   ,0x00FFFFFF,scale,0.0, 1.0, false,drop_shadow,"Pos: %d, %d", (int)player.phys.pos.x, (int)player.phys.pos.y);
-        gfx_draw_stringf(start_x+10,y+=h,0x00FFFFFF,scale,0.0, 1.0, false,drop_shadow,"Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action);
-        gfx_draw_stringf(start_x+10,y+=h,0x00FFFFFF,scale,0.0, 1.0, false,drop_shadow,"Angle: %.2f, %.2f deg", player.angle, DEG(player.angle));
-        
-        float mx, my;
-        window_get_mouse_world_coords(&mx, &my);
-        gfx_draw_stringf(start_x+10,y+=h,0x00FFFFFF,scale,0.0, 1.0, false,drop_shadow,"Mouse: %.2f, %.2f", mx, my);
+        size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Player"); y += size.y+5;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Pos: %d, %d", (int)player.phys.pos.x, (int)player.phys.pos.y); y += size.y+ypad;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action); y += size.y+ypad;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", player.angle, DEG(player.angle)); y += size.y+ypad;
 
-        // fps
-        float w;
+        // mouse
+        float wmx, wmy;
+        int vmx, vmy, mx, my, mr, mc, wr, wc;
+        window_get_mouse_world_coords(&wmx, &wmy);
+        window_get_mouse_view_coords(&vmx, &vmy);
+        window_get_mouse_coords(&mx, &my);
+        coords_to_map_grid(wmx, wmy, &mr, &mc);
+        coords_to_world_grid(wmx, wmy, &wr, &wc);
+        y += ypad;
+        size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Mouse"); y += size.y+5;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "World:  %.2f, %.2f", wmx, wmy); y += size.y+ypad;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "View:   %d, %d", vmx, vmy); y += size.y+ypad;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Window: %d, %d", mx, my); y += size.y+ypad;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Map Grid:   %d, %d", mr, mc); y += size.y+ypad;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "World Grid: %d, %d", wr, wc); y += size.y+ypad;
+
+
         float fps = timer_get_prior_frame_fps(&game_timer);
-        gfx_string_get_size("fps: 60.00",scale, &w, NULL);
-        w+=2;
+        size = gfx_string_get_size(scale, "fps: %.2f", fps);
+        gfx_draw_string(view_width-size.x,0,0x00FFFF00,scale,0.0, 1.0, false,drop_shadow,"fps: %.2f", fps);
 
-        gfx_draw_stringf(view_width-w,0,0x00FFFF00,scale,0.0, 1.0, false,drop_shadow,"fps: %.2f", fps);
-        
         // -----
         // Server
         // ------

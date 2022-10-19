@@ -244,18 +244,22 @@ void deinit()
     window_deinit();
 }
 
+Vector2f camera_offset = {0};
+
 int mx, my; //TODO
 void update(double delta_t)
 {
     gfx_clear_lines();
 
-    Vector2f offset = {player.w/2.0,player.h/2.0};
+    // Vector2f offset = {player.w/2.0,player.h/2.0};
+    Vector2f offset = {0,0};
     if(player.gun_ready)
     {
         window_get_mouse_view_coords(&mx, &my);
 
         mx = (mx - view_width/2.0);
         my = (my - view_height/2.0);
+        
 
         mx = 200.0*((float)mx/view_width);
         my = 200.0*((float)my/view_height);
@@ -285,6 +289,6 @@ void draw()
 
     gfx_draw_lines();
     gui_draw();
-    gfx_draw_stringf(2.0,200.0,0x00FFFFFF,0.16,0.0, 1.0, false, true,"cam offset: %d %d", mx, my);
+
 }
 

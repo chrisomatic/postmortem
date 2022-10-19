@@ -677,44 +677,52 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint3
 
 }
 
-void gfx_string_get_size(char* str, float scale, float* w, float* h)
+// w,h
+Vector2f gfx_string_get_size(float scale, char* fmt, ...)
 {
+    va_list args;
+    va_start(args, fmt);
+    char str[256] = {0};
+    vsprintf(str,fmt, args);
+    va_end(args);
+
     float tallest_h = 0.0;
     float x_pos = 0.0;
 
     char* c = str;
-
     for(;;)
     {
         if(*c == '\0')
             break;
 
         FontChar* fc = &font_chars[*c];
-
         float h = fc->h*scale;
         if(ABS(h) > tallest_h)
             tallest_h = ABS(h);
-
-        x_pos += scale*(fc->w + fc->advance);
+        if(*c == ' ')
+            x_pos += 16*scale;
+        else
+            x_pos += scale*(fc->w + fc->advance);
         c++;
     }
 
-    if(w) *w = x_pos;
-    if(h) *h = tallest_h;
+    Vector2f ret = {0};
+    ret.x = x_pos;
+    ret.y = tallest_h;
+    return ret;
 }
 
-void gfx_stringf_get_size(float scale, float* w, float* h, char* fmt, ...)
+// w,h
+Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
 {
+
     va_list args;
     va_start(args, fmt);
     char str[256] = {0};
     vsprintf(str,fmt, args);
-    gfx_string_get_size(str, scale, w, h);
     va_end(args);
-}
+    // gfx_draw_string(x, y, color, scale, rotation, opacity, in_world, drop_shadow, str);
 
-void gfx_draw_string(char* str, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow)
-{
     glUseProgram(program_font);
 
     Matrix* view = get_camera_transform();
@@ -876,17 +884,22 @@ void gfx_draw_string(char* str, float x, float y, uint32_t color, float scale, f
 
     glBindTexture(GL_TEXTURE_2D,0);
     glUseProgram(0);
+
+    Vector2f ret = {0};
+    ret.x = x_pos-x;
+    ret.y = tallest_h;
+    return ret;
 }
 
-void gfx_draw_stringf(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    char str[256] = {0};
-    vsprintf(str,fmt, args);
-    gfx_draw_string(str, x, y, color, scale, rotation, opacity, in_world, drop_shadow);
-    va_end(args);
-}
+// void gfx_draw_stringf(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
+// {
+//     va_list args;
+//     va_start(args, fmt);
+//     char str[256] = {0};
+//     vsprintf(str,fmt, args);
+//     gfx_draw_string(x, y, color, scale, rotation, opacity, in_world, drop_shadow, str);
+//     va_end(args);
+// }
 
 void gfx_clear_lines()
 {
