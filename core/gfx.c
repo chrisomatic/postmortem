@@ -450,7 +450,7 @@ GFXImage* gfx_get_image_data(int img_index)
     return &gfx_images[img_index];
 }
 
-void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, float scale, float opacity)
+void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, float scale, float opacity, bool filled, bool in_world)
 {
     glUseProgram(program_shape);
 
@@ -471,10 +471,22 @@ void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, floa
     glUniform1f(loc_shape_opacity,opacity);
 
     glUniformMatrix4fv(loc_shape_model,1,GL_TRUE,&model.m[0][0]);
-    glUniformMatrix4fv(loc_shape_view,1,GL_TRUE,&view->m[0][0]);
+
+    if(in_world)
+        glUniformMatrix4fv(loc_shape_view,1,GL_TRUE,&view->m[0][0]);
+    else
+        glUniformMatrix4fv(loc_shape_view,1,GL_TRUE,&IDENTITY_MATRIX.m[0][0]);
+
     glUniformMatrix4fv(loc_shape_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    if(filled)
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+    else
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
 
     glBindVertexArray(quad_vao);
     glEnableVertexAttribArray(0);
@@ -490,9 +502,9 @@ void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, floa
     glUseProgram(0);
 }
 
-void gfx_draw_rect(Rect* r, uint32_t color, float scale, float opacity)
+void gfx_draw_rect(Rect* r, uint32_t color, float scale, float opacity, bool filled, bool in_world)
 {
-    gfx_draw_rect_xywh(r->x, r->y, r->w, r->h, color, scale, opacity);
+    gfx_draw_rect_xywh(r->x, r->y, r->w, r->h, color, scale, opacity, filled, in_world);
 }
 
 bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale, float rotation, float opacity)

@@ -181,7 +181,7 @@ void projectile_draw()
 
             if(debug_enabled)
             {
-                gfx_draw_rect(&proj->hurt_box, 0x0000FFFF, 1.0,1.0);
+                gfx_draw_rect(&proj->hurt_box, 0x0000FFFF, 1.0,1.0, false, true);
             }
         }
     }

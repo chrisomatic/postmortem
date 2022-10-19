@@ -29,8 +29,8 @@ void gfx_init(int width, int height);
 void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b);
 
 // Rects
-void gfx_draw_rect(Rect* r, uint32_t color, float scale, float opacity);
-void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, float scale, float opacity);
+void gfx_draw_rect(Rect* r, uint32_t color, float scale, float opacity, bool filled, bool in_world);
+void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, float scale, float opacity, bool filled, bool in_world);
 
 // Images
 int gfx_load_image(const char* image_path, bool flip, bool linear_filter);

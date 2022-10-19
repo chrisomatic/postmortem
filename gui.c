@@ -18,7 +18,9 @@ void gui_draw()
         // -----
         // Player
         // ------
-        
+
+        gfx_draw_rect_xywh(80,78,120,120, 0x001F1F1F, 1.0, 0.4, true, false);
+
         bool up               = IS_BIT_SET(player.keys,PLAYER_ACTION_UP);
         bool down             = IS_BIT_SET(player.keys,PLAYER_ACTION_DOWN);
         bool left             = IS_BIT_SET(player.keys,PLAYER_ACTION_LEFT);
@@ -62,6 +64,8 @@ void gui_draw()
         // -----
         // Server
         // ------
+
+        
     }
 
 

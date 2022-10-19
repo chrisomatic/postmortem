@@ -210,8 +210,8 @@ void zombie_draw()
                 Rect* cbox  = &zom->collision_box;
                 Rect* hbox  = &zom->hit_box;
 
-                gfx_draw_rect(cbox, 0x0000FF00, zom->scale,1.0);
-                gfx_draw_rect(hbox, 0x00FFFF00, zom->scale,1.0);
+                gfx_draw_rect(cbox, 0x0000FF00, zom->scale,1.0, false, true);
+                gfx_draw_rect(hbox, 0x00FFFF00, zom->scale,1.0, false, true);
             }
         }
 
