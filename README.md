@@ -15,11 +15,14 @@ This is a work-in-progress 2D game
 - Add building blocks
 - Add chests
 - Add basic GUI
+- Add melee weapons
+- Define hit box and collision boxes for player
+- Write list wrapper
 
 ## DONE
 
 - Add font support
-- Create hitboxes for Zombies
+- Create hit boxes for Zombies
 - Add projectile collision
 - Draw only what is visible
 - Add draw\_line function

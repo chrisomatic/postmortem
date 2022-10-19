@@ -62,8 +62,7 @@ void projectile_init()
 }
 
 
-//TODO: x and y args not used
-void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle)
+void projectile_add(int sprite_index, Gun* gun, float angle_offset)
 {
     if(projectile_count >= MAX_PROJECTILES)
     {
@@ -83,12 +82,20 @@ void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle)
     proj->damage = gun->power + proj->power;
     proj->dead = false;
 
-    //spawn at the end of the gun, (could subtract bullet width/height to make spawn inside of gun)
-    float _x = gun->pos.x + (gun->visible_rect.w/2.0)*cosf(angle);
-    float _y = gun->pos.y + (gun->visible_rect.h/2.0)*sinf(PI*2-angle);
+    // //spawn at the end of the gun, (could subtract bullet width/height to make spawn inside of gun)
+    // float _x = gun->pos.x + (gun->visible_rect.w/2.0)*cosf(angle);
+    // float _y = gun->pos.y + (gun->visible_rect.h/2.0)*sinf(PI*2-angle);
+    float _x = gun->pos.x;
+    float _y = gun->pos.y;
     proj->pos.x = _x;
     proj->pos.y = _y;
-    proj->angle_deg = DEG(angle);
+
+    float mx, my;
+    window_get_mouse_world_coords(&mx, &my);
+    float angle_deg = angle_offset + calc_angle_deg(proj->pos.x, proj->pos.y, mx, my);
+    float angle = RAD(angle_deg);
+
+    proj->angle_deg = angle_deg;
     proj->vel.x = speed*cosf(angle);
     proj->vel.y = speed*sinf(angle);
     proj->time = 0.0;

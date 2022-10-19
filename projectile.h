@@ -10,6 +10,6 @@ typedef enum
 
 
 void projectile_init();
-void projectile_add(int sprite_index, Gun* gun, float x, float y, float angle);
+void projectile_add(int sprite_index, Gun* gun, float angle_offset);
 void projectile_update(float delta_t);
 void projectile_draw();

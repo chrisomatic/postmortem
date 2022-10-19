@@ -36,6 +36,7 @@ void player_init()
     player.scale = 1.0;
 
     player.gun = gun_get(GUN_TYPE_HANDGUN);
+    // player.gun = gun_get(GUN_TYPE_SHOTGUN);
 
     player.image = gfx_load_image_set("img/human_set_small.png",32,48);
     crosshair_image = gfx_load_image("img/crosshair.png", false, false);
@@ -52,6 +53,7 @@ void player_init()
     window_controls_add_key(&player.keys, GLFW_KEY_E, PLAYER_ACTION_INTERACT);
     window_controls_add_key(&player.keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_FIRE);
     window_controls_add_key(&player.keys, GLFW_KEY_F2, PLAYER_ACTION_TOGGLE_DEBUG);
+    window_controls_add_key(&player.keys, GLFW_KEY_G, PLAYER_ACTION_TOGGLE_GUN);
 
     window_controls_add_mouse_button(&player.keys, GLFW_MOUSE_BUTTON_LEFT, PLAYER_ACTION_PRIMARY_ACTION);
     window_controls_add_mouse_button(&player.keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
@@ -59,6 +61,7 @@ void player_init()
 
 bool prior_toggle_fire;
 bool prior_toggle_debug;
+bool prior_toggle_gun;
 
 void player_update(double delta_t)
 {
@@ -73,7 +76,16 @@ void player_update(double delta_t)
     bool secondary_action = IS_BIT_SET(player.keys,PLAYER_ACTION_SECONDARY_ACTION);
     bool toggle_fire      = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_FIRE);
     bool toggle_debug     = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_DEBUG);
+    bool toggle_gun       = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_GUN);
 
+
+    if(toggle_gun && !prior_toggle_gun)
+    {
+        int next = player.gun.type+1;
+        if(next >= GUN_TYPE_MAX) next = 0;
+        player.gun = gun_get(next);
+    }
+    prior_toggle_gun = toggle_gun;
 
     if(toggle_fire && !prior_toggle_fire)
     {
@@ -202,7 +214,7 @@ void player_update(double delta_t)
         // 'push' the rotated rectangle out a bit from the player
         for(int i = 0; i < 4; ++i)
         {
-            rxy_rot.x[i] += vr->w/2.0*cosf(player.gun.angle);
+            rxy_rot.x[i] += (vr->w*0.7)*cosf(player.gun.angle);
             // rxy_rot.y[i] -= vr->h/2.0*sinf(player.gun.angle);
 
             // rxy_rot.x[i] += 16*cosf(player.gun.angle);

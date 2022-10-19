@@ -16,6 +16,7 @@ enum PlayerAction
     PLAYER_ACTION_SECONDARY_ACTION = 1<<8,
     PLAYER_ACTION_TOGGLE_FIRE      = 1<<9,
     PLAYER_ACTION_TOGGLE_DEBUG     = 1<<10,
+    PLAYER_ACTION_TOGGLE_GUN       = 1<<11,
 };
 
 typedef struct

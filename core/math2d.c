@@ -46,6 +46,11 @@ void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Mat
     dot_product_mat(*model, scale_trans,     model);
 
 }
+float calc_angle_deg(float x0, float y0, float x1, float y1)
+{
+    return DEG(calc_angle_rad(x0,y0,x1,y1));
+}
+
 
 float calc_angle_rad(float x0, float y0, float x1, float y1)
 {

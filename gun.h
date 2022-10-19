@@ -5,6 +5,8 @@
 typedef enum
 {
     GUN_TYPE_HANDGUN = 0,
+    GUN_TYPE_MACHINEGUN = 1,
+    GUN_TYPE_SHOTGUN = 2,
     GUN_TYPE_MAX,
 } GunType;
 
@@ -15,6 +17,7 @@ typedef struct
     float angle;
     RectXY rectxy;  //rotated
 
+    int sprite_index;
     int type;
     int projectile_type;
 
@@ -24,6 +27,8 @@ typedef struct
     float fire_speed;
     float fire_period;
     float fire_cooldown;
+    float fire_spread;
+    int fire_count;
 
     int bullets;
     int bullets_max;
