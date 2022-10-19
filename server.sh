@@ -1,2 +1,2 @@
 #!/bin/sh
-./dungeoner --server
+./bin/postmortem --server

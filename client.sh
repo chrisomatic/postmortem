@@ -1,2 +1,2 @@
 #!/bin/sh
-./dungeoner --client 66.228.36.123
+./bin/postmortem --client 66.228.36.123

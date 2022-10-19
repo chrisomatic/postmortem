@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+#include "main.h"
 #include "window.h"
 #include "shader.h"
 #include "timer.h"
@@ -20,7 +21,8 @@
 #include "projectile.h"
 #include "zombie.h"
 #include "gui.h"
-#include "main.h"
+#include "net.h"
+#include "log.h"
 
 // Settings
 #define VIEW_WIDTH   800
@@ -31,12 +33,16 @@
 // =========================
 
 Timer game_timer = {0};
+GameRole role;
 
 // =========================
 // Function Prototypes
 // =========================
 
-void start_game();
+void parse_args(int argc, char* argv[]);
+void start_local();
+void start_client();
+void start_server();
 void init();
 void deinit();
 void update(double);
@@ -48,29 +54,21 @@ void draw();
 
 int main(int argc, char* argv[])
 {
-    // float a;
-    // float deg = 0.0;
-    // deg = 0.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
-    // deg = 45.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
-    // deg = 90.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
-    // deg = 180.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
-    // deg = 270.0; a = calc_angle_rad(0,0, cosf(RAD(deg)), -sin(RAD(deg))); printf("Angle: %.2f, Calc: %.2f\n", deg, DEG(a));
-    // exit(0);
-    
-    
-    // float a = calc_angle_rad(0,0,10,0);
-    // printf("%.2f, %.2f deg\n", a, DEG(a));
-    // exit(0);
+    parse_args(argc, argv);
 
+    switch(role)
+    {
+        case ROLE_LOCAL:
+            start_local();
+            break;
+        case ROLE_CLIENT:
+            start_client();
+            break;
+        case ROLE_SERVER:
+            start_server();
+            break;
+    }
 
-    // angle_sector(0.0, 2);
-    // angle_sector(0.0, 2);
-    // exit(0);
-
-
-
-
-    start_game();
     return 0;
 }
 
@@ -78,8 +76,49 @@ int main(int argc, char* argv[])
 // Functions
 // =========================
 
-void start_game()
+void parse_args(int argc, char* argv[])
 {
+    role = ROLE_LOCAL;
+
+    if(argc > 1)
+    {
+        for(int i = 1; i < argc; ++i)
+        {
+            if(argv[i][0] == '-' && argv[i][1] == '-')
+            {
+                // server
+                if(strncmp(argv[i]+2,"server",6) == 0)
+                    role = ROLE_SERVER;
+
+                // client
+                else if(strncmp(argv[i]+2,"client",6) == 0)
+                    role = ROLE_CLIENT;
+            }
+            else
+            {
+                net_client_set_server_ip(argv[i]);
+            }
+        }
+    }
+}
+
+const char* game_role_to_str(GameRole _role)
+{
+    switch(_role)
+    {
+        case ROLE_LOCAL:  return "Local";
+        case ROLE_CLIENT: return "Client";
+        case ROLE_SERVER: return "Server";
+    }
+    return "Unknown";
+}
+
+void start_local()
+{
+    LOGI("--------------");
+    LOGI("Starting Local");
+    LOGI("--------------");
+
     init();
 
     timer_set_fps(&game_timer,TARGET_FPS);
@@ -109,11 +148,58 @@ void start_game()
     deinit();
 }
 
+void start_client()
+{
+    LOGI("---------------");
+    LOGI("Starting Client");
+    LOGI("---------------");
+
+    init();
+
+    timer_set_fps(&game_timer,TARGET_FPS);
+    timer_begin(&game_timer);
+
+    double t0=timer_get_time();
+    double t1=0.0;
+
+    // main game loop
+    for(;;)
+    {
+        window_poll_events();
+        if(window_should_close())
+            break;
+
+        t1 = timer_get_time();
+
+        update(t1-t0);
+        draw();
+
+        timer_wait_for_frame(&game_timer);
+        window_swap_buffers();
+        t0 = t1;
+
+    }
+
+    deinit();
+}
+
+void start_server()
+{
+    LOGI("---------------");
+    LOGI("Starting Server");
+    LOGI("---------------");
+
+    time_t t;
+    srand((unsigned) time(&t));
+
+    net_server_start();
+}
+
 void init()
 {
     bool success;
 
-    printf("resolution: %d %d\n",VIEW_WIDTH, VIEW_HEIGHT);
+    LOGI("resolution: %d %d",VIEW_WIDTH, VIEW_HEIGHT);
     success = window_init(VIEW_WIDTH, VIEW_HEIGHT);
 
     if(!success)
@@ -125,30 +211,30 @@ void init()
     time_t t;
     srand((unsigned) time(&t));
 
-    printf("Initializing...\n");
+    LOGI("Initializing...");
 
-    printf(" - Shaders.\n");
+    LOGI(" - Shaders.");
     shader_load_all();
 
-    printf(" - Graphics.\n");
+    LOGI(" - Graphics.");
     gfx_init(VIEW_WIDTH, VIEW_HEIGHT);
 
-    printf(" - Camera.\n");
+    LOGI(" - Camera.");
     camera_init();
 
-    printf(" - World.\n");
+    LOGI(" - World.");
     world_init();
 
-    printf(" - Guns.\n");
+    LOGI(" - Guns.");
     gun_init();
 
-    printf(" - Player.\n");
+    LOGI(" - Player.");
     player_init();
 
-    printf(" - Zombies.\n");
+    LOGI(" - Zombies.");
     zombie_init();
 
-    printf(" - Projectiles.\n");
+    LOGI(" - Projectiles.");
     projectile_init();
 }
 
@@ -197,11 +283,8 @@ void draw()
 
     // gfx_draw_sub_image(player.image, 5, player.phys.pos.x, player.phys.pos.y, 0, 1.0, 0, 1.0);
 
-
-
     gfx_draw_lines();
     gui_draw();
     gfx_draw_stringf(2.0,200.0,0x00FFFFFF,0.16,0.0, 1.0, false, true,"cam offset: %d %d", mx, my);
-
 }
 
