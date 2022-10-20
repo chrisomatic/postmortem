@@ -64,3 +64,10 @@ void get_camera_rect(Rect* rect)
     rect->x = x+rect->w/2.0;
     rect->y = y+rect->h/2.0;
 }
+
+bool is_in_camera_view(Rect* r)
+{
+    Rect r1 = {0};
+    get_camera_rect(&r1);
+    return rectangles_colliding(&r1, r);
+}

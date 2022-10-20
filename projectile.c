@@ -3,8 +3,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
+#include "main.h"
 #include "math2d.h"
 #include "window.h"
+#include "camera.h"
 #include "world.h"
 #include "gfx.h"
 #include "log.h"
@@ -141,7 +143,7 @@ void projectile_update(float delta_t)
 
         update_hurt_box(proj);
 
-        for(int j = 0; j < num_zombies; ++j) // num_zombies
+        for(int j = 0; j < zlist->count; ++j) // num_zombies
         {
 #if 0
             if(is_colliding(&proj->hurt_box, &zombies[j].hit_box))

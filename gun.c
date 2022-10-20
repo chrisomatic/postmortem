@@ -80,7 +80,8 @@ void gun_fire(Gun* gun)
             for(int i = 0; i < gun->fire_count; ++i)
             {
                 int direction = rand()%2 == 0 ? -1 : 1;
-                float angle_offset = ((float)rand()/(float)(RAND_MAX)) * (gun->fire_spread/2.0) * direction;
+                float angle_offset = rand_float_between(0.0, gun->fire_spread/2.0) * direction;
+                // float angle_offset = ((float)rand()/(float)(RAND_MAX)) * (gun->fire_spread/2.0) * direction;
                 projectile_add(gun->projectile_type, gun, angle_offset);
             }
         }

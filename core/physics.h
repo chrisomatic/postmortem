@@ -4,10 +4,9 @@
 
 typedef struct
 {
-    Vector2f pos;
+    Rect pos;
     Vector2f vel;
     Vector2f accel;
-
     float max_linear_vel;
 } Physics;
 

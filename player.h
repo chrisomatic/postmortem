@@ -22,10 +22,6 @@ enum PlayerAction
 typedef struct
 {
     Physics phys;
-    Rect visible_rect;
-
-    float w,h;
-
     float speed;
     float max_base_speed;
     float angle;

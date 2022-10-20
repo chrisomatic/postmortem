@@ -92,3 +92,5 @@ void rect_to_rectxy(Rect* in, RectXY* out);
 void rectxy_to_rect(RectXY* in, Rect* out);
 void print_rect(Rect* r);
 void print_rectxy(RectXY* r);
+
+float rand_float_between(float lower, float upper);

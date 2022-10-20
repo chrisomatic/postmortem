@@ -53,8 +53,52 @@ void draw();
 // Main Loop
 // =========================
 
+
+// Zombie zombies2[MAX_ZOMBIES] = {0};
 int main(int argc, char* argv[])
 {
+    // Zombie x = {0};
+
+    // glist* l = list_create(NULL, 2, sizeof(Zombie));
+    // list_add(l, (void*)&x);
+    // list_add(l, (void*)&x);
+    // list_add(l, (void*)&x);
+    // list_add(l, (void*)&x);
+
+    // printf("zombies: %p\n", zombies2);
+
+
+    // glist* zlist = list_create((void*)zombies2, MAX_ZOMBIES, sizeof(Zombie));
+    // printf("item count: %d\n", zlist->count);
+    // printf("item size: %d\n", zlist->item_size);
+    // printf("zlist buf: %p\n", zlist->buf);
+
+    // Zombie z = {0};
+    // z.map_row = 1;
+    // list_add(zlist, (void*)&z);
+    // z.map_row = 2;
+    // list_add(zlist, (void*)&z);
+    // z.map_row = 100;
+    // list_add(zlist, (void*)&z);
+    // printf("item count: %d\n", zlist->count);
+
+
+    // printf("z0: %d\n", zombies2[0].map_row);
+    // printf("zn: %d\n", zombies2[zlist->count-1].map_row);
+
+    // // alternative for getting from list, not really neeeded though
+    // Zombie* p = (Zombie*)list_get(zlist, 0);
+    // printf("z0: %d\n", p->map_row);
+    // p = (Zombie*)list_get(zlist, zlist->count-1);
+    // printf("zn: %d\n", p->map_row);
+
+    // list_remove(zlist, 0);
+    // printf("z0: %d\n", zombies2[0].map_row);
+
+
+
+    // exit(0);
+
     parse_args(argc, argv);
 
     switch(role)
@@ -237,6 +281,10 @@ void init()
 
     LOGI(" - Projectiles.");
     projectile_init();
+
+    // float w = map.cols*MAP_GRID_PXL_SIZE;
+    // float h = map.rows*MAP_GRID_PXL_SIZE;
+    // physics_set_pos_limits()
 }
 
 void deinit()
@@ -253,7 +301,7 @@ void aim_camera_offset_update()
 
     if(player.gun_ready)
     {
-        float r = 0.3;  //should be <= 0.5 to make sense
+        float r = 0.2;  //should be <= 0.5 to make sense otherwise player will end up off of the screen
         float ox = (mx - view_width/2.0);
         float oy = (my - view_height/2.0);
         float xr = view_width*r;
@@ -273,6 +321,11 @@ void aim_camera_offset_update()
         window_set_mouse_view_coords(new_mx, new_my);
     }
     camera_move(player.phys.pos.x + aim_camera_offset.x, player.phys.pos.y + aim_camera_offset.y);
+
+    //TODO: don't let the camera show off-world to the right and bottom
+
+
+
 }
 
 void update(double delta_t)
@@ -300,3 +353,101 @@ void draw()
 
 }
 
+
+// lists
+// -------------------------------------------------------------------------------
+
+glist* list_create(void* buf, int max_count, int item_size)
+{
+    if(item_size <= 0 || max_count <= 1)
+    {
+        LOGE("Invalid item_size (%d) or max_count (%d) for list", item_size, max_count);
+        return NULL;
+    }
+    if(buf == NULL)
+    {
+        LOGE("List buffer is NULL");
+        return NULL;
+    }
+
+    glist* list = calloc(1, sizeof(glist));
+    list->count = 0;
+    list->max_count = max_count;
+    list->item_size = item_size;
+    list->buf = buf;
+    // if(list->buf == NULL)
+    // {
+    //     LOGI("Allocating %d bytes for list %p", max_count*item_size, list);
+    //     list->buf = calloc(max_count, item_size);
+    // }
+    return list;
+}
+
+void list_delete(glist* list)
+{
+    if(list != NULL) free(list);
+}
+
+bool list_add(glist* list, void* item)
+{
+    if(list == NULL)
+        return false;
+
+    if(list->count >= list->max_count)
+        return false;
+
+    memcpy(list->buf + list->count*list->item_size, item, list->item_size);
+    list->count++;
+    return true;
+}
+
+bool list_remove(glist* list, int index)
+{
+    if(list == NULL)
+        return false;
+
+    if(index >= list->count)
+        return false;
+
+    memcpy(list->buf + index*list->item_size, list->buf+(list->count-1)*list->item_size, list->item_size);
+    list->count--;
+}
+
+void* list_get(glist* list, int index)
+{
+    if(list == NULL)
+        return NULL;
+
+    return list->buf + index*list->item_size;
+}
+
+
+
+
+
+
+void limit_pos(Rect* limit, Rect* pos)
+{
+    // printf("-------------------------------------\n");
+    // printf("map: "); print_rect(limit);
+    // printf("before: "); print_rect(pos);
+    float lx0 = limit->x - limit->w/2.0;
+    float lx1 = lx0 + limit->w;
+    float ly0 = limit->y - limit->h/2.0;
+    float ly1 = ly0 + limit->h;
+
+    float px0 = pos->x - pos->w/2.0;
+    float px1 = px0 + pos->w;
+    float py0 = pos->y - pos->h/2.0;
+    float py1 = py0 + pos->h;
+
+    if(px0 < lx0)
+        pos->x = lx0+pos->w/2.0;
+    if(px1 > lx1)
+        pos->x = lx1-pos->w/2.0;
+    if(py0 < ly0)
+        pos->y = ly0+pos->h/2.0;
+    if(py1 > ly1)
+        pos->y = ly1-pos->h/2.0;
+    // printf("after: "); print_rect(pos);
+}

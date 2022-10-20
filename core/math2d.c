@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include "gfx.h"
@@ -457,4 +458,12 @@ void print_rectxy(RectXY* r)
     printf("  y: ");
     for(int i = 0; i < 4; ++i)
         printf("%.2f%s", r->y[i], i != 3 ? ", " : "\n");
+}
+
+// onyl works with positives
+float rand_float_between(float lower, float upper)
+{
+    float range = upper - lower;
+    float value = ((float)rand()/(float)(RAND_MAX)) * range + lower;
+    return value;
 }

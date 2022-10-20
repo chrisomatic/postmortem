@@ -11,19 +11,8 @@
 
 int ground_sheet;
 
-typedef struct
-{
-    uint8_t id;
-    uint32_t data_len;
-    uint8_t version;
-    uint8_t name_len;
-    char* name;
-    uint16_t rows;
-    uint16_t cols;
-    uint8_t* data;
-} WorldMap;
-
 WorldMap map;
+
 
 static void load_map_file(const char* file_path)
 {
@@ -68,7 +57,7 @@ static void load_map_file(const char* file_path)
     map.name = malloc((map.name_len+1)*sizeof(char));
     memcpy(map.name, &bytes[idx], map.name_len*sizeof(char));
     idx += map.name_len;
-   
+
     map.rows = bytes[idx+1] << 8 | bytes[idx] << 0;
     idx += 2;
 
@@ -88,6 +77,13 @@ static void load_map_file(const char* file_path)
     LOGI("  Cols: %u",map.cols);
     LOGI("  Data:");
     print_hex(map.data, 100);
+
+    float width = map.cols*MAP_GRID_PXL_SIZE;
+    float height = map.rows*MAP_GRID_PXL_SIZE;
+    map.rect.w = width;
+    map.rect.h = height;
+    map.rect.x = map.rect.w/2.0;
+    map.rect.y = map.rect.h/2.0;
 }
 
 void world_init()
@@ -146,6 +142,13 @@ void map_grid_to_coords(int row, int col, float* x, float* y)
     *y = (float)(row+0.5)*MAP_GRID_PXL_SIZE;
 }
 
+void map_grid_to_rect(int row, int col, Rect* r)
+{
+    map_grid_to_coords(row, col, &r->x, &r->y);
+    r->w = MAP_GRID_PXL_SIZE;
+    r->h = MAP_GRID_PXL_SIZE;
+}
+
 int map_grid_to_index(int row, int col)
 {
     return row*map.cols+col;
@@ -156,6 +159,13 @@ void index_to_map_grid(int index, int* row, int* col)
     *row = (index / map.cols);
     *col = (index % map.cols);
 }
+
+void map_get_grid_dimensions(int* num_rows, int* num_cols)
+{
+    *num_rows = (int)map.rows;
+    *num_cols = (int)map.cols;
+}
+
 
 void coords_to_world_grid(float x, float y, int* row, int* col)
 {
@@ -169,6 +179,13 @@ void world_grid_to_coords(int row, int col, float* x, float* y)
     *y = (float)(row+0.5)*(MAP_GRID_PXL_SIZE*WORLD_GRID_HEIGHT);
 }
 
+void world_grid_to_rect(int row, int col, Rect* r)
+{
+    world_grid_to_coords(row, col, &r->x, &r->y);
+    r->w = MAP_GRID_PXL_SIZE*WORLD_GRID_WIDTH;
+    r->h = MAP_GRID_PXL_SIZE*WORLD_GRID_HEIGHT;
+}
+
 int world_grid_to_index(int row, int col)
 {
     return row*WORLD_GRID_WIDTH+col;
@@ -178,14 +195,10 @@ void index_to_world_grid(int index, int* row, int* col)
 {
     *row = (index / WORLD_GRID_WIDTH);
     *col = (index % WORLD_GRID_WIDTH);
-    // printf("%d, %d, %d\n", index, *row, *col);
 }
 
-
-bool is_in_camera_view(Rect* r)
+void world_get_grid_dimensions(int* num_rows, int* num_cols)
 {
-    Rect r1 = {0};
-    get_camera_rect(&r1);
-    return rectangles_colliding(&r1, r);
+    *num_rows = map.rows/WORLD_GRID_HEIGHT;
+    *num_cols = map.cols/WORLD_GRID_WIDTH;
 }
-

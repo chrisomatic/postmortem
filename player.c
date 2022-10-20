@@ -10,6 +10,7 @@
 #include "projectile.h"
 #include "player.h"
 #include "world.h"
+#include "main.h"
 
 Player player;
 
@@ -25,8 +26,6 @@ void player_init()
 
     player.phys.vel.x = 0.0;
     player.phys.vel.y = 0.0;
-    player.w = 32;
-    player.h = 48;
     player.sprite_index = 0;
     player.gun_ready = true;
 
@@ -180,7 +179,12 @@ void player_update(double delta_t)
 
     GFXSubImageData* sid = gfx_images[player.image].sub_img_data;
     Rect* vr = &sid->visible_rects[player.sprite_index];
-    memcpy(&player.visible_rect, vr, sizeof(Rect));
+    player.phys.pos.w = vr->w*player.scale;
+    player.phys.pos.h = vr->h*player.scale;
+
+    // GFXSubImageData* sid = gfx_images[player.image].sub_img_data;
+    // Rect* vr = &sid->visible_rects[player.sprite_index];
+    // memcpy(&player.visible_rect, vr, sizeof(Rect));
 
     if(player.gun_ready)
     {
@@ -240,15 +244,16 @@ void player_update(double delta_t)
 
     if(run)
     {
-        accel.x *= 2.0;
-        accel.y *= 2.0;
-        player.phys.max_linear_vel *= 2.0;
+        accel.x *= 20.0;
+        accel.y *= 20.0;
+        player.phys.max_linear_vel *= 20.0;
     }
 
     physics_begin(&player.phys);
     physics_add_friction(&player.phys, 16.0);
     physics_add_force(&player.phys, accel.x, accel.y);
     physics_simulate(&player.phys, delta_t);
+    limit_pos(&map.rect, &player.phys.pos);
 }
 
 void player_draw()
@@ -270,12 +275,7 @@ void player_draw()
 
     if(debug_enabled)
     {
-        Rect r = {0};
-        r.x = player.phys.pos.x;
-        r.y = player.phys.pos.y;
-        r.w = player.visible_rect.w;
-        r.h = player.visible_rect.h;
-        gfx_draw_rect(&r, 0x00FF0000, player.scale,1.0, false, true);
+        gfx_draw_rect(&player.phys.pos, 0x00FF0000, 1.0,1.0, false, true);
     }
 
 

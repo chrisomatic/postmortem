@@ -2,6 +2,17 @@
 #include "log.h"
 #include "physics.h"
 
+// static float xlim[2] = {0,1};
+// static float ylim[2] = {0,1};
+
+// void physics_set_pos_limits(Rect* limits)
+// {
+//     xlim[0] = limits->x - limits->w/2.0;
+//     xlim[1] = xlim[0] + limits->w;
+//     ylim[0] = limits->y - limits->h/2.0;
+//     ylim[1] = ylim[0] + limits->h;
+// }
+
 void physics_begin(Physics* phys)
 {
     phys->accel.x = 0.0;
@@ -62,8 +73,4 @@ void physics_simulate(Physics* phys, float delta_t)
 
     phys->pos.x += delta_t*phys->vel.x;
     phys->pos.y += delta_t*phys->vel.y;
-
-    phys->pos.x = MAX(phys->pos.x, 0.0);
-    phys->pos.y = MAX(phys->pos.y, 0.0);
-
 }
