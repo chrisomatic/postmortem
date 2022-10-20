@@ -1,5 +1,6 @@
 #pragma once
 
+#include "main.h"
 #include "gun.h"
 
 typedef enum
@@ -8,6 +9,7 @@ typedef enum
     PROJECTILE_TYPE_MAX,
 } ProjectileType;
 
+extern glist* plist;
 
 void projectile_init();
 void projectile_add(int sprite_index, Gun* gun, float angle_offset);

@@ -34,8 +34,7 @@ void player_init()
     player.phys.max_linear_vel = player.max_base_speed;
     player.scale = 1.0;
 
-    player.gun = gun_get(GUN_TYPE_HANDGUN);
-    // player.gun = gun_get(GUN_TYPE_SHOTGUN);
+    player.gun = gun_get(GUN_TYPE_MACHINEGUN);
 
     player.image = gfx_load_image_set("img/human_set_small.png",32,48);
     crosshair_image = gfx_load_image("img/crosshair.png", false, false);
@@ -115,7 +114,7 @@ void player_update(double delta_t)
     Vector3f mouse_pos = {mouse_x, mouse_y, 0.0};
     Vector3f dist = {mouse_pos.x - player_pos.x, mouse_pos.y - player_pos.y, 0.0};
 
-    player.angle = calc_angle_rad(player_pos.x, player_pos.y, mouse_pos.x, mouse_pos.y);
+    player.angle = calc_angle_rad(player.phys.pos.x, player.phys.pos.y, mouse_pos.x, mouse_pos.y);
     float angle_deg = DEG(player.angle);
 
     if(player.gun_ready)
@@ -181,10 +180,6 @@ void player_update(double delta_t)
     Rect* vr = &sid->visible_rects[player.sprite_index];
     player.phys.pos.w = vr->w*player.scale;
     player.phys.pos.h = vr->h*player.scale;
-
-    // GFXSubImageData* sid = gfx_images[player.image].sub_img_data;
-    // Rect* vr = &sid->visible_rects[player.sprite_index];
-    // memcpy(&player.visible_rect, vr, sizeof(Rect));
 
     if(player.gun_ready)
     {

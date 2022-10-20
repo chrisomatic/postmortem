@@ -71,6 +71,8 @@ void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Mat
 void ortho(Matrix* m, float left, float right, float bottom, float top, float znear, float zfar);
 float calc_angle_deg(float x0, float y0, float x1, float y1);
 float calc_angle_rad(float x0, float y0, float x1, float y1);
+float dist_squared(float x0, float y0, float x1, float y1);
+float dist(float x0, float y0, float x1, float y1);
 void get_scale_transform(Matrix* mat, Vector3f* scale);
 void get_rotation_transform(Matrix* mat, Vector3f* rotation);
 void get_translate_transform(Matrix* mat, Vector3f* position);

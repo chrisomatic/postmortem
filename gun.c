@@ -1,8 +1,11 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include "gfx.h"
+#include "player.h"
 #include "projectile.h"
+#include "window.h"
 #include "gun.h"
 
 Gun gun_arsenal[GUN_TYPE_MAX] = {0};
@@ -81,7 +84,6 @@ void gun_fire(Gun* gun)
             {
                 int direction = rand()%2 == 0 ? -1 : 1;
                 float angle_offset = rand_float_between(0.0, gun->fire_spread/2.0) * direction;
-                // float angle_offset = ((float)rand()/(float)(RAND_MAX)) * (gun->fire_spread/2.0) * direction;
                 projectile_add(gun->projectile_type, gun, angle_offset);
             }
         }
@@ -89,6 +91,30 @@ void gun_fire(Gun* gun)
         {
             projectile_add(gun->projectile_type, gun, 0.0);
         }
+
+        // // //recoil
+        // float mouse_x, mouse_y;
+        // window_get_mouse_world_coords(&mouse_x, &mouse_y);
+        // // float d = dist(player.phys.pos.x, player.phys.pos.y, mouse_x, mouse_y);
+        // // float angle = calc_angle_rad(player.phys.pos.x, player.phys.pos.y, mouse_x, mouse_y);
+        // // angle += RAD(1.0);
+        // // float mouse_x_new = player.phys.pos.x+d*cosf(angle);
+        // // float mouse_y_new = player.phys.pos.y+d*sinf(angle);
+        // // window_set_mouse_world_coords(mouse_x_new, mouse_y_new);
+        // // window_set_mouse_world_coords(mouse_x+.5, mouse_y+.5);
+        // window_set_mouse_world_coords(mouse_x+10, mouse_y+10);
+
+
+        // // //recoil
+        // float mouse_x, mouse_y;
+        // window_get_mouse_world_coords(&mouse_x, &mouse_y);
+        // // float d = dist(player.phys.pos.x, player.phys.pos.y, mouse_x, mouse_y);
+        // float angle = calc_angle_rad(player.phys.pos.x, player.phys.pos.y, mouse_x, mouse_y);
+        // angle += RAD(5.0);
+        // // window_enable_cursor();
+        // window_set_mouse_world_coords(mouse_x+1.0*cosf(angle), mouse_y+1.0*sinf(angle));
+        // // window_disable_cursor();
+
 
         gun->fire_cooldown = gun->fire_period;
     }

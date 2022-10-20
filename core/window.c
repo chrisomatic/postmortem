@@ -121,6 +121,19 @@ void window_get_mouse_world_coords(float* x, float* y)
     *y = mouse_y - cam_y;
 }
 
+void window_set_mouse_world_coords(float x, float y)
+{
+    Matrix* view = get_camera_transform();
+    float cam_x = view->m[0][3];
+    float cam_y = view->m[1][3];
+    double _x = x + cam_x;
+    double _y = y + cam_y;
+    _x = (double)_x / (view_width/(float)window_width);
+    _y = (double)_y / (view_height/(float)window_height);
+    // printf("setting mouse world: %.2f, %.2f\n", x, y);
+    glfwSetCursorPos(window, _x, _y);
+}
+
 void window_deinit()
 {
     glfwTerminate();
@@ -172,8 +185,6 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
 {
     window_coord_x = xpos;
     window_coord_y = ypos;
-    // glfwSetCursorPos(window, view_width/2.0, 0); //TODO
-
 }
 
 typedef struct

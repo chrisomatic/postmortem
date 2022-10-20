@@ -126,6 +126,23 @@ float calc_angle_rad(float x0, float y0, float x1, float y1)
     }
 }
 
+float dist_squared(float x0, float y0, float x1, float y1)
+{
+    Vector2f s = {
+        x1 - x0,
+        y1 - y0
+    };
+
+    float d_sq = (s.x * s.x) + (s.y * s.y);
+    return d_sq;
+}
+
+float dist(float x0, float y0, float x1, float y1)
+{
+    float d = sqrt(dist_squared(x0,y0,x1,y1));
+    return d;
+}
+
 void print_matrix(Matrix* mat)
 {
     printf("Matrix:\n");

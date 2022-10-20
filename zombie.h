@@ -1,5 +1,7 @@
 #pragma once
 
+#include "main.h"
+
 #define MAX_ZOMBIES 2000
 
 typedef enum

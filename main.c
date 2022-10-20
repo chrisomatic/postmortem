@@ -314,18 +314,18 @@ void aim_camera_offset_update()
         aim_camera_offset.y = oy;
     }
 
-    if(mx >= view_width || mx <= 0 || my >= view_height || my <= 0)
+    if(!window_is_cursor_enabled())
     {
-        int new_mx = RANGE(mx, 0, view_width);
-        int new_my = RANGE(my, 0, view_height);
-        window_set_mouse_view_coords(new_mx, new_my);
+        if(mx >= view_width || mx <= 0 || my >= view_height || my <= 0)
+        {
+            int new_mx = RANGE(mx, 0, view_width);
+            int new_my = RANGE(my, 0, view_height);
+            window_set_mouse_view_coords(new_mx, new_my);
+        }
     }
     camera_move(player.phys.pos.x + aim_camera_offset.x, player.phys.pos.y + aim_camera_offset.y);
 
     //TODO: don't let the camera show off-world to the right and bottom
-
-
-
 }
 
 void update(double delta_t)
@@ -337,6 +337,10 @@ void update(double delta_t)
     zombie_update(delta_t);
     player_update(delta_t);
     projectile_update(delta_t);
+
+    // if(!window_is_cursor_enabled())
+    //     window_set_mouse_world_coords(400.0,1000.0);
+
 }
 
 void draw()

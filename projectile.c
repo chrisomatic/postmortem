@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
-#include "main.h"
 #include "math2d.h"
 #include "window.h"
 #include "camera.h"
@@ -14,8 +13,6 @@
 #include "player.h"
 #include "zombie.h"
 #include "projectile.h"
-
-#define MAX_PROJECTILES 1024
 
 typedef struct
 {
@@ -33,22 +30,27 @@ typedef struct
     bool dead;
 } Projectile;
 
+
+#define MAX_PROJECTILES 1024
+static Projectile projectiles[MAX_PROJECTILES];
+glist* plist = NULL;
+
 static int projectile_image_set;
 
-static Projectile projectiles[MAX_PROJECTILES];
-static int projectile_count = 0;
+
 
 static void projectile_remove(int index)
 {
-    if(index < 0 || index >= projectile_count)
-    {
-        LOGE("Projectile index out of range (%d)", index);
-        return;
-    }
+    list_remove(plist, index);
+    // if(index < 0 || index >= plist->count)
+    // {
+    //     LOGE("Projectile index out of range (%d)", index);
+    //     return;
+    // }
 
-    memcpy(&projectiles[index], &projectiles[projectile_count-1], sizeof(Projectile));
+    // memcpy(&projectiles[index], &projectiles[plist->count-1], sizeof(Projectile));
 
-    projectile_count--;
+    // plist->count--;
 }
 
 static void update_hurt_box(Projectile* proj)
@@ -60,71 +62,78 @@ static void update_hurt_box(Projectile* proj)
 
 void projectile_init()
 {
+    plist = list_create((void*)projectiles, MAX_PROJECTILES, sizeof(Projectile));
+
     projectile_image_set = gfx_load_image_set("img/projectile_set.png",32,32);
 }
 
 
 void projectile_add(int sprite_index, Gun* gun, float angle_offset)
 {
-    if(projectile_count >= MAX_PROJECTILES)
-    {
-        LOGW("Too many projectiles!");
-        return;
-    }
+    // if(plist->count >= MAX_PROJECTILES)
+    // {
+    //     LOGW("Too many projectiles!");
+    //     return;
+    // }
 
-    Projectile* proj = &projectiles[projectile_count];
-    projectile_count++;
+    // Projectile* proj = &projectiles[plist->count];
+    // plist->count++;
 
-    memset(proj,0, sizeof(Projectile));
+
+    Projectile proj = {0};
+
+    // memset(proj,0, sizeof(Projectile));
 
     float speed = gun->fire_speed;
     // speed = 10.0;
 
-    proj->sprite_index = sprite_index;
-    proj->damage = gun->power + proj->power;
-    proj->dead = false;
+    proj.sprite_index = sprite_index;
+    proj.damage = gun->power + proj.power;
+    proj.dead = false;
 
     // //spawn at the end of the gun, (could subtract bullet width/height to make spawn inside of gun)
     // float _x = gun->pos.x + (gun->visible_rect.w/2.0)*cosf(angle);
     // float _y = gun->pos.y + (gun->visible_rect.h/2.0)*sinf(PI*2-angle);
     float _x = gun->pos.x;
     float _y = gun->pos.y;
-    proj->pos.x = _x;
-    proj->pos.y = _y;
+    proj.pos.x = _x;
+    proj.pos.y = _y;
 
     float mx, my;
     window_get_mouse_world_coords(&mx, &my);
-    float angle_deg = angle_offset + calc_angle_deg(proj->pos.x, proj->pos.y, mx, my);
+    float angle_deg = angle_offset + calc_angle_deg(proj.pos.x, proj.pos.y, mx, my);
     float angle = RAD(angle_deg);
 
-    proj->angle_deg = angle_deg;
-    proj->vel.x = speed*cosf(angle);
-    proj->vel.y = speed*sinf(angle);
-    proj->time = 0.0;
-    float vel = sqrt(proj->vel.x*proj->vel.x + proj->vel.y*proj->vel.y);
-    proj->ttl  = 1.0 / (vel / gun->fire_range);
+    proj.angle_deg = angle_deg;
+    proj.vel.x = speed*cosf(angle);
+    proj.vel.y = speed*sinf(angle);
+    proj.time = 0.0;
+    float vel = sqrt(proj.vel.x*proj.vel.x + proj.vel.y*proj.vel.y);
+    proj.ttl  = 1.0 / (vel / gun->fire_range);
 
     GFXSubImageData* sid = gfx_images[projectile_image_set].sub_img_data;
-    Rect* vr = &sid->visible_rects[proj->sprite_index];
+    Rect* vr = &sid->visible_rects[proj.sprite_index];
 
+    //TODO: refactor this for reusable axis aligned boxes
     Rect r = {0};
     Rect r_rot = {0};
     RectXY rxy_rot = {0};
-    r.x = proj->pos.x;
-    r.y = proj->pos.y;
+    r.x = proj.pos.x;
+    r.y = proj.pos.y;
     r.w = vr->w;
     r.h = vr->h;
 
-    rotate_rect(&r, proj->angle_deg, r.x, r.y, &rxy_rot);
-    rectxy_to_rect(&rxy_rot, &proj->hurt_box);
-    memcpy(&proj->hurt_box_prior, &proj->hurt_box, sizeof(proj->hurt_box));
+    rotate_rect(&r, proj.angle_deg, r.x, r.y, &rxy_rot);
+    rectxy_to_rect(&rxy_rot, &proj.hurt_box);
+    // memcpy(&proj.hurt_box_prior, &proj.hurt_box, sizeof(proj.hurt_box));
+    update_hurt_box(&proj);
 
-    update_hurt_box(proj);
+    list_add(plist, (void*)&proj);
 }
 
 void projectile_update(float delta_t)
 {
-    for(int i = projectile_count - 1; i >= 0; --i)
+    for(int i = plist->count - 1; i >= 0; --i)
     {
         Projectile* proj = &projectiles[i];
 
@@ -168,7 +177,7 @@ void projectile_update(float delta_t)
         }
     }
 
-    for(int i = projectile_count - 1; i >= 0; --i)
+    for(int i = plist->count - 1; i >= 0; --i)
     {
         if(projectiles[i].dead)
         {
@@ -180,7 +189,7 @@ void projectile_update(float delta_t)
 
 void projectile_draw()
 {
-    for(int i = 0; i < projectile_count; ++i)
+    for(int i = 0; i < plist->count; ++i)
     {
         Projectile* proj = &projectiles[i];
 
