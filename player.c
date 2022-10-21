@@ -124,7 +124,6 @@ void player_update(Player* p, double delta_t)
         debug_enabled = !debug_enabled;
     }
 
-
     Vector2f accel = {0};
     bool player_moving = PLAYER_MOVING(player);
 

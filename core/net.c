@@ -49,6 +49,7 @@ typedef struct
     uint8_t xor_salts[8];
     ConnectionRejectionReason last_reject_reason;
     PacketError last_packet_error;
+    Packet prior_state_pkt;
 } ClientInfo;
 
 struct
@@ -57,7 +58,6 @@ struct
     NodeInfo info;
     ClientInfo clients[MAX_CLIENTS];
     int num_clients;
-    Packet prior_state_pkt;
 } server = {0};
 
 // ---
@@ -393,6 +393,7 @@ static void server_send(PacketType type, ClientInfo* cli)
                 NetPlayerState* player_state = &net_player_states[i];
                 if(player_state->active)
                 {
+                    printf("sending player state: %f %f, %f\n",player_state->pos.x, player_state->pos.y, player_state->angle);
                     pkt.data[index] = (uint8_t)i;
                     index += 1;
 
@@ -408,11 +409,13 @@ static void server_send(PacketType type, ClientInfo* cli)
             pkt.data_len = index;
             pkt.data[0] = num_clients;
 
-            if(memcmp(&server.prior_state_pkt.data, &pkt.data, pkt.data_len) == 0)
+            //print_packet(&pkt);
+
+            if(memcmp(&cli->prior_state_pkt.data, &pkt.data, pkt.data_len) == 0)
                 break;
 
             net_send(&server.info,&cli->address,&pkt);
-            memcpy(&server.prior_state_pkt, &pkt, get_packet_size(&pkt));
+            memcpy(&cli->prior_state_pkt, &pkt, get_packet_size(&pkt));
 
         }   break;
         case PACKET_TYPE_ERROR:
@@ -560,6 +563,8 @@ int net_server_start()
                             // apply input to player
                             players[client_id].keys = inputs[i].keys;
                             players[client_id].angle = inputs[i].angle;
+
+                            printf("before update player state for client id %d, pos %f %f, angle %f\n",client_id, players[client_id].phys.pos.x, players[client_id].phys.pos.y, players[client_id].angle);
                             
                             // simulate player
                             player_update(&players[client_id],inputs[i].delta_t);
@@ -571,7 +576,8 @@ int net_server_start()
                             net_player_states[client_id].pos.y = players[client_id].phys.pos.y;
                             net_player_states[client_id].angle = players[client_id].angle;
 
-                            //printf("player pos %f %f, angle %f\n",players[client_id].phys.pos.x, players[client_id].phys.pos.y, players[client_id].angle);
+                            printf("net player state for client id %d, pos %f %f, angle %f\n",client_id, players[client_id].phys.pos.x, players[client_id].phys.pos.y, players[client_id].angle);
+                            //printf("net player state for client id %d, pos %f %f, angle %f\n",client_id, net_player_states[client_id].pos.x, net_player_states[client_id].pos.y, net_player_states[client_id].angle);
 
                         }
                     } break;
@@ -893,10 +899,12 @@ void net_client_update()
 
                     int index = 1;
 
+                    /*
                     for(int i = 0; i < MAX_CLIENTS; ++i)
                     {
                         players[i].active = false;
                     }
+                    */
 
                     for(int i = 0; i < num_players; ++i)
                     {
@@ -920,9 +928,13 @@ void net_client_update()
                         Player* p = &players[client_id];
                         p->active = true;
 
+                        printf("Player %d active\n", client_id);
+
                         if(p != player)
                         {
-                            memcpy(&p->phys.pos, &pos, sizeof(Vector2f));
+                            printf("updated pos and angle for player %d\n",client_id);
+                            p->phys.pos.x = pos.x;
+                            p->phys.pos.y = pos.y;
                             memcpy(&p->angle, &angle, sizeof(float));
                         }
                     }

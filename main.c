@@ -430,7 +430,9 @@ void draw()
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
         if(players[i].active)
+        {
             player_draw(&players[i]);
+        }
     }
 
     gui_draw();
