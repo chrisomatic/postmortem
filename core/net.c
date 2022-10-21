@@ -10,7 +10,12 @@
 #include "timer.h"
 #include "net.h"
 #include "packet_queue.h"
+#include "window.h"
 #include "log.h"
+#include "../player.h" // @TODO: Find a way to not include player code like this
+
+#define SERVER_PRINT_SIMPLE 1
+//#define SERVER_PRINT_VERBOSE 1
 
 #define GAME_ID 0xC68BB821
 
@@ -34,6 +39,7 @@ typedef struct
 // Info server stores about a client
 typedef struct
 {
+    int client_id;
     Address address;
     ConnectionState state;
     uint16_t remote_latest_packet_id;
@@ -51,6 +57,7 @@ struct
     NodeInfo info;
     ClientInfo clients[MAX_CLIENTS];
     int num_clients;
+    Packet prior_state_pkt;
 } server = {0};
 
 // ---
@@ -59,6 +66,13 @@ struct
 #define RAND_MAX_WIDTH IMAX_BITS(RAND_MAX)
 
 _Static_assert((RAND_MAX & (RAND_MAX + 1u)) == 0, "RAND_MAX not a Mersenne number");
+
+// ---
+
+static NetPlayerState net_player_states[MAX_CLIENTS];
+static NetPlayerInput net_player_inputs[10];
+static int input_count;
+static int inputs_per_packet = (TARGET_FPS/TICK_RATE);
 
 static uint64_t rand64(void)
 {
@@ -159,6 +173,11 @@ static void print_packet(Packet* pkt)
     }
 }
 
+static void print_packet_simple(Packet* pkt, const char* hdr)
+{
+    LOGN("[%s][ID: %u] %s (%u B)",hdr, pkt->hdr.id, packet_type_to_str(pkt->hdr.type), pkt->data_len);
+}
+
 static bool has_data_waiting(int socket)
 {
     fd_set readfds;
@@ -189,8 +208,12 @@ static int net_send(NodeInfo* node_info, Address* to, Packet* pkt)
     int pkt_len = get_packet_size(pkt);
     int sent_bytes = socket_sendto(node_info->socket, to, (uint8_t*)pkt, pkt_len);
 
+#if SERVER_PRINT_SIMPLE==1
+    print_packet_simple(pkt,"SEND");
+#elif SERVER_PRINT_VERBOSE==1
     LOGN("[SENT] Packet %d (%u B)",pkt->hdr.id,sent_bytes);
     print_packet(pkt);
+#endif
 
     node_info->local_latest_packet_id++;
 
@@ -201,9 +224,13 @@ static int net_recv(NodeInfo* node_info, Address* from, Packet* pkt, bool* is_la
 {
     int recv_bytes = socket_recvfrom(node_info->socket, from, (uint8_t*)pkt);
 
+#if SERVER_PRINT_SIMPLE
+    print_packet_simple(pkt,"RECV");
+#elif SERVER_PRINT_VERBOSE
     LOGN("[RECV] Packet %d (%u B)",pkt->hdr.id,recv_bytes);
     print_address(from);
     print_packet(pkt);
+#endif
 
     *is_latest = is_packet_id_greater(pkt->hdr.id,node_info->remote_latest_packet_id);
     if(*is_latest)
@@ -255,7 +282,7 @@ static bool authenticate_client(Packet* pkt, ClientInfo* cli)
     return valid;
 }
 
-static bool server_get_client(Address* addr, ClientInfo** cli)
+static int server_get_client(Address* addr, ClientInfo** cli)
 {
     for(int i = 0; i < server.num_clients; ++i)
     {
@@ -263,11 +290,11 @@ static bool server_get_client(Address* addr, ClientInfo** cli)
         {
             // found existing client, exit
             *cli = &server.clients[i];
-            return false;
+            return i;
         }
     }
 
-    return true;
+    return -1;
 }
 
 static bool server_assign_new_client(Address* addr, ClientInfo** cli)
@@ -278,6 +305,7 @@ static bool server_assign_new_client(Address* addr, ClientInfo** cli)
         if(server.clients[i].state == DISCONNECTED)
         {
             *cli = &server.clients[i];
+            (*cli)->client_id = i;
             return true;
         }
     }
@@ -302,6 +330,7 @@ static void update_server_num_clients()
 static void remove_client(ClientInfo* cli)
 {
     LOGN("Remove client");
+    net_player_states[cli->client_id].active = false;
     memset(cli,0, sizeof(ClientInfo));
     update_server_num_clients();
 
@@ -339,7 +368,8 @@ static void server_send(PacketType type, ClientInfo* cli)
         case PACKET_TYPE_CONNECT_ACCEPTED:
         {
             cli->state = CONNECTED;
-            pkt.data_len = 0;
+            pkt.data_len = 1;
+            pkt.data[0] = (uint8_t)cli->client_id;
             net_send(&server.info,&cli->address,&pkt);
         }   break;
         case PACKET_TYPE_CONNECT_REJECTED:
@@ -354,9 +384,36 @@ static void server_send(PacketType type, ClientInfo* cli)
             net_send(&server.info,&cli->address,&pkt);
             break;
         case PACKET_TYPE_STATE:
-            pkt.data_len = 0;
+        {
+            int index = 1;
+            int num_clients = 0;
+            for(int i = 0; i < MAX_CLIENTS; ++i)
+            {
+                NetPlayerState* player_state = &net_player_states[i];
+                if(player_state->active)
+                {
+                    pkt.data[index] = (uint8_t)i;
+                    index += 1;
+
+                    memcpy(&pkt.data[index],&player_state->pos,sizeof(Vector2f)); // pos
+                    index += sizeof(Vector2f);
+
+                    memcpy(&pkt.data[index],&player_state->angle,sizeof(float)); // angle
+                    index += sizeof(float);
+
+                    num_clients++;
+                }
+            }
+            pkt.data_len = index;
+            pkt.data[0] = num_clients;
+
+            if(memcmp(&server.prior_state_pkt.data, &pkt.data, pkt.data_len) == 0)
+                break;
+
             net_send(&server.info,&cli->address,&pkt);
-            break;
+            memcpy(&server.prior_state_pkt, &pkt, get_packet_size(&pkt));
+
+        }   break;
         case PACKET_TYPE_ERROR:
             pkt.data_len = 1;
             pkt.data[0] = (uint8_t)cli->last_packet_error;
@@ -420,9 +477,9 @@ int net_server_start()
 
             ClientInfo* cli = NULL;
 
-            bool is_new_client = server_get_client(&from, &cli);
+            int client_id = server_get_client(&from, &cli);
 
-            if(is_new_client)
+            if(client_id == -1) // net client
             {
                 if(recv_pkt.hdr.type == PACKET_TYPE_CONNECT_REQUEST)
                 {
@@ -486,8 +543,39 @@ int net_server_start()
                     } break;
                     case PACKET_TYPE_INPUT:
                     {
-                        // apply inputs to player
-                        
+                        uint8_t input_count = recv_pkt.data[8];
+
+                        NetPlayerInput inputs[input_count];
+
+                        for(int i = 0; i < input_count; ++i)
+                        {
+                            // get input
+                            int index = 9+(i*sizeof(NetPlayerInput));
+                            memcpy(&inputs[i], &recv_pkt.data[index],sizeof(NetPlayerInput));
+
+                            //LOGN("got input: keys %X, angle %f, delta_t %f", inputs[i].keys, inputs[i].angle, inputs[i].delta_t);
+
+                            // apply input to player
+                            players[client_id].keys = inputs[i].keys;
+                            players[client_id].angle = inputs[i].angle;
+                            
+                            // simulate player
+                            player_update(&players[client_id],inputs[i].delta_t);
+
+                            // update net player state
+
+                            net_player_states[client_id].active = true;
+                            net_player_states[client_id].pos.x = players[client_id].phys.pos.x;
+                            net_player_states[client_id].pos.y = players[client_id].phys.pos.y;
+                            net_player_states[client_id].angle = players[client_id].angle;
+
+                            //printf("player pos %f %f, angle %f\n",players[client_id].phys.pos.x, players[client_id].phys.pos.y, players[client_id].angle);
+
+                        }
+                    } break;
+                    case PACKET_TYPE_PING:
+                    {
+                        server_send(PACKET_TYPE_PING, cli);
                     } break;
                     case PACKET_TYPE_DISCONNECT:
                     {
@@ -536,14 +624,13 @@ int net_server_start()
                         // disconnect client
                         server_send(PACKET_TYPE_DISCONNECT,cli);
                         remove_client(cli);
+                        continue;
                     }
                 }
+
+                // send world state to connected clients...
+                server_send(PACKET_TYPE_STATE,cli);
             }
-
-            // send world state to connected clients...
-            // @TODO
-
-            //server.info.local_latest_packet_id++;
         }
 
         timer_wait_for_frame(&server_timer);
@@ -562,23 +649,15 @@ struct
     ConnectionState state;
     double time_of_latest_sent_packet;
     double time_of_last_ping;
+    double time_of_last_received_ping;
+    double rtt;
     uint8_t server_salt[8];
     uint8_t client_salt[8];
     uint8_t xor_salts[8];
     PacketQueue queue;
 } client = {0};
 
-typedef struct
-{
-    double game_time;
-    uint16_t input;
-} NetPlayerInput;
-
-static NetPlayerInput net_player_inputs[10];
-static int input_count;
-static const int inputs_per_packet = 2;
-
-bool net_client_add_player_input(uint16_t input, double game_time)
+bool net_client_add_player_input(NetPlayerInput* input)
 {
     if(input_count >= 10)
     {
@@ -586,9 +665,7 @@ bool net_client_add_player_input(uint16_t input, double game_time)
         return false;
     }
 
-    net_player_inputs[input_count].game_time = game_time;
-    memcpy(&net_player_inputs[input_count].input, &input, sizeof(uint16_t));
-
+    memcpy(&net_player_inputs[input_count], input, sizeof(NetPlayerInput));
     input_count++;
 
     return true;
@@ -710,10 +787,10 @@ static void client_send(PacketType type)
     client.time_of_latest_sent_packet = timer_get_time();
 }
 
-bool net_client_connect()
+int net_client_connect()
 {
     if(client.state != DISCONNECTED)
-        return false; // temporary, handle different states in the future
+        return -1; // temporary, handle different states in the future
 
     for(;;)
     {
@@ -750,7 +827,7 @@ bool net_client_connect()
                         if(memcmp(srv_client_salt,client.client_salt,8) != 0)
                         {
                             LOGN("Server sent client salt doesn't match actual client salt");
-                            return false;
+                            return -1;
                         }
 
                         memcpy(client.server_salt,&srvpkt.data[8], 8);
@@ -762,7 +839,8 @@ bool net_client_connect()
                     case PACKET_TYPE_CONNECT_ACCEPTED:
                     {
                         client.state = CONNECTED;
-                        return true;
+                        uint8_t client_id = (uint8_t)srvpkt.data[0];
+                        return (int)client_id;
                     } break;
                     case PACKET_TYPE_CONNECT_REJECTED:
                     {
@@ -791,8 +869,47 @@ void net_client_update()
             switch(srvpkt.hdr.type)
             {
                 case PACKET_TYPE_STATE:
-                    //@TODO
-                    break;
+                {
+                    uint8_t num_players = (uint8_t)srvpkt.data[0];
+
+                    int index = 1;
+
+                    for(int i = 0; i < num_players; ++i)
+                    {
+                        uint8_t client_id = srvpkt.data[index];
+                        index += 1;
+
+                        if(client_id >= MAX_CLIENTS)
+                        {
+                            LOGE("Client ID is too large: %d",client_id);
+                            break;
+                        }
+
+                        Player* p = &players[client_id];
+
+                        Vector2f pos;
+                        float angle;
+
+                        memcpy(&pos, &srvpkt.data[index], sizeof(Vector2f));
+                        index += sizeof(Vector2f);
+                        memcpy(&angle, &srvpkt.data[index],sizeof(float));
+                        index += sizeof(float);
+
+                        if(p != player)
+                        {
+                            memcpy(&player->phys.pos, &pos, sizeof(Vector2f));
+                            memcpy(&player->angle, &angle, sizeof(float));
+                        }
+                    }
+
+                    player_count = num_players;
+
+                } break;
+                case PACKET_TYPE_PING:
+                {
+                    client.time_of_last_received_ping = timer_get_time();
+                    client.rtt = 1000.0f*(client.time_of_last_received_ping - client.time_of_last_ping);
+                } break;
                 case PACKET_TYPE_DISCONNECT:
                     client.state = DISCONNECTED;
                     break;
@@ -819,6 +936,11 @@ void net_client_update()
 bool net_client_is_connected()
 {
     return (client.state == CONNECTED);
+}
+
+double net_client_get_rtt()
+{
+    return client.rtt;
 }
 
 void net_client_disconnect()

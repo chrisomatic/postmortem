@@ -142,6 +142,16 @@ static void load_font()
 }
 
 
+void gfx_image_init()
+{
+    stbi_set_flip_vertically_on_load(0);
+
+    for(int i = 0; i < MAX_GFX_IMAGES; ++i)
+    {
+        gfx_images[i].texture = -1;
+    }
+}
+
 void gfx_init(int width, int height)
 {
     printf("GL version: %s\n",glGetString(GL_VERSION));
@@ -233,12 +243,7 @@ void gfx_init(int width, int height)
     glEnable(GL_LINE_SMOOTH);
     glLineWidth(5.0);
 
-    stbi_set_flip_vertically_on_load(0);
-
-    for(int i = 0; i < MAX_GFX_IMAGES; ++i)
-    {
-        gfx_images[i].texture = -1;
-    }
+    gfx_image_init();
 
     load_font();
 }

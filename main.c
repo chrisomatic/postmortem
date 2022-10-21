@@ -46,7 +46,8 @@ void start_client();
 void start_server();
 void init();
 void deinit();
-void update(double);
+void simulate(double);
+void simulate_client(double);
 void draw();
 
 // =========================
@@ -164,6 +165,9 @@ void start_local()
     LOGI("Starting Local");
     LOGI("--------------");
 
+    time_t t;
+    srand((unsigned) time(&t));
+
     init();
 
     timer_set_fps(&game_timer,TARGET_FPS);
@@ -181,7 +185,7 @@ void start_local()
 
         t1 = timer_get_time();
 
-        update(t1-t0);
+        simulate(t1-t0);
         draw();
 
         timer_wait_for_frame(&game_timer);
@@ -199,10 +203,22 @@ void start_client()
     LOGI("Starting Client");
     LOGI("---------------");
 
-    init();
+    time_t t;
+    srand((unsigned) time(&t));
 
     timer_set_fps(&game_timer,TARGET_FPS);
     timer_begin(&game_timer);
+
+    net_client_init();
+
+    int client_id = net_client_connect();
+    if(client_id < 0)
+        return;
+
+    LOGN("Client ID: %d", client_id);
+    player = &players[client_id];
+
+    init();
 
     double t0=timer_get_time();
     double t1=0.0;
@@ -214,15 +230,26 @@ void start_client()
         if(window_should_close())
             break;
 
+        if(!net_client_is_connected())
+            break;
+
         t1 = timer_get_time();
 
-        update(t1-t0);
+        double delta_t = t1-t0;
+
+        simulate_client(delta_t); // client-side prediction
+
+        if(player->input.keys != player->prior_input.keys || player->input.angle != player->prior_input.angle)
+            net_client_add_player_input(&player->input);
+
+        //printf("player pos %f %f, angle %f\n",player->phys.pos.x, player->phys.pos.y, player->angle);
+        net_client_update();
+
         draw();
 
         timer_wait_for_frame(&game_timer);
         window_swap_buffers();
         t0 = t1;
-
     }
 
     deinit();
@@ -236,6 +263,16 @@ void start_server()
 
     time_t t;
     srand((unsigned) time(&t));
+
+    view_width = VIEW_WIDTH;
+    view_height = VIEW_HEIGHT;
+
+    // server init
+    gfx_image_init();
+    gun_init();
+    player_init();
+    zombie_init();
+    projectile_init();
 
     net_server_start();
 }
@@ -252,9 +289,6 @@ void init()
         fprintf(stderr,"Failed to initialize window!\n");
         exit(1);
     }
-
-    time_t t;
-    srand((unsigned) time(&t));
 
     LOGI("Initializing...");
 
@@ -299,7 +333,7 @@ void camera_set()
     int mx, my;
     window_get_mouse_view_coords(&mx, &my);
 
-    if(player.gun_ready)
+    if(player->gun_ready)
     {
         float r = 0.2;  //should be <= 0.5 to make sense otherwise player will end up off of the screen
         float ox = (mx - view_width/2.0);
@@ -329,8 +363,8 @@ void camera_set()
         }
     }
 
-    float cam_pos_x = player.phys.pos.x + aim_camera_offset.x;
-    float cam_pos_y = player.phys.pos.y + aim_camera_offset.y;
+    float cam_pos_x = player->phys.pos.x + aim_camera_offset.x;
+    float cam_pos_y = player->phys.pos.y + aim_camera_offset.y;
     Rect cam_rect = {0};
     cam_rect.x = cam_pos_x;
     cam_rect.y = cam_pos_y;
@@ -340,7 +374,7 @@ void camera_set()
     camera_move(cam_rect.x, cam_rect.y, false);
 }
 
-void update(double delta_t)
+void simulate(double delta_t)
 {
     gfx_clear_lines();
 
@@ -349,7 +383,20 @@ void update(double delta_t)
 
     world_update();
     zombie_update(delta_t);
-    player_update(delta_t);
+    player_update(player,delta_t);
+    projectile_update(delta_t);
+}
+
+void simulate_client(double delta_t)
+{
+    gfx_clear_lines();
+
+    camera_set();
+    camera_update();
+
+    world_update();
+    //zombie_update(delta_t);
+    player_update(player,delta_t);
     projectile_update(delta_t);
 
     // if(!window_is_cursor_enabled())
@@ -364,11 +411,12 @@ void draw()
     world_draw();
     zombie_draw();
     projectile_draw();
-    player_draw();
+
+    for(int i = 0; i < player_count; ++i)
+        player_draw(&players[i]);
 
     gfx_draw_lines();
     gui_draw();
-
 }
 
 

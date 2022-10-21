@@ -10,6 +10,7 @@
 #include "gfx.h"
 #include "world.h"
 #include "log.h"
+#include "main.h"
 
 #include "zombie.h"
 

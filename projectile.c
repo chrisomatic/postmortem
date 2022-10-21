@@ -13,6 +13,7 @@
 #include "player.h"
 #include "zombie.h"
 #include "projectile.h"
+#include "main.h"
 
 typedef struct
 {

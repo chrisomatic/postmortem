@@ -25,6 +25,7 @@ typedef struct
 extern GFXImage gfx_images[MAX_GFX_IMAGES];
 extern int font_image;
 
+void gfx_image_init();
 void gfx_init(int width, int height);
 void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b);
 

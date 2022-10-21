@@ -6,6 +6,7 @@
 #include "player.h"
 #include "projectile.h"
 #include "window.h"
+#include "main.h"
 #include "gun.h"
 
 Gun gun_arsenal[GUN_TYPE_MAX] = {0};
@@ -13,7 +14,6 @@ int gun_image_set;
 
 void gun_init()
 {
-
     gun_image_set = gfx_load_image_set("img/gun_set.png",32,32);
     GFXSubImageData* sid = gfx_images[gun_image_set].sub_img_data;
 
@@ -64,7 +64,6 @@ void gun_init()
     gun_arsenal[idx].type = idx;
     gun_arsenal[idx].sprite_index = 1;
     memcpy(&gun_arsenal[idx].visible_rect, &sid->visible_rects[gun_arsenal[idx].sprite_index], sizeof(Rect));
-
 }
 
 Gun gun_get(GunType type)

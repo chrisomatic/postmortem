@@ -14,7 +14,7 @@ void gui_draw()
 {
     // test print
     gfx_draw_string(0,view_height-22,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
-    gfx_draw_string(player.phys.pos.x - player.phys.pos.w/2.0, player.phys.pos.y + player.phys.pos.h/2.0,0x0000FFFF,0.1,0.0, 0.8, true, true, "Kameron");
+    gfx_draw_string(player->phys.pos.x - player->phys.pos.w/2.0, player->phys.pos.y + player->phys.pos.h/2.0,0x0000FFFF,0.1,0.0, 0.8, true, true, "Kameron");
 
     if(debug_enabled)
     {
@@ -22,17 +22,17 @@ void gui_draw()
         // Player
         // ------
 
-        bool up               = IS_BIT_SET(player.keys,PLAYER_ACTION_UP);
-        bool down             = IS_BIT_SET(player.keys,PLAYER_ACTION_DOWN);
-        bool left             = IS_BIT_SET(player.keys,PLAYER_ACTION_LEFT);
-        bool right            = IS_BIT_SET(player.keys,PLAYER_ACTION_RIGHT);
-        bool run              = IS_BIT_SET(player.keys,PLAYER_ACTION_RUN);
-        bool jump             = IS_BIT_SET(player.keys,PLAYER_ACTION_JUMP);
-        bool interact         = IS_BIT_SET(player.keys,PLAYER_ACTION_INTERACT);
-        bool primary_action   = IS_BIT_SET(player.keys,PLAYER_ACTION_PRIMARY_ACTION);
-        bool secondary_action = IS_BIT_SET(player.keys,PLAYER_ACTION_SECONDARY_ACTION);
-        bool toggle_fire      = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_FIRE);
-        bool toggle_debug     = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_DEBUG);
+        bool up               = IS_BIT_SET(player->keys,PLAYER_ACTION_UP);
+        bool down             = IS_BIT_SET(player->keys,PLAYER_ACTION_DOWN);
+        bool left             = IS_BIT_SET(player->keys,PLAYER_ACTION_LEFT);
+        bool right            = IS_BIT_SET(player->keys,PLAYER_ACTION_RIGHT);
+        bool run              = IS_BIT_SET(player->keys,PLAYER_ACTION_RUN);
+        bool jump             = IS_BIT_SET(player->keys,PLAYER_ACTION_JUMP);
+        bool interact         = IS_BIT_SET(player->keys,PLAYER_ACTION_INTERACT);
+        bool primary_action   = IS_BIT_SET(player->keys,PLAYER_ACTION_PRIMARY_ACTION);
+        bool secondary_action = IS_BIT_SET(player->keys,PLAYER_ACTION_SECONDARY_ACTION);
+        bool toggle_fire      = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_FIRE);
+        bool toggle_debug     = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_DEBUG);
 
 
         float start_x = 20.0, start_y = 20.0;
@@ -53,9 +53,9 @@ void gui_draw()
 
         // player
         size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Player"); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Pos: %d, %d", (int)player.phys.pos.x, (int)player.phys.pos.y); y += size.y+ypad;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y); y += size.y+ypad;
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", player.angle, DEG(player.angle)); y += size.y+ypad;
+        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", player->angle, DEG(player->angle)); y += size.y+ypad;
 
         // mouse
         float wmx, wmy;

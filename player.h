@@ -2,6 +2,7 @@
 
 #include "physics.h"
 #include "gun.h"
+#include "net.h"
 
 enum PlayerAction
 {
@@ -31,13 +32,21 @@ typedef struct
     int sprite_index;
     uint16_t keys;
 
+    NetPlayerInput prior_input;
+    NetPlayerInput input;
+
+    NetPlayerState predicted_states[32];
+    int predicted_state_index;
+
     Gun gun;
     bool gun_ready;
 } Player;
 
-extern Player player;
+extern Player* player;
+extern Player players[MAX_CLIENTS];
+extern int player_count;
 extern bool debug_enabled;
 
 void player_init();
-void player_update(double delta_t);
+void player_update(Player* p, double delta_t);
 void player_draw();

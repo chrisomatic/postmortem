@@ -1,5 +1,7 @@
 #pragma once
 
+#include "math2d.h"
+
 #define MAX_CLIENTS 8
 #define MAX_PACKET_DATA_SIZE 1024
 
@@ -58,6 +60,20 @@ typedef struct
     uint8_t  data[MAX_PACKET_DATA_SIZE];
 } __attribute__((__packed__)) Packet;
 
+typedef struct
+{
+    double delta_t;
+    uint16_t keys;
+    float angle;
+} __attribute__((__packed__)) NetPlayerInput;
+
+typedef struct
+{
+    bool active;
+    Vector2f pos;
+    float angle;
+} __attribute__((__packed__)) NetPlayerState;
+
 extern char* server_ip_address;
 
 // Server
@@ -65,9 +81,9 @@ int net_server_start();
 
 // Client
 bool net_client_init();
-bool net_client_connect();
+int net_client_connect();
 void net_client_update();
-bool net_client_add_player_input(uint16_t input, double game_time);
+bool net_client_add_player_input(NetPlayerInput* input);
 bool net_client_is_connected();
 void net_client_disconnect();
 bool net_client_set_server_ip(char* address);
