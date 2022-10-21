@@ -294,7 +294,7 @@ void deinit()
 }
 
 // also checks if the mouse is off the screen
-void aim_camera_offset_update()
+void camera_set()
 {
     int mx, my;
     window_get_mouse_view_coords(&mx, &my);
@@ -313,6 +313,11 @@ void aim_camera_offset_update()
         aim_camera_offset.x = ox;
         aim_camera_offset.y = oy;
     }
+    else
+    {
+        aim_camera_offset.x = 0.0;
+        aim_camera_offset.y = 0.0;
+    }
 
     if(!window_is_cursor_enabled())
     {
@@ -323,16 +328,25 @@ void aim_camera_offset_update()
             window_set_mouse_view_coords(new_mx, new_my);
         }
     }
-    camera_move(player.phys.pos.x + aim_camera_offset.x, player.phys.pos.y + aim_camera_offset.y);
 
-    //TODO: don't let the camera show off-world to the right and bottom
+    float cam_pos_x = player.phys.pos.x + aim_camera_offset.x;
+    float cam_pos_y = player.phys.pos.y + aim_camera_offset.y;
+    Rect cam_rect = {0};
+    cam_rect.x = cam_pos_x;
+    cam_rect.y = cam_pos_y;
+    cam_rect.w = view_width;
+    cam_rect.h = view_height;
+    limit_pos(&map.rect, &cam_rect);
+    camera_move(cam_rect.x, cam_rect.y, false);
 }
 
 void update(double delta_t)
 {
     gfx_clear_lines();
 
-    aim_camera_offset_update();
+    camera_set();
+    camera_update();
+
     world_update();
     zombie_update(delta_t);
     player_update(delta_t);

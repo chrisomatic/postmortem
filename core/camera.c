@@ -6,8 +6,11 @@
 #include "window.h"
 #include "camera.h"
 
+static void move_camera(float x, float y);
+
 static Matrix view_matrix;
-static Camera camera;
+static Camera camera;                //current position
+static Camera camera_delta_target;   //target delta position
 
 void camera_init()
 {
@@ -17,8 +20,37 @@ void camera_init()
     camera.pos.y = 0.0;
 }
 
+void camera_update()
+{
+    if(!FEQ(camera_delta_target.pos.x,0.0) || !FEQ(camera_delta_target.pos.y,0.0))
+    {
 
-void camera_move(float x, float y)
+        float dx = camera_delta_target.pos.x/10.0;
+        float dy = camera_delta_target.pos.y/10.0;
+        move_camera(camera.pos.x+dx, camera.pos.y+dy);
+    }
+
+}
+
+void camera_move(float x, float y, bool immediate)
+{
+
+    if(immediate)
+    {
+        camera.pos.x = x;
+        camera.pos.y = y;
+        camera_delta_target.pos.x = 0.0;
+        camera_delta_target.pos.y = 0.0;
+    }
+    else
+    {
+        camera_delta_target.pos.x = x - camera.pos.x;
+        camera_delta_target.pos.y = y - camera.pos.y;
+    }
+
+}
+
+static void move_camera(float x, float y)
 {
     camera.pos.x = x;
     camera.pos.y = y;
@@ -32,15 +64,14 @@ void camera_move(float x, float y)
         0.0
     };
 
-    cam_pos.x = MIN(cam_pos.x, 0.0);
-    cam_pos.y = MIN(cam_pos.y, 0.0);
+    // cam_pos.x = MIN(cam_pos.x, 0.0);
+    // cam_pos.y = MIN(cam_pos.y, 0.0);
+    cam_pos.x = cam_pos.x;
+    cam_pos.y = cam_pos.y;
 
     // Rect r;
     // get_camera_rect(&r);
     // printf("%.2f, %.2f, %.2f, %.2f\n", r.x,r.y,r.w,r.h);
-
-
-
     // printf("camera: %.2f, %.2f    %d,%d   \n", camera.pos.x, camera.pos.y, view_width, view_height);
 
     get_translate_transform(&view_matrix,&cam_pos);
@@ -56,8 +87,10 @@ void get_camera_rect(Rect* rect)
     float vw = view_width / 2.0;
     float vh = view_height / 2.0;
 
-    float x = MAX(0,camera.pos.x-vw);
-    float y = MAX(0,camera.pos.y-vh);
+    // float x = MAX(0,camera.pos.x-vw);
+    // float y = MAX(0,camera.pos.y-vh);
+    float x = camera.pos.x-vw;
+    float y = camera.pos.y-vh;
 
     rect->w = vw*2.0;
     rect->h = vh*2.0;
