@@ -14,7 +14,7 @@
 #include "log.h"
 #include "../player.h" // @TODO: Find a way to not include player code like this
 
-#define SERVER_PRINT_SIMPLE 1
+//#define SERVER_PRINT_SIMPLE 1
 //#define SERVER_PRINT_VERBOSE 1
 
 #define GAME_ID 0xC68BB821
@@ -71,7 +71,7 @@ _Static_assert((RAND_MAX & (RAND_MAX + 1u)) == 0, "RAND_MAX not a Mersenne numbe
 
 static NetPlayerState net_player_states[MAX_CLIENTS];
 static NetPlayerInput net_player_inputs[10];
-static int input_count;
+static int input_count = 0;
 static int inputs_per_packet = (TARGET_FPS/TICK_RATE);
 
 static uint64_t rand64(void)
@@ -330,6 +330,7 @@ static void update_server_num_clients()
 static void remove_client(ClientInfo* cli)
 {
     LOGN("Remove client");
+    players[cli->client_id].active = false;
     net_player_states[cli->client_id].active = false;
     memset(cli,0, sizeof(ClientInfo));
     update_server_num_clients();
@@ -540,6 +541,7 @@ int net_server_start()
                     {
                         cli->state = SENDING_CHALLENGE_RESPONSE;
                         server_send(PACKET_TYPE_CONNECT_ACCEPTED,cli);
+                        server_send(PACKET_TYPE_STATE,cli);
                     } break;
                     case PACKET_TYPE_INPUT:
                     {
@@ -651,6 +653,7 @@ struct
     double time_of_last_ping;
     double time_of_last_received_ping;
     double rtt;
+    uint8_t player_count;
     uint8_t server_salt[8];
     uint8_t client_salt[8];
     uint8_t xor_salts[8];
@@ -669,6 +672,20 @@ bool net_client_add_player_input(NetPlayerInput* input)
     input_count++;
 
     return true;
+}
+
+uint8_t net_client_get_player_count()
+{
+    return client.player_count;
+}
+
+void net_client_get_server_ip_str(char* ip_str)
+{
+    if(!ip_str)
+        return;
+
+    sprintf(ip_str,"%u.%u.%u.%u:%u",server.address.a,server.address.b, server.address.c, server.address.d, server.address.port);
+    return;
 }
 
 bool net_client_set_server_ip(char* address)
@@ -840,6 +857,7 @@ int net_client_connect()
                     {
                         client.state = CONNECTED;
                         uint8_t client_id = (uint8_t)srvpkt.data[0];
+                        client_send(PACKET_TYPE_PING); // initial ping
                         return (int)client_id;
                     } break;
                     case PACKET_TYPE_CONNECT_REJECTED:
@@ -871,8 +889,14 @@ void net_client_update()
                 case PACKET_TYPE_STATE:
                 {
                     uint8_t num_players = (uint8_t)srvpkt.data[0];
+                    client.player_count = num_players;
 
                     int index = 1;
+
+                    for(int i = 0; i < MAX_CLIENTS; ++i)
+                    {
+                        players[i].active = false;
+                    }
 
                     for(int i = 0; i < num_players; ++i)
                     {
@@ -885,8 +909,6 @@ void net_client_update()
                             break;
                         }
 
-                        Player* p = &players[client_id];
-
                         Vector2f pos;
                         float angle;
 
@@ -895,14 +917,18 @@ void net_client_update()
                         memcpy(&angle, &srvpkt.data[index],sizeof(float));
                         index += sizeof(float);
 
+                        Player* p = &players[client_id];
+                        p->active = true;
+
                         if(p != player)
                         {
-                            memcpy(&player->phys.pos, &pos, sizeof(Vector2f));
-                            memcpy(&player->angle, &angle, sizeof(float));
+                            memcpy(&p->phys.pos, &pos, sizeof(Vector2f));
+                            memcpy(&p->angle, &angle, sizeof(float));
                         }
                     }
 
-                    player_count = num_players;
+                    client.player_count = num_players;
+                    player_count = client.player_count;
 
                 } break;
                 case PACKET_TYPE_PING:

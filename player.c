@@ -13,97 +13,94 @@
 #include "net.h"
 #include "main.h"
 
-typedef struct
-{
-    bool up, down, left, right;
-    bool run, jump, interact;
-    bool primary_action, secondary_action;
-    bool toggle_fire, toggle_debug, toggle_gun;
-} PlayerActions;
-
 Player players[MAX_CLIENTS];
 Player* player = &players[0];
 int player_count = 0;
 
 bool debug_enabled = true; // weird place for this variable
+static int player_image_set;
 static int crosshair_image;
 static float mouse_x, mouse_y;
-static PlayerActions player_actions = {0};
-static PlayerActions player_actions_prior = {0};
 
-void player_init()
+void player_init_images()
 {
-
-    player->phys.pos.x = 400.0;
-    player->phys.pos.y = 1000.0;
-
-    player->phys.vel.x = 0.0;
-    player->phys.vel.y = 0.0;
-    player->sprite_index = 0;
-    player->gun_ready = true;
-
-    player->speed = 32.0;
-    player->max_base_speed = 128.0;
-    player->phys.max_linear_vel = player->max_base_speed;
-    player->scale = 1.0;
-    player->predicted_state_index = 0;
-
-    player->gun = gun_get(GUN_TYPE_MACHINEGUN);
-
-    player->image = gfx_load_image_set("img/human_set_small.png",32,48);
+    player_image_set = gfx_load_image_set("img/human_set_small.png",32,48);
     crosshair_image = gfx_load_image("img/crosshair.png", false, false);
+}
 
+void player_init_controls(Player* p)
+{
     window_controls_clear_keys();
 
     // map keys
-    window_controls_add_key(&player->keys, GLFW_KEY_W, PLAYER_ACTION_UP);
-    window_controls_add_key(&player->keys, GLFW_KEY_S, PLAYER_ACTION_DOWN);
-    window_controls_add_key(&player->keys, GLFW_KEY_A, PLAYER_ACTION_LEFT);
-    window_controls_add_key(&player->keys, GLFW_KEY_D, PLAYER_ACTION_RIGHT);
-    window_controls_add_key(&player->keys, GLFW_KEY_LEFT_SHIFT, PLAYER_ACTION_RUN);
-    window_controls_add_key(&player->keys, GLFW_KEY_SPACE, PLAYER_ACTION_JUMP);
-    window_controls_add_key(&player->keys, GLFW_KEY_E, PLAYER_ACTION_INTERACT);
-    window_controls_add_key(&player->keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_FIRE);
-    window_controls_add_key(&player->keys, GLFW_KEY_F2, PLAYER_ACTION_TOGGLE_DEBUG);
-    window_controls_add_key(&player->keys, GLFW_KEY_G, PLAYER_ACTION_TOGGLE_GUN);
+    window_controls_add_key(&p->keys, GLFW_KEY_W, PLAYER_ACTION_UP);
+    window_controls_add_key(&p->keys, GLFW_KEY_S, PLAYER_ACTION_DOWN);
+    window_controls_add_key(&p->keys, GLFW_KEY_A, PLAYER_ACTION_LEFT);
+    window_controls_add_key(&p->keys, GLFW_KEY_D, PLAYER_ACTION_RIGHT);
+    window_controls_add_key(&p->keys, GLFW_KEY_LEFT_SHIFT, PLAYER_ACTION_RUN);
+    window_controls_add_key(&p->keys, GLFW_KEY_SPACE, PLAYER_ACTION_JUMP);
+    window_controls_add_key(&p->keys, GLFW_KEY_E, PLAYER_ACTION_INTERACT);
+    window_controls_add_key(&p->keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_FIRE);
+    window_controls_add_key(&p->keys, GLFW_KEY_F2, PLAYER_ACTION_TOGGLE_DEBUG);
+    window_controls_add_key(&p->keys, GLFW_KEY_G, PLAYER_ACTION_TOGGLE_GUN);
 
-    window_controls_add_mouse_button(&player->keys, GLFW_MOUSE_BUTTON_LEFT, PLAYER_ACTION_PRIMARY_ACTION);
-    window_controls_add_mouse_button(&player->keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
+    window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_LEFT, PLAYER_ACTION_PRIMARY_ACTION);
+    window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
+}
+
+void player_init(Player* p)
+{
+    p->phys.pos.x = 400.0;
+    p->phys.pos.y = 1000.0;
+
+    p->phys.vel.x = 0.0;
+    p->phys.vel.y = 0.0;
+    p->sprite_index = 0;
+    p->gun_ready = true;
+
+    p->speed = 32.0;
+    p->max_base_speed = 128.0;
+    p->phys.max_linear_vel = p->max_base_speed;
+    p->scale = 1.0;
+    p->predicted_state_index = 0;
+
+    p->gun = gun_get(GUN_TYPE_MACHINEGUN);
+    p->image = player_image_set;
 
     player_count = 1;
-
-    if(role == ROLE_CLIENT || role == ROLE_SERVER)
-    {
-        // initialize all players
-        for(int i = 1; i < MAX_CLIENTS; ++i)
-        {
-            memcpy(&players[i],player, sizeof(Player));
-        }
-    }
 }
 
 
 void player_update(Player* p, double delta_t)
 {
-    player_actions.up               = IS_BIT_SET(player->keys,PLAYER_ACTION_UP);
-    player_actions.down             = IS_BIT_SET(player->keys,PLAYER_ACTION_DOWN);
-    player_actions.left             = IS_BIT_SET(player->keys,PLAYER_ACTION_LEFT);
-    player_actions.right            = IS_BIT_SET(player->keys,PLAYER_ACTION_RIGHT);
-    player_actions.run              = IS_BIT_SET(player->keys,PLAYER_ACTION_RUN);
-    player_actions.jump             = IS_BIT_SET(player->keys,PLAYER_ACTION_JUMP);
-    player_actions.interact         = IS_BIT_SET(player->keys,PLAYER_ACTION_INTERACT);
-    player_actions.primary_action   = IS_BIT_SET(player->keys,PLAYER_ACTION_PRIMARY_ACTION);
-    player_actions.secondary_action = IS_BIT_SET(player->keys,PLAYER_ACTION_SECONDARY_ACTION);
-    player_actions.toggle_fire      = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_FIRE);
-    player_actions.toggle_debug     = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_DEBUG);
-    player_actions.toggle_gun       = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_GUN);
+    p->actions.up               = IS_BIT_SET(p->keys,PLAYER_ACTION_UP);
+    p->actions.down             = IS_BIT_SET(p->keys,PLAYER_ACTION_DOWN);
+    p->actions.left             = IS_BIT_SET(p->keys,PLAYER_ACTION_LEFT);
+    p->actions.right            = IS_BIT_SET(p->keys,PLAYER_ACTION_RIGHT);
+    p->actions.run              = IS_BIT_SET(p->keys,PLAYER_ACTION_RUN);
+    p->actions.jump             = IS_BIT_SET(p->keys,PLAYER_ACTION_JUMP);
+    p->actions.interact         = IS_BIT_SET(p->keys,PLAYER_ACTION_INTERACT);
+    p->actions.primary_action   = IS_BIT_SET(p->keys,PLAYER_ACTION_PRIMARY_ACTION);
+    p->actions.secondary_action = IS_BIT_SET(p->keys,PLAYER_ACTION_SECONDARY_ACTION);
+    p->actions.toggle_fire      = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_FIRE);
+    p->actions.toggle_debug     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_DEBUG);
+    p->actions.toggle_gun       = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_GUN);
 
-    bool primary_action_toggled = player_actions.primary_action && !player_actions_prior.primary_action;
-    bool fire_toggled = player_actions.toggle_fire && !player_actions_prior.toggle_fire;
-    bool debug_toggled = player_actions.toggle_debug && !player_actions_prior.toggle_debug;
-    bool gun_toggled = player_actions.toggle_gun && !player_actions_prior.toggle_gun;
+    bool primary_action_toggled = p->actions.primary_action && !p->actions_prior.primary_action;
+    bool fire_toggled = p->actions.toggle_fire && !p->actions_prior.toggle_fire;
+    bool debug_toggled = p->actions.toggle_debug && !p->actions_prior.toggle_debug;
+    bool gun_toggled = p->actions.toggle_gun && !p->actions_prior.toggle_gun;
 
-    memcpy(&player_actions_prior, &player_actions, sizeof(PlayerActions));
+    memcpy(&p->actions_prior, &p->actions, sizeof(PlayerActions));
+
+    if(role == ROLE_CLIENT)
+    {
+        memcpy(&p->input_prior, &p->input, sizeof(NetPlayerInput));
+
+        p->input.delta_t = delta_t;
+        p->input.keys = p->keys;
+        p->input.angle = p->angle;
+    }
 
     if(gun_toggled)
     {
@@ -129,10 +126,10 @@ void player_update(Player* p, double delta_t)
 
     Vector2f accel = {0};
 
-    if(player_actions.up)    { accel.y -= player->speed; }
-    if(player_actions.down)  { accel.y += player->speed; }
-    if(player_actions.left)  { accel.x -= player->speed; }
-    if(player_actions.right) { accel.x += player->speed; }
+    if(p->actions.up)    { accel.y -= p->speed; }
+    if(p->actions.down)  { accel.y += p->speed; }
+    if(p->actions.left)  { accel.x -= p->speed; }
+    if(p->actions.right) { accel.x += p->speed; }
 
     window_get_mouse_world_coords(&mouse_x, &mouse_y);
 
@@ -141,43 +138,43 @@ void player_update(Player* p, double delta_t)
     Vector3f dist = {mouse_pos.x - player_pos.x, mouse_pos.y - player_pos.y, 0.0};
 
     if(role != ROLE_SERVER)
-        player->angle = calc_angle_rad(player->phys.pos.x, player->phys.pos.y, mouse_pos.x, mouse_pos.y);
-    float angle_deg = DEG(player->angle);
+        p->angle = calc_angle_rad(p->phys.pos.x, p->phys.pos.y, mouse_pos.x, mouse_pos.y);
+    float angle_deg = DEG(p->angle);
 
     if(p->gun_ready)
     {
 
         int sector = angle_sector(angle_deg, 16);
 
-        if(sector == 15 || sector == 0)  // player_actions.right
+        if(sector == 15 || sector == 0)  // p->actions.right
         {
             p->sprite_index = 6;
         }
-        else if(sector == 1 || sector == 2)  // player_actions.up-player_actions.right
+        else if(sector == 1 || sector == 2)  // p->actions.up-p->actions.right
         {
             p->sprite_index = 5;
         }
-        else if(sector == 3 || sector == 4)  // player_actions.up
+        else if(sector == 3 || sector == 4)  // p->actions.up
         {
             p->sprite_index = 4;
         }
-        else if(sector == 5 || sector == 6)  // player_actions.up-player_actions.left
+        else if(sector == 5 || sector == 6)  // p->actions.up-p->actions.left
         {
             p->sprite_index = 3;
         }
-        else if(sector == 7 || sector == 8)  // player_actions.left
+        else if(sector == 7 || sector == 8)  // p->actions.left
         {
             p->sprite_index = 2;
         }
-        else if(sector == 9 || sector == 10)  // player_actions.down-player_actions.left
+        else if(sector == 9 || sector == 10)  // p->actions.down-p->actions.left
         {
             p->sprite_index = 1;
         }
-        else if(sector == 11 || sector == 12)  // player_actions.down
+        else if(sector == 11 || sector == 12)  // p->actions.down
         {
             p->sprite_index = 0;
         }
-        else if(sector == 13 || sector == 14)  // player_actions.down-player_actions.right
+        else if(sector == 13 || sector == 14)  // p->actions.down-p->actions.right
         {
             p->sprite_index = 7;
         }
@@ -185,29 +182,29 @@ void player_update(Player* p, double delta_t)
     }
     else
     {
-        if(player_actions.up && player_actions.left)
-            player->sprite_index = 3;
-        else if(player_actions.up && player_actions.right)
-            player->sprite_index = 5;
-        else if(player_actions.down && player_actions.left)
-            player->sprite_index = 1;
-        else if(player_actions.down && player_actions.right)
-            player->sprite_index = 7;
-        else if(player_actions.up)
-            player->sprite_index = 4;
-        else if(player_actions.down)
-            player->sprite_index = 0;
-        else if(player_actions.left)
-            player->sprite_index = 2;
-        else if(player_actions.right)
-            player->sprite_index = 6;
+        if(p->actions.up && p->actions.left)
+            p->sprite_index = 3;
+        else if(p->actions.up && p->actions.right)
+            p->sprite_index = 5;
+        else if(p->actions.down && p->actions.left)
+            p->sprite_index = 1;
+        else if(p->actions.down && p->actions.right)
+            p->sprite_index = 7;
+        else if(p->actions.up)
+            p->sprite_index = 4;
+        else if(p->actions.down)
+            p->sprite_index = 0;
+        else if(p->actions.left)
+            p->sprite_index = 2;
+        else if(p->actions.right)
+            p->sprite_index = 6;
     }
     
 
-    GFXSubImageData* sid = gfx_images[player->image].sub_img_data;
-    Rect* vr = &sid->visible_rects[player->sprite_index];
-    player->phys.pos.w = vr->w*player->scale;
-    player->phys.pos.h = vr->h*player->scale;
+    GFXSubImageData* sid = gfx_images[p->image].sub_img_data;
+    Rect* vr = &sid->visible_rects[p->sprite_index];
+    p->phys.pos.w = vr->w*p->scale;
+    p->phys.pos.h = vr->h*p->scale;
 
     if(p->gun_ready)
     {
@@ -255,9 +252,9 @@ void player_update(Player* p, double delta_t)
         p->gun.pos.y = r_rot.y;
         memcpy(&p->gun.rectxy, &rxy_rot, sizeof(RectXY));
 
-        if(player_actions.primary_action)
+        if(p->actions.primary_action)
         {
-            gun_fire(&player->gun, !primary_action_toggled);
+            gun_fire(&p->gun, !primary_action_toggled);
         }
     }
 
@@ -265,18 +262,18 @@ void player_update(Player* p, double delta_t)
 
     p->phys.max_linear_vel = p->max_base_speed;
 
-    if(player_actions.run)
+    if(p->actions.run)
     {
         accel.x *= 20.0;
         accel.y *= 20.0;
-        player->phys.max_linear_vel *= 20.0;
+        p->phys.max_linear_vel *= 20.0;
     }
 
-    physics_begin(&player->phys);
-    physics_add_friction(&player->phys, 16.0);
-    physics_add_force(&player->phys, accel.x, accel.y);
-    physics_simulate(&player->phys, delta_t);
-    limit_pos(&map.rect, &player->phys.pos);
+    physics_begin(&p->phys);
+    physics_add_friction(&p->phys, 16.0);
+    physics_add_force(&p->phys, accel.x, accel.y);
+    physics_simulate(&p->phys, delta_t);
+    limit_pos(&map.rect, &p->phys.pos);
 
     if(role == ROLE_CLIENT)
     {
@@ -322,7 +319,7 @@ void player_draw(Player* p)
 
     if(debug_enabled)
     {
-        gfx_draw_rect(&player->phys.pos, 0x00FF0000, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->phys.pos, 0x00FF0000, 1.0,1.0, false, true);
     }
 
 

@@ -220,6 +220,12 @@ void start_client()
 
     init();
 
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        if(&players[i] != player)
+            player_init(&players[i]);
+    }
+
     double t0=timer_get_time();
     double t1=0.0;
 
@@ -239,8 +245,10 @@ void start_client()
 
         simulate_client(delta_t); // client-side prediction
 
-        if(player->input.keys != player->prior_input.keys || player->input.angle != player->prior_input.angle)
+        if(player->input.keys != player->input_prior.keys || player->input.angle != player->input_prior.angle)
+        {
             net_client_add_player_input(&player->input);
+        }
 
         //printf("player pos %f %f, angle %f\n",player->phys.pos.x, player->phys.pos.y, player->angle);
         net_client_update();
@@ -270,7 +278,11 @@ void start_server()
     // server init
     gfx_image_init();
     gun_init();
-    player_init();
+
+    player_init_images();
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+        player_init(&players[i]);
+
     zombie_init();
     projectile_init();
 
@@ -308,7 +320,10 @@ void init()
     gun_init();
 
     LOGI(" - Player.");
-    player_init();
+    player_init_images();
+    player_init_controls(player);
+    player_init(player);
+    player->active = true;
 
     LOGI(" - Zombies.");
     zombie_init();
@@ -412,8 +427,11 @@ void draw()
     zombie_draw();
     projectile_draw();
 
-    for(int i = 0; i < player_count; ++i)
-        player_draw(&players[i]);
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        if(players[i].active)
+            player_draw(&players[i]);
+    }
 
     gfx_draw_lines();
     gui_draw();

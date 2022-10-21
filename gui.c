@@ -44,10 +44,13 @@ void gui_draw()
 
         Rect gui_bg = {0};
         gui_bg.w = 120;
-        gui_bg.h = 150;
+        if(role == ROLE_CLIENT)
+            gui_bg.h = 200;
+        else
+            gui_bg.h = 150;
         gui_bg.x = start_x-5 + gui_bg.w/2.0;
         gui_bg.y = start_y-5 + gui_bg.h/2.0;
-        gfx_draw_rect(&gui_bg, 0x001F1F1F, 1.0, 0.4, true, false);
+        gfx_draw_rect(&gui_bg, 0x001F1F1F, 1.0, 0.6, true, false);
 
         Vector2f size = {0};
 
@@ -82,15 +85,26 @@ void gui_draw()
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "w,h: %.2f, %.2f", camera_rect.w, camera_rect.h); y += size.y+ypad;
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Offset: %.2f, %.2f", aim_camera_offset.x, aim_camera_offset.y); y += size.y+ypad;
 
+        if(role == ROLE_CLIENT)
+        {
+
+            char server_ip_str[32] = {0};
+            net_client_get_server_ip_str(server_ip_str);
+
+            int player_count = net_client_get_player_count();
+
+            // network
+            y += ypad;
+            size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Network"); y += size.y+ypad;
+            size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Server IP: %s",server_ip_str); y += size.y+ypad;
+            size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Player count: %u",player_count); y += size.y+ypad;
+            size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Ping: %.0f ms",net_client_get_rtt()); y += size.y+ypad;
+
+        }
 
         float fps = timer_get_prior_frame_fps(&game_timer);
         size = gfx_string_get_size(scale, "fps: %.2f", fps);
         gfx_draw_string(view_width-size.x,0,0x00FFFF00,scale,0.0, 1.0, false,drop_shadow,"fps: %.2f", fps);
-
-
-        // -----
-        // Server
-        // ------
 
     }
 

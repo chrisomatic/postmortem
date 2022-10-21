@@ -22,6 +22,16 @@ enum PlayerAction
 
 typedef struct
 {
+    bool up, down, left, right;
+    bool run, jump, interact;
+    bool primary_action, secondary_action;
+    bool toggle_fire, toggle_debug, toggle_gun;
+} PlayerActions;
+
+typedef struct
+{
+    bool active;
+
     Physics phys;
     float speed;
     float max_base_speed;
@@ -32,7 +42,10 @@ typedef struct
     int sprite_index;
     uint16_t keys;
 
-    NetPlayerInput prior_input;
+    PlayerActions actions_prior;
+    PlayerActions actions;
+
+    NetPlayerInput input_prior;
     NetPlayerInput input;
 
     NetPlayerState predicted_states[32];
@@ -47,6 +60,8 @@ extern Player players[MAX_CLIENTS];
 extern int player_count;
 extern bool debug_enabled;
 
+void player_init_images();
+void player_init_controls(Player* p);
 void player_init();
 void player_update(Player* p, double delta_t);
 void player_draw();
