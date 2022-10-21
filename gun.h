@@ -23,6 +23,7 @@ typedef struct
 
     float power;
 
+    float recoil_spread;
     float fire_range;
     float fire_speed;
     float fire_period;
@@ -38,5 +39,5 @@ typedef struct
 void gun_init();
 void gun_update(Gun* gun, float delta_t);
 void gun_draw();
-void gun_fire(Gun* gun);
+void gun_fire(Gun* gun, bool held);
 Gun gun_get(GunType type);

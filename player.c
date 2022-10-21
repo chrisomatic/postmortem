@@ -12,15 +12,26 @@
 #include "world.h"
 #include "main.h"
 
+typedef struct
+{
+    bool up, down, left, right;
+    bool run, jump, interact;
+    bool primary_action, secondary_action;
+    bool toggle_fire, toggle_debug, toggle_gun;
+} PlayerActions;
+
+
 Player player;
 
 bool debug_enabled = true; // weird place for this variable
-
 static int crosshair_image;
 static float mouse_x, mouse_y;
+static PlayerActions player_actions = {0};
+static PlayerActions player_actions_prior = {0};
 
 void player_init()
 {
+
     player.phys.pos.x = 400.0;
     player.phys.pos.y = 1000.0;
 
@@ -57,35 +68,37 @@ void player_init()
     window_controls_add_mouse_button(&player.keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
 }
 
-bool prior_toggle_fire;
-bool prior_toggle_debug;
-bool prior_toggle_gun;
 
 void player_update(double delta_t)
 {
-    bool up               = IS_BIT_SET(player.keys,PLAYER_ACTION_UP);
-    bool down             = IS_BIT_SET(player.keys,PLAYER_ACTION_DOWN);
-    bool left             = IS_BIT_SET(player.keys,PLAYER_ACTION_LEFT);
-    bool right            = IS_BIT_SET(player.keys,PLAYER_ACTION_RIGHT);
-    bool run              = IS_BIT_SET(player.keys,PLAYER_ACTION_RUN);
-    bool jump             = IS_BIT_SET(player.keys,PLAYER_ACTION_JUMP);
-    bool interact         = IS_BIT_SET(player.keys,PLAYER_ACTION_INTERACT);
-    bool primary_action   = IS_BIT_SET(player.keys,PLAYER_ACTION_PRIMARY_ACTION);
-    bool secondary_action = IS_BIT_SET(player.keys,PLAYER_ACTION_SECONDARY_ACTION);
-    bool toggle_fire      = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_FIRE);
-    bool toggle_debug     = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_DEBUG);
-    bool toggle_gun       = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_GUN);
+    player_actions.up               = IS_BIT_SET(player.keys,PLAYER_ACTION_UP);
+    player_actions.down             = IS_BIT_SET(player.keys,PLAYER_ACTION_DOWN);
+    player_actions.left             = IS_BIT_SET(player.keys,PLAYER_ACTION_LEFT);
+    player_actions.right            = IS_BIT_SET(player.keys,PLAYER_ACTION_RIGHT);
+    player_actions.run              = IS_BIT_SET(player.keys,PLAYER_ACTION_RUN);
+    player_actions.jump             = IS_BIT_SET(player.keys,PLAYER_ACTION_JUMP);
+    player_actions.interact         = IS_BIT_SET(player.keys,PLAYER_ACTION_INTERACT);
+    player_actions.primary_action   = IS_BIT_SET(player.keys,PLAYER_ACTION_PRIMARY_ACTION);
+    player_actions.secondary_action = IS_BIT_SET(player.keys,PLAYER_ACTION_SECONDARY_ACTION);
+    player_actions.toggle_fire      = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_FIRE);
+    player_actions.toggle_debug     = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_DEBUG);
+    player_actions.toggle_gun       = IS_BIT_SET(player.keys,PLAYER_ACTION_TOGGLE_GUN);
 
+    bool primary_action_toggled = player_actions.primary_action && !player_actions_prior.primary_action;
+    bool fire_toggled = player_actions.toggle_fire && !player_actions_prior.toggle_fire;
+    bool debug_toggled = player_actions.toggle_debug && !player_actions_prior.toggle_debug;
+    bool gun_toggled = player_actions.toggle_gun && !player_actions_prior.toggle_gun;
 
-    if(toggle_gun && !prior_toggle_gun)
+    memcpy(&player_actions_prior, &player_actions, sizeof(PlayerActions));
+
+    if(gun_toggled)
     {
         int next = player.gun.type+1;
         if(next >= GUN_TYPE_MAX) next = 0;
         player.gun = gun_get(next);
     }
-    prior_toggle_gun = toggle_gun;
 
-    if(toggle_fire && !prior_toggle_fire)
+    if(fire_toggled)
     {
         player.gun_ready = !player.gun_ready;
         //if(player.gun_ready)
@@ -94,19 +107,18 @@ void player_update(double delta_t)
         //    window_enable_cursor();
     }
 
-    prior_toggle_fire = toggle_fire;
-
-    if(toggle_debug && !prior_toggle_debug)
+    if(debug_toggled)
+    {
         debug_enabled = !debug_enabled;
+    }
 
-    prior_toggle_debug = toggle_debug;
 
     Vector2f accel = {0};
 
-    if(up)    { accel.y -= player.speed; }
-    if(down)  { accel.y += player.speed; }
-    if(left)  { accel.x -= player.speed; }
-    if(right) { accel.x += player.speed; }
+    if(player_actions.up)    { accel.y -= player.speed; }
+    if(player_actions.down)  { accel.y += player.speed; }
+    if(player_actions.left)  { accel.x -= player.speed; }
+    if(player_actions.right) { accel.x += player.speed; }
 
     window_get_mouse_world_coords(&mouse_x, &mouse_y);
 
@@ -122,35 +134,35 @@ void player_update(double delta_t)
 
         int sector = angle_sector(angle_deg, 16);
 
-        if(sector == 15 || sector == 0)  // right
+        if(sector == 15 || sector == 0)  // player_actions.right
         {
             player.sprite_index = 6;
         }
-        else if(sector == 1 || sector == 2)  // up-right
+        else if(sector == 1 || sector == 2)  // player_actions.up-player_actions.right
         {
             player.sprite_index = 5;
         }
-        else if(sector == 3 || sector == 4)  // up
+        else if(sector == 3 || sector == 4)  // player_actions.up
         {
             player.sprite_index = 4;
         }
-        else if(sector == 5 || sector == 6)  // up-left
+        else if(sector == 5 || sector == 6)  // player_actions.up-player_actions.left
         {
             player.sprite_index = 3;
         }
-        else if(sector == 7 || sector == 8)  // left
+        else if(sector == 7 || sector == 8)  // player_actions.left
         {
             player.sprite_index = 2;
         }
-        else if(sector == 9 || sector == 10)  // down-left
+        else if(sector == 9 || sector == 10)  // player_actions.down-player_actions.left
         {
             player.sprite_index = 1;
         }
-        else if(sector == 11 || sector == 12)  // down
+        else if(sector == 11 || sector == 12)  // player_actions.down
         {
             player.sprite_index = 0;
         }
-        else if(sector == 13 || sector == 14)  // down-right
+        else if(sector == 13 || sector == 14)  // player_actions.down-player_actions.right
         {
             player.sprite_index = 7;
         }
@@ -158,21 +170,21 @@ void player_update(double delta_t)
     }
     else
     {
-        if(up && left)
+        if(player_actions.up && player_actions.left)
             player.sprite_index = 3;
-        else if(up && right)
+        else if(player_actions.up && player_actions.right)
             player.sprite_index = 5;
-        else if(down && left)
+        else if(player_actions.down && player_actions.left)
             player.sprite_index = 1;
-        else if(down && right)
+        else if(player_actions.down && player_actions.right)
             player.sprite_index = 7;
-        else if(up)
+        else if(player_actions.up)
             player.sprite_index = 4;
-        else if(down)
+        else if(player_actions.down)
             player.sprite_index = 0;
-        else if(left)
+        else if(player_actions.left)
             player.sprite_index = 2;
-        else if(right)
+        else if(player_actions.right)
             player.sprite_index = 6;
     }
 
@@ -227,9 +239,9 @@ void player_update(double delta_t)
         player.gun.pos.y = r_rot.y;
         memcpy(&player.gun.rectxy, &rxy_rot, sizeof(RectXY));
 
-        if(primary_action)
+        if(player_actions.primary_action)
         {
-            gun_fire(&player.gun);
+            gun_fire(&player.gun, !primary_action_toggled);
         }
     }
 
@@ -237,7 +249,7 @@ void player_update(double delta_t)
 
     player.phys.max_linear_vel = player.max_base_speed;
 
-    if(run)
+    if(player_actions.run)
     {
         accel.x *= 20.0;
         accel.y *= 20.0;

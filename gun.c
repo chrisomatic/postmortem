@@ -19,6 +19,7 @@ void gun_init()
 
     int idx = GUN_TYPE_HANDGUN;
     gun_arsenal[idx].power = 1.0;
+    gun_arsenal[idx].recoil_spread = 2.0;
     gun_arsenal[idx].fire_range = 500.0;
     gun_arsenal[idx].fire_speed = 1000.0;
     gun_arsenal[idx].fire_period = 500.0; // milliseconds
@@ -34,6 +35,7 @@ void gun_init()
 
     idx = GUN_TYPE_MACHINEGUN;
     gun_arsenal[idx].power = 1.0;
+    gun_arsenal[idx].recoil_spread = 4.0;
     gun_arsenal[idx].fire_range = 500.0;
     gun_arsenal[idx].fire_speed = 1000.0;
     gun_arsenal[idx].fire_period = 100.0; // milliseconds
@@ -49,6 +51,7 @@ void gun_init()
 
     idx = GUN_TYPE_SHOTGUN;
     gun_arsenal[idx].power = 1.0;
+    gun_arsenal[idx].recoil_spread = 0.0;
     gun_arsenal[idx].fire_range = 200.0;
     gun_arsenal[idx].fire_speed = 1000.0;
     gun_arsenal[idx].fire_period = 400.0; // milliseconds
@@ -73,7 +76,7 @@ Gun gun_get(GunType type)
     return gun;
 }
 
-void gun_fire(Gun* gun)
+void gun_fire(Gun* gun, bool held)
 {
     if(gun->fire_cooldown == 0)
     {
@@ -89,7 +92,13 @@ void gun_fire(Gun* gun)
         }
         else
         {
-            projectile_add(gun->projectile_type, gun, 0.0);
+            float angle_offset = 0.0;
+            if(held && !FEQ(gun->recoil_spread,0.0))
+            {
+                int direction = rand()%2 == 0 ? -1 : 1;
+                angle_offset = rand_float_between(0.0, gun->recoil_spread/2.0) * direction;
+            }
+            projectile_add(gun->projectile_type, gun, angle_offset);
         }
 
         // // //recoil

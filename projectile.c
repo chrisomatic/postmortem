@@ -42,15 +42,6 @@ static int projectile_image_set;
 static void projectile_remove(int index)
 {
     list_remove(plist, index);
-    // if(index < 0 || index >= plist->count)
-    // {
-    //     LOGE("Projectile index out of range (%d)", index);
-    //     return;
-    // }
-
-    // memcpy(&projectiles[index], &projectiles[plist->count-1], sizeof(Projectile));
-
-    // plist->count--;
 }
 
 static void update_hurt_box(Projectile* proj)
@@ -63,26 +54,13 @@ static void update_hurt_box(Projectile* proj)
 void projectile_init()
 {
     plist = list_create((void*)projectiles, MAX_PROJECTILES, sizeof(Projectile));
-
     projectile_image_set = gfx_load_image_set("img/projectile_set.png",32,32);
 }
 
 
 void projectile_add(int sprite_index, Gun* gun, float angle_offset)
 {
-    // if(plist->count >= MAX_PROJECTILES)
-    // {
-    //     LOGW("Too many projectiles!");
-    //     return;
-    // }
-
-    // Projectile* proj = &projectiles[plist->count];
-    // plist->count++;
-
-
     Projectile proj = {0};
-
-    // memset(proj,0, sizeof(Projectile));
 
     float speed = gun->fire_speed;
     // speed = 10.0;
@@ -125,7 +103,6 @@ void projectile_add(int sprite_index, Gun* gun, float angle_offset)
 
     rotate_rect(&r, proj.angle_deg, r.x, r.y, &rxy_rot);
     rectxy_to_rect(&rxy_rot, &proj.hurt_box);
-    // memcpy(&proj.hurt_box_prior, &proj.hurt_box, sizeof(proj.hurt_box));
     update_hurt_box(&proj);
 
     list_add(plist, (void*)&proj);
