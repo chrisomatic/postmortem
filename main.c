@@ -331,9 +331,7 @@ void init()
     LOGI(" - Projectiles.");
     projectile_init();
 
-    // float w = map.cols*MAP_GRID_PXL_SIZE;
-    // float h = map.rows*MAP_GRID_PXL_SIZE;
-    // physics_set_pos_limits()
+    camera_move(player->phys.pos.x, player->phys.pos.y, true);
 }
 
 void deinit()
@@ -424,6 +422,8 @@ void draw()
     gfx_clear_buffer(50,50,50);
 
     world_draw();
+    gfx_draw_lines();
+
     zombie_draw();
     projectile_draw();
 
@@ -433,7 +433,6 @@ void draw()
             player_draw(&players[i]);
     }
 
-    gfx_draw_lines();
     gui_draw();
 }
 
@@ -470,6 +469,7 @@ glist* list_create(void* buf, int max_count, int item_size)
 void list_delete(glist* list)
 {
     if(list != NULL) free(list);
+    list = NULL;
 }
 
 bool list_add(glist* list, void* item)

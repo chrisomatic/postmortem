@@ -37,6 +37,7 @@ typedef struct
     float max_base_speed;
     float angle;
     float scale;
+    bool running;
 
     int image;
     int sprite_index;
@@ -54,6 +55,9 @@ typedef struct
     Gun gun;
     bool gun_ready;
 } Player;
+
+#define PLAYER_MOVING(p) (p->actions.up || p->actions.down || p->actions.left || p->actions.right)
+// #define PLAYER_MOVING(p) (player_actions.up || player_actions.down || player_actions.left || player_actions.right)
 
 extern Player* player;
 extern Player players[MAX_CLIENTS];

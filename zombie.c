@@ -102,6 +102,7 @@ void zombie_init()
         for(int c = 0; c < wcols; ++c)
         {
             ZombieSpawn spawn = {0};
+            spawn.scale = rand_float_between(0.2, 5.0);
             zombie_add_to_world_grid(&spawn, r, c);
         }
     }

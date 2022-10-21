@@ -12,9 +12,14 @@
 
 void gui_draw()
 {
+    Vector2f size = {0};
+
     // test print
     gfx_draw_string(0,view_height-22,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
-    gfx_draw_string(player->phys.pos.x - player->phys.pos.w/2.0, player->phys.pos.y + player->phys.pos.h/2.0,0x0000FFFF,0.1,0.0, 0.8, true, true, "Kameron");
+
+    char* name = "Kameron";
+    size = gfx_string_get_size(0.1, name);
+    gfx_draw_string(player->phys.pos.x - size.x/2.0, player->phys.pos.y + player->phys.pos.h/2.0,0x0000FFFF,0.1,0.0, 0.8, true, true, name);
 
     if(debug_enabled)
     {
@@ -51,8 +56,6 @@ void gui_draw()
         gui_bg.x = start_x-5 + gui_bg.w/2.0;
         gui_bg.y = start_y-5 + gui_bg.h/2.0;
         gfx_draw_rect(&gui_bg, 0x001F1F1F, 1.0, 0.6, true, false);
-
-        Vector2f size = {0};
 
         // player
         size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Player"); y += size.y+ypad;

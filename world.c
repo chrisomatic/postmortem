@@ -8,6 +8,7 @@
 #include "log.h"
 #include "world.h"
 #include "camera.h"
+#include "player.h"
 
 int ground_sheet;
 
@@ -108,17 +109,76 @@ void world_draw()
     coords_to_map_grid(r.x-r.w/2.0, r.y-r.h/2.0, &r1, &c1);
     coords_to_map_grid(r.x+r.w/2.0, r.y+r.h/2.0, &r2, &c2);
 
+
+#if 1
+    // draw tile grid
+    if(debug_enabled)
+    {
+        // float xadj = -1.0*MAP_GRID_PXL_SIZE/2.0;
+        // float yadj = -1.0*MAP_GRID_PXL_SIZE/2.0;
+        for(int r = (r1-1); r < (r2+1); ++r)
+        {
+            float x0,y0,x1,y1;
+            map_grid_to_coords_tl(r, c1-1, &x0, &y0);
+            map_grid_to_coords_tl(r, c2+1, &x1, &y1);
+            // x0 += xadj; x1 += xadj;
+            // y0 += yadj; y1 += yadj;
+            gfx_add_line(x0,y0,x1,y1,0x00FF0000);
+        }
+        for(int c = (c1-1); c < (c2+1); ++c)
+        {
+            float x0,y0,x1,y1;
+            map_grid_to_coords_tl(r1-1, c, &x0, &y0);
+            map_grid_to_coords_tl(r2+1, c, &x1, &y1);
+            // x0 += xadj; x1 += xadj;
+            // y0 += yadj; y1 += yadj;
+            gfx_add_line(x0,y0,x1,y1,0x00FF0000);
+        }
+    }
+#endif
+
+#if 1
+    // draw world grid
+    if(debug_enabled)
+    {
+        int wr1,wc1,wr2,wc2;
+        coords_to_world_grid(r.x-r.w/2.0, r.y-r.h/2.0, &wr1, &wc1);
+        coords_to_world_grid(r.x+r.w/2.0, r.y+r.h/2.0, &wr2, &wc2);
+        for(int r = (wr1-1); r < (wr2+1); ++r)
+        {
+            float x0,y0,x1,y1;
+            world_grid_to_coords_tl(r, wc1-1, &x0, &y0);
+            world_grid_to_coords_tl(r, wc2+1, &x1, &y1);
+            gfx_add_line(x0,y0,x1,y1,0x00FFFF00);
+        }
+        for(int c = (wc1-1); c < (wc2+1); ++c)
+        {
+            float x0,y0,x1,y1;
+            world_grid_to_coords_tl(wr1-1, c, &x0, &y0);
+            world_grid_to_coords_tl(wr2+1, c, &x1, &y1);
+            gfx_add_line(x0,y0,x1,y1,0x00FFFF00);
+        }
+    }
+#endif
+
+
     for(int r = (r1-1); r < (r2+1); ++r)
     {
         for(int c = (c1-1); c < (c2+1); ++c)
         {
             uint8_t index = map_get_tile_index(r,c);
             if(index == 0xFF) continue;
-
             float x,y;
             map_grid_to_coords(r, c, &x, &y);
-
             gfx_draw_sub_image(ground_sheet,index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0);
+
+#if 0
+            if(debug_enabled)
+            {
+                map_grid_to_coords_tl(r, c, &x, &y);
+                gfx_draw_string(x,y,0x00404040,0.1, 0.0, 1.0, true,false,"%d,%d", r, c);
+            }
+#endif
         }
     }
 }
@@ -140,6 +200,12 @@ void map_grid_to_coords(int row, int col, float* x, float* y)
 {
     *x = (float)(col+0.5)*MAP_GRID_PXL_SIZE;
     *y = (float)(row+0.5)*MAP_GRID_PXL_SIZE;
+}
+
+void map_grid_to_coords_tl(int row, int col, float* x, float* y)
+{
+    *x = (float)(col)*MAP_GRID_PXL_SIZE;
+    *y = (float)(row)*MAP_GRID_PXL_SIZE;
 }
 
 void map_grid_to_rect(int row, int col, Rect* r)
@@ -177,6 +243,12 @@ void world_grid_to_coords(int row, int col, float* x, float* y)
 {
     *x = (float)(col+0.5)*(MAP_GRID_PXL_SIZE*WORLD_GRID_WIDTH);
     *y = (float)(row+0.5)*(MAP_GRID_PXL_SIZE*WORLD_GRID_HEIGHT);
+}
+
+void world_grid_to_coords_tl(int row, int col, float* x, float* y)
+{
+    *x = (float)(col)*(MAP_GRID_PXL_SIZE*WORLD_GRID_WIDTH);
+    *y = (float)(row)*(MAP_GRID_PXL_SIZE*WORLD_GRID_HEIGHT);
 }
 
 void world_grid_to_rect(int row, int col, Rect* r)

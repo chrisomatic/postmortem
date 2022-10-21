@@ -86,6 +86,7 @@ void player_update(Player* p, double delta_t)
     p->actions.toggle_debug     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_DEBUG);
     p->actions.toggle_gun       = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_GUN);
 
+    bool run_toggled = p->actions.run && !p->actions_prior.run;
     bool primary_action_toggled = p->actions.primary_action && !p->actions_prior.primary_action;
     bool fire_toggled = p->actions.toggle_fire && !p->actions_prior.toggle_fire;
     bool debug_toggled = p->actions.toggle_debug && !p->actions_prior.toggle_debug;
@@ -125,6 +126,7 @@ void player_update(Player* p, double delta_t)
 
 
     Vector2f accel = {0};
+    bool player_moving = PLAYER_MOVING(player);
 
     if(p->actions.up)    { accel.y -= p->speed; }
     if(p->actions.down)  { accel.y += p->speed; }
@@ -262,7 +264,12 @@ void player_update(Player* p, double delta_t)
 
     p->phys.max_linear_vel = p->max_base_speed;
 
-    if(p->actions.run)
+    if(run_toggled)
+    {
+        p->running = !p->running;
+    }
+
+    if(p->running && player_moving)
     {
         accel.x *= 20.0;
         accel.y *= 20.0;
