@@ -110,7 +110,7 @@ void world_draw()
     coords_to_map_grid(r.x+r.w/2.0, r.y+r.h/2.0, &r2, &c2);
 
 
-#if 1
+#if 0
     // draw tile grid
     if(debug_enabled)
     {
@@ -141,6 +141,7 @@ void world_draw()
     // draw world grid
     if(debug_enabled)
     {
+        uint32_t line_color = 0x000000FF;
         int wr1,wc1,wr2,wc2;
         coords_to_world_grid(r.x-r.w/2.0, r.y-r.h/2.0, &wr1, &wc1);
         coords_to_world_grid(r.x+r.w/2.0, r.y+r.h/2.0, &wr2, &wc2);
@@ -149,14 +150,14 @@ void world_draw()
             float x0,y0,x1,y1;
             world_grid_to_coords_tl(r, wc1-1, &x0, &y0);
             world_grid_to_coords_tl(r, wc2+1, &x1, &y1);
-            gfx_add_line(x0,y0,x1,y1,0x00FFFF00);
+            gfx_add_line(x0,y0,x1,y1,line_color);
         }
         for(int c = (wc1-1); c < (wc2+1); ++c)
         {
             float x0,y0,x1,y1;
             world_grid_to_coords_tl(wr1-1, c, &x0, &y0);
             world_grid_to_coords_tl(wr2+1, c, &x1, &y1);
-            gfx_add_line(x0,y0,x1,y1,0x00FFFF00);
+            gfx_add_line(x0,y0,x1,y1,line_color);
         }
     }
 #endif
