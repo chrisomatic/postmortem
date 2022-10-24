@@ -18,8 +18,6 @@
 //#define SERVER_PRINT_VERBOSE 1
 
 #define GAME_ID 0xC68BB821
-
-#define TICK_RATE 20.0f
 #define PORT 27001
 
 #define MAXIMUM_RTT 1.0f
@@ -393,7 +391,6 @@ static void server_send(PacketType type, ClientInfo* cli)
                 NetPlayerState* player_state = &net_player_states[i];
                 if(player_state->active)
                 {
-                    printf("sending player state: %f %f, %f\n",player_state->pos.x, player_state->pos.y, player_state->angle);
                     pkt.data[index] = (uint8_t)i;
                     index += 1;
 
@@ -564,19 +561,15 @@ int net_server_start()
                             players[client_id].keys = inputs[i].keys;
                             players[client_id].angle = inputs[i].angle;
 
-                            printf("before update player state for client id %d, pos %f %f, angle %f\n",client_id, players[client_id].phys.pos.x, players[client_id].phys.pos.y, players[client_id].angle);
-                            
                             // simulate player
                             player_update(&players[client_id],inputs[i].delta_t);
 
                             // update net player state
-
                             net_player_states[client_id].active = true;
                             net_player_states[client_id].pos.x = players[client_id].phys.pos.x;
                             net_player_states[client_id].pos.y = players[client_id].phys.pos.y;
                             net_player_states[client_id].angle = players[client_id].angle;
 
-                            printf("net player state for client id %d, pos %f %f, angle %f\n",client_id, players[client_id].phys.pos.x, players[client_id].phys.pos.y, players[client_id].angle);
                             //printf("net player state for client id %d, pos %f %f, angle %f\n",client_id, net_player_states[client_id].pos.x, net_player_states[client_id].pos.y, net_player_states[client_id].angle);
 
                         }
@@ -594,6 +587,7 @@ int net_server_start()
                 }
             }
 
+            /*
             if(cli != NULL)
             {
                 // update client info packet time
@@ -605,7 +599,7 @@ int net_server_start()
                     cli->time_of_latest_packet = timer_get_time();
                 }
             }
-
+            */
 
             timer_delay_us(1000); // delay 1ms
         }
@@ -888,7 +882,7 @@ void net_client_update()
         bool is_latest;
 
         int recv_bytes = net_client_recv(&srvpkt, &is_latest);
-        if(recv_bytes > 0)
+        if(recv_bytes > 0 && is_latest)
         {
             switch(srvpkt.hdr.type)
             {
@@ -899,12 +893,8 @@ void net_client_update()
 
                     int index = 1;
 
-                    /*
                     for(int i = 0; i < MAX_CLIENTS; ++i)
-                    {
                         players[i].active = false;
-                    }
-                    */
 
                     for(int i = 0; i < num_players; ++i)
                     {
@@ -928,14 +918,31 @@ void net_client_update()
                         Player* p = &players[client_id];
                         p->active = true;
 
-                        printf("Player %d active\n", client_id);
-
-                        if(p != player)
+                        if(p == player)
                         {
-                            printf("updated pos and angle for player %d\n",client_id);
-                            p->phys.pos.x = pos.x;
-                            p->phys.pos.y = pos.y;
-                            memcpy(&p->angle, &angle, sizeof(float));
+                            // @TODO
+                            /*
+                            printf("=====\n");
+                            printf("client local latest packet id: %u, srvpkt ack: %u\n", client.info.remote_latest_packet_id, srvpkt.hdr.id);
+                            printf("server pos: %f %f, %f\n", pos.x, pos.y, angle);
+                            for(int i = 0; i < 32; ++i)
+                            {
+                                printf("[%02d] predicted pos: %f %f, %f\n", i, p->predicted_states[i].pos.x, p->predicted_states[i].pos.y, p->predicted_states[i].angle);
+                            }
+                            printf("=====\n");
+                            */
+                        }
+                        else
+                        {
+                            p->phys.pos_prior.x = p->phys.pos.x;
+                            p->phys.pos_prior.y = p->phys.pos.y;
+
+                            p->phys.pos_target.x = pos.x;
+                            p->phys.pos_target.y = pos.y;
+                            p->phys.lerp_t = 0.0;
+
+                            p->angle_prior = p->angle;
+                            p->angle_target = angle;
                         }
                     }
 

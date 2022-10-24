@@ -95,4 +95,7 @@ void rectxy_to_rect(RectXY* in, Rect* out);
 void print_rect(Rect* r);
 void print_rectxy(RectXY* r);
 
+float lerp(float a, float b, float t);
+Vector2f lerp2f(Vector2f* a, Vector2f* b, float t);
+
 float rand_float_between(float lower, float upper);

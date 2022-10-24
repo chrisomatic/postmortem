@@ -22,6 +22,9 @@ static int player_image_set;
 static int crosshair_image;
 static float mouse_x, mouse_y;
 
+static void player_update_sprite_index(Player* p);
+static void player_gun_set_position(Player* p);
+
 void player_init_images()
 {
     player_image_set = gfx_load_image_set("img/human_set_small.png",32,48);
@@ -70,6 +73,143 @@ void player_init(Player* p)
     player_count = 1;
 }
 
+void player_update_other(Player* p, double delta_t)
+{
+    p->phys.lerp_t += delta_t;
+
+    float tick_time = 1.0/TICK_RATE;
+    float t = (p->phys.lerp_t / tick_time);
+
+    Vector2f lp = lerp2f(&p->phys.pos_prior,&p->phys.pos_target,t);
+    p->phys.pos.x = lp.x;
+    p->phys.pos.y = lp.y;
+
+    p->angle = lerp(p->angle_prior,p->angle_target,t);
+
+    player_update_sprite_index(p);
+    player_gun_set_position(p);
+}
+
+void player_update_sprite_index(Player* p)
+{
+    if(role != ROLE_SERVER && p == player)
+        p->angle = calc_angle_rad(p->phys.pos.x, p->phys.pos.y, mouse_x, mouse_y);
+
+    float angle_deg = DEG(p->angle);
+
+    if(p->gun_ready)
+    {
+        int sector = angle_sector(angle_deg, 16);
+
+        if(sector == 15 || sector == 0)  // p->actions.right
+        {
+            p->sprite_index = 6;
+        }
+        else if(sector == 1 || sector == 2)  // p->actions.up-p->actions.right
+        {
+            p->sprite_index = 5;
+        }
+        else if(sector == 3 || sector == 4)  // p->actions.up
+        {
+            p->sprite_index = 4;
+        }
+        else if(sector == 5 || sector == 6)  // p->actions.up-p->actions.left
+        {
+            p->sprite_index = 3;
+        }
+        else if(sector == 7 || sector == 8)  // p->actions.left
+        {
+            p->sprite_index = 2;
+        }
+        else if(sector == 9 || sector == 10)  // p->actions.down-p->actions.left
+        {
+            p->sprite_index = 1;
+        }
+        else if(sector == 11 || sector == 12)  // p->actions.down
+        {
+            p->sprite_index = 0;
+        }
+        else if(sector == 13 || sector == 14)  // p->actions.down-p->actions.right
+        {
+            p->sprite_index = 7;
+        }
+
+    }
+    else
+    {
+        if(p->actions.up && p->actions.left)
+            p->sprite_index = 3;
+        else if(p->actions.up && p->actions.right)
+            p->sprite_index = 5;
+        else if(p->actions.down && p->actions.left)
+            p->sprite_index = 1;
+        else if(p->actions.down && p->actions.right)
+            p->sprite_index = 7;
+        else if(p->actions.up)
+            p->sprite_index = 4;
+        else if(p->actions.down)
+            p->sprite_index = 0;
+        else if(p->actions.left)
+            p->sprite_index = 2;
+        else if(p->actions.right)
+            p->sprite_index = 6;
+    }
+    
+    GFXSubImageData* sid = gfx_images[p->image].sub_img_data;
+    Rect* vr = &sid->visible_rects[p->sprite_index];
+    p->phys.pos.w = vr->w*p->scale;
+    p->phys.pos.h = vr->h*p->scale;
+}
+
+void player_gun_set_position(Player* p)
+{
+    // update gun
+    // gun orientation X:
+    // +----------------------+
+    // |                      |
+    // X                      B
+    // |                      |
+    // +----------------------+
+    // bullet should spawn at B
+
+    Rect* vr = &gfx_images[p->image].sub_img_data->visible_rects[p->sprite_index];
+
+    // p->gun.angle = p->angle;
+    float gx0 = p->phys.pos.x;
+    float gy0 = p->phys.pos.y-vr->h*0.1;
+
+    p->gun.angle = p->angle;
+
+    if(role != ROLE_SERVER && p == player)
+        p->gun.angle = calc_angle_rad(gx0, gy0, mouse_x, mouse_y);
+
+    Rect r = {0};
+    RectXY rxy_rot = {0};
+    Rect r_rot = {0};
+
+    r.x = gx0;
+    r.y = gy0;
+    r.w = p->gun.visible_rect.w;
+    r.h = p->gun.visible_rect.h;
+    rotate_rect(&r, DEG(p->gun.angle), r.x, r.y, &rxy_rot);
+
+    // 'push' the rotated rectangle out a bit from the player
+    for(int i = 0; i < 4; ++i)
+    {
+        rxy_rot.x[i] += (vr->w*0.7)*cosf(p->gun.angle);
+        // rxy_rot.y[i] -= vr->h/2.0*sinf(p->gun.angle);
+
+        // rxy_rot.x[i] += 16*cosf(p->gun.angle);
+        // rxy_rot.y[i] -= 16*sinf(p->gun.angle);
+        // // rxy_rot.y[i] += 16*sinf(PI*2-p->gun.angle); //also works
+    }
+
+    // find center of rotated rectangle
+    rectxy_to_rect(&rxy_rot, &r_rot);
+    p->gun.pos.x = r_rot.x;
+    p->gun.pos.y = r_rot.y;
+    memcpy(&p->gun.rectxy, &rxy_rot, sizeof(RectXY));
+}
 
 void player_update(Player* p, double delta_t)
 {
@@ -134,124 +274,11 @@ void player_update(Player* p, double delta_t)
 
     window_get_mouse_world_coords(&mouse_x, &mouse_y);
 
-    Vector3f player_pos = {p->phys.pos.x, p->phys.pos.y, 0.0};
-    Vector3f mouse_pos = {mouse_x, mouse_y, 0.0};
-    Vector3f dist = {mouse_pos.x - player_pos.x, mouse_pos.y - player_pos.y, 0.0};
-
-    if(role != ROLE_SERVER)
-        p->angle = calc_angle_rad(p->phys.pos.x, p->phys.pos.y, mouse_pos.x, mouse_pos.y);
-    float angle_deg = DEG(p->angle);
+    player_update_sprite_index(p);
 
     if(p->gun_ready)
     {
-
-        int sector = angle_sector(angle_deg, 16);
-
-        if(sector == 15 || sector == 0)  // p->actions.right
-        {
-            p->sprite_index = 6;
-        }
-        else if(sector == 1 || sector == 2)  // p->actions.up-p->actions.right
-        {
-            p->sprite_index = 5;
-        }
-        else if(sector == 3 || sector == 4)  // p->actions.up
-        {
-            p->sprite_index = 4;
-        }
-        else if(sector == 5 || sector == 6)  // p->actions.up-p->actions.left
-        {
-            p->sprite_index = 3;
-        }
-        else if(sector == 7 || sector == 8)  // p->actions.left
-        {
-            p->sprite_index = 2;
-        }
-        else if(sector == 9 || sector == 10)  // p->actions.down-p->actions.left
-        {
-            p->sprite_index = 1;
-        }
-        else if(sector == 11 || sector == 12)  // p->actions.down
-        {
-            p->sprite_index = 0;
-        }
-        else if(sector == 13 || sector == 14)  // p->actions.down-p->actions.right
-        {
-            p->sprite_index = 7;
-        }
-
-    }
-    else
-    {
-        if(p->actions.up && p->actions.left)
-            p->sprite_index = 3;
-        else if(p->actions.up && p->actions.right)
-            p->sprite_index = 5;
-        else if(p->actions.down && p->actions.left)
-            p->sprite_index = 1;
-        else if(p->actions.down && p->actions.right)
-            p->sprite_index = 7;
-        else if(p->actions.up)
-            p->sprite_index = 4;
-        else if(p->actions.down)
-            p->sprite_index = 0;
-        else if(p->actions.left)
-            p->sprite_index = 2;
-        else if(p->actions.right)
-            p->sprite_index = 6;
-    }
-    
-
-    GFXSubImageData* sid = gfx_images[p->image].sub_img_data;
-    Rect* vr = &sid->visible_rects[p->sprite_index];
-    p->phys.pos.w = vr->w*p->scale;
-    p->phys.pos.h = vr->h*p->scale;
-
-    if(p->gun_ready)
-    {
-        // update gun
-
-        // gun orientation X:
-        // +----------------------+
-        // |                      |
-        // X                      B
-        // |                      |
-        // +----------------------+
-        // bullet should spawn at B
-
-        // p->gun.angle = p->angle;
-        float gx0 = p->phys.pos.x;
-        float gy0 = p->phys.pos.y-vr->h*0.1;
-
-        if(role != ROLE_SERVER)
-            p->gun.angle = calc_angle_rad(gx0, gy0, mouse_pos.x, mouse_pos.y);
-
-        Rect r = {0};
-        RectXY rxy_rot = {0};
-        Rect r_rot = {0};
-
-        r.x = gx0;
-        r.y = gy0;
-        r.w = p->gun.visible_rect.w;
-        r.h = p->gun.visible_rect.h;
-        rotate_rect(&r, DEG(p->gun.angle), r.x, r.y, &rxy_rot);
-
-        // 'push' the rotated rectangle out a bit from the player
-        for(int i = 0; i < 4; ++i)
-        {
-            rxy_rot.x[i] += (vr->w*0.7)*cosf(p->gun.angle);
-            // rxy_rot.y[i] -= vr->h/2.0*sinf(p->gun.angle);
-
-            // rxy_rot.x[i] += 16*cosf(p->gun.angle);
-            // rxy_rot.y[i] -= 16*sinf(p->gun.angle);
-            // // rxy_rot.y[i] += 16*sinf(PI*2-p->gun.angle); //also works
-        }
-
-        // find center of rotated rectangle
-        rectxy_to_rect(&rxy_rot, &r_rot);
-        p->gun.pos.x = r_rot.x;
-        p->gun.pos.y = r_rot.y;
-        memcpy(&p->gun.rectxy, &rxy_rot, sizeof(RectXY));
+        player_gun_set_position(p);
 
         if(p->actions.primary_action)
         {
@@ -270,10 +297,26 @@ void player_update(Player* p, double delta_t)
 
     if(p->running && player_moving)
     {
-        accel.x *= 20.0;
-        accel.y *= 20.0;
-        p->phys.max_linear_vel *= 20.0;
+        accel.x *= 2.0;
+        accel.y *= 2.0;
+        p->phys.max_linear_vel *= 2.0;
     }
+
+#if 0
+    if(role == ROLE_SERVER)
+    {
+        printf("player pos: %f %f, accel: %f %f, delta_t: %f,map rect: %f %f %f %f",
+                p->phys.pos.x,
+                p->phys.pos.y,
+                accel.x,
+                accel.y,
+                delta_t,
+                map.rect.x,
+                map.rect.y,
+                map.rect.w,
+                map.rect.h);
+    }
+#endif
 
     physics_begin(&p->phys);
     physics_add_friction(&p->phys, 16.0);
@@ -281,6 +324,7 @@ void player_update(Player* p, double delta_t)
     physics_simulate(&p->phys, delta_t);
     limit_pos(&map.rect, &p->phys.pos);
 
+    // circular buffer of client predicted states
     if(role == ROLE_CLIENT)
     {
         // add position, angle to predicted player state
@@ -290,7 +334,7 @@ void player_update(Player* p, double delta_t)
         if(p->predicted_state_index == 31)
         {
             // shift
-            for(int i = 31; i >= 1; --i)
+            for(int i = 1; i <= 31; ++i)
             {
                 memcpy(&p->predicted_states[i-1],&p->predicted_states[i],sizeof(NetPlayerState));
             }

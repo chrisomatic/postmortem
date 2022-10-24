@@ -36,12 +36,16 @@ typedef struct
     float speed;
     float max_base_speed;
     float angle;
+    float angle_prior;
+    float angle_target;
     float scale;
     bool running;
 
     int image;
     int sprite_index;
     uint16_t keys;
+
+    Vector2f mouse_pos;
 
     PlayerActions actions_prior;
     PlayerActions actions;
@@ -57,7 +61,6 @@ typedef struct
 } Player;
 
 #define PLAYER_MOVING(p) (p->actions.up || p->actions.down || p->actions.left || p->actions.right)
-// #define PLAYER_MOVING(p) (player_actions.up || player_actions.down || player_actions.left || player_actions.right)
 
 extern Player* player;
 extern Player players[MAX_CLIENTS];
@@ -68,4 +71,5 @@ void player_init_images();
 void player_init_controls(Player* p);
 void player_init();
 void player_update(Player* p, double delta_t);
+void player_update_other(Player* p, double delta_t);
 void player_draw();

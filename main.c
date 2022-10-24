@@ -277,6 +277,7 @@ void start_server()
 
     // server init
     gfx_image_init();
+    world_init();
     gun_init();
 
     player_init_images();
@@ -410,6 +411,15 @@ void simulate_client(double delta_t)
     world_update();
     //zombie_update(delta_t);
     player_update(player,delta_t);
+
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        if(players[i].active && &players[i] != player)
+        {
+            player_update_other(&players[i], delta_t);
+        }
+    }
+
     projectile_update(delta_t);
 
     // if(!window_is_cursor_enabled())

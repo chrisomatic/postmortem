@@ -18,6 +18,22 @@ Matrix IDENTITY_MATRIX = {
     }
 };
 
+float lerp(float a, float b, float t)
+{
+    t = RANGE(t,0.0,1.0);
+    float r = (1.0-t)*a+(t*b);
+    return r;
+}
+
+Vector2f lerp2f(Vector2f* a, Vector2f* b, float t)
+{
+    float rx = lerp(a->x,b->x,t);
+    float ry = lerp(a->y,b->y,t);
+
+    Vector2f r = {rx,ry};
+    return r;
+}
+
 void ortho(Matrix* m, float left, float right, float bottom, float top, float znear, float zfar)
 {
     memcpy(m,&IDENTITY_MATRIX,sizeof(Matrix));
