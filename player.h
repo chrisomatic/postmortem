@@ -4,6 +4,8 @@
 #include "gun.h"
 #include "net.h"
 
+#define MAX_CLIENT_PREDICTED_STATES 8
+
 enum PlayerAction
 {
     PLAYER_ACTION_UP               = 1<<0,
@@ -53,7 +55,7 @@ typedef struct
     NetPlayerInput input_prior;
     NetPlayerInput input;
 
-    NetPlayerState predicted_states[32];
+    NetPlayerState predicted_states[MAX_CLIENT_PREDICTED_STATES];
     int predicted_state_index;
 
     Gun gun;

@@ -674,9 +674,19 @@ bool net_client_add_player_input(NetPlayerInput* input)
     return true;
 }
 
+int net_client_get_input_count()
+{
+    return input_count;
+}
+
 uint8_t net_client_get_player_count()
 {
     return client.player_count;
+}
+
+uint16_t net_client_get_latest_local_packet_id()
+{
+    return client.info.local_latest_packet_id;
 }
 
 void net_client_get_server_ip_str(char* ip_str)
@@ -920,17 +930,22 @@ void net_client_update()
 
                         if(p == player)
                         {
-                            // @TODO
-                            /*
-                            printf("=====\n");
-                            printf("client local latest packet id: %u, srvpkt ack: %u\n", client.info.remote_latest_packet_id, srvpkt.hdr.id);
-                            printf("server pos: %f %f, %f\n", pos.x, pos.y, angle);
-                            for(int i = 0; i < 32; ++i)
+                            for(int i = p->predicted_state_index; i >= 0; --i)
                             {
-                                printf("[%02d] predicted pos: %f %f, %f\n", i, p->predicted_states[i].pos.x, p->predicted_states[i].pos.y, p->predicted_states[i].angle);
+                                NetPlayerState* pstate = &p->predicted_states[i];
+
+                                if(pstate->associated_packet_id == srvpkt.hdr.ack)
+                                {
+                                    if(pstate->pos.x != pos.x || pstate->pos.y != pos.y || pstate->angle != angle)
+                                    {
+                                        LOGW("Out of sync with server, correcting client position/angle");
+                                        p->phys.pos.x = pos.x;
+                                        p->phys.pos.y = pos.y;
+                                        p->angle = angle;
+                                    }
+                                    break;
+                                }
                             }
-                            printf("=====\n");
-                            */
                         }
                         else
                         {

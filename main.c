@@ -245,11 +245,6 @@ void start_client()
 
         simulate_client(delta_t); // client-side prediction
 
-        if(player->input.keys != player->input_prior.keys || player->input.angle != player->input_prior.angle)
-        {
-            net_client_add_player_input(&player->input);
-        }
-
         //printf("player pos %f %f, angle %f\n",player->phys.pos.x, player->phys.pos.y, player->angle);
         net_client_update();
 

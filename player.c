@@ -234,15 +234,6 @@ void player_update(Player* p, double delta_t)
 
     memcpy(&p->actions_prior, &p->actions, sizeof(PlayerActions));
 
-    if(role == ROLE_CLIENT)
-    {
-        memcpy(&p->input_prior, &p->input, sizeof(NetPlayerInput));
-
-        p->input.delta_t = delta_t;
-        p->input.keys = p->keys;
-        p->input.angle = p->angle;
-    }
-
     if(gun_toggled)
     {
         int next = p->gun.type+1;
@@ -324,29 +315,44 @@ void player_update(Player* p, double delta_t)
     physics_simulate(&p->phys, delta_t);
     limit_pos(&map.rect, &p->phys.pos);
 
-    // circular buffer of client predicted states
     if(role == ROLE_CLIENT)
     {
-        // add position, angle to predicted player state
-        NetPlayerState* state = &p->predicted_states[p->predicted_state_index];
+        // handle input
+        memcpy(&p->input_prior, &p->input, sizeof(NetPlayerInput));
 
-        // circular buffer
-        if(p->predicted_state_index == 31)
+        p->input.delta_t = delta_t;
+        p->input.keys = p->keys;
+        p->input.angle = p->angle;
+        
+        if(p->input.keys != p->input_prior.keys || p->input.angle != p->input_prior.angle)
         {
-            // shift
-            for(int i = 1; i <= 31; ++i)
+            net_client_add_player_input(&p->input);
+
+            if(net_client_get_input_count() >= 3) // @HARDCODED 3
             {
-                memcpy(&p->predicted_states[i-1],&p->predicted_states[i],sizeof(NetPlayerState));
+                // add position, angle to predicted player state
+                NetPlayerState* state = &p->predicted_states[p->predicted_state_index];
+
+                // circular buffer
+                if(p->predicted_state_index == 7)
+                {
+                    // shift
+                    for(int i = 1; i <= 7; ++i)
+                    {
+                        memcpy(&p->predicted_states[i-1],&p->predicted_states[i],sizeof(NetPlayerState));
+                    }
+                }
+                else if(p->predicted_state_index < 7)
+                {
+                    p->predicted_state_index++;
+                }
+
+                state->associated_packet_id = net_client_get_latest_local_packet_id();
+                state->pos.x = p->phys.pos.x;
+                state->pos.y = p->phys.pos.y;
+                state->angle = p->angle;
             }
         }
-        else if(p->predicted_state_index < 31)
-        {
-            p->predicted_state_index++;
-        }
-
-        state->pos.x = p->phys.pos.x;
-        state->pos.y = p->phys.pos.y;
-        state->angle = p->angle;
     }
 }
 

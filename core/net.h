@@ -72,6 +72,7 @@ typedef struct
 typedef struct
 {
     bool active;
+    uint16_t associated_packet_id;
     Vector2f pos;
     float angle;
 } __attribute__((__packed__)) NetPlayerState;
@@ -86,6 +87,8 @@ bool net_client_init();
 int net_client_connect();
 void net_client_update();
 uint8_t net_client_get_player_count();
+int net_client_get_input_count();
+uint16_t net_client_get_latest_local_packet_id();
 bool net_client_add_player_input(NetPlayerInput* input);
 bool net_client_is_connected();
 void net_client_disconnect();
