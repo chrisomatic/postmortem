@@ -3,6 +3,16 @@
 #include "math2d.h"
 
 #define MAX_GFX_IMAGES 256
+
+#define COLOR(r,g,b) (uint32_t)(r<<16|g<<8|b)
+#define COLOR_RED       COLOR(0xff,0x00,0x00)
+#define COLOR_GREEN     COLOR(0x00,0xff,0x00)
+#define COLOR_BLUE      COLOR(0x00,0x00,0xff)
+#define COLOR_ORANGE    COLOR(0xff,0x80,0x00)
+#define COLOR_CYAN      COLOR(0x00,0xff,0xff)
+#define COLOR_PURPLE    COLOR(0x7f,0x00,0xff)
+#define COLOR_PINK      COLOR(0xff,0x00,0xff)
+#define COLOR_YELLOW    COLOR(0xff,0xff,0x00)
 #define COLOR_TINT_NONE (0xFFFFFFFF)
 
 typedef struct

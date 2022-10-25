@@ -17,10 +17,6 @@ void gui_draw()
     // test print
     gfx_draw_string(0,view_height-22,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
 
-    char* name = "Kameron";
-    size = gfx_string_get_size(0.1, name);
-    gfx_draw_string(player->phys.pos.x - size.x/2.0, player->phys.pos.y + player->phys.pos.h/2.0,0x0000FFFF,0.1,0.0, 0.8, true, true, name);
-
     if(debug_enabled)
     {
         // -----

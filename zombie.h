@@ -38,6 +38,8 @@ typedef struct
     int map_col;
     int world_row;
     int world_col;
+
+    // bool dead;
 } Zombie;
 
 typedef struct

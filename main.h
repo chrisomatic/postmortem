@@ -17,6 +17,7 @@ typedef struct
     void* buf;
 } glist;
 
+#define DEBUG_PRINT()   printf("%d %s %s()\n", __LINE__, __FILE__, __func__)
 
 extern Timer game_timer;
 extern GameRole role;

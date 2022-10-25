@@ -39,6 +39,7 @@ typedef struct
 typedef struct
 {
     bool active;
+    int index;
 
     Physics phys;
     float speed;
@@ -75,13 +76,14 @@ typedef struct
 #define PLAYER_MOVING(p) (p->actions.up || p->actions.down || p->actions.left || p->actions.right)
 
 extern Player* player;
+extern uint32_t player_colors[MAX_CLIENTS];
 extern Player players[MAX_CLIENTS];
 extern int player_count;
 extern bool debug_enabled;
 
 void player_init_images();
 void player_init_controls(Player* p);
-void player_init();
+void players_init();
 void player_update(Player* p, double delta_t);
 void player_update_other(Player* p, double delta_t);
-void player_draw();
+void player_draw(Player* p);

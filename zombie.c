@@ -30,6 +30,7 @@ static void zombie_die(int index);
 bool zombie_add(ZombieSpawn* spawn)
 {
     Zombie zombie = {0};
+    // zombie.dead = false;
     zombie.phys.pos.x = spawn->pos.x;
     zombie.phys.pos.y = spawn->pos.y;
     zombie.phys.accel.x = 0.0;
@@ -116,7 +117,14 @@ void zombie_init()
         // printf("%d) %.0f %.0f\n", i, spawn.pos.x, spawn.pos.y);
         zombie_add(&spawn);
     }
-    printf("zombie count: %d\n", zlist->count);
+
+    ZombieSpawn spawn = {0};
+    spawn.pos.x = player->phys.pos.x;
+    spawn.pos.y = player->phys.pos.y;
+    spawn.scale = 1.0;
+    zombie_add(&spawn);
+
+    LOGI("zombie count: %d", zlist->count);
 }
 
 
@@ -127,7 +135,7 @@ void zombie_update(float delta_t)
     //     update_zombie_boxes(&zombies[i]);
     // return;
 
-    for(int i = 0; i < zlist->count; ++i)
+    for(int i = zlist->count - 1; i >= 0 ; --i)
     {
         Zombie* zom = &zombies[i];
         wander(zom, delta_t);
@@ -204,8 +212,8 @@ void zombie_draw()
             {
                 Rect* cbox  = &zom->collision_box;
                 Rect* hbox  = &zom->hit_box;
-                gfx_draw_rect(cbox, 0x0000FF00, 1.0,1.0, false, true);
-                gfx_draw_rect(hbox, 0x00FFFF00, 1.0,1.0, false, true);
+                gfx_draw_rect(cbox, COLOR_GREEN, 1.0,1.0, false, true);
+                gfx_draw_rect(hbox, COLOR_YELLOW, 1.0,1.0, false, true);
             }
         }
 
@@ -243,9 +251,6 @@ void zombie_hurt(int index, float val)
         zombie_die(index);
     }
 }
-
-
-
 
 static void zombie_remove(int index)
 {

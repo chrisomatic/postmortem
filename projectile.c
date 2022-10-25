@@ -130,8 +130,11 @@ void projectile_update(float delta_t)
 
         update_hurt_box(proj);
 
-        for(int j = 0; j < zlist->count; ++j) // num_zombies
+        for(int j = zlist->count - 1; j >= 0; --j) // num_zombies
         {
+
+            if(proj->dead)
+                break;
 #if 0
             if(is_colliding(&proj->hurt_box, &zombies[j].hit_box))
             {

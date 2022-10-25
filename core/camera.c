@@ -87,8 +87,6 @@ void get_camera_rect(Rect* rect)
     float vw = view_width / 2.0;
     float vh = view_height / 2.0;
 
-    // float x = MAX(0,camera.pos.x-vw);
-    // float y = MAX(0,camera.pos.y-vh);
     float x = camera.pos.x-vw;
     float y = camera.pos.y-vh;
 

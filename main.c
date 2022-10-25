@@ -55,50 +55,8 @@ void draw();
 // =========================
 
 
-// Zombie zombies2[MAX_ZOMBIES] = {0};
 int main(int argc, char* argv[])
 {
-    // Zombie x = {0};
-
-    // glist* l = list_create(NULL, 2, sizeof(Zombie));
-    // list_add(l, (void*)&x);
-    // list_add(l, (void*)&x);
-    // list_add(l, (void*)&x);
-    // list_add(l, (void*)&x);
-
-    // printf("zombies: %p\n", zombies2);
-
-
-    // glist* zlist = list_create((void*)zombies2, MAX_ZOMBIES, sizeof(Zombie));
-    // printf("item count: %d\n", zlist->count);
-    // printf("item size: %d\n", zlist->item_size);
-    // printf("zlist buf: %p\n", zlist->buf);
-
-    // Zombie z = {0};
-    // z.map_row = 1;
-    // list_add(zlist, (void*)&z);
-    // z.map_row = 2;
-    // list_add(zlist, (void*)&z);
-    // z.map_row = 100;
-    // list_add(zlist, (void*)&z);
-    // printf("item count: %d\n", zlist->count);
-
-
-    // printf("z0: %d\n", zombies2[0].map_row);
-    // printf("zn: %d\n", zombies2[zlist->count-1].map_row);
-
-    // // alternative for getting from list, not really neeeded though
-    // Zombie* p = (Zombie*)list_get(zlist, 0);
-    // printf("z0: %d\n", p->map_row);
-    // p = (Zombie*)list_get(zlist, zlist->count-1);
-    // printf("zn: %d\n", p->map_row);
-
-    // list_remove(zlist, 0);
-    // printf("z0: %d\n", zombies2[0].map_row);
-
-
-
-    // exit(0);
 
     parse_args(argc, argv);
 
@@ -220,12 +178,6 @@ void start_client()
 
     init();
 
-    for(int i = 0; i < MAX_CLIENTS; ++i)
-    {
-        if(&players[i] != player)
-            player_init(&players[i]);
-    }
-
     double t0=timer_get_time();
     double t1=0.0;
 
@@ -276,9 +228,7 @@ void start_server()
     world_init();
     gun_init();
 
-    player_init_images();
-    for(int i = 0; i < MAX_CLIENTS; ++i)
-        player_init(&players[i]);
+    players_init();
 
     zombie_init();
     projectile_init();
@@ -317,10 +267,7 @@ void init()
     gun_init();
 
     LOGI(" - Player.");
-    player_init_images();
-    player_init_controls(player);
-    player_init(player);
-    player->active = true;
+    players_init();
 
     LOGI(" - Zombies.");
     zombie_init();
@@ -433,11 +380,36 @@ void draw()
     zombie_draw();
     projectile_draw();
 
+    // players[2].active = true;
+    // players[2].phys.pos.x = 1000;
+    // players[2].phys.pos.y = 1000;
+    // players[2].phys.pos.w = 25;
+    // players[2].phys.pos.h = 60;
+    // players[2].sprite_index = 1;
+
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
-        if(players[i].active)
+        Player* p = &players[i];
+        if(p->active)
         {
-            player_draw(&players[i]);
+            player_draw(p);
+            if(p != player)
+            {
+                bool in_view = is_in_camera_view(&p->phys.pos);
+                if(!in_view)
+                {
+                    Rect camera_rect = {0};
+                    get_camera_rect(&camera_rect);
+                    // float angle = calc_angle_rad(player->phys.pos.x, player->phys.pos.y, p->phys.pos.x, p->phys.pos.y);
+                    Rect prect = {0};
+                    memcpy(&prect, &p->phys.pos, sizeof(Rect));
+                    prect.w = 4.0;
+                    prect.h = 4.0;
+                    limit_pos(&camera_rect, &prect);
+                    gfx_draw_rect(&prect, player_colors[p->index], 1.0,1.0,true,true);
+                }
+            }
+
         }
     }
 

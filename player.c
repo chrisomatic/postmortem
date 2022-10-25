@@ -13,8 +13,19 @@
 #include "net.h"
 #include "main.h"
 
+uint32_t player_colors[MAX_CLIENTS] = {
+    COLOR_BLUE,
+    COLOR_RED,
+    COLOR_GREEN,
+    COLOR_ORANGE,
+    COLOR_PURPLE,
+    COLOR_CYAN,
+    COLOR_PINK,
+    COLOR_YELLOW,
+};
+
 Player players[MAX_CLIENTS];
-Player* player = &players[0];
+Player* player = &players[1];
 int player_count = 0;
 
 bool debug_enabled = true; // weird place for this variable
@@ -51,8 +62,11 @@ void player_init_controls(Player* p)
     window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
 }
 
-void player_init(Player* p)
+static void player_init(int index)
 {
+    Player* p = &players[index];
+    p->index = index;
+
     p->phys.pos.x = 400.0;
     p->phys.pos.y = 1000.0;
 
@@ -70,8 +84,29 @@ void player_init(Player* p)
     p->gun = gun_get(GUN_TYPE_MACHINEGUN);
     p->image = player_image_set;
 
-    player_count = 1;
 }
+
+void players_init()
+{
+    player_init_images();
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        Player* p = &players[i];
+        player_init(i);
+        if(role == ROLE_LOCAL || role == ROLE_CLIENT)
+        {
+            if(player == p)
+            {
+                player_init_controls(p);
+                p->active = true;
+            }
+        }
+
+        if(p->active)
+            player_count++;
+    }
+}
+
 
 void player_update_other(Player* p, double delta_t)
 {
@@ -288,9 +323,9 @@ void player_update(Player* p, double delta_t)
 
     if(p->running && player_moving)
     {
-        accel.x *= 2.0;
-        accel.y *= 2.0;
-        p->phys.max_linear_vel *= 2.0;
+        accel.x *= 10.0;
+        accel.y *= 10.0;
+        p->phys.max_linear_vel *= 10.0;
     }
 
 #if 0
@@ -358,6 +393,12 @@ void player_update(Player* p, double delta_t)
 
 void player_draw(Player* p)
 {
+
+    if(!is_in_camera_view(&p->phys.pos))
+    {
+        return;
+    }
+
     bool gun_drawn = false;
     if(p->gun_ready)
     {
@@ -375,7 +416,7 @@ void player_draw(Player* p)
 
     if(debug_enabled)
     {
-        gfx_draw_rect(&p->phys.pos, 0x00FF0000, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->phys.pos, COLOR_RED, 1.0,1.0, false, true);
     }
 
 
@@ -385,6 +426,13 @@ void player_draw(Player* p)
             gun_draw(&p->gun);
 
         GFXImage* img = &gfx_images[crosshair_image];
-        gfx_draw_image(crosshair_image,mouse_x,mouse_y, 0x00FF00FF,1.0,0.0,0.80);
+        gfx_draw_image(crosshair_image,mouse_x,mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
     }
+
+
+    char name[20] = {0};
+    snprintf(name, 20, "Player: %d", p->index);
+    Vector2f size = gfx_string_get_size(0.1, name);
+    gfx_draw_string(p->phys.pos.x - size.x/2.0, p->phys.pos.y + p->phys.pos.h/2.0,player_colors[p->index],0.1,0.0, 0.8, true, true, name);
+
 }
