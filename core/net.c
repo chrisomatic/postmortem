@@ -14,7 +14,7 @@
 #include "log.h"
 #include "../player.h" // @TODO: Find a way to not include player code like this
 
-#define SERVER_PRINT_SIMPLE 1
+//#define SERVER_PRINT_SIMPLE 1
 //#define SERVER_PRINT_VERBOSE 1
 
 #define GAME_ID 0xC68BB821
@@ -321,8 +321,9 @@ static void update_server_num_clients()
 static void remove_client(ClientInfo* cli)
 {
     LOGN("Remove client");
+    cli->state = DISCONNECTED;
     players[cli->client_id].active = false;
-    cli->player_state.active = false;
+    //cli->player_state.active = false;
     memset(cli,0, sizeof(ClientInfo));
     update_server_num_clients();
 
@@ -333,7 +334,7 @@ static void server_send(PacketType type, ClientInfo* cli)
     Packet pkt = {
         .hdr.game_id = GAME_ID,
         .hdr.id = server.info.local_latest_packet_id,
-        .hdr.ack = server.info.remote_latest_packet_id,
+        .hdr.ack = cli->remote_latest_packet_id,
         .hdr.type = type
     };
 
@@ -381,7 +382,7 @@ static void server_send(PacketType type, ClientInfo* cli)
             int num_clients = 0;
             for(int i = 0; i < MAX_CLIENTS; ++i)
             {
-                if(server.clients[i].player_state.active)
+                if(server.clients[i].state == CONNECTED)
                 {
                     pkt.data[index] = (uint8_t)i;
                     index += 1;
@@ -542,7 +543,7 @@ int net_server_start()
                     case PACKET_TYPE_CONNECT_CHALLENGE_RESP:
                     {
                         cli->state = SENDING_CHALLENGE_RESPONSE;
-                        cli->player_state.active = true;
+                        //cli->player_state.active = true;
                         players[cli->client_id].active = true;
 
                         server_send(PACKET_TYPE_CONNECT_ACCEPTED,cli);
@@ -570,7 +571,7 @@ int net_server_start()
                             player_update(&players[client_id],inputs[i].delta_t);
 
                             // update net player state
-                            cli->player_state.active = true;
+                            //cli->player_state.active = true;
                             cli->player_state.pos.x = players[client_id].phys.pos.x;
                             cli->player_state.pos.y = players[client_id].phys.pos.y;
                             cli->player_state.angle = players[client_id].angle;
@@ -934,6 +935,20 @@ void net_client_update()
                                     if(pstate->pos.x != pos.x || pstate->pos.y != pos.y || pstate->angle != angle)
                                     {
                                         LOGW("Out of sync with server, correcting client position/angle");
+                                        /*
+                                        LOGW("======");
+                                        LOGW("Out of sync with server, correcting client position/angle");
+                                        LOGW("Packet ID: %u",pstate->associated_packet_id);
+                                        LOGW("%f %f, %f -> %f %f, %f",pstate->pos.x, pstate->pos.y, pstate->angle, pos.x, pos.y, angle);
+
+                                        for(int i = 0; i < MAX_CLIENT_PREDICTED_STATES; ++i)
+                                        {
+                                            LOGW("[%02d] %d: %f %f, %f",i,p->predicted_states[i].associated_packet_id, p->predicted_states[i].pos.x, p->predicted_states[i].pos.y, p->predicted_states[i].angle);
+                                        }
+                                            
+                                        LOGW("======");
+                                        */
+
                                         p->phys.pos.x = pos.x;
                                         p->phys.pos.y = pos.y;
                                         p->angle = angle;

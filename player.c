@@ -256,7 +256,7 @@ void player_update(Player* p, double delta_t)
     }
 
     Vector2f accel = {0};
-    bool player_moving = PLAYER_MOVING(player);
+    bool player_moving = PLAYER_MOVING(p);
 
     if(p->actions.up)    { accel.y -= p->speed; }
     if(p->actions.down)  { accel.y += p->speed; }
@@ -334,15 +334,15 @@ void player_update(Player* p, double delta_t)
                 NetPlayerState* state = &p->predicted_states[p->predicted_state_index];
 
                 // circular buffer
-                if(p->predicted_state_index == 7)
+                if(p->predicted_state_index == MAX_CLIENT_PREDICTED_STATES -1)
                 {
                     // shift
-                    for(int i = 1; i <= 7; ++i)
+                    for(int i = 1; i <= MAX_CLIENT_PREDICTED_STATES -1; ++i)
                     {
                         memcpy(&p->predicted_states[i-1],&p->predicted_states[i],sizeof(NetPlayerState));
                     }
                 }
-                else if(p->predicted_state_index < 7)
+                else if(p->predicted_state_index < MAX_CLIENT_PREDICTED_STATES -1)
                 {
                     p->predicted_state_index++;
                 }
