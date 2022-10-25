@@ -8,11 +8,6 @@ typedef struct
     Vector2f vel;
     Vector2f accel;
     float max_linear_vel;
-
-    // for client-side interpolation
-    double lerp_t;
-    Vector2f pos_prior;
-    Vector2f pos_target;
 } Physics;
 
 void physics_begin(Physics* phys);

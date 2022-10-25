@@ -32,14 +32,18 @@ typedef struct
 
 typedef struct
 {
+    Vector2f pos;
+    float angle;
+} PlayerState;
+
+typedef struct
+{
     bool active;
 
     Physics phys;
     float speed;
     float max_base_speed;
     float angle;
-    float angle_prior;
-    float angle_target;
     float scale;
     bool running;
 
@@ -60,6 +64,12 @@ typedef struct
 
     Gun gun;
     bool gun_ready;
+
+    // for client-side interpolation
+    float lerp_t;
+    PlayerState state_target;
+    PlayerState state_prior;
+
 } Player;
 
 #define PLAYER_MOVING(p) (p->actions.up || p->actions.down || p->actions.left || p->actions.right)

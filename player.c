@@ -75,16 +75,16 @@ void player_init(Player* p)
 
 void player_update_other(Player* p, double delta_t)
 {
-    p->phys.lerp_t += delta_t;
+    p->lerp_t += delta_t;
 
     float tick_time = 1.0/TICK_RATE;
-    float t = (p->phys.lerp_t / tick_time);
+    float t = (p->lerp_t / tick_time);
 
-    Vector2f lp = lerp2f(&p->phys.pos_prior,&p->phys.pos_target,t);
+    Vector2f lp = lerp2f(&p->state_prior.pos,&p->state_target.pos,t);
     p->phys.pos.x = lp.x;
     p->phys.pos.y = lp.y;
 
-    p->angle = lerp(p->angle_prior,p->angle_target,t);
+    p->angle = lerp(p->state_prior.angle,p->state_target.angle,t);
 
     player_update_sprite_index(p);
     player_gun_set_position(p);

@@ -322,11 +322,10 @@ static void remove_client(ClientInfo* cli)
 {
     LOGN("Remove client");
     cli->state = DISCONNECTED;
+    cli->remote_latest_packet_id = 0;
     players[cli->client_id].active = false;
-    //cli->player_state.active = false;
     memset(cli,0, sizeof(ClientInfo));
     update_server_num_clients();
-
 }
 
 static void server_send(PacketType type, ClientInfo* cli)
@@ -935,7 +934,6 @@ void net_client_update()
                                     if(pstate->pos.x != pos.x || pstate->pos.y != pos.y || pstate->angle != angle)
                                     {
                                         LOGW("Out of sync with server, correcting client position/angle");
-                                        /*
                                         LOGW("======");
                                         LOGW("Out of sync with server, correcting client position/angle");
                                         LOGW("Packet ID: %u",pstate->associated_packet_id);
@@ -947,7 +945,6 @@ void net_client_update()
                                         }
                                             
                                         LOGW("======");
-                                        */
 
                                         p->phys.pos.x = pos.x;
                                         p->phys.pos.y = pos.y;
@@ -959,15 +956,16 @@ void net_client_update()
                         }
                         else
                         {
-                            p->phys.pos_prior.x = p->phys.pos.x;
-                            p->phys.pos_prior.y = p->phys.pos.y;
+                            p->state_prior.pos.x = p->phys.pos.x;
+                            p->state_prior.pos.y = p->phys.pos.y;
 
-                            p->phys.pos_target.x = pos.x;
-                            p->phys.pos_target.y = pos.y;
-                            p->phys.lerp_t = 0.0;
+                            p->state_target.pos.x = pos.x;
+                            p->state_target.pos.y = pos.y;
 
-                            p->angle_prior = p->angle;
-                            p->angle_target = angle;
+                            p->lerp_t = 0.0;
+
+                            p->state_prior.angle = p->angle;
+                            p->state_target.angle = angle;
                         }
                     }
 
