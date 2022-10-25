@@ -255,6 +255,7 @@ void start_client()
         t0 = t1;
     }
 
+    net_client_disconnect();
     deinit();
 }
 
@@ -511,11 +512,6 @@ void* list_get(glist* list, int index)
 
     return list->buf + index*list->item_size;
 }
-
-
-
-
-
 
 void limit_pos(Rect* limit, Rect* pos)
 {

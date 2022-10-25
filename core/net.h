@@ -97,5 +97,5 @@ void net_client_get_server_ip_str(char* ip_str);
 bool net_client_data_waiting();
 double net_client_get_rtt();
 int net_client_send(uint8_t* data, uint32_t len);
-int net_client_recv(Packet* pkt, bool* is_latest);
+int net_client_recv(Packet* pkt);
 void net_client_deinit();

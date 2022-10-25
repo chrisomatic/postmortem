@@ -162,7 +162,6 @@ void world_draw()
     }
 #endif
 
-
     for(int r = (r1-1); r < (r2+1); ++r)
     {
         for(int c = (c1-1); c < (c2+1); ++c)
