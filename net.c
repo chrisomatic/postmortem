@@ -9,10 +9,10 @@
 #include "socket.h"
 #include "timer.h"
 #include "net.h"
-#include "packet_queue.h"
 #include "window.h"
 #include "log.h"
-#include "../player.h" // @TODO: Find a way to not include player code like this
+
+#include "player.h"
 
 //#define SERVER_PRINT_SIMPLE 1
 //#define SERVER_PRINT_VERBOSE 1
@@ -31,7 +31,6 @@ typedef struct
     int socket;
     uint16_t local_latest_packet_id;
     uint16_t remote_latest_packet_id;
-    PacketQueue latest_received_packets;
 } NodeInfo;
 
 // Info server stores about a client
@@ -648,7 +647,6 @@ struct
     uint8_t server_salt[8];
     uint8_t client_salt[8];
     uint8_t xor_salts[8];
-    PacketQueue queue;
 } client = {0};
 
 bool net_client_add_player_input(NetPlayerInput* input)
@@ -731,8 +729,6 @@ bool net_client_init()
     socket_create(&sock);
 
     client.info.socket = sock;
-
-    packet_queue_create(&client.queue, 32);
 
     return true;
 }

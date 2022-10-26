@@ -23,6 +23,7 @@
 #include "gui.h"
 #include "net.h"
 #include "log.h"
+#include "bitpack.h"
 
 // Settings
 #define VIEW_WIDTH   800
@@ -141,6 +142,7 @@ void start_local()
     double t0=timer_get_time();
     double t1=0.0;
 
+    //bitpack_test(); //@TEMP
 
     // main game loop
     for(;;)

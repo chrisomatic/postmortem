@@ -10,13 +10,14 @@ gcc core/gfx.c \
     core/camera.c \
     core/window.c \
     core/socket.c \
-    core/net.c \
+    core/bitpack.c \
     main.c \
     world.c \
     player.c \
     zombie.c \
     gun.c \
     gui.c \
+    net.c \
     projectile.c \
     -Icore \
     -lglfw -lGLU -lGLEW -lGL -lm \
