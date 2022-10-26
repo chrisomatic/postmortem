@@ -39,7 +39,9 @@ Vector2f aim_camera_offset = {0};
 char console_text[CONSOLE_TEXT_MAX+1] = {0};
 bool console_enabled = false;
 bool debug_enabled = true;
-bool should_close_window = false;
+
+bool backspace_held = false;
+double t0_backspace = 0.0;
 
 // =========================
 // Function Prototypes
@@ -140,46 +142,16 @@ void start_local()
     double t0=timer_get_time();
     double t1=0.0;
 
+
     // main game loop
     for(;;)
     {
         window_poll_events();
 
-        // could probably move some of this to player_keys
-        // bool should_close_window = false;
-        // KeyMode kmode = window_get_key_mode();
-        // if(kmode == KEY_MODE_NORMAL)
-        // {
+        handle_backspace_timer();
 
-        //     printf("window_key_is_state(GLFW_KEY_Q, GLFW_PRESS): %d\n", window_key_is_state(GLFW_KEY_Q, GLFW_PRESS));
-        //     if(window_key_is_state(GLFW_KEY_Q, GLFW_PRESS) || window_should_close())
-        //     {
 
-        //     printf("window_key_is_state(GLFW_KEY_Q, GLFW_PRESS): %d\n", window_key_is_state(GLFW_KEY_Q, GLFW_PRESS));
-        //         should_close = true;
-        //     }
-
-        //     if(window_key_is_state(GLFW_KEY_C, GLFW_PRESS))
-        //     {
-        //         window_set_key_mode(KEY_MODE_TEXT);
-        //         console_enabled = true;
-        //     }
-
-        //     if(window_key_is_state(GLFW_KEY_ESCAPE, GLFW_PRESS))
-        //         window_enable_cursor();
-
-        // }
-        // else if(kmode == KEY_MODE_TEXT)
-        // {
-        //     if(window_key_is_state(GLFW_KEY_ESCAPE, GLFW_PRESS))
-        //     {
-        //         window_set_key_mode(KEY_MODE_NORMAL);
-        //         console_enabled = false;
-        //         printf("console not enabled\n");
-        //     }
-        // }
-
-        if(should_close_window || window_should_close())
+        if(window_should_close())
         {
             break;
         }
@@ -230,7 +202,9 @@ void start_client()
     {
         window_poll_events();
 
-        if(should_close_window || window_should_close())
+        handle_backspace_timer();
+
+        if(window_should_close())
         {
             break;
         }
@@ -470,41 +444,65 @@ void draw()
 
 void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
 {
+    // printf("key: %d, action: %d\n", key, action);
+    bool ctrl = (mods & GLFW_MOD_CONTROL) == GLFW_MOD_CONTROL;
 
-    if(action == GLFW_PRESS)
+    KeyMode kmode = window_controls_get_key_mode();
+    if(kmode == KEY_MODE_NORMAL)
     {
-        KeyMode kmode = window_controls_get_key_mode();
-        if(kmode == KEY_MODE_NORMAL)
+        if(action == GLFW_PRESS)
         {
-
-            // printf("window_key_is_state(GLFW_KEY_Q, GLFW_PRESS): %d\n", window_key_is_state(GLFW_KEY_Q, GLFW_PRESS));
             if(key == GLFW_KEY_Q)
             {
-
-            // printf("window_key_is_state(GLFW_KEY_Q, GLFW_PRESS): %d\n", window_key_is_state(GLFW_KEY_Q, GLFW_PRESS));
-                should_close_window = true;
+                window_set_close(1);
             }
-
-            if(key == GLFW_KEY_F10)
+            else if(key == GLFW_KEY_F10)
             {
                 window_controls_set_key_mode(KEY_MODE_TEXT);
                 console_enabled = true;
             }
-
-            if(key == GLFW_KEY_ESCAPE)
+            else if(key == GLFW_KEY_ESCAPE)
+            {
                 window_enable_cursor();
+            }
+
+            if(ctrl && key == GLFW_KEY_C)
+            {
+                window_set_close(1);
+            }
 
         }
-        else if(kmode == KEY_MODE_TEXT)
+
+    }
+    else if(kmode == KEY_MODE_TEXT)
+    {
+        if(action == GLFW_PRESS)
         {
             if(key == GLFW_KEY_ESCAPE || key == GLFW_KEY_F10)
             {
                 window_controls_set_key_mode(KEY_MODE_NORMAL);
                 console_enabled = false;
+                backspace_held = false;
                 // printf("console not enabled\n");
+            }
+            if(ctrl && key == GLFW_KEY_C)
+            {
+                memset(console_text, 0, CONSOLE_TEXT_MAX*sizeof(console_text[0]));
             }
         }
 
+        if(key == GLFW_KEY_BACKSPACE)
+        {
+            if(action == GLFW_PRESS)
+            {
+                backspace_held = true;
+                t0_backspace = timer_get_time();
+            }
+            else if(action == GLFW_RELEASE)
+            {
+                backspace_held = false;
+            }
+        }
     }
 
 }
@@ -514,8 +512,21 @@ void parse_console_command(char* command)
     printf("parse command: '%s'\n", command);
     if(strcmp(command,"exit") == 0)
     {
-        printf("setting close\n");
+        // printf("setting close\n");
         window_set_close(1);
+    }
+}
+
+void handle_backspace_timer()
+{
+    if(window_controls_get_key_mode() == KEY_MODE_TEXT && backspace_held)
+    {
+        // printf("delta: %.2f\n", timer_get_time() - t0_backspace);
+        if((timer_get_time() - t0_backspace) >= 0.1)
+        {
+            window_text_mode_buf_backspace();
+            t0_backspace = timer_get_time();
+        }
     }
 }
 

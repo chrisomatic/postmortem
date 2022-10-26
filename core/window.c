@@ -31,8 +31,8 @@ static void char_callback(GLFWwindow* window, unsigned int code);
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods);
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 
-static void text_buf_append(char c);
-static void text_buf_backspace();
+// static void windows_text_mode_buf_append(char c);
+// static void window_text_mode_buf_backspace();
 
 bool window_init(int _view_width, int _view_height)
 {
@@ -288,12 +288,12 @@ static void char_callback(GLFWwindow* window, unsigned int code)
 {
     char c = (char)code;
     if(key_mode == KEY_MODE_TEXT)
-        text_buf_append(c);
+        windows_text_mode_buf_append(c);
 }
 
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods)
 {
-    printf("key callback: %d\n", key);
+    // printf("key callback: %d\n", key);
 
     if(action == GLFW_PRESS || action == GLFW_RELEASE)
     {
@@ -317,11 +317,11 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
             {
                 if(key == GLFW_KEY_ENTER)
                 {
-                    text_buf_append('\n');
+                    windows_text_mode_buf_append('\n');
                 }
                 else if(key == GLFW_KEY_BACKSPACE)
                 {
-                    text_buf_backspace();
+                    window_text_mode_buf_backspace();
                 }
             }
         }
@@ -360,7 +360,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
     }
 }
 
-static void text_buf_append(char c)
+void windows_text_mode_buf_append(char c)
 {
     if(text_buf != NULL)
     {
@@ -377,7 +377,7 @@ static void text_buf_append(char c)
     }
 }
 
-static void text_buf_backspace()
+void window_text_mode_buf_backspace()
 {
     if(text_buf != NULL)
     {
@@ -385,7 +385,7 @@ static void text_buf_backspace()
         if(len == 0)
             return;
         text_buf[len-1] = '\0';
-        printf("backspace\n");
+        // printf("backspace\n");
     }
 }
 

@@ -23,33 +23,53 @@ void gui_draw()
 
         float scale = 0.12;
 
-        Vector2f size = gfx_string_get_size(scale, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890|[](){}");
+        Vector2f size = gfx_string_get_size(scale, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890|[](){}");
 
         Rect tbox = {0};
         tbox.x = view_width*0.5;
-        tbox.y = view_height*0.25;
         tbox.w = view_width*0.4;
         tbox.h = size.y*1.5;
+        // tbox.y = view_height*0.25;
+        tbox.y = tbox.h/2.0+10.0;
         gfx_draw_rect(&tbox, 0x001F1F1F, 1.0, 0.6, true, false);
 
         float x0 = tbox.x-tbox.w/2.0 + 1;
         float y0 = tbox.y-tbox.h/1.5/2.0;
 
         // printf("console_text[0] = %d\n", (int)console_text[0]);
+        const char* prompt = "cmd > ";
+        Vector2f psize = gfx_string_get_size(scale, (char*)prompt);
 
-        size = gfx_draw_string(x0, y0, COLOR_WHITE, scale, 0.0, 1.0, false, false, "cmd> %s", console_text);// y += size.y+ypad;
-
+        int index = 0;
         int tlen = strlen(console_text);
         if(tlen > 0)
         {
             if(console_text[tlen-1] == '\n')
             {
                 console_text[tlen-1] = '\0';
-                printf("submit command: '%s'\n", console_text);
+                // printf("submit command: '%s'\n", console_text);
                 parse_console_command(console_text);
                 memset(console_text, 0, CONSOLE_TEXT_MAX*sizeof(console_text[0]));
             }
+            else
+            {
+                float x1 = x0+tbox.w;
+                for(int i = 0; i < tlen; ++i)
+                {
+                    Vector2f tsize = gfx_string_get_size(scale, console_text+i);
+                    
+                    if(x0 + psize.x + tsize.x <= x1)
+                    {
+                        index = i;
+                        break;
+                    }
+
+                }
+            }
         }
+
+        size = gfx_draw_string(x0, y0, COLOR_WHITE, scale, 0.0, 1.0, false, false, "%s%s", prompt, console_text+index);// y += size.y+ypad;
+
     }
 
     if(debug_enabled)

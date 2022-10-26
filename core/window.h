@@ -47,3 +47,6 @@ void window_controls_add_mouse_button(uint16_t* keys, int key, int bit_num);
 bool window_is_cursor_enabled();
 void window_enable_cursor();
 void window_disable_cursor();
+
+void windows_text_mode_buf_append(char c);
+void window_text_mode_buf_backspace();

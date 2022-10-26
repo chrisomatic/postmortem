@@ -27,11 +27,11 @@ extern Vector2f aim_camera_offset;
 extern char console_text[CONSOLE_TEXT_MAX+1];
 extern bool console_enabled;
 extern bool debug_enabled;
-extern bool should_close_window;
 
 const char* game_role_to_str(GameRole _role);
 
 void parse_console_command(char* command);
+void handle_backspace_timer();
 
 // lists
 glist* list_create(void* buf, int max_count, int item_size);
