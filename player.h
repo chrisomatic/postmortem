@@ -20,6 +20,7 @@ enum PlayerAction
     PLAYER_ACTION_TOGGLE_FIRE      = 1<<9,
     PLAYER_ACTION_TOGGLE_DEBUG     = 1<<10,
     PLAYER_ACTION_TOGGLE_GUN       = 1<<11,
+    // PLAYER_ACTION_CONSOLE          = 1<<12,
 };
 
 typedef struct
@@ -75,11 +76,11 @@ typedef struct
 
 #define PLAYER_MOVING(p) (p->actions.up || p->actions.down || p->actions.left || p->actions.right)
 
+
 extern Player* player;
 extern uint32_t player_colors[MAX_CLIENTS];
 extern Player players[MAX_CLIENTS];
 extern int player_count;
-extern bool debug_enabled;
 
 void player_init_images();
 void player_init_controls(Player* p);

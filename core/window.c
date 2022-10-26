@@ -16,14 +16,23 @@ int window_height = 0;
 int view_width = 0;
 int view_height = 0;
 
+static key_cb_t key_cb = NULL;
+static KeyMode key_mode = KEY_MODE_NONE;
+static char* text_buf = NULL;
+static int text_buf_max = 0;
+
 static double window_coord_x = 0;
 static double window_coord_y = 0;
 
 static void window_size_callback(GLFWwindow* window, int _window_width, int _window_height);
 static void window_maximize_callback(GLFWwindow* window, int maximized);
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
+static void char_callback(GLFWwindow* window, unsigned int code);
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods);
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+
+static void text_buf_append(char c);
+static void text_buf_backspace();
 
 bool window_init(int _view_width, int _view_height)
 {
@@ -62,6 +71,7 @@ bool window_init(int _view_width, int _view_height)
     glfwSetWindowSizeCallback(window,window_size_callback);
     glfwSetWindowMaximizeCallback(window, window_maximize_callback);
     glfwSetKeyCallback(window, key_callback);
+    glfwSetCharCallback(window, char_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
@@ -145,7 +155,12 @@ void window_poll_events()
 
 bool window_should_close()
 {
-    return (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS || glfwWindowShouldClose(window) != 0);
+    return (glfwWindowShouldClose(window) != 0);
+}
+
+void window_set_close(int value)
+{
+    glfwSetWindowShouldClose(window,value);
 }
 
 void window_swap_buffers()
@@ -168,7 +183,7 @@ static void window_size_callback(GLFWwindow* window, int width, int height)
 
 static void window_maximize_callback(GLFWwindow* window, int maximized)
 {
-    if (maximized)
+    if(maximized)
     {
         // The window was maximized
         printf("Maximized.\n");
@@ -198,6 +213,33 @@ static int window_keys_count = 0;
 
 static WindowKey window_mouse_buttons[10];
 static int window_mouse_buttons_count = 0;
+
+
+bool window_controls_is_key_state(int key, int state)
+{
+    return glfwGetKey(window, key) == state;
+}
+
+void window_controls_set_cb(key_cb_t cb)
+{
+    key_cb = cb;
+}
+
+void window_controls_set_text_buf(char* buf, int max_len)
+{
+    text_buf = buf;
+    text_buf_max = max_len;
+}
+
+void window_controls_set_key_mode(KeyMode mode)
+{
+    key_mode = mode;
+}
+
+KeyMode window_controls_get_key_mode()
+{
+    return key_mode;
+}
 
 
 void window_controls_clear_keys()
@@ -242,42 +284,53 @@ void window_disable_cursor()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
+static void char_callback(GLFWwindow* window, unsigned int code)
+{
+    char c = (char)code;
+    if(key_mode == KEY_MODE_TEXT)
+        text_buf_append(c);
+}
+
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods)
 {
-    bool ctrl = (mods & GLFW_MOD_CONTROL) == GLFW_MOD_CONTROL;
-
-    if(action == GLFW_PRESS)
-    {
-        switch(key)
-        {
-            case GLFW_KEY_C:
-                if(ctrl)
-                {
-                    exit(0);
-                }
-                break;
-            case GLFW_KEY_ESCAPE:
-                if(!window_is_cursor_enabled())
-                {
-                    window_enable_cursor();
-                }
-                break;
-        }
-    }
+    printf("key callback: %d\n", key);
 
     if(action == GLFW_PRESS || action == GLFW_RELEASE)
     {
-        for(int i = 0; i < window_keys_count; ++i)
+        if(key_mode == KEY_MODE_NORMAL)
         {
-            WindowKey* wk = &window_keys[i];
-            if(key == wk->key)
+            for(int i = 0; i < window_keys_count; ++i)
             {
-                if(action == GLFW_PRESS)
-                    (*wk->keys) |= wk->bit_num;
-                else
-                    (*wk->keys) &= ~(wk->bit_num);
+                WindowKey* wk = &window_keys[i];
+                if(key == wk->key)
+                {
+                    if(action == GLFW_PRESS)
+                        (*wk->keys) |= wk->bit_num;
+                    else
+                        (*wk->keys) &= ~(wk->bit_num);
+                }
             }
         }
+        else if(key_mode == KEY_MODE_TEXT)
+        {
+            if(action == GLFW_PRESS)
+            {
+                if(key == GLFW_KEY_ENTER)
+                {
+                    text_buf_append('\n');
+                }
+                else if(key == GLFW_KEY_BACKSPACE)
+                {
+                    text_buf_backspace();
+                }
+            }
+        }
+
+    }
+
+    if(key_mode != KEY_MODE_NONE && key_cb != NULL)
+    {
+        key_cb(window, key, scan_code, action, mods);
     }
 }
 
@@ -295,10 +348,10 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
                 {
                     (*wk->keys) |= wk->bit_num;
 
-                    if(window_is_cursor_enabled())
-                    {
-                        window_disable_cursor();
-                    }
+                    // if(window_is_cursor_enabled())
+                    // {
+                    //     window_disable_cursor();
+                    // }
                 }
                 else
                     (*wk->keys) &= ~(wk->bit_num);
@@ -306,4 +359,34 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
         }
     }
 }
+
+static void text_buf_append(char c)
+{
+    if(text_buf != NULL)
+    {
+        int len = strlen(text_buf);
+
+        int index = MIN(len,text_buf_max-1);
+
+        text_buf[index] = c;
+
+        // // always save space for \n at the end
+        // if(len >= (text_buf_max-1))
+        //     return;
+        // text_buf[len] = c;
+    }
+}
+
+static void text_buf_backspace()
+{
+    if(text_buf != NULL)
+    {
+        int len = strlen(text_buf);
+        if(len == 0)
+            return;
+        text_buf[len-1] = '\0';
+        printf("backspace\n");
+    }
+}
+
 

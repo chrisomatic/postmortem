@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 #include "main.h"
 #include "window.h"
 #include "gfx.h"
@@ -16,6 +17,40 @@ void gui_draw()
 
     // test print
     gfx_draw_string(0,view_height-22,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
+
+    if(console_enabled)
+    {
+
+        float scale = 0.12;
+
+        Vector2f size = gfx_string_get_size(scale, "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890|[](){}");
+
+        Rect tbox = {0};
+        tbox.x = view_width*0.5;
+        tbox.y = view_height*0.25;
+        tbox.w = view_width*0.4;
+        tbox.h = size.y*1.5;
+        gfx_draw_rect(&tbox, 0x001F1F1F, 1.0, 0.6, true, false);
+
+        float x0 = tbox.x-tbox.w/2.0 + 1;
+        float y0 = tbox.y-tbox.h/1.5/2.0;
+
+        // printf("console_text[0] = %d\n", (int)console_text[0]);
+
+        size = gfx_draw_string(x0, y0, COLOR_WHITE, scale, 0.0, 1.0, false, false, "cmd> %s", console_text);// y += size.y+ypad;
+
+        int tlen = strlen(console_text);
+        if(tlen > 0)
+        {
+            if(console_text[tlen-1] == '\n')
+            {
+                console_text[tlen-1] = '\0';
+                printf("submit command: '%s'\n", console_text);
+                parse_console_command(console_text);
+                memset(console_text, 0, CONSOLE_TEXT_MAX*sizeof(console_text[0]));
+            }
+        }
+    }
 
     if(debug_enabled)
     {

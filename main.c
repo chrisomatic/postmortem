@@ -36,6 +36,11 @@ Timer game_timer = {0};
 GameRole role;
 Vector2f aim_camera_offset = {0};
 
+char console_text[CONSOLE_TEXT_MAX+1] = {0};
+bool console_enabled = false;
+bool debug_enabled = true;
+bool should_close_window = false;
+
 // =========================
 // Function Prototypes
 // =========================
@@ -49,6 +54,7 @@ void deinit();
 void simulate(double);
 void simulate_client(double);
 void draw();
+void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
 // =========================
 // Main Loop
@@ -138,8 +144,46 @@ void start_local()
     for(;;)
     {
         window_poll_events();
-        if(window_should_close())
+
+        // could probably move some of this to player_keys
+        // bool should_close_window = false;
+        // KeyMode kmode = window_get_key_mode();
+        // if(kmode == KEY_MODE_NORMAL)
+        // {
+
+        //     printf("window_key_is_state(GLFW_KEY_Q, GLFW_PRESS): %d\n", window_key_is_state(GLFW_KEY_Q, GLFW_PRESS));
+        //     if(window_key_is_state(GLFW_KEY_Q, GLFW_PRESS) || window_should_close())
+        //     {
+
+        //     printf("window_key_is_state(GLFW_KEY_Q, GLFW_PRESS): %d\n", window_key_is_state(GLFW_KEY_Q, GLFW_PRESS));
+        //         should_close = true;
+        //     }
+
+        //     if(window_key_is_state(GLFW_KEY_C, GLFW_PRESS))
+        //     {
+        //         window_set_key_mode(KEY_MODE_TEXT);
+        //         console_enabled = true;
+        //     }
+
+        //     if(window_key_is_state(GLFW_KEY_ESCAPE, GLFW_PRESS))
+        //         window_enable_cursor();
+
+        // }
+        // else if(kmode == KEY_MODE_TEXT)
+        // {
+        //     if(window_key_is_state(GLFW_KEY_ESCAPE, GLFW_PRESS))
+        //     {
+        //         window_set_key_mode(KEY_MODE_NORMAL);
+        //         console_enabled = false;
+        //         printf("console not enabled\n");
+        //     }
+        // }
+
+        if(should_close_window || window_should_close())
+        {
             break;
+        }
+
 
         t1 = timer_get_time();
 
@@ -185,8 +229,11 @@ void start_client()
     for(;;)
     {
         window_poll_events();
-        if(window_should_close())
+
+        if(should_close_window || window_should_close())
+        {
             break;
+        }
 
         if(!net_client_is_connected())
             break;
@@ -248,6 +295,10 @@ void init()
         fprintf(stderr,"Failed to initialize window!\n");
         exit(1);
     }
+
+    window_controls_set_cb(key_cb);
+    window_controls_set_text_buf(console_text, CONSOLE_TEXT_MAX);
+    window_controls_set_key_mode(KEY_MODE_NORMAL);
 
     LOGI("Initializing...");
 
@@ -414,6 +465,58 @@ void draw()
     }
 
     gui_draw();
+}
+
+
+void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
+{
+
+    if(action == GLFW_PRESS)
+    {
+        KeyMode kmode = window_controls_get_key_mode();
+        if(kmode == KEY_MODE_NORMAL)
+        {
+
+            // printf("window_key_is_state(GLFW_KEY_Q, GLFW_PRESS): %d\n", window_key_is_state(GLFW_KEY_Q, GLFW_PRESS));
+            if(key == GLFW_KEY_Q)
+            {
+
+            // printf("window_key_is_state(GLFW_KEY_Q, GLFW_PRESS): %d\n", window_key_is_state(GLFW_KEY_Q, GLFW_PRESS));
+                should_close_window = true;
+            }
+
+            if(key == GLFW_KEY_F10)
+            {
+                window_controls_set_key_mode(KEY_MODE_TEXT);
+                console_enabled = true;
+            }
+
+            if(key == GLFW_KEY_ESCAPE)
+                window_enable_cursor();
+
+        }
+        else if(kmode == KEY_MODE_TEXT)
+        {
+            if(key == GLFW_KEY_ESCAPE || key == GLFW_KEY_F10)
+            {
+                window_controls_set_key_mode(KEY_MODE_NORMAL);
+                console_enabled = false;
+                // printf("console not enabled\n");
+            }
+        }
+
+    }
+
+}
+
+void parse_console_command(char* command)
+{
+    printf("parse command: '%s'\n", command);
+    if(strcmp(command,"exit") == 0)
+    {
+        printf("setting close\n");
+        window_set_close(1);
+    }
 }
 
 

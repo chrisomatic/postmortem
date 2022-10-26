@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "main.h"
 #include "window.h"
 #include "gfx.h"
 #include "log.h"

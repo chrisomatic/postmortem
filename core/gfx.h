@@ -13,6 +13,7 @@
 #define COLOR_PURPLE    COLOR(0x7f,0x00,0xff)
 #define COLOR_PINK      COLOR(0xff,0x00,0xff)
 #define COLOR_YELLOW    COLOR(0xff,0xff,0x00)
+#define COLOR_WHITE     COLOR(0xff,0xff,0xff)
 #define COLOR_TINT_NONE (0xFFFFFFFF)
 
 typedef struct
