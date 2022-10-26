@@ -20,7 +20,6 @@ void gui_draw()
 
     if(console_enabled)
     {
-
         float scale = 0.12;
 
         Vector2f size = gfx_string_get_size(scale, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890|[](){}");

@@ -56,7 +56,6 @@ void player_init_controls(Player* p)
     window_controls_add_key(&p->keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_FIRE);
     window_controls_add_key(&p->keys, GLFW_KEY_F2, PLAYER_ACTION_TOGGLE_DEBUG);
     window_controls_add_key(&p->keys, GLFW_KEY_G, PLAYER_ACTION_TOGGLE_GUN);
-    // window_controls_add_key(&p->keys, GLFW_KEY_C, PLAYER_ACTION_CONSOLE);
 
     window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_LEFT, PLAYER_ACTION_PRIMARY_ACTION);
     window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
@@ -65,7 +64,12 @@ void player_init_controls(Player* p)
 static void player_init(int index)
 {
     Player* p = &players[index];
+
     p->index = index;
+    if(STR_EMPTY(p->name))
+    {
+        sprintf(p->name, "Player %d", p->index);
+    }
 
     p->phys.pos.x = 400.0;
     p->phys.pos.y = 1000.0;
@@ -260,14 +264,12 @@ void player_update(Player* p, double delta_t)
     p->actions.toggle_fire      = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_FIRE);
     p->actions.toggle_debug     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_DEBUG);
     p->actions.toggle_gun       = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_GUN);
-    // p->actions.toggle_console   = IS_BIT_SET(p->keys,PLAYER_ACTION_CONSOLE);
 
     bool run_toggled = p->actions.run && !p->actions_prior.run;
     bool primary_action_toggled = p->actions.primary_action && !p->actions_prior.primary_action;
     bool fire_toggled = p->actions.toggle_fire && !p->actions_prior.toggle_fire;
     bool debug_toggled = p->actions.toggle_debug && !p->actions_prior.toggle_debug;
     bool gun_toggled = p->actions.toggle_gun && !p->actions_prior.toggle_gun;
-    // bool console_toggled = p->actions.toggle_console && !p->actions_prior.toggle_console;
 
     memcpy(&p->actions_prior, &p->actions, sizeof(PlayerActions));
 
@@ -300,20 +302,6 @@ void player_update(Player* p, double delta_t)
             window_disable_cursor();
         }
     }
-
-    // if(console_toggled)
-    // {
-    //     console_enabled = !console_enabled;
-    //     if(console_enabled)
-    //     {
-    //         memset(console_text, 0, CONSOLE_TEXT_MAX);
-    //         window_set_key_mode(KEY_MODE_TEXT);
-    //     }
-    //     else
-    //     {
-    //         window_set_key_mode(KEY_MODE_NORMAL);
-    //     }
-    // }
 
     Vector2f accel = {0};
     bool player_moving = PLAYER_MOVING(p);
@@ -456,9 +444,6 @@ void player_draw(Player* p)
     }
 
 
-    char name[20] = {0};
-    snprintf(name, 20, "Player: %d", p->index);
-    Vector2f size = gfx_string_get_size(0.1, name);
-    gfx_draw_string(p->phys.pos.x - size.x/2.0, p->phys.pos.y + p->phys.pos.h/2.0,player_colors[p->index],0.1,0.0, 0.8, true, true, name);
-
+    Vector2f size = gfx_string_get_size(0.1, p->name);
+    gfx_draw_string(p->phys.pos.x - size.x/2.0, p->phys.pos.y + p->phys.pos.h/2.0,player_colors[p->index],0.1,0.0, 0.8, true, true, p->name);
 }

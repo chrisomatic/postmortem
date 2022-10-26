@@ -6,6 +6,8 @@
 
 #define MAX_CLIENT_PREDICTED_STATES 8
 
+#define PLAYER_NAME_MAX 32
+
 enum PlayerAction
 {
     PLAYER_ACTION_UP               = 1<<0,
@@ -20,7 +22,6 @@ enum PlayerAction
     PLAYER_ACTION_TOGGLE_FIRE      = 1<<9,
     PLAYER_ACTION_TOGGLE_DEBUG     = 1<<10,
     PLAYER_ACTION_TOGGLE_GUN       = 1<<11,
-    // PLAYER_ACTION_CONSOLE          = 1<<12,
 };
 
 typedef struct
@@ -39,6 +40,8 @@ typedef struct
 
 typedef struct
 {
+    char name[PLAYER_NAME_MAX+1];
+
     bool active;
     int index;
 

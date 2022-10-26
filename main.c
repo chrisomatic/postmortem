@@ -65,7 +65,6 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
 int main(int argc, char* argv[])
 {
-
     parse_args(argc, argv);
 
     switch(role)
@@ -405,12 +404,18 @@ void draw()
     zombie_draw();
     projectile_draw();
 
-    // players[2].active = true;
-    // players[2].phys.pos.x = 1000;
-    // players[2].phys.pos.y = 1000;
-    // players[2].phys.pos.w = 25;
-    // players[2].phys.pos.h = 60;
-    // players[2].sprite_index = 1;
+    // static bool activate_player = false;
+    // if(!activate_player)
+    // {
+    //     players[2].active = true;
+    //     players[2].phys.pos.x = 1000;
+    //     players[2].phys.pos.y = 1000;
+    //     players[2].phys.pos.w = 25;
+    //     players[2].phys.pos.h = 60;
+    //     players[2].sprite_index = 1;
+    //     player_count++;
+    //     activate_player = true;
+    // }
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
@@ -507,13 +512,131 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
 
 }
 
-void parse_console_command(char* command)
+// TODO: maybe make another function to allocate a buffer for the pointer this returns
+char* string_split_index(char* str, const char* delim, int index, int* ret_len)
 {
-    printf("parse command: '%s'\n", command);
-    if(strcmp(command,"exit") == 0)
+    char* s = str;
+    char* s_end = str+strlen(str);
+
+    for(int i = 0; i < (index+1); ++i)
     {
-        // printf("setting close\n");
+        char* end = strstr(s, delim);
+
+        if(end == NULL)
+            end = s_end;
+
+        int len = end - s;
+
+        // printf("%d]  '%.*s' \n", i, len, s);
+
+        if(i == index)
+        {
+            *ret_len = len;
+            return s;
+        }
+
+        if(end == s_end)
+        {
+            *ret_len = 0;
+            return NULL;
+        }
+
+        s += len+strlen(delim);
+    }
+
+    *ret_len = 0;
+    return NULL;
+}
+
+
+
+void parse_console_command(char* text)
+{
+    if(STR_EMPTY(text))
+        return;
+
+    LOGI("parse command: '%s'", text);
+
+    int cmd_len = 0;
+    char* cmd = string_split_index(text, " ", 0, &cmd_len);
+
+    LOGI("  cmd: '%.*s'", cmd_len, cmd);
+
+    if(STRN_EQUAL(cmd,"exit",cmd_len))
+    {
         window_set_close(1);
+    }
+    else if(STRN_EQUAL(cmd,"setname",cmd_len))
+    {
+        // setname <name>
+        char* name = cmd+cmd_len+1; //+1 for space delimiter
+        if(!STR_EMPTY(name))
+        {
+            memset(player->name, 0, PLAYER_NAME_MAX);
+            memcpy(player->name, name, MIN(strlen(name),PLAYER_NAME_MAX));
+        }
+    }
+    else if(STRN_EQUAL(cmd,"teleport",cmd_len) || STRN_EQUAL(cmd,"tp",cmd_len))
+    {
+        // teleport <row> <col>
+        int len = 0;
+        char srow[10] = {0};
+        char* s = string_split_index(text, " ", 1, &len);
+        if(s == NULL) return;
+        memcpy(srow, s, MIN(len,9));
+
+        len = 0;
+        char scol[10] = {0};
+        s = string_split_index(text, " ", 2, &len);
+        if(s == NULL) return;
+        memcpy(scol, s, MIN(len,9));
+
+        int row = atoi(srow);
+        int col = atoi(scol);
+
+        row = RANGE(row, 0, map.rows-1);
+        col = RANGE(col, 0, map.cols-1);
+        // printf("row, col: %d, %d\n", row, col);
+        float x,y;
+        map_grid_to_coords(row, col, &x, &y);
+        player->phys.pos.x = x;
+        player->phys.pos.y = y;
+    }
+    else if(STRN_EQUAL(cmd,"goto",cmd_len))
+    {
+        // goto <object> <index>
+
+        int olen = 0;
+        char* o_s = string_split_index(text, " ", 1, &olen);
+
+        int ilen = 0;
+        char* i_s = string_split_index(text, " ", 2, &ilen);
+
+        if(o_s == NULL || i_s == NULL)
+            return;
+
+        char i_s2[7] = {0};
+        memcpy(i_s2, i_s, MIN(ilen,6));
+        int idx = atoi(i_s2);
+
+        if(STRN_EQUAL(o_s,"zombie",olen))
+        {
+            if(idx >= zlist->count)
+                return;
+            
+            // printf("goto zombie %d\n", idx);
+            player->phys.pos.x = zombies[idx].phys.pos.x;
+            player->phys.pos.y = zombies[idx].phys.pos.y;
+        }
+        else if(STRN_EQUAL(o_s,"player",olen))
+        {
+            if(idx == player->index)
+                return;
+            // printf("goto player %d\n", idx);
+            player->phys.pos.x = players[idx].phys.pos.x;
+            player->phys.pos.y = players[idx].phys.pos.y;
+        }
+
     }
 }
 

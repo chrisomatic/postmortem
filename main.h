@@ -17,6 +17,11 @@ typedef struct
     void* buf;
 } glist;
 
+// strings
+#define STR_EMPTY(x)      (x == 0 || strlen(x) == 0)
+#define STR_EQUAL(x,y)    (strncmp((x),(y),strlen((x))) == 0 && strlen(x) == strlen(y))
+#define STRN_EQUAL(x,y,n) (strncmp((x),(y),(n)) == 0)
+
 #define DEBUG_PRINT()   printf("%d %s %s()\n", __LINE__, __FILE__, __func__)
 
 extern Timer game_timer;
@@ -30,7 +35,8 @@ extern bool debug_enabled;
 
 const char* game_role_to_str(GameRole _role);
 
-void parse_console_command(char* command);
+char* string_split_index(char* str, const char* delim, int index, int* ret_len);
+void parse_console_command(char* text);
 void handle_backspace_timer();
 
 // lists
