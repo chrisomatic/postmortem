@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include <assert.h>
 #include <math.h>
@@ -38,6 +37,10 @@ GameRole role;
 Vector2f aim_camera_offset = {0};
 
 // gui might be a good spot for some of these variables
+
+ConsoleMessage console_msg[CONSOLE_MSG_MAX] = {0};
+int console_msg_count = 0;
+
 char console_text[CONSOLE_TEXT_MAX+1] = {0};
 
 char console_text_hist[CONSOLE_HIST_MAX][CONSOLE_TEXT_MAX+1] = {{0}};
@@ -72,6 +75,11 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
 int main(int argc, char* argv[])
 {
+
+    // char x[3] = {0};
+    // snprintf(x, 3, "%s","123");
+    // printf("x: %s\n", x);
+    // exit(1);
     parse_args(argc, argv);
 
     switch(role)
@@ -602,8 +610,40 @@ char* string_split_index_copy(char* str, const char* delim, int index, bool spli
     return ret;
 }
 
+
+void console_message_add(uint32_t color, char* fmt, ...)
+{
+    // 0 is oldest
+    if(console_msg_count >= CONSOLE_MSG_MAX)
+    {
+        for(int i = 1; i < CONSOLE_MSG_MAX; ++i)
+        {
+            memcpy(&console_msg[i-1], &console_msg[i], sizeof(ConsoleMessage));
+        }
+    }
+
+    int index = MIN(console_msg_count, CONSOLE_MSG_MAX-1);
+
+
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(console_msg[index].msg, CONSOLE_TEXT_MAX+1, fmt, args);
+    va_end(args);
+
+    console_msg[index].color = color;
+
+    console_msg_count = MIN(console_msg_count+1, CONSOLE_MSG_MAX);
+
+    // for(int i = 0; i < console_msg_count; ++i)
+    // {
+    //     printf("%d) %s\n", i, console_msg[i].msg);
+    // }
+}
+
 void console_text_hist_add(char* text)
 {
+    console_message_add(COLOR_WHITE, "%s%s", CONSOLE_PROMPT, text);
+
     if(!STR_EQUAL(text, console_text_hist[console_text_hist_index]))
     {
         int next_index = console_text_hist_index+1;

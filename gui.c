@@ -23,21 +23,37 @@ void gui_draw()
         float scale = 0.12;
 
         Vector2f size = gfx_string_get_size(scale, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890|[](){}");
+        // Vector2f size = gfx_string_get_size(scale, "j");
+
+
+        float yspace = size.y*1.5;
 
         Rect tbox = {0};
         tbox.x = view_width*0.5;
-        tbox.w = view_width*0.4;
-        tbox.h = size.y*1.5;
-        // tbox.y = view_height*0.25;
-        tbox.y = tbox.h/2.0+10.0;
+        tbox.w = view_width*0.6;
+        tbox.h = yspace * (CONSOLE_MSG_MAX+1);
+        tbox.y = tbox.h/2.0;
+
         gfx_draw_rect(&tbox, 0x001F1F1F, 1.0, 0.6, true, false);
 
-        float x0 = tbox.x-tbox.w/2.0 + 1;
-        float y0 = tbox.y-tbox.h/1.5/2.0;
+
+        float x0 = tbox.x-tbox.w/2.0;
+        float y0 = tbox.y-tbox.h/2.0;
+
+        for(int i = 0; i < console_msg_count; ++i)
+        {
+            float y = y0+i*yspace;
+            float x = x0+1.0;
+            gfx_draw_string(x, y, console_msg[i].color, scale, 0.0, 1.0, false, false, "%s", console_msg[i].msg);// y += size.y+ypad;
+        }
+
+
+
+        // float y0 = tbox.y-tbox.h/1.5/2.0;
 
         // printf("console_text[0] = %d\n", (int)console_text[0]);
-        const char* prompt = "cmd > ";
-        Vector2f psize = gfx_string_get_size(scale, (char*)prompt);
+        // const char* prompt = "cmd > ";
+        Vector2f psize = gfx_string_get_size(scale, (char*)CONSOLE_PROMPT);
 
         int index = 0;
         int tlen = strlen(console_text);
@@ -52,7 +68,7 @@ void gui_draw()
             }
             else
             {
-                float x1 = x0+tbox.w;
+                float x1 = x0+1.0+tbox.w;
                 for(int i = 0; i < tlen; ++i)
                 {
                     Vector2f tsize = gfx_string_get_size(scale, console_text+i);
@@ -67,7 +83,7 @@ void gui_draw()
             }
         }
 
-        size = gfx_draw_string(x0, y0, COLOR_WHITE, scale, 0.0, 1.0, false, false, "%s%s", prompt, console_text+index);// y += size.y+ypad;
+        size = gfx_draw_string(x0+1.0, y0+yspace*(CONSOLE_MSG_MAX), COLOR_WHITE, scale, 0.0, 1.0, false, false, "%s%s", CONSOLE_PROMPT, console_text+index);// y += size.y+ypad;
 
     }
 
