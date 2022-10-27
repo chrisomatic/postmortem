@@ -88,6 +88,7 @@ extern int player_count;
 void player_init_images();
 void player_init_controls(Player* p);
 void players_init();
+int players_get_count();
 void player_update(Player* p, double delta_t);
 void player_update_other(Player* p, double delta_t);
 void player_draw(Player* p);

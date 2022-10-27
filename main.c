@@ -37,7 +37,13 @@ Timer game_timer = {0};
 GameRole role;
 Vector2f aim_camera_offset = {0};
 
+// gui might be a good spot for some of these variables
 char console_text[CONSOLE_TEXT_MAX+1] = {0};
+
+char console_text_hist[CONSOLE_HIST_MAX][CONSOLE_TEXT_MAX+1] = {{0}};
+int console_text_hist_index = 0;
+int console_text_hist_selection = 0;
+
 bool console_enabled = false;
 bool debug_enabled = true;
 
@@ -133,6 +139,8 @@ void start_local()
 
     time_t t;
     srand((unsigned) time(&t));
+
+    // player = &players[0];
 
     init();
 
@@ -492,6 +500,28 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
                 backspace_held = false;
                 // printf("console not enabled\n");
             }
+
+
+            if(key == GLFW_KEY_UP || key == GLFW_KEY_DOWN)
+            {
+                // printf("console_text_hist_selection: %d  -> ", console_text_hist_selection);
+                console_text_hist_selection = console_text_hist_get(key == GLFW_KEY_UP ? -1: 1);
+                // printf("%d\n", console_text_hist_selection);
+
+                if(console_text_hist_selection != -1)
+                {
+                    // memset(console_text, 0, CONSOLE_TEXT_MAX*sizeof(console_text[0]));
+                    memcpy(console_text, console_text_hist[console_text_hist_selection], CONSOLE_TEXT_MAX);
+
+                }
+            }
+            else
+            {
+                // reset selection on any other key press
+                console_text_hist_selection = -1;
+            }
+
+
             if(ctrl && key == GLFW_KEY_C)
             {
                 memset(console_text, 0, CONSOLE_TEXT_MAX*sizeof(console_text[0]));
@@ -514,8 +544,8 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
 
 }
 
-// TODO: maybe make another function to allocate a buffer for the pointer this returns
-char* string_split_index(char* str, const char* delim, int index, int* ret_len)
+
+char* string_split_index(char* str, const char* delim, int index, int* ret_len, bool split_past_index)
 {
     char* s = str;
     char* s_end = str+strlen(str);
@@ -529,11 +559,20 @@ char* string_split_index(char* str, const char* delim, int index, int* ret_len)
 
         int len = end - s;
 
+        if(len == 0)
+        {
+            *ret_len = 0;
+            return NULL;
+        }
+
         // printf("%d]  '%.*s' \n", i, len, s);
 
         if(i == index)
         {
-            *ret_len = len;
+            if(split_past_index)
+                *ret_len = len;
+            else
+                *ret_len = s_end-s;
             return s;
         }
 
@@ -550,51 +589,120 @@ char* string_split_index(char* str, const char* delim, int index, int* ret_len)
     return NULL;
 }
 
+char* string_split_index_copy(char* str, const char* delim, int index, bool split_past_index)
+{
+    int len = 0;
+    char* s = string_split_index(str, delim, index, &len, split_past_index);
+
+    if(s == NULL || len == 0)
+        return NULL;
+
+    char* ret = calloc(len+1,sizeof(char));
+    memcpy(ret, s, len);
+    return ret;
+}
+
+void console_text_hist_add(char* text)
+{
+    if(!STR_EQUAL(text, console_text_hist[console_text_hist_index]))
+    {
+        int next_index = console_text_hist_index+1;
+        if(next_index >= CONSOLE_HIST_MAX) next_index = 0;
+        memset(console_text_hist[next_index], 0, CONSOLE_TEXT_MAX);
+        memcpy(console_text_hist[next_index], text, strlen(text));
+        console_text_hist_index = next_index;
+        // printf("added to index: %d\n", next_index);
+    }
+}
+
+// gets next non-empty index
+int console_text_hist_get(int direction)
+{
+    int index = console_text_hist_selection;
+    if(index == -1)
+    {
+        index = console_text_hist_index;
+        if(direction == -1)
+            index += 1;
+    }
+
+    // printf("start search at index: %d\n", index);
+    for(int i = 0; i < CONSOLE_HIST_MAX; ++i)
+    {
+        index += direction;
+        if(index < 0) index = CONSOLE_HIST_MAX-1;
+        if(index >= CONSOLE_HIST_MAX) index = 0;
+        if(!STR_EMPTY(console_text_hist[index]))
+            return index;
+    }
+    return -1;
+}
 
 
-void parse_console_command(char* text)
+//TODO: some of these commands should only work locally
+void run_console_command(char* text)
 {
     if(STR_EMPTY(text))
         return;
 
     LOGI("parse command: '%s'", text);
 
-    int cmd_len = 0;
-    char* cmd = string_split_index(text, " ", 0, &cmd_len);
+    console_text_hist_add(text);
+    console_text_hist_selection = -1;
 
+
+    int cmd_len = 0;
+    char* cmd = string_split_index(text, " ", 0, &cmd_len, true);
+
+    // this is the case if there's a space before the command
+    if(cmd_len == 0) return;
+
+
+
+
+    // char* arg0 = string_split_index_copy(text, " ", 1, true);
+    // char* args = string_split_index_copy(text, " ", 1, false);
+    // printf("arg0: %s\n", arg0 == NULL ? "NULL" : arg0);
+    // printf("args: %s\n", args == NULL ? "NULL" : args);
+    // if(arg0 != NULL) free(arg0);
+    // if(args != NULL) free(args);
+
+    // printf("cmdlen: %d\n", cmd_len);
     LOGI("  cmd: '%.*s'", cmd_len, cmd);
+
 
     if(STRN_EQUAL(cmd,"exit",cmd_len))
     {
+        // printf("closing\n");
         window_set_close(1);
     }
     else if(STRN_EQUAL(cmd,"setname",cmd_len))
     {
         // setname <name>
-        char* name = cmd+cmd_len+1; //+1 for space delimiter
-        if(!STR_EMPTY(name))
+        // char* name = cmd+cmd_len+1; //+1 for space delimiter
+        char* name = string_split_index_copy(text, " ", 1, false);
+        if(name != NULL)
         {
             memset(player->name, 0, PLAYER_NAME_MAX);
             memcpy(player->name, name, MIN(strlen(name),PLAYER_NAME_MAX));
+            FREE(name);
         }
     }
     else if(STRN_EQUAL(cmd,"teleport",cmd_len) || STRN_EQUAL(cmd,"tp",cmd_len))
     {
         // teleport <row> <col>
-        int len = 0;
-        char srow[10] = {0};
-        char* s = string_split_index(text, " ", 1, &len);
-        if(s == NULL) return;
-        memcpy(srow, s, MIN(len,9));
+        char* s_row = string_split_index_copy(text, " ", 1, true);
+        char* s_col = string_split_index_copy(text, " ", 2, true);
 
-        len = 0;
-        char scol[10] = {0};
-        s = string_split_index(text, " ", 2, &len);
-        if(s == NULL) return;
-        memcpy(scol, s, MIN(len,9));
+        if(s_row == NULL || s_col == NULL)
+        {
+            FREE(s_row);
+            FREE(s_col);
+            return;
+        }
 
-        int row = atoi(srow);
-        int col = atoi(scol);
+        int row = atoi(s_row);
+        int col = atoi(s_col);
 
         row = RANGE(row, 0, map.rows-1);
         col = RANGE(col, 0, map.cols-1);
@@ -603,42 +711,99 @@ void parse_console_command(char* text)
         map_grid_to_coords(row, col, &x, &y);
         player->phys.pos.x = x;
         player->phys.pos.y = y;
+
+        FREE(s_row);
+        FREE(s_col);
     }
     else if(STRN_EQUAL(cmd,"goto",cmd_len))
     {
         // goto <object> <index>
 
-        int olen = 0;
-        char* o_s = string_split_index(text, " ", 1, &olen);
+        char* s_object = string_split_index_copy(text, " ", 1, true);
+        char* s_index = string_split_index_copy(text, " ", 2, true);
 
-        int ilen = 0;
-        char* i_s = string_split_index(text, " ", 2, &ilen);
-
-        if(o_s == NULL || i_s == NULL)
+        if(s_object == NULL || s_index == NULL)
+        {
+            FREE(s_object);
+            FREE(s_index);
             return;
-
-        char i_s2[7] = {0};
-        memcpy(i_s2, i_s, MIN(ilen,6));
-        int idx = atoi(i_s2);
-
-        if(STRN_EQUAL(o_s,"zombie",olen))
-        {
-            if(idx >= zlist->count)
-                return;
-            
-            // printf("goto zombie %d\n", idx);
-            player->phys.pos.x = zombies[idx].phys.pos.x;
-            player->phys.pos.y = zombies[idx].phys.pos.y;
-        }
-        else if(STRN_EQUAL(o_s,"player",olen))
-        {
-            if(idx == player->index)
-                return;
-            // printf("goto player %d\n", idx);
-            player->phys.pos.x = players[idx].phys.pos.x;
-            player->phys.pos.y = players[idx].phys.pos.y;
         }
 
+        int idx = atoi(s_index);
+
+        if(STR_EQUAL(s_object,"zombie"))
+        {
+            if(idx < zlist->count)
+            {
+                // printf("goto zombie %d\n", idx);
+                player->phys.pos.x = zombies[idx].phys.pos.x;
+                player->phys.pos.y = zombies[idx].phys.pos.y;
+            }
+        }
+        else if(STR_EQUAL(s_object,"player"))
+        {
+            // printf("goto player %d (my index: %d)\n", idx, player->index);
+            if(idx != player->index && idx < MAX_CLIENTS)
+            {
+                if(players[idx].active)
+                {
+                    player->phys.pos.x = players[idx].phys.pos.x;
+                    player->phys.pos.y = players[idx].phys.pos.y;
+                }
+            }
+        }
+
+        FREE(s_object);
+        FREE(s_index);
+    }
+    else if(STRN_EQUAL(cmd,"spawn",cmd_len))
+    {
+        // spawn <object> <row> <col>
+        char* s_object = string_split_index_copy(text, " ", 1, true);
+        if(s_object == NULL)
+        {
+            FREE(s_object);
+            return;
+        }
+
+        int row, col;
+        coords_to_map_grid(player->phys.pos.x, player->phys.pos.y, &row, &col);
+
+        char* s_row = string_split_index_copy(text, " ", 2, true);
+        char* s_col = string_split_index_copy(text, " ", 3, true);
+        if(s_row != NULL && s_col != NULL)
+        {
+            row = atoi(s_row);
+            col = atoi(s_col);
+        }
+
+        float x, y;
+        map_grid_to_coords(row, col, &x, &y);
+
+        if(STR_EQUAL(s_object,"zombie"))
+        {
+            ZombieSpawn spawn = {0};
+            spawn.pos.x = x;
+            spawn.pos.y = y;
+            zombie_add(&spawn);
+        }
+        else if(STR_EQUAL(s_object,"player"))
+        {
+            for(int i = 0; i < MAX_CLIENTS; ++i)
+            {
+                if(!players[i].active)
+                {
+                    players[i].phys.pos.x = x;
+                    players[i].phys.pos.y = y;
+                    players[i].active = true;
+                    break;
+                }
+            }
+        }
+
+        FREE(s_object);
+        FREE(s_row);
+        FREE(s_col);
     }
 }
 

@@ -25,7 +25,7 @@ uint32_t player_colors[MAX_CLIENTS] = {
 };
 
 Player players[MAX_CLIENTS];
-Player* player = &players[1];
+Player* player = &players[0];   //this was index 1?
 int player_count = 0;
 
 static int player_image_set;
@@ -76,7 +76,7 @@ static void player_init(int index)
 
     p->phys.vel.x = 0.0;
     p->phys.vel.y = 0.0;
-    p->sprite_index = 0;
+    // p->sprite_index = 0;
     p->gun_ready = true;
 
     p->speed = 32.0;
@@ -88,6 +88,8 @@ static void player_init(int index)
     p->gun = gun_get(GUN_TYPE_MACHINEGUN);
     p->image = player_image_set;
 
+    p->angle = 0.0;
+    player_update_sprite_index(p);
 }
 
 void players_init()
@@ -101,6 +103,7 @@ void players_init()
         {
             if(player == p)
             {
+                printf("my player: %d\n", i);
                 player_init_controls(p);
                 p->active = true;
             }
@@ -109,6 +112,18 @@ void players_init()
         if(p->active)
             player_count++;
     }
+}
+
+int players_get_count()
+{
+    player_count = 0;
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        if(players[i].active)
+            player_count++;
+    }
+
+    return player_count;
 }
 
 

@@ -47,7 +47,7 @@ void gui_draw()
             {
                 console_text[tlen-1] = '\0';
                 // printf("submit command: '%s'\n", console_text);
-                parse_console_command(console_text);
+                run_console_command(console_text);
                 memset(console_text, 0, CONSOLE_TEXT_MAX*sizeof(console_text[0]));
             }
             else
