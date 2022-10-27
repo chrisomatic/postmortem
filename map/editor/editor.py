@@ -960,7 +960,8 @@ class Editor(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         print("__init__()")
-        QWidget.__init__(self, parent)
+        # QWidget.__init__(self, parent)
+        super().__init__()
 
         self.first_resize = False
         self.initialized = False

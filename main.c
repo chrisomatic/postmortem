@@ -68,10 +68,6 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 int main(int argc, char* argv[])
 {
 
-    // char x[3] = {0};
-    // snprintf(x, 3, "%s","123");
-    // printf("x: %s\n", x);
-    // exit(1);
     parse_args(argc, argv);
 
     switch(role)
@@ -443,10 +439,10 @@ void draw()
                     // float angle = calc_angle_rad(player->phys.pos.x, player->phys.pos.y, p->phys.pos.x, p->phys.pos.y);
                     Rect prect = {0};
                     memcpy(&prect, &p->phys.pos, sizeof(Rect));
-                    prect.w = 4.0;
-                    prect.h = 4.0;
+                    prect.w = 6.0;
+                    prect.h = 6.0;
                     limit_pos(&camera_rect, &prect);
-                    gfx_draw_rect(&prect, player_colors[p->index], 1.0,1.0,true,true);
+                    gfx_draw_rect(&prect, player_colors[p->index], 1.0, 0.5, true,true);
                 }
             }
 
