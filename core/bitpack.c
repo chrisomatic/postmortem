@@ -9,111 +9,157 @@
 #include "math2d.h"
 #include "bitpack.h"
 
-void bitpack_create(BitPack* bp, size_t num_bits)
+#define CPU_LITTLE_ENDIAN 1
+#define CPU_BIG_ENDIAN 2
+
+#if    defined(__386__) || defined(i386)    || defined(__i386__)  \
+    || defined(__X86)   || defined(_M_IX86)                       \
+    || defined(_M_X64)  || defined(__x86_64__)                    \
+    || defined(alpha)   || defined(__alpha) || defined(__alpha__) \
+    || defined(_M_ALPHA)                                          \
+    || defined(ARM)     || defined(_ARM)    || defined(__arm__)   \
+    || defined(WIN32)   || defined(_WIN32)  || defined(__WIN32__) \
+    || defined(_WIN32_WCE) || defined(__NT__)                     \
+    || defined(__MIPSEL__)
+  #define CPU_ENDIAN CPU_LITTLE_ENDIAN
+#else
+  #define CPU_ENDIAN CPU_BIG_ENDIAN
+#endif
+
+static inline uint32_t conv_endian32(uint32_t value)
 {
-    size_t num_bytes = (size_t)ceil(num_bits/8);
+#if CPU_ENDIAN == CPU_BIG_ENDIAN
+    return __builtin_bswap32( value );
+#else
+    return value;
+#endif
+}
+
+void bitpack_create(BitPack* bp, size_t num_bytes)
+{
+    // round num_bytes up to multiple of 4
+    num_bytes += 4-(num_bytes % 4);
+    printf("num_bytes: %d\n",num_bytes);
+
     bp->data = malloc(num_bytes*sizeof(uint8_t));
     assert(bp->data);
-
     memset(bp->data,0,num_bytes);
 
-    bp->curr_bit_index = 0;
+    bp->size_in_bits = 8*num_bytes;
+    bp->size_in_words = num_bytes/4;
     bp->bits_written = 0;
-    bp->size_in_bits = num_bits;
+    bp->word_index = 0;
+    bp->words_written = 0;
+    bp->scratch = 0;
+    bp->bit_index = 0;
+    bp->overflow = false;
 }
 
 void bitpack_clear(BitPack* bp)
 {
-    int bytes = bp->size_in_bits/8;
-    memset(bp->data,0,bytes);
+    memset(bp->data,0,4*bp->size_in_words);
     bp->bits_written = 0;
+    bp->word_index = 0;
+    bp->words_written = 0;
+    bp->overflow = false;
 }
 
 void bitpack_delete(BitPack* bp)
 {
     bp->bits_written = 0;
+    bp->word_index = 0;
+    bp->words_written = 0;
+    bp->overflow = false;
     free(bp->data);
     bp->data = NULL;
 }
 
-void bitpack_write(BitPack* bp, uint32_t value, int num_bits)
+void bitpack_seek_begin(BitPack* bp)
 {
-    if(num_bits > 32)
-        return;
-
-    uint8_t curr_byte = bp->curr_bit_index / 8;
-    uint8_t bit_index = bp->curr_bit_index % 8;
-
-    uint8_t* p = (bp->data+curr_byte);
-
-    int bits_written = 0;
-
-    if(bit_index > 0)
-    {
-        // write in first byte
-        int bits_left_in_byte = bit_index + MIN(num_bits, 8-bit_index);
-        for(int i = bit_index; i < bits_left_in_byte; ++i)
-        {
-            uint8_t bit_val = (uint8_t)((value >> (i-bit_index)) & 0x1);
-            *p |= (bit_val << i);
-        }
-        p++; // advance to next byte
-        bits_written += bits_left_in_byte;
-    }
-
-    uint32_t* k = (uint32_t*)p;
-
-    // write remaining bits
-    for(int i = bits_written; i < num_bits; ++i)
-    {
-        uint32_t bit_val = ((value >> i) & 0x1);
-        *k |= (bit_val << (i-bits_written));
-    }
-
-    bp->bits_written += num_bits;
-    bp->curr_bit_index += num_bits;
+    bp->bit_index = 0;
+    bp->word_index = 0;
 }
 
-void bitpack_seek(BitPack* bp,int bit_index)
+void bitpack_seek_to_written(BitPack* bp)
 {
-    bp->curr_bit_index = bit_index;
+    bp->bit_index = bp->bits_written;
+    bp->word_index = bp->words_written;
+}
+
+void bitpack_write(BitPack* bp, uint32_t value, int num_bits)
+{
+    if(!bp->data)
+        return;
+
+    if(num_bits < 0 || num_bits > 32)
+        return;
+
+    value &= ((uint64_t)1 << num_bits) -1;
+
+    bp->scratch |= ((uint64_t)value) << ( 64 - bp->bit_index - num_bits);
+    bp->bit_index += num_bits;
+
+    if(bp->bit_index >= 32)
+    {
+        bp->data[bp->word_index] = conv_endian32((uint32_t)(bp->scratch >> 32));
+        bp->word_index++;
+        bp->words_written++;
+        bp->scratch <<= 32;
+        bp->bit_index -= 32;
+    }
+    bp->bits_written += num_bits;
+}
+
+void bitpack_flush_bits(BitPack* bp)
+{
+    if(bp->bit_index != 0)
+    {
+        assert(bp->word_index < bp->size_in_words);
+        if (bp->word_index >= bp->size_in_words )
+        {
+            bp->overflow = true;
+            return;
+        }
+        bp->data[bp->word_index] = conv_endian32((uint32_t)(bp->scratch >> 32));
+
+        bp->word_index++;
+        bp->words_written++;
+
+    }
 }
 
 uint32_t bitpack_print_data(BitPack* bp)
 {
     printf("BitPack %p (%d bits)\n",bp,bp->bits_written);
-    uint32_t val = ((uint32_t*)(bp->data))[0];
-    for(int i = bp->bits_written; i >= 0; --i)
-        printf("%d",(val >> i) & 0x1);
+    for(int i = 0; i < bp->words_written; ++i)
+    {
+        uint32_t val = bp->data[i];
+        for(int j = 31; j >= 0; --j)
+            printf("%d",(val >> j) & 0x1);
+
+        printf(" ");
+    }
     printf("\n");
 }
 
 uint32_t bitpack_read(BitPack* bp, int num_bits)
 {
-    if(num_bits > 32)
+    if(!bp->data)
         return 0;
 
-    uint8_t curr_byte = bp->curr_bit_index / 8;
-    uint8_t bit_remainder = bp->curr_bit_index % 8;
+    if(num_bits < 0 || num_bits > 32)
+        return 0;
 
-    uint32_t* p = (uint32_t*)(bp->data+curr_byte);
+    // @TODO
 
-    uint32_t ret = 0;
-
-    for(int i = 0; i < num_bits; ++i)
-    {
-        ret |= ((*p >> (i+bit_remainder)) & 1) << i;
-    }
-    bp->curr_bit_index += num_bits;
-
-    return ret;
+    return 0;
 }
 
 void bitpack_test()
 {
     BitPack bp;
 
-    bitpack_create(&bp,100);
+    bitpack_create(&bp,8);
 
     bitpack_write(&bp,2048,12);
     bitpack_write(&bp,9,4);
@@ -122,10 +168,11 @@ void bitpack_test()
     bitpack_write(&bp,1,1);
     bitpack_write(&bp,0,1);
     bitpack_write(&bp,1,1);
+    bitpack_flush_bits(&bp);
     bitpack_print_data(&bp);
 
-    bitpack_seek(&bp,0);
-    uint32_t v1 = bitpack_read(&bp,10);
+    bitpack_seek_begin(&bp);
+    uint32_t v1 = bitpack_read(&bp,12);
     uint32_t v2 = bitpack_read(&bp,4);
     uint32_t v3 = bitpack_read(&bp,3);
     uint32_t v4 = bitpack_read(&bp,10);

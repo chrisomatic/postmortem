@@ -16,7 +16,11 @@ void gui_draw()
     Vector2f size = {0};
 
     // test print
-    gfx_draw_string(0,view_height-22,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
+    /*
+    char* test_str = "Hejg'\",.; _-QW!M-\"(0)\"";
+    Vector2f s1 = gfx_draw_string(0,0,0x0000CCFF,1.0,0.0,1.0, false,true,test_str); // @TEST
+    Vector2f s2 = gfx_string_get_size(1.0,test_str);
+    */
 
     if(console_enabled)
     {
@@ -87,6 +91,8 @@ void gui_draw()
 
     }
 
+    gfx_draw_string(0,view_height-(64*0.4)-2,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
+
     if(debug_enabled)
     {
         // -----
@@ -116,9 +122,9 @@ void gui_draw()
         Rect gui_bg = {0};
         gui_bg.w = 120;
         if(role == ROLE_CLIENT)
-            gui_bg.h = 200;
+            gui_bg.h = 220;
         else
-            gui_bg.h = 150;
+            gui_bg.h = 170;
         gui_bg.x = start_x-5 + gui_bg.w/2.0;
         gui_bg.y = start_y-5 + gui_bg.h/2.0;
         gfx_draw_rect(&gui_bg, 0x001F1F1F, 1.0, 0.6, true, false);
@@ -138,7 +144,7 @@ void gui_draw()
         coords_to_map_grid(wmx, wmy, &mr, &mc);
         coords_to_world_grid(wmx, wmy, &wr, &wc);
         y += ypad;
-        size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Mouse"); y += size.y+5;
+        size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Mouse"); y += size.y+ypad;
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "World:  %.2f, %.2f", wmx, wmy); y += size.y+ypad;
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "View:   %d, %d", vmx, vmy); y += size.y+ypad;
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Window: %d, %d", mx, my); y += size.y+ypad;
@@ -174,8 +180,5 @@ void gui_draw()
         float fps = timer_get_prior_frame_fps(&game_timer);
         size = gfx_string_get_size(scale, "fps: %.2f", fps);
         gfx_draw_string(view_width-size.x,0,0x00FFFF00,scale,0.0, 1.0, false,drop_shadow,"fps: %.2f", fps);
-
     }
-
-
 }

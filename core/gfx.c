@@ -691,36 +691,28 @@ Vector2f gfx_string_get_size(float scale, char* fmt, ...)
     vsprintf(str,fmt, args);
     va_end(args);
 
-    float tallest_h = 0.0;
     float x_pos = 0.0;
+    float fontsize = 64.0 * scale;
 
     char* c = str;
+
     for(;;)
     {
         if(*c == '\0')
             break;
 
         FontChar* fc = &font_chars[*c];
-        float h = fc->h*scale;
-        if(ABS(h) > tallest_h)
-            tallest_h = ABS(h);
-        if(*c == ' ')
-            x_pos += 16*scale;
-        else
-            x_pos += scale*(fc->w + fc->advance);
+
+        x_pos += (fontsize*fc->advance);
         c++;
     }
 
-    Vector2f ret = {0};
-    ret.x = x_pos;
-    ret.y = tallest_h;
+    Vector2f ret = {x_pos, fontsize};
     return ret;
 }
 
-// w,h
 Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
 {
-
     va_list args;
     va_start(args, fmt);
     char str[256] = {0};
@@ -735,7 +727,6 @@ Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float ro
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, img->texture);
-    //glBindTexture(GL_TEXTURE_2D, gfx_images[1].texture);
     glUniform1i(loc_font_image, 0);
 
     glBindVertexArray(font_vao);
@@ -751,10 +742,10 @@ Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float ro
 
     char* c = str;
 
+    float fontsize = 64.0 * scale;
+
     float x_pos = x;
-
-    // used to draw the string at top left of first character
-    float tallest_h = 0.0;
+    float y_pos = y+fontsize;
 
     for(;;)
     {
@@ -763,108 +754,38 @@ Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float ro
 
         FontChar* fc = &font_chars[*c];
 
-        float h = fc->h*scale;
-        if(ABS(h) > tallest_h)
-            tallest_h = ABS(h);
+        float x0 = x_pos + fontsize*fc->plane_box.l;
+        float y0 = y_pos - fontsize*fc->plane_box.t;
+        float x1 = x_pos + fontsize*fc->plane_box.r;
+        float y1 = y_pos - fontsize*fc->plane_box.b;
 
-        c++;
-    }
-
-
-    if(drop_shadow)
-    {
-        glUniform4f(loc_font_fg_color,0.2,0.2,0.2,opacity);
-
-        c = str;
-
-        for(;;)
-        {
-            if(*c == '\0')
-                break;
-
-            FontChar* fc = &font_chars[*c];
-
-            float x_loc = x_pos+(fc->w*scale/2.0)+(fc->plane_box.l*fc->w*scale) -0.7;
-            float y_loc = y+tallest_h+(fc->h*scale/2.0)+(fc->plane_box.b*fc->h*scale)+0.7;
-
-            Vector3f pos = {x_loc,y_loc,0.0};
-            Vector3f rot = {0.0,0.0,rotation};
-            Vector3f sca = {scale*fc->w,-scale*fc->h,1.0};
-
-            Matrix model = {0};
-            get_model_transform(&pos,&rot,&sca,&model);
-
-            Vertex fontchar[] =
-            {
-                {{-0.5, +0.5},{fc->tex_coords.l,fc->tex_coords.b}},
-                {{+0.5, -0.5},{fc->tex_coords.r,fc->tex_coords.t}},
-                {{-0.5, -0.5},{fc->tex_coords.l,fc->tex_coords.t}},
-                {{-0.5, +0.5},{fc->tex_coords.l,fc->tex_coords.b}},
-                {{+0.5, +0.5},{fc->tex_coords.r,fc->tex_coords.b}},
-                {{+0.5, -0.5},{fc->tex_coords.r,fc->tex_coords.t}},
-            };
-            
-            //printf("%c: [%f %f, %f, %f %f %f %f]\n",*c, fc->w, fc->h, fc->advance, fc->plane_box.l, fc->plane_box.b, fc->plane_box.r, fc->plane_box.t);
-
-            glBindBuffer(GL_ARRAY_BUFFER, font_vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(fontchar), fontchar);
-            glUniformMatrix4fv(loc_font_model,1,GL_TRUE,&model.m[0][0]);
-
-            if(in_world)
-                glUniformMatrix4fv(loc_font_view,1,GL_TRUE,&view->m[0][0]);
-            else
-                glUniformMatrix4fv(loc_font_view,1,GL_TRUE,&IDENTITY_MATRIX.m[0][0]);
-
-            glUniformMatrix4fv(loc_font_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
-
-            glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
-
-            if(*c == ' ')
-                x_pos += 16*scale;
-            else
-                x_pos += scale*(fc->w + fc->advance);
-
-            c++;
-        }
-
-    }
-
-    glUniform4f(loc_font_fg_color,r/255.0,g/255.0,b/255.0,opacity);
-
-    c = str;
-    x_pos = x;
-    for(;;)
-    {
-        if(*c == '\0')
-            break;
-
-        FontChar* fc = &font_chars[*c];
-
-        float x_loc = x_pos+(fc->w*scale/2.0)+(fc->plane_box.l*fc->w*scale);
-        float y_loc = y+tallest_h+(fc->h*scale/2.0)+(fc->plane_box.b*fc->h*scale);
-
-        Vector3f pos = {x_loc,y_loc,0.0};
-        Vector3f rot = {0.0,0.0,rotation};
-        Vector3f sca = {scale*fc->w,-scale*fc->h,1.0};
-
-        Matrix model = {0};
-        get_model_transform(&pos,&rot,&sca,&model);
+        /*
+        printf("====== %c ========\n",*c);
+        printf("x0: %f, y0: %f, x1: %f, y1: %f\n",x0,y0,x1,y1);
+        printf("w: %f, h: %f\n",w,h);
+        printf("advance: %f, advance px: %f\n",fc->advance, fontsize*fc->advance);
+        printf("==================\n");
+        */
 
         Vertex fontchar[] =
         {
-            {{-0.5, +0.5},{fc->tex_coords.l,fc->tex_coords.b}},
-            {{+0.5, -0.5},{fc->tex_coords.r,fc->tex_coords.t}},
-            {{-0.5, -0.5},{fc->tex_coords.l,fc->tex_coords.t}},
-            {{-0.5, +0.5},{fc->tex_coords.l,fc->tex_coords.b}},
-            {{+0.5, +0.5},{fc->tex_coords.r,fc->tex_coords.b}},
-            {{+0.5, -0.5},{fc->tex_coords.r,fc->tex_coords.t}},
+            {{x0, y1},{fc->tex_coords.l,fc->tex_coords.b}},
+            {{x1, y0},{fc->tex_coords.r,fc->tex_coords.t}},
+            {{x0, y0},{fc->tex_coords.l,fc->tex_coords.t}},
+            {{x0, y1},{fc->tex_coords.l,fc->tex_coords.b}},
+            {{x1, y1},{fc->tex_coords.r,fc->tex_coords.b}},
+            {{x1, y0},{fc->tex_coords.r,fc->tex_coords.t}},
         };
         
-        //printf("%c: [%f %f, %f, %f %f %f %f]\n",*c, fc->w, fc->h, fc->advance, fc->plane_box.l, fc->plane_box.b, fc->plane_box.r, fc->plane_box.t);
-
         glBindBuffer(GL_ARRAY_BUFFER, font_vbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(fontchar), fontchar);
-        glUniformMatrix4fv(loc_font_model,1,GL_TRUE,&model.m[0][0]);
+
+        Matrix model = {0};
+
+        Vector3f pos = {0.0,0.0,0.0};
+        Vector3f rot = {0.0,0.0,rotation};
+        Vector3f sca = {1.0,1.0,1.0};
+        get_model_transform(&pos,&rot,&sca,&model);
 
         if(in_world)
             glUniformMatrix4fv(loc_font_view,1,GL_TRUE,&view->m[0][0]);
@@ -873,13 +794,22 @@ Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float ro
 
         glUniformMatrix4fv(loc_font_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
 
-        glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
+        if(drop_shadow)
+        {
+            Matrix model_shadow = {0};
+            Vector3f pos_shadow = {-4.0*scale,4.0*scale,0.0};
+            get_model_transform(&pos_shadow,&rot,&sca,&model_shadow);
 
-        if(*c == ' ')
-            x_pos += 16*scale;
-        else
-            x_pos += scale*(fc->w + fc->advance);
+            glUniformMatrix4fv(loc_font_model,1,GL_TRUE,&model_shadow.m[0][0]);
+            glUniform4f(loc_font_fg_color,0.0,0.0,0.0,opacity);
+            glDrawArrays(GL_TRIANGLES,0,6);
+        }
 
+        glUniformMatrix4fv(loc_font_model,1,GL_TRUE,&model.m[0][0]);
+        glUniform4f(loc_font_fg_color,r/255.0,g/255.0,b/255.0,opacity);
+        glDrawArrays(GL_TRIANGLES,0,6);
+
+        x_pos += (fontsize*fc->advance);
         c++;
     }
 
@@ -889,12 +819,9 @@ Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float ro
     glBindTexture(GL_TEXTURE_2D,0);
     glUseProgram(0);
 
-    Vector2f ret = {0};
-    ret.x = x_pos-x;
-    ret.y = tallest_h;
+    Vector2f ret = {x_pos - x, fontsize};
     return ret;
 }
-
 
 void gfx_clear_lines()
 {

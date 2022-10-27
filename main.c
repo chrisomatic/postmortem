@@ -158,7 +158,7 @@ void start_local()
     double t0=timer_get_time();
     double t1=0.0;
 
-    //bitpack_test(); //@TEMP
+    bitpack_test(); //@TEMP
 
     // main game loop
     for(;;)
