@@ -37,7 +37,7 @@ static void player_gun_set_position(Player* p);
 
 void player_init_images()
 {
-    player_image_set = gfx_load_image_set("img/human_set_small.png",32,48);
+    player_image_set = gfx_load_image_set("img/human2.png",64,128);
     crosshair_image = gfx_load_image("img/crosshair.png", false, false);
 }
 
