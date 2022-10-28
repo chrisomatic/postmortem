@@ -76,17 +76,26 @@ static void player_init(int index)
 
     p->phys.vel.x = 0.0;
     p->phys.vel.y = 0.0;
-    // p->sprite_index = 0;
+    p->sprite_index = 0;
     p->gun_ready = true;
 
     p->speed = 32.0;
     p->max_base_speed = 128.0;
     p->phys.max_linear_vel = p->max_base_speed;
-    p->scale = 1.0;
+    p->scale = 0.50;
     p->predicted_state_index = 0;
 
     p->gun = gun_get(GUN_TYPE_MACHINEGUN);
     p->image = player_image_set;
+
+    // animation
+    p->anim.curr_frame = 0;
+    p->anim.max_frames = 3;
+    p->anim.curr_frame_time = 0.0f;
+    p->anim.max_frame_time = 0.3f;
+    p->anim.finite = false;
+    p->anim.curr_loop = 0;
+    p->anim.max_loops = 0;
 
     p->angle = 0.0;
     player_update_sprite_index(p);
@@ -126,7 +135,6 @@ int players_get_count()
     return player_count;
 }
 
-
 void player_update_other(Player* p, double delta_t)
 {
     p->lerp_t += delta_t;
@@ -156,63 +164,60 @@ void player_update_sprite_index(Player* p)
         int sector = angle_sector(angle_deg, 16);
 
         if(sector == 15 || sector == 0)  // p->actions.right
-        {
-            p->sprite_index = 6;
-        }
-        else if(sector == 1 || sector == 2)  // p->actions.up-p->actions.right
-        {
-            p->sprite_index = 5;
-        }
-        else if(sector == 3 || sector == 4)  // p->actions.up
-        {
-            p->sprite_index = 4;
-        }
-        else if(sector == 5 || sector == 6)  // p->actions.up-p->actions.left
-        {
-            p->sprite_index = 3;
-        }
-        else if(sector == 7 || sector == 8)  // p->actions.left
-        {
             p->sprite_index = 2;
-        }
+        else if(sector == 1 || sector == 2)  // p->actions.up-p->actions.right
+            p->sprite_index = 3;
+        else if(sector == 3 || sector == 4)  // p->actions.up
+            p->sprite_index = 4;
+        else if(sector == 5 || sector == 6)  // p->actions.up-p->actions.left
+            p->sprite_index = 5;
+        else if(sector == 7 || sector == 8)  // p->actions.left
+            p->sprite_index = 6;
         else if(sector == 9 || sector == 10)  // p->actions.down-p->actions.left
-        {
-            p->sprite_index = 1;
-        }
-        else if(sector == 11 || sector == 12)  // p->actions.down
-        {
-            p->sprite_index = 0;
-        }
-        else if(sector == 13 || sector == 14)  // p->actions.down-p->actions.right
-        {
             p->sprite_index = 7;
-        }
-
+        else if(sector == 11 || sector == 12)  // p->actions.down
+            p->sprite_index = 0;
+        else if(sector == 13 || sector == 14)  // p->actions.down-p->actions.right
+            p->sprite_index = 1;
     }
     else
     {
         if(p->actions.up && p->actions.left)
-            p->sprite_index = 3;
-        else if(p->actions.up && p->actions.right)
             p->sprite_index = 5;
+        else if(p->actions.up && p->actions.right)
+            p->sprite_index = 3;
         else if(p->actions.down && p->actions.left)
-            p->sprite_index = 1;
-        else if(p->actions.down && p->actions.right)
             p->sprite_index = 7;
+        else if(p->actions.down && p->actions.right)
+            p->sprite_index = 1;
         else if(p->actions.up)
             p->sprite_index = 4;
         else if(p->actions.down)
             p->sprite_index = 0;
         else if(p->actions.left)
-            p->sprite_index = 2;
-        else if(p->actions.right)
             p->sprite_index = 6;
+        else if(p->actions.right)
+            p->sprite_index = 2;
     }
     
     GFXSubImageData* sid = gfx_images[p->image].sub_img_data;
     Rect* vr = &sid->visible_rects[p->sprite_index];
     p->phys.pos.w = vr->w*p->scale;
     p->phys.pos.h = vr->h*p->scale;
+
+    int anim_frame_offset = p->anim.curr_frame*sid->elements_per_row;
+    assert(anim_frame_offset >= 0);
+
+    /*
+    printf("anim_curr_frame: %d\n",p->anim.curr_frame);
+    printf("elements_per_row: %d\n",sid->elements_per_row);
+    printf("elements_per_col: %d\n",sid->elements_per_col);
+    printf("element_count: %d\n",sid->element_count);
+    printf("anim_frame_offset: %d\n",anim_frame_offset);
+    */
+
+    p->sprite_index += anim_frame_offset;
+    p->sprite_index = MIN(p->sprite_index, sid->element_count);
 }
 
 void player_gun_set_position(Player* p)
@@ -330,6 +335,15 @@ void player_update(Player* p, double delta_t)
 
     player_update_sprite_index(p);
 
+    if(accel.x == 0.0 && accel.y == 0.0)
+    {
+        p->anim.curr_frame = 0;
+        p->anim.curr_frame_time = 0.0;
+    }
+    else
+    {
+        gfx_anim_update(&p->anim,delta_t);
+    }
 
     if(p->gun_ready)
     {

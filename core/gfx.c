@@ -295,6 +295,8 @@ static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool lin
             {
                 img->sub_img_data = calloc(1,sizeof(GFXSubImageData));
                 img->sub_img_data->element_count = sub_image_data->element_count;
+                img->sub_img_data->elements_per_row = sub_image_data->elements_per_row;
+                img->sub_img_data->elements_per_col = sub_image_data->elements_per_col;
                 img->sub_img_data->element_width = sub_image_data->element_width;
                 img->sub_img_data->element_height = sub_image_data->element_height;
                 img->sub_img_data->visible_rects = calloc(img->sub_img_data->element_count, sizeof(Rect));
@@ -365,10 +367,14 @@ int gfx_load_image_set(const char* image_path, int element_width, int element_he
     int num_rows = (image.h / element_height);    //rows
     int element_count = num_cols*num_rows;
 
+    printf("cols: %d, row: %d\n",num_cols, num_rows);
+
     GFXSubImageData sid = {0};
     sid.element_width = element_width;
     sid.element_height = element_height;
     sid.element_count = element_count;
+    sid.elements_per_row = num_cols;
+    sid.elements_per_col = num_rows;
     sid.visible_rects = malloc(sid.element_count * sizeof(Rect));
     sid.sprite_rects = malloc(sid.element_count * sizeof(Rect));
 
@@ -715,6 +721,29 @@ Vector2f gfx_string_get_size(float scale, char* fmt, ...)
 
     Vector2f ret = {x_pos, fontsize};
     return ret;
+}
+
+void gfx_anim_update(GFXAnimation* anim, double delta_t)
+{
+    if(anim->finite && anim->curr_loop >= anim->max_loops)
+        return;
+   
+    anim->curr_frame_time += delta_t;
+    if(anim->curr_frame_time >= anim->max_frame_time)
+    {
+        anim->curr_frame_time -= anim->max_frame_time;
+        anim->curr_frame++;
+
+        printf("curr frame : %d\n",anim->curr_frame);
+
+        if(anim->curr_frame >= anim->max_frames)
+        {
+            anim->curr_frame = 0;
+
+            if(anim->finite)
+                anim->curr_loop++;
+        }
+    }
 }
 
 Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)

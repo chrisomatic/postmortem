@@ -19,6 +19,8 @@
 typedef struct
 {
     int element_count;
+    int elements_per_row;
+    int elements_per_col;
     int element_width, element_height;
     Rect* visible_rects;
     Rect* sprite_rects;
@@ -32,6 +34,17 @@ typedef struct
     uint32_t texture;
     GFXSubImageData* sub_img_data;
 } GFXImage;
+
+typedef struct
+{
+    int curr_frame;
+    int max_frames;
+    float curr_frame_time;
+    float max_frame_time;
+    bool finite;
+    int curr_loop;
+    int max_loops;
+} GFXAnimation;
 
 extern GFXImage gfx_images[MAX_GFX_IMAGES];
 extern int font_image;
@@ -52,6 +65,9 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
 bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity);
 void gfx_free_image(int img_index);
 GFXImage* gfx_get_image_data(int img_index);
+
+// Animation
+void gfx_anim_update(GFXAnimation* anim, double delta_t);
 
 // Strings
 Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...);

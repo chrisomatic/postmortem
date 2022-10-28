@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gfx.h"
 #include "physics.h"
 #include "gun.h"
 #include "net.h"
@@ -74,6 +75,8 @@ typedef struct
     float lerp_t;
     PlayerState state_target;
     PlayerState state_prior;
+
+    GFXAnimation anim;
 
 } Player;
 
