@@ -90,12 +90,16 @@ static void player_init(int index)
 
     // animation
     p->anim.curr_frame = 0;
-    p->anim.max_frames = 3;
+    p->anim.max_frames = 4;
     p->anim.curr_frame_time = 0.0f;
-    p->anim.max_frame_time = 0.3f;
+    p->anim.max_frame_time = 0.2f;
     p->anim.finite = false;
     p->anim.curr_loop = 0;
     p->anim.max_loops = 0;
+    p->anim.frame_sequence[0] = 0;
+    p->anim.frame_sequence[1] = 1;
+    p->anim.frame_sequence[2] = 0;
+    p->anim.frame_sequence[3] = 2;
 
     p->angle = 0.0;
     player_update_sprite_index(p);
@@ -148,7 +152,7 @@ void player_update_other(Player* p, double delta_t)
 
     p->angle = lerp(p->state_prior.angle,p->state_target.angle,t);
 
-    player_update_sprite_index(p);
+    //player_update_sprite_index(p);
     player_gun_set_position(p);
 }
 
@@ -201,11 +205,9 @@ void player_update_sprite_index(Player* p)
     }
     
     GFXSubImageData* sid = gfx_images[p->image].sub_img_data;
-    Rect* vr = &sid->visible_rects[p->sprite_index];
-    p->phys.pos.w = vr->w*p->scale;
-    p->phys.pos.h = vr->h*p->scale;
 
-    int anim_frame_offset = p->anim.curr_frame*sid->elements_per_row;
+    int anim_frame_offset = p->anim.frame_sequence[p->anim.curr_frame]*sid->elements_per_row;
+    printf("curr_frame: %d, anim_frame_offset: %d, elements per row: %d\n",p->anim.curr_frame, anim_frame_offset,sid->elements_per_row);
     assert(anim_frame_offset >= 0);
 
     /*
@@ -218,6 +220,10 @@ void player_update_sprite_index(Player* p)
 
     p->sprite_index += anim_frame_offset;
     p->sprite_index = MIN(p->sprite_index, sid->element_count);
+
+    Rect* vr = &sid->visible_rects[p->sprite_index];
+    p->phys.pos.w = vr->w*p->scale;
+    p->phys.pos.h = vr->h*p->scale;
 }
 
 void player_gun_set_position(Player* p)
@@ -314,12 +320,14 @@ void player_update(Player* p, double delta_t)
         debug_enabled = !debug_enabled;
     }
 
-
-    if(p->actions.primary_action)
+    if(role != ROLE_SERVER)
     {
-        if(window_is_cursor_enabled())
+        if(p->actions.primary_action)
         {
-            window_disable_cursor();
+            if(window_is_cursor_enabled())
+            {
+                window_disable_cursor();
+            }
         }
     }
 
@@ -342,6 +350,7 @@ void player_update(Player* p, double delta_t)
     }
     else
     {
+        printf("curr frame: %d, frame sequence num: %d\n",p->anim.curr_frame, p->anim.frame_sequence[p->anim.curr_frame]);
         gfx_anim_update(&p->anim,delta_t);
     }
 

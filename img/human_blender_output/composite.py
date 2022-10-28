@@ -42,8 +42,9 @@ class Compositor(QWidget):
 
         self.root = root = os.path.dirname(os.path.abspath(__file__)) + slash
 
-        self.path = self.root + "standing" + slash
-        self.path = self.root + "walk1" + slash
+        #self.path = self.root + "standing" + slash
+        #self.path = self.root + "walk1" + slash
+        self.path = self.root + "walk2" + slash
 
         self.scaled_size = QSize(64, 128)
 

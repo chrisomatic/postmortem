@@ -75,6 +75,7 @@ typedef struct
     uint16_t associated_packet_id;
     Vector2f pos;
     float angle;
+    uint8_t sprite_index;
 } __attribute__((__packed__)) NetPlayerState;
 
 extern char* server_ip_address;

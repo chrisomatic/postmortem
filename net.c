@@ -391,6 +391,9 @@ static void server_send(PacketType type, ClientInfo* cli)
                     memcpy(&pkt.data[index],&server.clients[i].player_state.angle,sizeof(float)); // angle
                     index += sizeof(float);
 
+                    memcpy(&pkt.data[index],&server.clients[i].player_state.sprite_index,sizeof(uint8_t));
+                    index += sizeof(uint8_t);
+
                     num_clients++;
                 }
             }
@@ -573,6 +576,7 @@ int net_server_start()
                             cli->player_state.pos.x = players[client_id].phys.pos.x;
                             cli->player_state.pos.y = players[client_id].phys.pos.y;
                             cli->player_state.angle = players[client_id].angle;
+                            cli->player_state.sprite_index = players[client_id].sprite_index;
 
                             //printf("net player state for client id %d, pos %f %f, angle %f\n",client_id, net_player_states[client_id].pos.x, net_player_states[client_id].pos.y, net_player_states[client_id].angle);
 
@@ -910,11 +914,14 @@ void net_client_update()
 
                         Vector2f pos;
                         float angle;
+                        uint8_t sprite_index;
 
                         memcpy(&pos, &srvpkt.data[index], sizeof(Vector2f));
                         index += sizeof(Vector2f);
                         memcpy(&angle, &srvpkt.data[index],sizeof(float));
                         index += sizeof(float);
+                        memcpy(&sprite_index, &srvpkt.data[index],sizeof(uint8_t));
+                        index += sizeof(uint8_t);
 
                         Player* p = &players[client_id];
                         p->active = true;
@@ -945,6 +952,7 @@ void net_client_update()
                                         p->phys.pos.x = pos.x;
                                         p->phys.pos.y = pos.y;
                                         p->angle = angle;
+                                        p->sprite_index = sprite_index;
                                     }
                                     break;
                                 }
@@ -962,6 +970,8 @@ void net_client_update()
 
                             p->state_prior.angle = p->angle;
                             p->state_target.angle = angle;
+                            p->sprite_index = sprite_index;
+                            printf("received sprite index: %d\n",p->sprite_index);
                         }
                     }
 

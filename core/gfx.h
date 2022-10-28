@@ -39,6 +39,7 @@ typedef struct
 {
     int curr_frame;
     int max_frames;
+    int frame_sequence[16];
     float curr_frame_time;
     float max_frame_time;
     bool finite;

@@ -54,7 +54,7 @@ typedef struct
     bool running;
 
     int image;
-    int sprite_index;
+    uint8_t sprite_index;
     uint16_t keys;
 
     Vector2f mouse_pos;

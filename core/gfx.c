@@ -337,6 +337,10 @@ static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool lin
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
             glBindTexture(GL_TEXTURE_2D, 0);
+
+            if(img->texture == -1)
+                img->texture = i; // @HACK
+
             return i;
         }
     }
@@ -733,8 +737,6 @@ void gfx_anim_update(GFXAnimation* anim, double delta_t)
     {
         anim->curr_frame_time -= anim->max_frame_time;
         anim->curr_frame++;
-
-        printf("curr frame : %d\n",anim->curr_frame);
 
         if(anim->curr_frame >= anim->max_frames)
         {
