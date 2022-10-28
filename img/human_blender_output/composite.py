@@ -50,7 +50,7 @@ class Compositor(QWidget):
             printf("Loading image %s (%d of %d)      \r", p, i+1, len(pics))
             num = int(p.replace(".png",""))
             img = QImage(self.root+p,"PNG")
-            img,_ = self.sub_img_color(img, self.color_rep_clear, self.color_clear)
+            img,cnt = self.sub_img_color(img, self.color_rep_clear, self.color_clear)
             w = img.width()
             h = img.height()
 
@@ -88,7 +88,7 @@ class Compositor(QWidget):
             key = self.keys[i]
             tw += self.pic_data[key]["img_scaled"].width()
 
-        image = QImage(tw, self.scaled_size.height(), QImage.Format_RGB32)
+        image = QImage(tw, self.scaled_size.height(), QImage.Format_ARGB32)
 
         painter = QPainter()
         painter.begin(image)
