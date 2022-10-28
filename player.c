@@ -207,16 +207,7 @@ void player_update_sprite_index(Player* p)
     GFXSubImageData* sid = gfx_images[p->image].sub_img_data;
 
     int anim_frame_offset = p->anim.frame_sequence[p->anim.curr_frame]*sid->elements_per_row;
-    printf("curr_frame: %d, anim_frame_offset: %d, elements per row: %d\n",p->anim.curr_frame, anim_frame_offset,sid->elements_per_row);
     assert(anim_frame_offset >= 0);
-
-    /*
-    printf("anim_curr_frame: %d\n",p->anim.curr_frame);
-    printf("elements_per_row: %d\n",sid->elements_per_row);
-    printf("elements_per_col: %d\n",sid->elements_per_col);
-    printf("element_count: %d\n",sid->element_count);
-    printf("anim_frame_offset: %d\n",anim_frame_offset);
-    */
 
     p->sprite_index += anim_frame_offset;
     p->sprite_index = MIN(p->sprite_index, sid->element_count);
@@ -350,7 +341,6 @@ void player_update(Player* p, double delta_t)
     }
     else
     {
-        printf("curr frame: %d, frame sequence num: %d\n",p->anim.curr_frame, p->anim.frame_sequence[p->anim.curr_frame]);
         gfx_anim_update(&p->anim,delta_t);
     }
 

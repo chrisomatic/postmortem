@@ -937,6 +937,7 @@ void net_client_update()
                                     if(pstate->pos.x != pos.x || pstate->pos.y != pos.y || pstate->angle != angle)
                                     {
                                         LOGW("Out of sync with server, correcting client position/angle");
+                                        /*
                                         LOGW("======");
                                         LOGW("Out of sync with server, correcting client position/angle");
                                         LOGW("Packet ID: %u",pstate->associated_packet_id);
@@ -948,11 +949,11 @@ void net_client_update()
                                         }
                                             
                                         LOGW("======");
+                                        */
 
                                         p->phys.pos.x = pos.x;
                                         p->phys.pos.y = pos.y;
                                         p->angle = angle;
-                                        p->sprite_index = sprite_index;
                                     }
                                     break;
                                 }
@@ -971,7 +972,6 @@ void net_client_update()
                             p->state_prior.angle = p->angle;
                             p->state_target.angle = angle;
                             p->sprite_index = sprite_index;
-                            printf("received sprite index: %d\n",p->sprite_index);
                         }
                     }
 

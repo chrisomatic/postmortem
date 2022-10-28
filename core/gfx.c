@@ -371,8 +371,6 @@ int gfx_load_image_set(const char* image_path, int element_width, int element_he
     int num_rows = (image.h / element_height);    //rows
     int element_count = num_cols*num_rows;
 
-    printf("cols: %d, row: %d\n",num_cols, num_rows);
-
     GFXSubImageData sid = {0};
     sid.element_width = element_width;
     sid.element_height = element_height;
