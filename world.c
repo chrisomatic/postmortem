@@ -91,7 +91,7 @@ static void load_map_file(const char* file_path)
 void world_init()
 {
     load_map_file("map/test.map");
-    ground_sheet = gfx_load_image_set("img/ground_set.png",32,32);
+    ground_sheet = gfx_load_image_set("img/ground_set.png",32,32,NULL);
 
 }
 

@@ -55,7 +55,7 @@ static void update_hurt_box(Projectile* proj)
 void projectile_init()
 {
     plist = list_create((void*)projectiles, MAX_PROJECTILES, sizeof(Projectile));
-    projectile_image_set = gfx_load_image_set("img/projectile_set.png",32,32);
+    projectile_image_set = gfx_load_image_set("img/projectile_set.png",32,32,NULL);
 }
 
 

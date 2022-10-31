@@ -57,6 +57,9 @@ typedef struct
     uint8_t sprite_index;
     uint16_t keys;
 
+    Vector2f* nodes;    //node positions are interpreted as offsets from center of visible rectangle
+    int node_count;
+
     Vector2f mouse_pos;
 
     PlayerActions actions_prior;
