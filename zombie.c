@@ -60,8 +60,8 @@ bool zombie_add(ZombieSpawn* spawn)
         zombie.scale = 1.0;
 
     zombie.hp = zombie.hp_max;
-    zombie.phys.pos.w = gfx_images[zombie_image].visible_rect.w*zombie.scale;
-    zombie.phys.pos.h = gfx_images[zombie_image].visible_rect.h*zombie.scale;
+    zombie.phys.pos.w = gfx_images2[zombie_image].visible_rects[0].w*zombie.scale;
+    zombie.phys.pos.h = gfx_images2[zombie_image].visible_rects[0].h*zombie.scale;
 
     update_zombie_boxes(&zombie);
 
@@ -88,7 +88,8 @@ bool zombie_add_to_world_grid(ZombieSpawn* spawn, int world_row, int world_col)
 
 void zombie_init()
 {
-    zombie_image = gfx_load_image("img/zombie_f1.png", false, false);
+    // zombie_image = gfx_load_image("img/zombie_f1.png", false, false);
+    zombie_image = gfx_load_image2("img/zombie_f1.png", false, false, 0, 0, NULL);
 
     zlist = list_create((void*)zombies, MAX_ZOMBIES, sizeof(Zombie));
     if(zlist == NULL)
@@ -206,7 +207,8 @@ void zombie_draw()
 
         if(is_in_camera_view(&zom->phys.pos))
         {
-            gfx_draw_image(zombie_image,(int)zom->phys.pos.x,(int)zom->phys.pos.y, COLOR_TINT_NONE,zom->scale,0.0,1.0);
+            // gfx_draw_image(zombie_image,(int)zom->phys.pos.x,(int)zom->phys.pos.y, COLOR_TINT_NONE,zom->scale,0.0,1.0);
+            gfx_draw_image2(zombie_image, 0,(int)zom->phys.pos.x,(int)zom->phys.pos.y, COLOR_TINT_NONE,zom->scale,0.0,1.0);
 
             if(debug_enabled)
             {

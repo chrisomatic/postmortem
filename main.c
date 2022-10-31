@@ -67,6 +67,28 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
 int main(int argc, char* argv[])
 {
+    // gfx_image_init();
+
+    // GFXNodeDataInput nd = {
+    //     .image_path = "img/human2_nodes.png",
+    //     .colors = {COLOR_RED},
+    //     .num_sets = 1
+    // };
+    // int idx = gfx_load_image2("img/human2.png", false, false, 64, 128, &nd);
+
+    // printf("idx: %d\n", idx);
+
+    // printf("node sets: %d\n", gfx_images2[idx].node_sets);
+    // printf("element count: %d\n", gfx_images2[idx].element_count);
+
+    // for(int n = 0; n < gfx_images2[idx].node_sets; ++n)
+    // {
+    //     for(int i = 0; i < gfx_images2[idx].element_count; ++i)
+    //     {
+    //         printf("%d, %d   %.1f, %.1f\n", n, i, gfx_images2[idx].nodes[n][i].x, gfx_images2[idx].nodes[n][i].y);
+    //     }
+    // }
+    // exit(0);
 
     parse_args(argc, argv);
 

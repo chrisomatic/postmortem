@@ -18,7 +18,7 @@ static GLuint quad_vao, quad_vbo;
 static GLuint font_vao, font_vbo;
 static GLuint line_vao,line_vbo;
 
-GFXImage gfx_images[MAX_GFX_IMAGES] = {0};
+// GFXImage gfx_images[MAX_GFX_IMAGES] = {0};
 
 static Matrix proj_matrix;
 
@@ -58,6 +58,8 @@ static GLint loc_font_model;
 static GLint loc_font_view;
 static GLint loc_font_proj;
 
+#define DEBUG_PRINT()   printf("%d %s %s()\n", __LINE__, __FILE__, __func__)
+
 
 static int assign_image(GFXSubImageData* sub_image_data, GFXImageData* image, bool linear_filter);
 
@@ -87,7 +89,7 @@ FontChar font_chars[255];
 
 static void load_font()
 {
-    font_image = gfx_load_image("core/fonts/atlas.png", false, true);
+    font_image = gfx_load_image2("core/fonts/atlas.png", false, true, 0, 0, NULL);
     LOGI("Font image index: %d",font_image);
 
     FILE* fp = fopen("core/fonts/atlas_layout.csv","r");
@@ -143,7 +145,8 @@ void gfx_image_init()
 
     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
     {
-        gfx_images[i].texture = -1;
+        // gfx_images[i].texture = -1;
+        gfx_images2[i].texture = -1;
     }
 }
 
@@ -251,76 +254,76 @@ void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static int assign_image(GFXSubImageData* sub_image_data, GFXImageData* image, bool linear_filter)
-{
-    for(int i = 0; i < MAX_GFX_IMAGES; ++i)
-    {
-        if(gfx_images[i].texture == -1)
-        {
-            GFXImage* img = &gfx_images[i];
+// static int assign_image(GFXSubImageData* sub_image_data, GFXImageData* image, bool linear_filter)
+// {
+//     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
+//     {
+//         if(gfx_images[i].texture == -1)
+//         {
+//             GFXImage* img = &gfx_images[i];
 
-            img->w = image->w;
-            img->h = image->h;
-            img->n = image->n;
+//             img->w = image->w;
+//             img->h = image->h;
+//             img->n = image->n;
 
-            LOGI("Assigning image to index: %d", i);
+//             LOGI("Assigning image to index: %d", i);
 
-            if(sub_image_data != NULL)
-            {
-                img->sub_img_data = calloc(1,sizeof(GFXSubImageData));
-                img->sub_img_data->element_count = sub_image_data->element_count;
-                img->sub_img_data->elements_per_row = sub_image_data->elements_per_row;
-                img->sub_img_data->elements_per_col = sub_image_data->elements_per_col;
-                img->sub_img_data->element_width = sub_image_data->element_width;
-                img->sub_img_data->element_height = sub_image_data->element_height;
-                img->sub_img_data->visible_rects = calloc(img->sub_img_data->element_count, sizeof(Rect));
-                img->sub_img_data->sprite_rects = calloc(img->sub_img_data->element_count, sizeof(Rect));
-                for(int e = 0; e < img->sub_img_data->element_count; ++e)
-                {
-                    memcpy(&img->sub_img_data->visible_rects[e], &sub_image_data->visible_rects[e], sizeof(Rect));
-                    memcpy(&img->sub_img_data->sprite_rects[e], &sub_image_data->sprite_rects[e], sizeof(Rect));
-                }
-                LOGI("Image set: width: %d, height: %d, count: %d", img->sub_img_data->element_width, img->sub_img_data->element_height, img->sub_img_data->element_count);
-            }
-            else
-            {
-                gfx_get_image_visible_rect(img->w, img->h, img->n, image->data, &img->visible_rect);
-                img->sprite_rect.w = img->visible_rect.w / img->w;
-                img->sprite_rect.h = img->visible_rect.h / img->h;
-                img->sprite_rect.x = (img->visible_rect.x) / img->w;
-                img->sprite_rect.y = (img->visible_rect.y) / img->h;
-                LOGI("Visible Rectangle: x: %.0f, y: %.0f, w: %.0f, h: %.0f", img->visible_rect.x, img->visible_rect.y, img->visible_rect.w, img->visible_rect.h);
-            }
+//             if(sub_image_data != NULL)
+//             {
+//                 img->sub_img_data = calloc(1,sizeof(GFXSubImageData));
+//                 img->sub_img_data->element_count = sub_image_data->element_count;
+//                 img->sub_img_data->elements_per_row = sub_image_data->elements_per_row;
+//                 img->sub_img_data->elements_per_col = sub_image_data->elements_per_col;
+//                 img->sub_img_data->element_width = sub_image_data->element_width;
+//                 img->sub_img_data->element_height = sub_image_data->element_height;
+//                 img->sub_img_data->visible_rects = calloc(img->sub_img_data->element_count, sizeof(Rect));
+//                 img->sub_img_data->sprite_rects = calloc(img->sub_img_data->element_count, sizeof(Rect));
+//                 for(int e = 0; e < img->sub_img_data->element_count; ++e)
+//                 {
+//                     memcpy(&img->sub_img_data->visible_rects[e], &sub_image_data->visible_rects[e], sizeof(Rect));
+//                     memcpy(&img->sub_img_data->sprite_rects[e], &sub_image_data->sprite_rects[e], sizeof(Rect));
+//                 }
+//                 LOGI("Image set: width: %d, height: %d, count: %d", img->sub_img_data->element_width, img->sub_img_data->element_height, img->sub_img_data->element_count);
+//             }
+//             else
+//             {
+//                 gfx_get_image_visible_rect(img->w, img->h, img->n, image->data, &img->visible_rect);
+//                 img->sprite_rect.w = img->visible_rect.w / img->w;
+//                 img->sprite_rect.h = img->visible_rect.h / img->h;
+//                 img->sprite_rect.x = (img->visible_rect.x) / img->w;
+//                 img->sprite_rect.y = (img->visible_rect.y) / img->h;
+//                 LOGI("Visible Rectangle: x: %.0f, y: %.0f, w: %.0f, h: %.0f", img->visible_rect.x, img->visible_rect.y, img->visible_rect.w, img->visible_rect.h);
+//             }
 
-            glGenTextures(1, &img->texture);
-            glBindTexture(GL_TEXTURE_2D, img->texture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->data);
+//             glGenTextures(1, &img->texture);
+//             glBindTexture(GL_TEXTURE_2D, img->texture);
+//             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->data);
 
-            if(linear_filter)
-            {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            }
-            else
-            {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            }
+//             if(linear_filter)
+//             {
+//                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//             }
+//             else
+//             {
+//                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//             }
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-            glBindTexture(GL_TEXTURE_2D, 0);
+//             glBindTexture(GL_TEXTURE_2D, 0);
 
-            if(img->texture == -1)
-                img->texture = i; // @HACK
+//             if(img->texture == -1)
+//                 img->texture = i; // @HACK
 
-            return i;
-        }
-    }
+//             return i;
+//         }
+//     }
 
-    return -1;
-}
+//     return -1;
+// }
 
 bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip)
 {
@@ -341,83 +344,83 @@ bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip)
     }
 }
 
-int gfx_load_image(const char* image_path, bool flip, bool linear_filter)
-{
-    GFXImageData image = {0};
-    bool load = gfx_load_image_data(image_path, &image, flip);
-    if(!load) return -1;
+// int gfx_load_image(const char* image_path, bool flip, bool linear_filter)
+// {
+//     GFXImageData image = {0};
+//     bool load = gfx_load_image_data(image_path, &image, flip);
+//     if(!load) return -1;
 
-    int idx = assign_image(NULL, &image, linear_filter);
+//     int idx = assign_image(NULL, &image, linear_filter);
 
-    stbi_image_free(image.data);
+//     stbi_image_free(image.data);
 
-    return idx;
-}
+//     return idx;
+// }
 
-int gfx_load_image_set(const char* image_path, int element_width, int element_height, GFXImageData* data)
-{
-    GFXImageData image = {0};
-    bool load = gfx_load_image_data(image_path, &image, false);
-    if(!load) return -1;
+// int gfx_load_image_set(const char* image_path, int element_width, int element_height, GFXImageData* data)
+// {
+//     GFXImageData image = {0};
+//     bool load = gfx_load_image_data(image_path, &image, false);
+//     if(!load) return -1;
 
-    int num_cols = (image.w / element_width);     //cols
-    int num_rows = (image.h / element_height);    //rows
-    int element_count = num_cols*num_rows;
+//     int num_cols = (image.w / element_width);     //cols
+//     int num_rows = (image.h / element_height);    //rows
+//     int element_count = num_cols*num_rows;
 
-    GFXSubImageData sid = {0};
-    sid.element_width = element_width;
-    sid.element_height = element_height;
-    sid.element_count = element_count;
-    sid.elements_per_row = num_cols;
-    sid.elements_per_col = num_rows;
-    sid.visible_rects = malloc(sid.element_count * sizeof(Rect));
-    sid.sprite_rects = malloc(sid.element_count * sizeof(Rect));
+//     GFXSubImageData sid = {0};
+//     sid.element_width = element_width;
+//     sid.element_height = element_height;
+//     sid.element_count = element_count;
+//     sid.elements_per_row = num_cols;
+//     sid.elements_per_col = num_rows;
+//     sid.visible_rects = malloc(sid.element_count * sizeof(Rect));
+//     sid.sprite_rects = malloc(sid.element_count * sizeof(Rect));
 
-    int n = image.n;
-    unsigned char* temp_data = malloc(element_width*element_height*n*sizeof(unsigned char));
+//     int n = image.n;
+//     unsigned char* temp_data = malloc(element_width*element_height*n*sizeof(unsigned char));
 
-    for(int i = 0; i < sid.element_count; ++i)
-    {
-        int start_x = (i % num_cols) * element_width;
-        int start_y = (i / num_cols) * element_height;
-        for(int y = 0; y < element_height; ++y)
-        {
-            for(int x = 0; x < element_width; ++x)
-            {
-                int index = ((start_y+y)*image.w + (start_x+x)) * n;
-                int sub_index = (y*element_width + x) * n;
-                for(int _n = 0; _n < n; ++_n)
-                    temp_data[sub_index+_n] = image.data[index+_n];
-            }
-        }
+//     for(int i = 0; i < sid.element_count; ++i)
+//     {
+//         int start_x = (i % num_cols) * element_width;
+//         int start_y = (i / num_cols) * element_height;
+//         for(int y = 0; y < element_height; ++y)
+//         {
+//             for(int x = 0; x < element_width; ++x)
+//             {
+//                 int index = ((start_y+y)*image.w + (start_x+x)) * n;
+//                 int sub_index = (y*element_width + x) * n;
+//                 for(int _n = 0; _n < n; ++_n)
+//                     temp_data[sub_index+_n] = image.data[index+_n];
+//             }
+//         }
 
-        gfx_get_image_visible_rect(element_width, element_height, n, temp_data, &sid.visible_rects[i]);
+//         gfx_get_image_visible_rect(element_width, element_height, n, temp_data, &sid.visible_rects[i]);
 
-        Rect* vr = &sid.visible_rects[i];
-        sid.sprite_rects[i].x = (float)(start_x+vr->x) / image.w;
-        sid.sprite_rects[i].y = (float)(start_y+vr->y) / image.h;
-        sid.sprite_rects[i].w = vr->w / image.w;
-        sid.sprite_rects[i].h = vr->h / image.h;
-    }
+//         Rect* vr = &sid.visible_rects[i];
+//         sid.sprite_rects[i].x = (float)(start_x+vr->x) / image.w;
+//         sid.sprite_rects[i].y = (float)(start_y+vr->y) / image.h;
+//         sid.sprite_rects[i].w = vr->w / image.w;
+//         sid.sprite_rects[i].h = vr->h / image.h;
+//     }
 
-    int idx = assign_image(&sid, &image, false);
+//     int idx = assign_image(&sid, &image, false);
 
-    free(temp_data);
-    free(sid.visible_rects);
-    free(sid.sprite_rects);
+//     free(temp_data);
+//     free(sid.visible_rects);
+//     free(sid.sprite_rects);
 
-    if(data != NULL)
-    {
-        memcpy(data, &image, sizeof(GFXImageData));
-        int num_bytes = image.w*image.h*image.n*sizeof(unsigned char);
-        data->data = malloc(num_bytes);
-        memcpy(data->data, image.data, num_bytes);
-    }
+//     if(data != NULL)
+//     {
+//         memcpy(data, &image, sizeof(GFXImageData));
+//         int num_bytes = image.w*image.h*image.n*sizeof(unsigned char);
+//         data->data = malloc(num_bytes);
+//         memcpy(data->data, image.data, num_bytes);
+//     }
 
-    stbi_image_free(image.data);
+//     stbi_image_free(image.data);
 
-    return idx;
-}
+//     return idx;
+// }
 
 
 void gfx_get_image_visible_rect(int img_w, int img_h, int img_n, unsigned char* img_data, Rect* ret)
@@ -436,35 +439,35 @@ void gfx_get_image_visible_rect(int img_w, int img_h, int img_n, unsigned char* 
     ret->y = (float)top + ret->h/2.0;
 }
 
-void gfx_free_image(int img_index)
-{
-    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
-    {
-        LOGE("%s: Invalid image index!", __func__);
-        return;
-    }
-    GFXImage* img = &gfx_images[img_index];
+// void gfx_free_image(int img_index)
+// {
+//     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
+//     {
+//         LOGE("%s: Invalid image index!", __func__);
+//         return;
+//     }
+//     GFXImage* img = &gfx_images[img_index];
 
-    GFXSubImageData* sid = img->sub_img_data;
-    if(sid != NULL)
-    {
-        if(sid->visible_rects != NULL) free(sid->visible_rects);
-        if(sid->sprite_rects != NULL) free(sid->sprite_rects);
-        free(sid);
-    }
+//     GFXSubImageData* sid = img->sub_img_data;
+//     if(sid != NULL)
+//     {
+//         if(sid->visible_rects != NULL) free(sid->visible_rects);
+//         if(sid->sprite_rects != NULL) free(sid->sprite_rects);
+//         free(sid);
+//     }
 
-    memset(img, 0, sizeof(GFXImage));
-    img->texture = -1;
-}
+//     memset(img, 0, sizeof(GFXImage));
+//     img->texture = -1;
+// }
 
-GFXImage* gfx_get_image_data(int img_index)
+GFXImage2* gfx_get_image_data(int img_index)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
         LOGE("%s: Invalid image index!", __func__);
         return NULL;
     }
-    return &gfx_images[img_index];
+    return &gfx_images2[img_index];
 }
 
 void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, float scale, float opacity, bool filled, bool in_world)
@@ -524,177 +527,177 @@ void gfx_draw_rect(Rect* r, uint32_t color, float scale, float opacity, bool fil
     gfx_draw_rect_xywh(r->x, r->y, r->w, r->h, color, scale, opacity, filled, in_world);
 }
 
-bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale, float rotation, float opacity)
-{
-    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
-    {
-        LOGE("%s: Invalid image index!", __func__);
-        return false;
-    }
+// bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale, float rotation, float opacity)
+// {
+//     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
+//     {
+//         LOGE("%s: Invalid image index!", __func__);
+//         return false;
+//     }
 
-    GFXImage* img = &gfx_images[img_index];
+//     GFXImage* img = &gfx_images[img_index];
 
-    // int total = img->w*img->h*img->n;
-    glUseProgram(program_basic);
+//     // int total = img->w*img->h*img->n;
+//     glUseProgram(program_basic);
 
-    Matrix model = {0};
+//     Matrix model = {0};
 
-    float vw = img->visible_rect.w;
-    float vh = img->visible_rect.h;
+//     float vw = img->visible_rect.w;
+//     float vh = img->visible_rect.h;
 
-    Rect* sr = &img->sprite_rect;
-    float sprite_x = sr->x-sr->w/2.0;
-    float sprite_y = sr->y-sr->h/2.0;
-    float sprite_w = sr->w;
-    float sprite_h = sr->h;
+//     Rect* sr = &img->sprite_rect;
+//     float sprite_x = sr->x-sr->w/2.0;
+//     float sprite_y = sr->y-sr->h/2.0;
+//     float sprite_w = sr->w;
+//     float sprite_h = sr->h;
 
-    Vertex quad[] =
-    {
-        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
-        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
-        {{-0.5, -0.5},{sprite_x,sprite_y}},
-        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
-        {{+0.5, +0.5},{sprite_x+sprite_w,sprite_y+sprite_h}},
-        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
-    };
+//     Vertex quad[] =
+//     {
+//         {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
+//         {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
+//         {{-0.5, -0.5},{sprite_x,sprite_y}},
+//         {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
+//         {{+0.5, +0.5},{sprite_x+sprite_w,sprite_y+sprite_h}},
+//         {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
+//     };
 
-    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
+//     glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+//     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
 
-    Vector3f pos = {x,y,0.0};
-    Vector3f rot = {0.0,0.0,360.0-rotation};
-    Vector3f sca = {scale*vw,scale*vh,1.0};
+//     Vector3f pos = {x,y,0.0};
+//     Vector3f rot = {0.0,0.0,360.0-rotation};
+//     Vector3f sca = {scale*vw,scale*vh,1.0};
 
-    get_model_transform(&pos,&rot,&sca,&model);
-    Matrix* view = get_camera_transform();
+//     get_model_transform(&pos,&rot,&sca,&model);
+//     Matrix* view = get_camera_transform();
 
-    //print_matrix(&model);
-    //print_matrix(view);
-    //print_matrix(&proj_matrix);
+//     //print_matrix(&model);
+//     //print_matrix(view);
+//     //print_matrix(&proj_matrix);
 
-    uint8_t r = color >> 16;
-    uint8_t g = color >> 8;
-    uint8_t b = color >> 0;
+//     uint8_t r = color >> 16;
+//     uint8_t g = color >> 8;
+//     uint8_t b = color >> 0;
 
-    glUniform3f(loc_basic_tint_color,r/255.0,g/255.0,b/255.0);
-    glUniform1f(loc_basic_opacity,opacity);
-    glUniform1f(loc_basic_brightness,1.0);
+//     glUniform3f(loc_basic_tint_color,r/255.0,g/255.0,b/255.0);
+//     glUniform1f(loc_basic_opacity,opacity);
+//     glUniform1f(loc_basic_brightness,1.0);
 
-    glUniformMatrix4fv(loc_basic_model,1,GL_TRUE,&model.m[0][0]);
-    glUniformMatrix4fv(loc_basic_view,1,GL_TRUE,&view->m[0][0]);
-    glUniformMatrix4fv(loc_basic_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
+//     glUniformMatrix4fv(loc_basic_model,1,GL_TRUE,&model.m[0][0]);
+//     glUniformMatrix4fv(loc_basic_view,1,GL_TRUE,&view->m[0][0]);
+//     glUniformMatrix4fv(loc_basic_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, img->texture);
+//     glActiveTexture(GL_TEXTURE0);
+//     glBindTexture(GL_TEXTURE_2D, img->texture);
 
-    glUniform1i(loc_basic_image, 0);
+//     glUniform1i(loc_basic_image, 0);
 
-    glBindVertexArray(quad_vao);
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
+//     glBindVertexArray(quad_vao);
+//     glEnableVertexAttribArray(0);
+//     glEnableVertexAttribArray(1);
 
-    glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
+//     glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
 
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
+//     glDisableVertexAttribArray(0);
+//     glDisableVertexAttribArray(1);
 
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D,0);
-    glUseProgram(0);
+//     glBindVertexArray(0);
+//     glBindTexture(GL_TEXTURE_2D,0);
+//     glUseProgram(0);
 
-    return true;
-}
+//     return true;
+// }
 
-bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity)
-{
-    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
-    {
-        LOGE("%s: Invalid image index!", __func__);
-        return false;
-    }
+// bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity)
+// {
+//     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
+//     {
+//         LOGE("%s: Invalid image index!", __func__);
+//         return false;
+//     }
 
-    GFXImage* img = &gfx_images[img_index];
-    GFXSubImageData* sid = img->sub_img_data;
+//     GFXImage* img = &gfx_images[img_index];
+//     GFXSubImageData* sid = img->sub_img_data;
 
-    if(sid == NULL)
-    {
-        LOGE("Not a sub image set (%d)", img_index);
-        return false;
-    }
+//     if(sid == NULL)
+//     {
+//         LOGE("Not a sub image set (%d)", img_index);
+//         return false;
+//     }
 
-    if(sprite_index >= sid->element_count)
-    {
-        LOGE("Invalid sprite index: %d (%d, %d)", sprite_index, img_index, sid->element_count);
-        return false;
-    }
-    float vw = sid->visible_rects[sprite_index].w;
-    float vh = sid->visible_rects[sprite_index].h;
+//     if(sprite_index >= sid->element_count)
+//     {
+//         LOGE("Invalid sprite index: %d (%d, %d)", sprite_index, img_index, sid->element_count);
+//         return false;
+//     }
+//     float vw = sid->visible_rects[sprite_index].w;
+//     float vh = sid->visible_rects[sprite_index].h;
 
 
-    glUseProgram(program_sprite);
-    Rect* sr = &sid->sprite_rects[sprite_index];
-    float sprite_x = sr->x-sr->w/2.0;
-    float sprite_y = sr->y-sr->h/2.0;
-    float sprite_w = sr->w;
-    float sprite_h = sr->h;
+//     glUseProgram(program_sprite);
+//     Rect* sr = &sid->sprite_rects[sprite_index];
+//     float sprite_x = sr->x-sr->w/2.0;
+//     float sprite_y = sr->y-sr->h/2.0;
+//     float sprite_w = sr->w;
+//     float sprite_h = sr->h;
 
-    Vertex quad[] =
-    {
-        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
-        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
-        {{-0.5, -0.5},{sprite_x,sprite_y}},
-        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
-        {{+0.5, +0.5},{sprite_x+sprite_w,sprite_y+sprite_h}},
-        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
-    };
+//     Vertex quad[] =
+//     {
+//         {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
+//         {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
+//         {{-0.5, -0.5},{sprite_x,sprite_y}},
+//         {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
+//         {{+0.5, +0.5},{sprite_x+sprite_w,sprite_y+sprite_h}},
+//         {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
+//     };
 
-    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
+//     glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+//     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
 
-    Matrix model = {0};
+//     Matrix model = {0};
 
-    Vector3f pos = {x,y,0.0};
-    Vector3f rot = {0.0,0.0,360.0-rotation};
-    Vector3f sca = {scale*vw,scale*vh,1.0};
+//     Vector3f pos = {x,y,0.0};
+//     Vector3f rot = {0.0,0.0,360.0-rotation};
+//     Vector3f sca = {scale*vw,scale*vh,1.0};
 
-    get_model_transform(&pos,&rot,&sca,&model);
-    Matrix* view = get_camera_transform();
+//     get_model_transform(&pos,&rot,&sca,&model);
+//     Matrix* view = get_camera_transform();
 
-    uint8_t r = color >> 16;
-    uint8_t g = color >> 8;
-    uint8_t b = color >> 0;
+//     uint8_t r = color >> 16;
+//     uint8_t g = color >> 8;
+//     uint8_t b = color >> 0;
 
-    //printf("num_in_row: %d, sprite_index: %d\n",num_in_row, sprite_index);
+//     //printf("num_in_row: %d, sprite_index: %d\n",num_in_row, sprite_index);
 
-    glUniform3f(loc_sprite_tint_color,r/255.0,g/255.0,b/255.0);
-    glUniform1f(loc_sprite_opacity,opacity);
-    glUniform1f(loc_sprite_brightness,1.0);
+//     glUniform3f(loc_sprite_tint_color,r/255.0,g/255.0,b/255.0);
+//     glUniform1f(loc_sprite_opacity,opacity);
+//     glUniform1f(loc_sprite_brightness,1.0);
 
-    glUniformMatrix4fv(loc_sprite_model,1,GL_TRUE,&model.m[0][0]);
-    glUniformMatrix4fv(loc_sprite_view,1,GL_TRUE,&view->m[0][0]);
-    glUniformMatrix4fv(loc_sprite_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
+//     glUniformMatrix4fv(loc_sprite_model,1,GL_TRUE,&model.m[0][0]);
+//     glUniformMatrix4fv(loc_sprite_view,1,GL_TRUE,&view->m[0][0]);
+//     glUniformMatrix4fv(loc_sprite_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, img->texture);
+//     glActiveTexture(GL_TEXTURE0);
+//     glBindTexture(GL_TEXTURE_2D, img->texture);
 
-    glUniform1i(loc_sprite_image, 0);
+//     glUniform1i(loc_sprite_image, 0);
 
-    glBindVertexArray(quad_vao);
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
+//     glBindVertexArray(quad_vao);
+//     glEnableVertexAttribArray(0);
+//     glEnableVertexAttribArray(1);
 
-    glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
+//     glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
 
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
+//     glDisableVertexAttribArray(0);
+//     glDisableVertexAttribArray(1);
 
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D,0);
-    glUseProgram(0);
+//     glBindVertexArray(0);
+//     glBindTexture(GL_TEXTURE_2D,0);
+//     glUseProgram(0);
 
-    return true;
+//     return true;
 
-}
+// }
 
 // w,h
 Vector2f gfx_string_get_size(float scale, char* fmt, ...)
@@ -758,7 +761,7 @@ Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float ro
 
     Matrix* view = get_camera_transform();
 
-    GFXImage* img = &gfx_images[font_image];
+    GFXImage2* img = &gfx_images2[font_image];
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, img->texture);
@@ -993,4 +996,339 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
         return 0;
     }
     return -1;
+}
+
+
+
+
+
+
+// static int assign_image2(GFXImage2** img)
+// {
+//     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
+//     {
+//         if(gfx_images[i].texture == -1)
+//         {
+//             GFXImage* img = &gfx_images[i];
+
+//             img->w = image->w;
+//             img->h = image->h;
+//             img->n = image->n;
+
+//             LOGI("Assigning image to index: %d", i);
+
+//             if(sub_image_data != NULL)
+//             {
+//                 img->sub_img_data = calloc(1,sizeof(GFXSubImageData));
+//                 img->sub_img_data->element_count = sub_image_data->element_count;
+//                 img->sub_img_data->elements_per_row = sub_image_data->elements_per_row;
+//                 img->sub_img_data->elements_per_col = sub_image_data->elements_per_col;
+//                 img->sub_img_data->element_width = sub_image_data->element_width;
+//                 img->sub_img_data->element_height = sub_image_data->element_height;
+//                 img->sub_img_data->visible_rects = calloc(img->sub_img_data->element_count, sizeof(Rect));
+//                 img->sub_img_data->sprite_rects = calloc(img->sub_img_data->element_count, sizeof(Rect));
+//                 for(int e = 0; e < img->sub_img_data->element_count; ++e)
+//                 {
+//                     memcpy(&img->sub_img_data->visible_rects[e], &sub_image_data->visible_rects[e], sizeof(Rect));
+//                     memcpy(&img->sub_img_data->sprite_rects[e], &sub_image_data->sprite_rects[e], sizeof(Rect));
+//                 }
+//                 LOGI("Image set: width: %d, height: %d, count: %d", img->sub_img_data->element_width, img->sub_img_data->element_height, img->sub_img_data->element_count);
+//             }
+//             else
+//             {
+//                 gfx_get_image_visible_rect(img->w, img->h, img->n, image->data, &img->visible_rect);
+//                 img->sprite_rect.w = img->visible_rect.w / img->w;
+//                 img->sprite_rect.h = img->visible_rect.h / img->h;
+//                 img->sprite_rect.x = (img->visible_rect.x) / img->w;
+//                 img->sprite_rect.y = (img->visible_rect.y) / img->h;
+//                 LOGI("Visible Rectangle: x: %.0f, y: %.0f, w: %.0f, h: %.0f", img->visible_rect.x, img->visible_rect.y, img->visible_rect.w, img->visible_rect.h);
+//             }
+
+//             glGenTextures(1, &img->texture);
+//             glBindTexture(GL_TEXTURE_2D, img->texture);
+//             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->data);
+
+//             if(linear_filter)
+//             {
+//                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//             }
+//             else
+//             {
+//                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//             }
+
+//             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+//             glBindTexture(GL_TEXTURE_2D, 0);
+
+//             if(img->texture == -1)
+//                 img->texture = i; // @HACK
+
+//             return i;
+//         }
+//     }
+
+//     return -1;
+// }
+
+GFXImage2 gfx_images2[MAX_GFX_IMAGES] = {0};
+
+
+int gfx_load_image2(const char* image_path, bool flip, bool linear_filter, int element_width, int element_height, GFXNodeDataInput* node_input)
+{
+    GFXImageData image = {0};
+    bool load = gfx_load_image_data(image_path, &image, flip);
+    if(!load) return -1;
+
+    GFXImage2 img = {0};
+    img.w = image.w;
+    img.h = image.h;
+    img.n = image.n;
+
+    if(element_width <= 0 || element_height <= 0)
+    {
+        img.elements_per_row = 1;
+        img.elements_per_col = 1;
+        img.element_width = img.w;
+        img.element_height = img.h;
+    }
+    else
+    {
+        img.elements_per_row = (img.w / element_width);
+        img.elements_per_col = (img.h / element_height);
+        img.element_width = element_width;
+        img.element_height = element_height;
+    }
+    img.element_count = img.elements_per_row * img.elements_per_col;
+
+    // printf("image wh: %d, %d\n", img.w, img.h);
+    // printf("element count: %d  (%d x %d)\n", img.element_count, img.elements_per_row, img.elements_per_col);
+
+    img.visible_rects = malloc(img.element_count * sizeof(Rect));
+    img.sprite_rects = malloc(img.element_count * sizeof(Rect));
+
+    int num_cols = img.elements_per_row;
+    int num_rows = img.elements_per_col;
+
+    bool nodes = false;
+    GFXImageData node_image = {0};
+    if(node_input != NULL)
+    {
+        node_input->num_sets = MIN(node_input->num_sets, 10);
+        if(node_input->num_sets > 0)
+        {
+            nodes = gfx_load_image_data(node_input->image_path, &node_image, flip);
+
+            if(nodes)
+            {
+                img.node_sets = node_input->num_sets;
+                img.nodes = calloc(img.node_sets, sizeof(Vector2f*));
+                for(int c = 0; c < img.node_sets; ++c)
+                {
+                    img.nodes[c] = calloc(img.element_count, sizeof(Vector2f));
+                }
+            }
+        }
+    }
+
+    size_t temp_size = img.element_width*img.element_height*img.n*sizeof(unsigned char);
+    unsigned char* temp_data = malloc(temp_size);
+
+    for(int i = 0; i < img.element_count; ++i)
+    {
+        int start_x = (i % num_cols) * img.element_width;
+        int start_y = (i / num_cols) * img.element_height;
+        for(int y = 0; y < img.element_height; ++y)
+        {
+            for(int x = 0; x < img.element_width; ++x)
+            {
+                int index = ((start_y+y)*image.w + (start_x+x)) * img.n;
+                int sub_index = (y*img.element_width + x) * img.n;
+                for(int _n = 0; _n < img.n; ++_n)
+                {
+                    temp_data[sub_index+_n] = image.data[index+_n];
+                }
+
+                if(nodes)
+                {
+                    uint32_t color = COLOR(node_image.data[index+0], node_image.data[index+1], node_image.data[index+2]);
+                    for(int c = 0; c < img.node_sets; ++c)
+                    {
+                        if(node_input->colors[c] == color)
+                        {
+                            img.nodes[c][i].x = x;
+                            img.nodes[c][i].y = y;
+                            // LOGI("Found node: %d,%d -> %.0f,%.0f", x, y, img.nodes[c][i].x, img.nodes[c][i].y);
+                            continue;
+                        }
+                    }
+                }
+
+            }//element_width
+        }//element_height
+
+        gfx_get_image_visible_rect(img.element_width, img.element_height, img.n, temp_data, &img.visible_rects[i]);
+        Rect* vr = &img.visible_rects[i];
+        img.sprite_rects[i].x = (float)(start_x+vr->x) / image.w;
+        img.sprite_rects[i].y = (float)(start_y+vr->y) / image.h;
+        img.sprite_rects[i].w = vr->w / image.w;
+        img.sprite_rects[i].h = vr->h / image.h;
+
+        for(int c = 0; c < img.node_sets; ++c)
+        {
+            float nx = img.nodes[c][i].x;
+            float ny = img.nodes[c][i].y;
+            // node stays at center if not found for image
+            if(!FEQ(nx,0.0) || !FEQ(ny,0.0))
+            {
+                img.nodes[c][i].x = nx - vr->x;
+                img.nodes[c][i].y = ny - vr->y;
+            }
+            // LOGI("[%2d, %2d] Node: %.1f,%.1f -> %.1f,%.1f", c, i, nx, ny, img.nodes[c][i].x, img.nodes[c][i].y);
+        }
+
+    }//element_count
+
+
+    //assign image
+    for(int i = 0; i < MAX_GFX_IMAGES; ++i)
+    {
+        if(gfx_images2[i].texture == -1)
+        {
+
+            GFXImage2* p = &gfx_images2[i];
+            memcpy(p, &img, sizeof(GFXImage2));
+
+            glGenTextures(1, &p->texture);
+            if(p->texture == -1)
+            {
+                p->texture = i; // @HACK: for server
+            }
+            else
+            {
+                glBindTexture(GL_TEXTURE_2D, p->texture);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.w, image.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
+
+                if(linear_filter)
+                {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                }
+                else
+                {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                }
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+                glBindTexture(GL_TEXTURE_2D, 0);
+            }
+
+
+DEBUG_PRINT();
+            if(temp_data != NULL) free(temp_data);
+            if(image.data != NULL) free(image.data);
+            if(node_image.data != NULL) free(node_image.data);
+DEBUG_PRINT();
+
+            return i;
+            // return p->texture;
+        }
+    }
+DEBUG_PRINT();
+
+    if(temp_data != NULL) free(temp_data);
+    if(image.data != NULL) free(image.data);
+    if(node_image.data != NULL) free(node_image.data);
+
+    return -1;
+}
+
+
+bool gfx_draw_image2(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity)
+{
+    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
+    {
+        LOGE("%s: Invalid image index!", __func__);
+        return false;
+    }
+
+    GFXImage2* img = &gfx_images2[img_index];
+
+    if(sprite_index >= img->element_count)
+    {
+        LOGE("Invalid sprite index: %d (%d, %d)", sprite_index, img_index, img->element_count);
+        return false;
+    }
+    float vw = img->visible_rects[sprite_index].w;
+    float vh = img->visible_rects[sprite_index].h;
+
+
+    glUseProgram(program_sprite);
+    Rect* sr = &img->sprite_rects[sprite_index];
+    float sprite_x = sr->x-sr->w/2.0;
+    float sprite_y = sr->y-sr->h/2.0;
+    float sprite_w = sr->w;
+    float sprite_h = sr->h;
+
+    Vertex quad[] =
+    {
+        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
+        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
+        {{-0.5, -0.5},{sprite_x,sprite_y}},
+        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
+        {{+0.5, +0.5},{sprite_x+sprite_w,sprite_y+sprite_h}},
+        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
+
+    Matrix model = {0};
+
+    Vector3f pos = {x,y,0.0};
+    Vector3f rot = {0.0,0.0,360.0-rotation};
+    Vector3f sca = {scale*vw,scale*vh,1.0};
+
+    get_model_transform(&pos,&rot,&sca,&model);
+    Matrix* view = get_camera_transform();
+
+    uint8_t r = color >> 16;
+    uint8_t g = color >> 8;
+    uint8_t b = color >> 0;
+
+    //printf("num_in_row: %d, sprite_index: %d\n",num_in_row, sprite_index);
+
+    glUniform3f(loc_sprite_tint_color,r/255.0,g/255.0,b/255.0);
+    glUniform1f(loc_sprite_opacity,opacity);
+    glUniform1f(loc_sprite_brightness,1.0);
+
+    glUniformMatrix4fv(loc_sprite_model,1,GL_TRUE,&model.m[0][0]);
+    glUniformMatrix4fv(loc_sprite_view,1,GL_TRUE,&view->m[0][0]);
+    glUniformMatrix4fv(loc_sprite_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, img->texture);
+
+    glUniform1i(loc_sprite_image, 0);
+
+    glBindVertexArray(quad_vao);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+
+    glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D,0);
+    glUseProgram(0);
+
+    return true;
 }

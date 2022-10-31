@@ -29,8 +29,8 @@ Player* player = &players[0];   //this was index 1?
 int player_count = 0;
 
 static int player_image_set;
-static Vector2f* player_image_set_nodes = NULL;
-static int player_image_set_nodes_count = 0;
+// static Vector2f* player_image_set_nodes = NULL;
+// static int player_image_set_nodes_count = 0;
 
 static int crosshair_image;
 static float mouse_x, mouse_y;
@@ -42,68 +42,80 @@ void player_init_images()
 {
     int ew = 64;
     int eh = 128;
-    player_image_set = gfx_load_image_set("img/human_base.png",ew,eh,NULL);
-    crosshair_image = gfx_load_image("img/crosshair.png", false, false);
 
-    if(player_image_set != -1)
-    {
+    // GFXNodeDataInput nd = {
+    //     .image_path = "img/human2_nodes.png",
+    //     .colors = {COLOR_RED},
+    //     .num_sets = 1
+    // };
+    // player_image_set = gfx_load_image2("img/human_base.png", false, false, ew, eh, &nd);
+    player_image_set = gfx_load_image2("img/human_base.png", false, false, ew, eh, NULL);
 
+    crosshair_image = gfx_load_image2("img/crosshair.png", false, false, 0, 0, NULL);
 
-        GFXImageData data = {0};
-        int player_node_image_set = gfx_load_image_set("img/human2_nodes.png", ew, eh, &data);
+    // crosshair_image = gfx_load_image("img/crosshair.png", false, false);
 
-        if(player_node_image_set != -1)
-        {
-            GFXSubImageData* sid = gfx_images[player_image_set].sub_img_data;
-            GFXSubImageData* sid_nodes = gfx_images[player_node_image_set].sub_img_data;
-            if( sid->elements_per_row != sid_nodes->elements_per_row 
-                || sid->elements_per_col != sid_nodes->elements_per_col
-                )
-            {
-                LOGE("Incompatible node image for player");
-            }
-            else
-            {
-                // look for all of the nodes
-                player_image_set_nodes_count = sid_nodes->element_count;
-                player_image_set_nodes = calloc(player_image_set_nodes_count,sizeof(Vector2f));
-
-                int num_cols = sid_nodes->elements_per_row;
-                int element_width = sid_nodes->element_width;
-                int element_height = sid_nodes->element_height;
-
-                for(int i = 0; i < player_image_set_nodes_count; ++i)
-                {
-
-                    int start_x = (i % num_cols) * element_width;
-                    int start_y = (i / num_cols) * element_height;
-                    for(int y = 0; y < element_height; ++y)
-                    {
-                        for(int x = 0; x < element_width; ++x)
-                        {
-                            int index = ((start_y+y)*data.w + (start_x+x)) * data.n;
-                            int sub_index = (y*element_width + x) * data.n;
-                            uint8_t r = data.data[index+0];
-                            uint8_t g = data.data[index+1];
-                            uint8_t b = data.data[index+2];
-                            uint8_t a = data.data[index+3];
-
-                            if(r==0xFF && g==0x00 && b==0x00)
-                            {
-                                player_image_set_nodes[i].x = x-sid->visible_rects[i].x;
-                                player_image_set_nodes[i].y = y-sid->visible_rects[i].y;
-                                // print_rect(&sid->visible_rects[i]);
-                                // LOGI("Found node: %d,%d -> %.0f,%.0f", x, y, player_image_set_nodes[i].x, player_image_set_nodes[i].y);
-                                break;
-                            }
-                        }
-                    }
-                }
+    // player_image_set = gfx_load_image_set("img/human2.png",ew,eh,NULL);
+    // crosshair_image = gfx_load_image("img/crosshair.png", false, false);
 
 
-            }
-        }
-    }
+    // if(player_image_set != -1)
+    // {
+    //     GFXImageData data = {0};
+    //     int player_node_image_set = gfx_load_image_set("img/human2_nodes.png", ew, eh, &data);
+
+    //     if(player_node_image_set != -1)
+    //     {
+    //         GFXSubImageData* sid = gfx_images[player_image_set].sub_img_data;
+    //         GFXSubImageData* sid_nodes = gfx_images[player_node_image_set].sub_img_data;
+    //         if( sid->elements_per_row != sid_nodes->elements_per_row 
+    //             || sid->elements_per_col != sid_nodes->elements_per_col
+    //             )
+    //         {
+    //             LOGE("Incompatible node image for player");
+    //         }
+    //         else
+    //         {
+    //             // look for all of the nodes
+    //             player_image_set_nodes_count = sid_nodes->element_count;
+    //             player_image_set_nodes = calloc(player_image_set_nodes_count,sizeof(Vector2f));
+
+    //             int num_cols = sid_nodes->elements_per_row;
+    //             int element_width = sid_nodes->element_width;
+    //             int element_height = sid_nodes->element_height;
+
+    //             for(int i = 0; i < player_image_set_nodes_count; ++i)
+    //             {
+
+    //                 int start_x = (i % num_cols) * element_width;
+    //                 int start_y = (i / num_cols) * element_height;
+    //                 for(int y = 0; y < element_height; ++y)
+    //                 {
+    //                     for(int x = 0; x < element_width; ++x)
+    //                     {
+    //                         int index = ((start_y+y)*data.w + (start_x+x)) * data.n;
+    //                         int sub_index = (y*element_width + x) * data.n;
+    //                         uint8_t r = data.data[index+0];
+    //                         uint8_t g = data.data[index+1];
+    //                         uint8_t b = data.data[index+2];
+    //                         uint8_t a = data.data[index+3];
+
+    //                         if(r==0xFF && g==0x00 && b==0x00)
+    //                         {
+    //                             player_image_set_nodes[i].x = x-sid->visible_rects[i].x;
+    //                             player_image_set_nodes[i].y = y-sid->visible_rects[i].y;
+    //                             // print_rect(&sid->visible_rects[i]);
+    //                             // LOGI("Found node: %d,%d -> %.0f,%.0f", x, y, player_image_set_nodes[i].x, player_image_set_nodes[i].y);
+    //                             break;
+    //                         }
+    //                     }
+    //                 }
+    //             }
+
+
+    //         }
+    //     }
+    // }
 
 
 }
@@ -180,8 +192,8 @@ static void player_init(int index)
     p->anim.frame_sequence[14] = 10;
     p->anim.frame_sequence[15] = 11;
 
-    p->nodes = player_image_set_nodes;
-    p->node_count = player_image_set_nodes_count;
+    // p->nodes = player_image_set_nodes;
+    // p->node_count = player_image_set_nodes_count;
 
     p->angle = 0.0;
     player_update_sprite_index(p);
@@ -288,15 +300,13 @@ void player_update_sprite_index(Player* p)
 
     p->sprite_index *= 16;
     
-    GFXSubImageData* sid = gfx_images[p->image].sub_img_data;
-
     int anim_frame_offset = p->anim.frame_sequence[p->anim.curr_frame];//*sid->elements_per_row;
     assert(anim_frame_offset >= 0);
 
     p->sprite_index += anim_frame_offset;
-    p->sprite_index = MIN(p->sprite_index, sid->element_count);
+    p->sprite_index = MIN(p->sprite_index, gfx_images2[p->image].element_count);
 
-    Rect* vr = &sid->visible_rects[p->sprite_index];
+    Rect* vr = &gfx_images2[p->image].visible_rects[p->sprite_index];
     p->phys.pos.w = vr->w*p->scale;
     p->phys.pos.h = vr->h*p->scale;
 }
@@ -304,18 +314,18 @@ void player_update_sprite_index(Player* p)
 void player_gun_set_position(Player* p)
 {
 
+    GFXImage2* img = &gfx_images2[p->image];
+
     p->gun.angle = p->angle;
     float gx0 = p->phys.pos.x;
     float gy0 = p->phys.pos.y;
-    // Rect* vr = &gfx_images[p->image].sub_img_data->visible_rects[p->sprite_index];
     Rect* vr = &p->phys.pos;
 
-    if(p->nodes != NULL && p->sprite_index < p->node_count)
+    if(img->nodes != NULL)
     {
-        Vector2f node = p->nodes[p->sprite_index];
+        Vector2f node = img->nodes[0][p->sprite_index];
         gx0 += node.x*p->scale;
         gy0 += node.y*p->scale;
-
     }
     else
     {
@@ -344,56 +354,6 @@ void player_gun_set_position(Player* p)
     p->gun.pos.y = r_rot.y;
 }
 
-
-// void player_gun_set_position(Player* p)
-// {
-//     // update gun
-//     // gun orientation X:
-//     // +----------------------+
-//     // |                      |
-//     // X                      B
-//     // |                      |
-//     // +----------------------+
-//     // bullet should spawn at B
-
-//     Rect* vr = &gfx_images[p->image].sub_img_data->visible_rects[p->sprite_index];
-
-//     // p->gun.angle = p->angle;
-//     float gx0 = p->phys.pos.x;
-//     float gy0 = p->phys.pos.y-vr->h*0.1;
-
-//     p->gun.angle = p->angle;
-
-//     if(role != ROLE_SERVER && p == player)
-//         p->gun.angle = calc_angle_rad(gx0, gy0, mouse_x, mouse_y);
-
-//     Rect r = {0};
-//     RectXY rxy_rot = {0};
-//     Rect r_rot = {0};
-
-//     r.x = gx0;
-//     r.y = gy0;
-//     r.w = p->gun.visible_rect.w;
-//     r.h = p->gun.visible_rect.h;
-//     rotate_rect(&r, DEG(p->gun.angle), r.x, r.y, &rxy_rot);
-
-//     // 'push' the rotated rectangle out a bit from the player
-//     for(int i = 0; i < 4; ++i)
-//     {
-//         rxy_rot.x[i] += (vr->w*0.7)*cosf(p->gun.angle);
-//         // rxy_rot.y[i] -= vr->h/2.0*sinf(p->gun.angle);
-
-//         // rxy_rot.x[i] += 16*cosf(p->gun.angle);
-//         // rxy_rot.y[i] -= 16*sinf(p->gun.angle);
-//         // // rxy_rot.y[i] += 16*sinf(PI*2-p->gun.angle); //also works
-//     }
-
-//     // find center of rotated rectangle
-//     rectxy_to_rect(&rxy_rot, &r_rot);
-//     p->gun.pos.x = r_rot.x;
-//     p->gun.pos.y = r_rot.y;
-//     memcpy(&p->gun.rectxy, &rxy_rot, sizeof(RectXY));
-// }
 
 void player_update(Player* p, double delta_t)
 {
@@ -582,7 +542,8 @@ void player_draw(Player* p)
 
     float px = p->phys.pos.x;
     float py = p->phys.pos.y;
-    gfx_draw_sub_image(p->image, p->sprite_index, px, py, COLOR_TINT_NONE,p->scale,0.0,1.0);
+    // gfx_draw_sub_image(p->image, p->sprite_index, px, py, COLOR_TINT_NONE,p->scale,0.0,1.0);
+    gfx_draw_image2(p->image, p->sprite_index, px, py, COLOR_TINT_NONE,p->scale,0.0,1.0);
 
     if(debug_enabled)
     {
@@ -595,8 +556,9 @@ void player_draw(Player* p)
         if(!gun_drawn)
             gun_draw(&p->gun);
 
-        GFXImage* img = &gfx_images[crosshair_image];
-        gfx_draw_image(crosshair_image,mouse_x,mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
+        GFXImage2* img = &gfx_images2[crosshair_image];
+        // gfx_draw_image(crosshair_image,mouse_x,mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
+        gfx_draw_image2(crosshair_image,0,mouse_x,mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
     }
 
 
