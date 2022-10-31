@@ -59,14 +59,7 @@ static GLint loc_font_view;
 static GLint loc_font_proj;
 
 
-typedef struct
-{
-    int w,h,n;
-    unsigned char* data;
-} _Image;
-
-static bool load_image(const char* image_path, _Image* image, bool flip);
-static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool linear_filter);
+static int assign_image(GFXSubImageData* sub_image_data, GFXImageData* image, bool linear_filter);
 
 static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int img_n, unsigned char* data);
 
@@ -95,7 +88,7 @@ FontChar font_chars[255];
 static void load_font()
 {
     font_image = gfx_load_image("core/fonts/atlas.png", false, true);
-    printf("font image index: %d\n",font_image);
+    LOGI("Font image index: %d",font_image);
 
     FILE* fp = fopen("core/fonts/atlas_layout.csv","r");
 
@@ -156,7 +149,7 @@ void gfx_image_init()
 
 void gfx_init(int width, int height)
 {
-    printf("GL version: %s\n",glGetString(GL_VERSION));
+    LOGI("GL version: %s",glGetString(GL_VERSION));
 
     glGenVertexArrays(1, &quad_vao);
     glBindVertexArray(quad_vao);
@@ -258,26 +251,7 @@ void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static bool load_image(const char* image_path, _Image* image, bool flip)
-{
-    printf("%s\n",image_path);
-
-    stbi_set_flip_vertically_on_load(flip);
-    image->data = stbi_load(image_path,&image->w,&image->h,&image->n,4);
-
-    if(image->data != NULL)
-    {
-        printf("Loaded image: %s (x: %d, y: %d, n: %d)\n", image_path, image->w, image->h, image->n);
-         return true;
-    }
-    else
-    {
-        printf("Image data is NULL: %s\n", image_path);
-        return false;
-    }
-}
-
-static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool linear_filter)
+static int assign_image(GFXSubImageData* sub_image_data, GFXImageData* image, bool linear_filter)
 {
     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
     {
@@ -289,7 +263,7 @@ static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool lin
             img->h = image->h;
             img->n = image->n;
 
-            printf("Assigning image to index: %d\n", i);
+            LOGI("Assigning image to index: %d", i);
 
             if(sub_image_data != NULL)
             {
@@ -306,7 +280,7 @@ static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool lin
                     memcpy(&img->sub_img_data->visible_rects[e], &sub_image_data->visible_rects[e], sizeof(Rect));
                     memcpy(&img->sub_img_data->sprite_rects[e], &sub_image_data->sprite_rects[e], sizeof(Rect));
                 }
-                printf("Image set: width: %d, height: %d, count: %d\n", img->sub_img_data->element_width, img->sub_img_data->element_height, img->sub_img_data->element_count);
+                LOGI("Image set: width: %d, height: %d, count: %d", img->sub_img_data->element_width, img->sub_img_data->element_height, img->sub_img_data->element_count);
             }
             else
             {
@@ -315,7 +289,7 @@ static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool lin
                 img->sprite_rect.h = img->visible_rect.h / img->h;
                 img->sprite_rect.x = (img->visible_rect.x) / img->w;
                 img->sprite_rect.y = (img->visible_rect.y) / img->h;
-                printf("Visible Rectangle: x: %.0f, y: %.0f, w: %.0f, h: %.0f\n", img->visible_rect.x, img->visible_rect.y, img->visible_rect.w, img->visible_rect.h);
+                LOGI("Visible Rectangle: x: %.0f, y: %.0f, w: %.0f, h: %.0f", img->visible_rect.x, img->visible_rect.y, img->visible_rect.w, img->visible_rect.h);
             }
 
             glGenTextures(1, &img->texture);
@@ -348,10 +322,29 @@ static int assign_image(GFXSubImageData* sub_image_data, _Image* image, bool lin
     return -1;
 }
 
+bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip)
+{
+    LOGI("Loading image: %s",image_path);
+
+    stbi_set_flip_vertically_on_load(flip);
+    image->data = stbi_load(image_path,&image->w,&image->h,&image->n,4);
+
+    if(image->data != NULL)
+    {
+        LOGI("Loaded image: %s (w: %d, h: %d, n: %d)", image_path, image->w, image->h, image->n);
+        return true;
+    }
+    else
+    {
+        LOGE("Image data is NULL: %s", image_path);
+        return false;
+    }
+}
+
 int gfx_load_image(const char* image_path, bool flip, bool linear_filter)
 {
-    _Image image = {0};
-    bool load = load_image(image_path, &image, flip);
+    GFXImageData image = {0};
+    bool load = gfx_load_image_data(image_path, &image, flip);
     if(!load) return -1;
 
     int idx = assign_image(NULL, &image, linear_filter);
@@ -361,10 +354,10 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter)
     return idx;
 }
 
-int gfx_load_image_set(const char* image_path, int element_width, int element_height)
+int gfx_load_image_set(const char* image_path, int element_width, int element_height, GFXImageData* data)
 {
-    _Image image = {0};
-    bool load = load_image(image_path, &image, false);
+    GFXImageData image = {0};
+    bool load = gfx_load_image_data(image_path, &image, false);
     if(!load) return -1;
 
     int num_cols = (image.w / element_width);     //cols
@@ -393,14 +386,12 @@ int gfx_load_image_set(const char* image_path, int element_width, int element_he
             {
                 int index = ((start_y+y)*image.w + (start_x+x)) * n;
                 int sub_index = (y*element_width + x) * n;
-                temp_data[sub_index] = image.data[index];
-                temp_data[sub_index+1] = image.data[index+1];
-                temp_data[sub_index+2] = image.data[index+2];
-                temp_data[sub_index+3] = image.data[index+3];
+                for(int _n = 0; _n < n; ++_n)
+                    temp_data[sub_index+_n] = image.data[index+_n];
             }
         }
 
-        gfx_get_image_visible_rect(element_width, element_height, 4, temp_data, &sid.visible_rects[i]);
+        gfx_get_image_visible_rect(element_width, element_height, n, temp_data, &sid.visible_rects[i]);
 
         Rect* vr = &sid.visible_rects[i];
         sid.sprite_rects[i].x = (float)(start_x+vr->x) / image.w;
@@ -412,9 +403,18 @@ int gfx_load_image_set(const char* image_path, int element_width, int element_he
     int idx = assign_image(&sid, &image, false);
 
     free(temp_data);
-    stbi_image_free(image.data);
     free(sid.visible_rects);
     free(sid.sprite_rects);
+
+    if(data != NULL)
+    {
+        memcpy(data, &image, sizeof(GFXImageData));
+        int num_bytes = image.w*image.h*image.n*sizeof(unsigned char);
+        data->data = malloc(num_bytes);
+        memcpy(data->data, image.data, num_bytes);
+    }
+
+    stbi_image_free(image.data);
 
     return idx;
 }
@@ -440,7 +440,7 @@ void gfx_free_image(int img_index)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
-        printf("%s: Invalid image index!\n", __func__);
+        LOGE("%s: Invalid image index!", __func__);
         return;
     }
     GFXImage* img = &gfx_images[img_index];
@@ -461,7 +461,7 @@ GFXImage* gfx_get_image_data(int img_index)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
-        printf("%s: Invalid image index!\n", __func__);
+        LOGE("%s: Invalid image index!", __func__);
         return NULL;
     }
     return &gfx_images[img_index];
@@ -528,7 +528,7 @@ bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
-        printf("%s: Invalid image index!\n", __func__);
+        LOGE("%s: Invalid image index!", __func__);
         return false;
     }
 
@@ -609,7 +609,7 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint3
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
-        printf("%s: Invalid image index!\n", __func__);
+        LOGE("%s: Invalid image index!", __func__);
         return false;
     }
 
@@ -618,13 +618,13 @@ bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint3
 
     if(sid == NULL)
     {
-        printf("Not a sub image set (%d)\n", img_index);
+        LOGE("Not a sub image set (%d)", img_index);
         return false;
     }
 
     if(sprite_index >= sid->element_count)
     {
-        printf("Invalid sprite index: %d (%d, %d)\n", sprite_index, img_index, sid->element_count);
+        LOGE("Invalid sprite index: %d (%d, %d)", sprite_index, img_index, sid->element_count);
         return false;
     }
     float vw = sid->visible_rects[sprite_index].w;

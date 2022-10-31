@@ -4,6 +4,7 @@
 
 #define MAX_GFX_IMAGES 256
 
+
 #define COLOR(r,g,b) (uint32_t)(r<<16|g<<8|b)
 #define COLOR_RED       COLOR(0xff,0x00,0x00)
 #define COLOR_GREEN     COLOR(0x00,0xff,0x00)
@@ -15,6 +16,12 @@
 #define COLOR_YELLOW    COLOR(0xff,0xff,0x00)
 #define COLOR_WHITE     COLOR(0xff,0xff,0xff)
 #define COLOR_TINT_NONE (0xFFFFFFFF)
+
+typedef struct
+{
+    int w,h,n;
+    unsigned char* data;
+} GFXImageData;
 
 typedef struct
 {
@@ -47,6 +54,43 @@ typedef struct
     int max_loops;
 } GFXAnimation;
 
+
+// typedef struct
+// {
+//     Vector2f** nodes;
+//     int* count;
+// } GFXNodeData;
+
+
+// typedef struct
+// {
+//     uint32_t* colors
+// } GFXNodeDataInput;
+
+
+
+// typedef struct
+// {
+//     uint32_t texture;
+//     int w,h,n;
+
+//     int element_count;
+//     int elements_per_row;
+//     int elements_per_col;
+//     int element_width, element_height;
+
+//     int node_sets;
+//     Vector2f** nodes;   //double array
+
+//     Rect* visible_rect;
+//     Rect* sprite_rect;
+//     // GFXSubImageData* sub_img_data;
+// } GFXImage2;
+
+
+
+// int gfx_load_image_set(const char* image_path, int element_width, int element_height, uint32_t*);
+
 extern GFXImage gfx_images[MAX_GFX_IMAGES];
 extern int font_image;
 
@@ -59,9 +103,12 @@ void gfx_draw_rect(Rect* r, uint32_t color, float scale, float opacity, bool fil
 void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, float scale, float opacity, bool filled, bool in_world);
 
 // Images
+// TODO: linear_filter arg
+bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip);
 int gfx_load_image(const char* image_path, bool flip, bool linear_filter);
+int gfx_load_image_set(const char* image_path, int element_width, int element_height, GFXImageData* data);
+
 void gfx_get_image_visible_rect(int img_w, int img_h, int img_n, unsigned char* img_data, Rect* ret);
-int gfx_load_image_set(const char* image_path, int element_width, int element_height);
 bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale, float rotation, float opacity);
 bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity);
 void gfx_free_image(int img_index);

@@ -14,7 +14,7 @@ int gun_image_set;
 
 void gun_init()
 {
-    gun_image_set = gfx_load_image_set("img/gun_set.png",32,32);
+    gun_image_set = gfx_load_image_set("img/gun_set.png",32,32,NULL);
     GFXSubImageData* sid = gfx_images[gun_image_set].sub_img_data;
 
     int idx = GUN_TYPE_HANDGUN;
