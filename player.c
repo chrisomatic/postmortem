@@ -37,7 +37,7 @@ static void player_gun_set_position(Player* p);
 
 void player_init_images()
 {
-    player_image_set = gfx_load_image_set("img/human2.png",64,128);
+    player_image_set = gfx_load_image_set("img/human_base.png",64,128);
     crosshair_image = gfx_load_image("img/crosshair.png", false, false);
 }
 
@@ -90,16 +90,28 @@ static void player_init(int index)
 
     // animation
     p->anim.curr_frame = 0;
-    p->anim.max_frames = 4;
+    p->anim.max_frames = 16;
     p->anim.curr_frame_time = 0.0f;
-    p->anim.max_frame_time = 0.2f;
+    p->anim.max_frame_time = 0.04f;
     p->anim.finite = false;
     p->anim.curr_loop = 0;
     p->anim.max_loops = 0;
-    p->anim.frame_sequence[0] = 0;
-    p->anim.frame_sequence[1] = 1;
-    p->anim.frame_sequence[2] = 0;
-    p->anim.frame_sequence[3] = 2;
+    p->anim.frame_sequence[0] = 12;
+    p->anim.frame_sequence[1] = 13;
+    p->anim.frame_sequence[2] = 14;
+    p->anim.frame_sequence[3] = 15;
+    p->anim.frame_sequence[4] = 0;
+    p->anim.frame_sequence[5] = 1;
+    p->anim.frame_sequence[6] = 2;
+    p->anim.frame_sequence[7] = 3;
+    p->anim.frame_sequence[8] = 4;
+    p->anim.frame_sequence[9] = 5;
+    p->anim.frame_sequence[10] = 6;
+    p->anim.frame_sequence[11] = 7;
+    p->anim.frame_sequence[12] = 8;
+    p->anim.frame_sequence[13] = 9;
+    p->anim.frame_sequence[14] = 10;
+    p->anim.frame_sequence[15] = 11;
 
     p->angle = 0.0;
     player_update_sprite_index(p);
@@ -203,10 +215,12 @@ void player_update_sprite_index(Player* p)
         else if(p->actions.right)
             p->sprite_index = 2;
     }
+
+    p->sprite_index *= 16;
     
     GFXSubImageData* sid = gfx_images[p->image].sub_img_data;
 
-    int anim_frame_offset = p->anim.frame_sequence[p->anim.curr_frame]*sid->elements_per_row;
+    int anim_frame_offset = p->anim.frame_sequence[p->anim.curr_frame];//*sid->elements_per_row;
     assert(anim_frame_offset >= 0);
 
     p->sprite_index += anim_frame_offset;
