@@ -46,7 +46,8 @@ void player_init_images()
         .colors = {COLOR_RED, COLOR_BLUE},
         .num_sets = 2
     };
-    player_image_set = gfx_load_image("img/human_base.png", false, false, ew, eh, &nd);
+    // player_image_set = gfx_load_image("img/human_base.png", false, false, ew, eh, &nd);
+    player_image_set = gfx_load_image("img/human_base_full.png", false, false, ew, eh, NULL);
 
     crosshair_image = gfx_load_image("img/crosshair.png", false, false, 0, 0, NULL);
 }

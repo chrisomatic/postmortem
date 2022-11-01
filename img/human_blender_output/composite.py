@@ -42,57 +42,116 @@ class Compositor(QWidget):
 
         self.root = root = os.path.dirname(os.path.abspath(__file__)) + slash
 
-        folder = "walk_gun_ready"
-
-        self.path = self.root + folder + slash + "front" + slash
-        #self.path = self.root + folder + slash + "front_right" + slash
-        #self.path = self.root + folder + slash "right" + slash
-        #self.path = self.root + folder + slash "back_right" + slash
-        #self.path = self.root + folder + slash "back" + slash
-        #self.path = self.root + folder + slash "back_left" + slash
-        #self.path = self.root + folder + slash "left" + slash
-        #self.path = self.root + folder + slash "front_left" + slash
-
         self.scaled_size = QSize(96, 128)
 
-        pics = [x.lower() for x in os.listdir(self.path) if os.path.isfile(self.path+x) and x.lower().endswith(".png") and x.lower().startswith("00")]
-        pics.sort()
+        self.num_cols = 16
 
-        if(len(pics) == 0):
-            printf("No images found")
-            QCoreApplication.instance().quit()
-
-        # pics = [pics[0]]
+        nums = ["00%02d" % i for i in range(self.num_cols)]
 
         self.pic_data = {}
-        for i in range(len(pics)):
-            p = pics[i]
-            # printf("Loading image %s (%d of %d)      \r", p, i+1, len(pics))
-            printf("Loading image %s (%d of %d)      \n", p, i+1, len(pics))
-            num = int(p.replace(".png",""))
-            img = QImage(self.path+p,"PNG")
+
+        self.folders = ["walk_normal", "walk_gun_ready"]
+        self.orientations = ["front" , "front_right", "right", "back_right", "back", "back_left", "left", "front_left"]
+
+
+        for i in range(len(self.folders)):
+            # self.pic_data.append({})
+            f = self.folders[i]
+            fpath = self.root + f + slash
+
+            for j in range(len(self.orientations)):
+                o = self.orientations[j]
+
+                search_pics = [n + "_" + o + ".png" for n in nums]
+
+                pics = [x.lower() for x in os.listdir(fpath) if os.path.isfile(fpath+x) and x.lower() in search_pics]
+                pics.sort()
+
+                self.num_cols = len(pics)
+
+                for p in pics:
+                    self.pic_data[fpath+p] = {}
+
+
+        self.keys = [x for x in self.pic_data.keys()]
+        self.krange = range(len(self.keys))
+
+        for i in self.krange:
+            path = self.keys[i]
+
+            # printf("Loading image %s (%d of %d)      \r", path, i+1, len(self.keys))
+            printf("Loading image %d of %d      \r", i+1, len(self.keys))
+            img = QImage(path,"PNG")
             img = img.convertToFormat(QImage.Format_ARGB32)
-            img,cnt = self.sub_img_color(img, self.color_rep_clear, self.color_clear)
-            w = img.width()
-            h = img.height()
+            # img,cnt = self.sub_img_color(img, self.color_rep_clear, self.color_clear)
+            # w = img.width()
+            # h = img.height()
 
             # https://doc.qt.io/qtforpython-5/PySide2/QtGui/QImage.html?highlight=qimage#PySide2.QtGui.PySide2.QtGui.QImage.scaled
             # https://doc.qt.io/qtforpython-5/PySide2/QtCore/Qt.html#PySide2.QtCore.PySide2.QtCore.Qt.AspectRatioMode
             img_scaled = img.scaled(self.scaled_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
-            self.pic_data[p] = {}
-            self.pic_data[p]["num"] = num
-            self.pic_data[p]["img"] = img
-            self.pic_data[p]["img_scaled"] = img_scaled
+            # self.pic_data[p] = {}
+            # self.pic_data[p]["num"] = num
+            self.pic_data[path]["img"] = img
+            self.pic_data[path]["img_scaled"] = img_scaled
+
+        print("")
 
         # printf("Loaded %d image(s)                                                 \n", len(self.pic_data))
 
-        self.keys = [x for x in self.pic_data.keys()]
-        self.krange = range(len(self.keys))
+        self.num_rows = len(self.folders)*len(self.orientations)
+        # print(self.num_cols)
+        # print(self.num_rows)
 
         self.draw_png()
         QCoreApplication.instance().quit()
 
+
+    def draw_png(self):
+
+        tw = self.scaled_size.width()*self.num_cols
+        th = self.scaled_size.height()*self.num_rows
+
+        image = QImage(tw, th, QImage.Format_ARGB32)
+
+        # painter = QPainter(image)
+
+        painter = QPainter()
+        painter.begin(image)
+
+        idx = 0
+        for r in range(self.num_rows):
+            y = self.scaled_size.height()*r
+            for c in range(self.num_cols):
+                x = self.scaled_size.width()*c
+
+                img = self.pic_data[self.keys[idx]]["img_scaled"]
+                painter.drawImage(x,y,img)
+
+
+                idx += 1
+
+            
+
+
+        # # painter.setCompositionMode(QPainter.CompositionMode_Source)
+
+        # x = 0
+        # for i in self.krange:
+        #     key = self.keys[i]
+        #     img = self.pic_data[key]["img_scaled"]
+        #     painter.drawImage(x,0,img)
+        #     x += img.width()
+
+        painter.end()
+        path = self.root+"composite.png"
+        image.save(path,"PNG")
+        printf("Saved: %s\n", path)
+
+
+
+    # junk function
     def sub_img_color(self, img, find, replace):
 
         am = img.createAlphaMask()
@@ -121,35 +180,6 @@ class Compositor(QWidget):
                     count += 1
         # img.setAlphaChannel(am)
         return img,count
-
-    def draw_png(self):
-        # return
-        # print("draw png")
-        tw = 0
-        for i in self.krange:
-            key = self.keys[i]
-            tw += self.pic_data[key]["img_scaled"].width()
-
-        image = QImage(tw, self.scaled_size.height(), QImage.Format_ARGB32)
-
-        # painter = QPainter(image)
-
-        painter = QPainter()
-        painter.begin(image)
-
-        # painter.setCompositionMode(QPainter.CompositionMode_Source)
-
-        x = 0
-        for i in self.krange:
-            key = self.keys[i]
-            img = self.pic_data[key]["img_scaled"]
-            painter.drawImage(x,0,img)
-            x += img.width()
-
-        painter.end()
-        path = self.path+"composite_test.png"
-        image.save(path,"PNG")
-        printf("Saved: %s\n", path)
 
     def paintEvent(self, event):
         print("paint event")
