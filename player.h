@@ -39,6 +39,23 @@ typedef struct
     float angle;
 } PlayerState;
 
+
+// typedef void (*object_primary_action_cb)(GLFWwindow* window, int key, int scan_code, int action, int mods);
+
+
+// typedef struct
+// {
+//     int img_index;
+//     int sprite_index;
+// } Object;
+
+// typedef struct
+// {
+//     Object* obj;
+//     PositionRects pos;
+//     bool draw_front;
+// } PlayerObjectData;
+
 typedef struct
 {
     char name[PLAYER_NAME_MAX+1];
@@ -57,9 +74,6 @@ typedef struct
     uint8_t sprite_index;
     uint16_t keys;
 
-    // Vector2f* nodes;    //node positions are interpreted as offsets from center of visible rectangle
-    // int node_count;
-
     Vector2f mouse_pos;
 
     PlayerActions actions_prior;
@@ -71,8 +85,11 @@ typedef struct
     NetPlayerState predicted_states[MAX_CLIENT_PREDICTED_STATES];
     int predicted_state_index;
 
+    // Object equipped_object;
+
     Gun gun;
     bool gun_ready;
+    bool gun_front; //TODO
 
     // for client-side interpolation
     float lerp_t;

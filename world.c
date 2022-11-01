@@ -91,7 +91,7 @@ static void load_map_file(const char* file_path)
 void world_init()
 {
     load_map_file("map/test.map");
-    ground_sheet = gfx_load_image2("img/ground_set.png", false, false, 32, 32, NULL);
+    ground_sheet = gfx_load_image("img/ground_set.png", false, false, 32, 32, NULL);
 
 }
 
@@ -171,7 +171,7 @@ void world_draw()
             if(index == 0xFF) continue;
             float x,y;
             map_grid_to_coords(r, c, &x, &y);
-            gfx_draw_image2(ground_sheet,index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0);
+            gfx_draw_image(ground_sheet,index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0);
 
 #if 0
             if(debug_enabled)

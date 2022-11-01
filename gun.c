@@ -14,9 +14,7 @@ int gun_image_set;
 
 void gun_init()
 {
-    // gun_image_set = gfx_load_image_set("img/gun_set.png",32,32,NULL);
-    gun_image_set = gfx_load_image2("img/gun_set.png",false, false, 32, 32, NULL);
-    // GFXSubImageData* sid = gfx_images[gun_image_set].sub_img_data;
+    gun_image_set = gfx_load_image("img/gun_set.png",false, false, 32, 32, NULL);
 
 
     int idx = GUN_TYPE_HANDGUN;
@@ -33,7 +31,7 @@ void gun_init()
     gun_arsenal[idx].projectile_type = PROJECTILE_TYPE_BULLET;
     gun_arsenal[idx].type = idx;
     gun_arsenal[idx].sprite_index = 0;
-    memcpy(&gun_arsenal[idx].visible_rect, &gfx_images2[gun_image_set].visible_rects[gun_arsenal[idx].sprite_index], sizeof(Rect));
+    // memcpy(&gun_arsenal[idx].visible_rect, &gfx_images[gun_image_set].visible_rects[gun_arsenal[idx].sprite_index], sizeof(Rect));
 
     idx = GUN_TYPE_MACHINEGUN;
     gun_arsenal[idx].power = 1.0;
@@ -49,7 +47,7 @@ void gun_init()
     gun_arsenal[idx].projectile_type = PROJECTILE_TYPE_BULLET;
     gun_arsenal[idx].type = idx;
     gun_arsenal[idx].sprite_index = 0;
-    memcpy(&gun_arsenal[idx].visible_rect, &gfx_images2[gun_image_set].visible_rects[gun_arsenal[idx].sprite_index], sizeof(Rect));
+    // memcpy(&gun_arsenal[idx].visible_rect, &gfx_images[gun_image_set].visible_rects[gun_arsenal[idx].sprite_index], sizeof(Rect));
 
     idx = GUN_TYPE_SHOTGUN;
     gun_arsenal[idx].power = 1.0;
@@ -65,7 +63,7 @@ void gun_init()
     gun_arsenal[idx].projectile_type = PROJECTILE_TYPE_BULLET;
     gun_arsenal[idx].type = idx;
     gun_arsenal[idx].sprite_index = 1;
-    memcpy(&gun_arsenal[idx].visible_rect, &gfx_images2[gun_image_set].visible_rects[gun_arsenal[idx].sprite_index], sizeof(Rect));
+    // memcpy(&gun_arsenal[idx].visible_rect, &gfx_images[gun_image_set].visible_rects[gun_arsenal[idx].sprite_index], sizeof(Rect));
 }
 
 Gun gun_get(GunType type)
@@ -142,7 +140,7 @@ void gun_update(Gun* gun, float delta_t)
 
 void gun_draw(Gun* gun)
 {
-    gfx_draw_image2(gun_image_set,gun->sprite_index,gun->pos.x,gun->pos.y, COLOR_TINT_NONE,1.0,DEG(gun->angle),1.0);
+    gfx_draw_image(gun_image_set,gun->sprite_index,gun->pos.x,gun->pos.y, COLOR_TINT_NONE,1.0,DEG(gun->angle),1.0);
 
     // gfx_draw_sub_image(gun_image_set,gun->sprite_index,gun->pos.x,gun->pos.y, COLOR_TINT_NONE,1.0,DEG(gun->angle),1.0);
 }
