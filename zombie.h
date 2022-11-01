@@ -39,6 +39,8 @@ typedef struct
     int world_row;
     int world_col;
 
+    int sprite_index;
+
     // bool dead;
 } Zombie;
 
@@ -60,6 +62,7 @@ void zombie_init();
 bool zombie_add(ZombieSpawn* spawn);
 bool zombie_add_to_world_grid(ZombieSpawn* spawn, int world_row, int world_col);
 void zombie_update(float delta_t);
+void zombie_update_boxes(Zombie* zom);
 void zombie_draw();
 void zombie_hurt(int index, float val);
 void zombie_push(int index, Vector2f* force);

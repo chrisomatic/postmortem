@@ -22,10 +22,7 @@ static int zombie_image;
 static void zombie_remove(int index);
 static void sort_zombies(Zombie arr[], int n);
 static void wander(Zombie* zom, float delta_t);
-static void update_zombie_boxes(Zombie* zom);
 static void zombie_die(int index);
-
-
 
 bool zombie_add(ZombieSpawn* spawn)
 {
@@ -39,6 +36,7 @@ bool zombie_add(ZombieSpawn* spawn)
     zombie.push_vel.x = 0.0;
     zombie.push_vel.y = 0.0;
     zombie.action_timer = 0;
+    zombie.sprite_index = 0;
 
     zombie.hp_max = spawn->hp_max;
     zombie.action = spawn->action;
@@ -63,7 +61,7 @@ bool zombie_add(ZombieSpawn* spawn)
     zombie.phys.pos.w = gfx_images[zombie_image].visible_rects[0].w*zombie.scale;
     zombie.phys.pos.h = gfx_images[zombie_image].visible_rects[0].h*zombie.scale;
 
-    update_zombie_boxes(&zombie);
+    zombie_update_boxes(&zombie);
 
     return list_add(zlist, (void*)&zombie);
 }
@@ -96,43 +94,80 @@ void zombie_init()
         LOGE("zombie list failed to create");
     }
 
-    int wrows, wcols;
-    world_get_grid_dimensions(&wrows, &wcols);
-    for(int r = 0; r < wrows; ++r)
-    {
-        for(int c = 0; c < wcols; ++c)
+    //if(role == ROLE_LOCAL || role == ROLE_SERVER)
+    //{
+        /*
+        int wrows, wcols;
+        world_get_grid_dimensions(&wrows, &wcols);
+        for(int r = 0; r < wrows; ++r)
+        {
+            for(int c = 0; c < wcols; ++c)
+            {
+                ZombieSpawn spawn = {0};
+                spawn.scale = rand_float_between(0.2, 5.0);
+                zombie_add_to_world_grid(&spawn, r, c);
+            }
+        }
+        */
+
+        for(int i = 0; i < 10; ++i)
         {
             ZombieSpawn spawn = {0};
-            spawn.scale = rand_float_between(0.2, 5.0);
-            zombie_add_to_world_grid(&spawn, r, c);
+            spawn.pos.x = rand() % view_width;
+            spawn.pos.y = rand() % view_height;
+            spawn.scale = rand_float_between(0.2, 1.2);
+            // printf("%d) %.0f %.0f\n", i, spawn.pos.x, spawn.pos.y);
+            zombie_add(&spawn);
         }
-    }
+    //}
 
-    for(int i = 0; i < 50; ++i)
-    {
-        ZombieSpawn spawn = {0};
-        spawn.pos.x = rand() % view_width;
-        spawn.pos.y = rand() % view_height;
-        spawn.scale = rand_float_between(0.2, 1.2);
-        // printf("%d) %.0f %.0f\n", i, spawn.pos.x, spawn.pos.y);
-        zombie_add(&spawn);
-    }
-
+    /*
     ZombieSpawn spawn = {0};
     spawn.pos.x = player->phys.pos.x;
     spawn.pos.y = player->phys.pos.y;
     spawn.scale = 1.0;
     zombie_add(&spawn);
+    */
 
     LOGI("zombie count: %d", zlist->count);
 }
 
+void zombie_update_boxes(Zombie* zom)
+{
+    // const float shrink_factor = 0.80;
+
+    // Rect* vr = &zom->visible_rect;
+    float w = zom->phys.pos.w;
+    float h = zom->phys.pos.h;
+    float x0 = zom->phys.pos.x;
+    float y0 = zom->phys.pos.y;
+    float ytop = y0-h/2.0;
+    float ybot = y0+h/2.0;
+
+    float collision_height = h*0.4;
+    zom->collision_box.x = x0;
+    zom->collision_box.y = ybot-collision_height/2.0;
+    zom->collision_box.w = w;
+    zom->collision_box.h = collision_height;
+
+    float hit_box_height = h*0.5;
+    zom->hit_box.x = x0;
+    zom->hit_box.y = ytop+hit_box_height/2.0;
+    zom->hit_box.w = w;
+    zom->hit_box.h = hit_box_height;
+
+    float x = zom->collision_box.x;
+    float y = zom->collision_box.y;
+    coords_to_map_grid(x, y, &zom->map_row, &zom->map_col);
+    coords_to_map_grid(x, y, &zom->world_row, &zom->world_col);
+
+}
 
 void zombie_update(float delta_t)
 {
     // //TEMP
     // for(int i = 0; i < num_zombies; ++i)
-    //     update_zombie_boxes(&zombies[i]);
+    //     zombie_update_boxes(&zombies[i]);
     // return;
 
     for(int i = zlist->count - 1; i >= 0 ; --i)
@@ -192,7 +227,7 @@ void zombie_update(float delta_t)
         physics_simulate(&zom->phys, delta_t);
         limit_pos(&map.rect, &zom->phys.pos);
 
-        update_zombie_boxes(&zombies[i]);
+        zombie_update_boxes(&zombies[i]);
     }
 
     sort_zombies(zombies,zlist->count);
@@ -207,7 +242,7 @@ void zombie_draw()
         if(is_in_camera_view(&zom->phys.pos))
         {
             // gfx_draw_image(zombie_image,(int)zom->phys.pos.x,(int)zom->phys.pos.y, COLOR_TINT_NONE,zom->scale,0.0,1.0);
-            gfx_draw_image(zombie_image, 0,(int)zom->phys.pos.x,(int)zom->phys.pos.y, COLOR_TINT_NONE,zom->scale,0.0,1.0);
+            gfx_draw_image(zombie_image, zom->sprite_index,(int)zom->phys.pos.x,(int)zom->phys.pos.y, COLOR_TINT_NONE,zom->scale,0.0,1.0);
 
             if(debug_enabled)
             {
@@ -291,32 +326,6 @@ static void wander(Zombie* zom, float delta_t)
 
 static void update_zombie_boxes(Zombie* zom)
 {
-    // const float shrink_factor = 0.80;
-
-    // Rect* vr = &zom->visible_rect;
-    float w = zom->phys.pos.w;
-    float h = zom->phys.pos.h;
-    float x0 = zom->phys.pos.x;
-    float y0 = zom->phys.pos.y;
-    float ytop = y0-h/2.0;
-    float ybot = y0+h/2.0;
-
-    float collision_height = h*0.4;
-    zom->collision_box.x = x0;
-    zom->collision_box.y = ybot-collision_height/2.0;
-    zom->collision_box.w = w;
-    zom->collision_box.h = collision_height;
-
-    float hit_box_height = h*0.5;
-    zom->hit_box.x = x0;
-    zom->hit_box.y = ytop+hit_box_height/2.0;
-    zom->hit_box.w = w;
-    zom->hit_box.h = hit_box_height;
-
-    float x = zom->collision_box.x;
-    float y = zom->collision_box.y;
-    coords_to_map_grid(x, y, &zom->map_row, &zom->map_col);
-    coords_to_map_grid(x, y, &zom->world_row, &zom->world_col);
 }
 
 static void zombie_die(int index)

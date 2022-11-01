@@ -38,7 +38,7 @@ static void player_gun_set_position(Player* p);
 
 void player_init_images()
 {
-    int ew = 64;
+    int ew = 96;
     int eh = 128;
 
     GFXNodeDataInput nd = {

@@ -13,6 +13,8 @@
 #include "log.h"
 
 #include "player.h"
+#include "zombie.h"
+#include "projectile.h"
 
 //#define SERVER_PRINT_SIMPLE 1
 //#define SERVER_PRINT_VERBOSE 1
@@ -391,14 +393,30 @@ static void server_send(PacketType type, ClientInfo* cli)
                     memcpy(&pkt.data[index],&server.clients[i].player_state.angle,sizeof(float)); // angle
                     index += sizeof(float);
 
-                    memcpy(&pkt.data[index],&server.clients[i].player_state.sprite_index,sizeof(uint8_t));
+                    memcpy(&pkt.data[index],&server.clients[i].player_state.sprite_index,sizeof(uint8_t)); // sprite index
                     index += sizeof(uint8_t);
 
                     num_clients++;
                 }
             }
-            pkt.data_len = index;
             pkt.data[0] = num_clients;
+
+            pkt.data[index] = zlist->count; // num zombies
+            index += sizeof(uint8_t);
+
+            for(int i = 0; i < zlist->count; ++i)
+            {
+                memcpy(&pkt.data[index],&zombies[i].phys.pos.x,sizeof(float)); // pos.x
+                index += sizeof(float);
+
+                memcpy(&pkt.data[index],&zombies[i].phys.pos.y,sizeof(float)); // pos.y
+                index += sizeof(float);
+
+                memcpy(&pkt.data[index],&zombies[i].sprite_index,sizeof(uint8_t)); // sprite index
+                index += sizeof(uint8_t);
+            }
+
+            pkt.data_len = index;
 
             //print_packet(&pkt);
 
@@ -447,6 +465,9 @@ int net_server_start()
     server.info.socket = sock;
 
     LOGN("Server Started with tick rate %f.", TICK_RATE);
+
+    double t0=timer_get_time();
+    double t1=0.0;
 
     for(;;)
     {
@@ -629,7 +650,17 @@ int net_server_start()
             }
         }
 
+
+        t1 = timer_get_time();
+        double delta_t = t1-t0;
+
+        // server simulate
+        projectile_update(delta_t);
+        zombie_update(delta_t);
+
         timer_wait_for_frame(&server_timer);
+
+        t0 = t1;
     }
 }
 
@@ -977,6 +1008,34 @@ void net_client_update()
 
                     client.player_count = num_players;
                     player_count = client.player_count;
+
+                    // zombies
+                    uint8_t num_zombies = srvpkt.data[index];
+                    index += sizeof(uint8_t);
+
+                    zlist->count = num_zombies;
+
+                    float pos_x, pos_y;
+                    uint8_t sprite_index;
+
+                    for(int i = 0; i < num_zombies; ++i)
+                    {
+                        memcpy(&pos_x,&srvpkt.data[index],sizeof(float)); // pos.x
+                        index += sizeof(float);
+
+                        memcpy(&pos_y,&srvpkt.data[index],sizeof(float)); // pos.y
+                        index += sizeof(float);
+
+                        memcpy(&sprite_index,&srvpkt.data[index],sizeof(uint8_t)); // sprite index
+                        index += sizeof(uint8_t);
+
+                        zombies[i].phys.pos.x = pos_x;
+                        zombies[i].phys.pos.y = pos_y;
+                        zombies[i].sprite_index = sprite_index;
+
+                        zombie_update_boxes(&zombies[i]);
+                        //printf("  %d, pos: %f %f, sprite index: %d\n",i,pos_x,pos_y,sprite_index);
+                    }
 
                 } break;
                 case PACKET_TYPE_PING:
