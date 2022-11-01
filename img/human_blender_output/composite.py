@@ -42,16 +42,18 @@ class Compositor(QWidget):
 
         self.root = root = os.path.dirname(os.path.abspath(__file__)) + slash
 
-        #self.path = self.root + "front" + slash
-        #self.path = self.root + "front_right" + slash
-        #self.path = self.root + "right" + slash
-        #self.path = self.root + "back_right" + slash
-        #self.path = self.root + "back" + slash
-        #self.path = self.root + "back_left" + slash
-        #self.path = self.root + "left" + slash
-        self.path = self.root + "front_left" + slash
+        folder = "walk_gun_ready"
 
-        self.scaled_size = QSize(64, 128)
+        self.path = self.root + folder + slash + "front" + slash
+        #self.path = self.root + folder + slash + "front_right" + slash
+        #self.path = self.root + folder + slash "right" + slash
+        #self.path = self.root + folder + slash "back_right" + slash
+        #self.path = self.root + folder + slash "back" + slash
+        #self.path = self.root + folder + slash "back_left" + slash
+        #self.path = self.root + folder + slash "left" + slash
+        #self.path = self.root + folder + slash "front_left" + slash
+
+        self.scaled_size = QSize(96, 128)
 
         pics = [x.lower() for x in os.listdir(self.path) if os.path.isfile(self.path+x) and x.lower().endswith(".png") and x.lower().startswith("00")]
         pics.sort()
