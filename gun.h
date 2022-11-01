@@ -13,7 +13,7 @@ typedef enum
 typedef struct
 {
     Vector2f pos;
-    Rect visible_rect;
+    // Rect visible_rect;
     float angle;
     RectXY rectxy;  //rotated
 
@@ -35,6 +35,9 @@ typedef struct
     int bullets_max;
 
 } Gun;
+
+extern Gun gun_arsenal[GUN_TYPE_MAX];
+extern int gun_image_set;
 
 void gun_init();
 void gun_update(Gun* gun, float delta_t);

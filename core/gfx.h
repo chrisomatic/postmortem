@@ -2,8 +2,11 @@
 
 #include "math2d.h"
 
-#define MAX_GFX_IMAGES 256
 
+// defines
+// --------------------------------------------------------
+
+#define MAX_GFX_IMAGES 256
 
 #define COLOR(r,g,b) (uint32_t)(r<<16|g<<8|b)
 #define COLOR_RED       COLOR(0xff,0x00,0x00)
@@ -17,6 +20,10 @@
 #define COLOR_WHITE     COLOR(0xff,0xff,0xff)
 #define COLOR_TINT_NONE (0xFFFFFFFF)
 
+
+// types
+// --------------------------------------------------------
+
 typedef struct
 {
     int w,h,n;
@@ -25,22 +32,28 @@ typedef struct
 
 typedef struct
 {
+    uint32_t texture;
+    int w,h,n;
+
     int element_count;
     int elements_per_row;
     int elements_per_col;
     int element_width, element_height;
+
     Rect* visible_rects;
     Rect* sprite_rects;
-} GFXSubImageData;
+
+    int node_sets;
+    Vector2f** nodes;   // node positions are interpreted as offsets from center of image visible rectangle
+    uint32_t* node_colors;
+} GFXImage;
 
 typedef struct
 {
-    int w,h,n;
-    Rect visible_rect;
-    Rect sprite_rect;
-    uint32_t texture;
-    GFXSubImageData* sub_img_data;
-} GFXImage;
+    const char* image_path;
+    uint32_t colors[10];
+    int num_sets;
+} GFXNodeDataInput;
 
 typedef struct
 {
@@ -54,74 +67,41 @@ typedef struct
     int max_loops;
 } GFXAnimation;
 
-
-// typedef struct
-// {
-//     Vector2f** nodes;
-//     int* count;
-// } GFXNodeData;
-
-
-// typedef struct
-// {
-//     uint32_t* colors
-// } GFXNodeDataInput;
-
-
-
-// typedef struct
-// {
-//     uint32_t texture;
-//     int w,h,n;
-
-//     int element_count;
-//     int elements_per_row;
-//     int elements_per_col;
-//     int element_width, element_height;
-
-//     int node_sets;
-//     Vector2f** nodes;   //double array
-
-//     Rect* visible_rect;
-//     Rect* sprite_rect;
-//     // GFXSubImageData* sub_img_data;
-// } GFXImage2;
-
-
-
-// int gfx_load_image_set(const char* image_path, int element_width, int element_height, uint32_t*);
+// global vars
+// --------------------------------------------------------
 
 extern GFXImage gfx_images[MAX_GFX_IMAGES];
 extern int font_image;
 
-void gfx_image_init();
+
+// global functions
+// --------------------------------------------------------
+
+// Graphics
 void gfx_init(int width, int height);
 void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b);
 
-// Rects
-void gfx_draw_rect(Rect* r, uint32_t color, float scale, float opacity, bool filled, bool in_world);
-void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, float scale, float opacity, bool filled, bool in_world);
-
 // Images
-// TODO: linear_filter arg
+void gfx_image_init();
 bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip);
-int gfx_load_image(const char* image_path, bool flip, bool linear_filter);
-int gfx_load_image_set(const char* image_path, int element_width, int element_height, GFXImageData* data);
-
-void gfx_get_image_visible_rect(int img_w, int img_h, int img_n, unsigned char* img_data, Rect* ret);
-bool gfx_draw_image(int img_index, float x, float y, uint32_t color, float scale, float rotation, float opacity);
-bool gfx_draw_sub_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity);
-void gfx_free_image(int img_index);
+int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int element_width, int element_height, GFXNodeDataInput* node_input);
+bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity);
 GFXImage* gfx_get_image_data(int img_index);
-
-// Animation
-void gfx_anim_update(GFXAnimation* anim, double delta_t);
-
-// Strings
-Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...);
-Vector2f gfx_string_get_size(float scale, char* fmt, ...);
+bool gfx_get_image_node_point(int img_index, int sprite_index, uint32_t node_color, Vector2f* node);
 
 // Lines
 void gfx_clear_lines();
 void gfx_add_line(float x0, float y0, float x1, float y1, uint32_t color);
 void gfx_draw_lines();
+
+// Rects
+void gfx_draw_rect(Rect* r, uint32_t color, float scale, float opacity, bool filled, bool in_world);
+void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, float scale, float opacity, bool filled, bool in_world);
+
+// Strings
+Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...);
+Vector2f gfx_string_get_size(float scale, char* fmt, ...);
+
+// Animation
+void gfx_anim_update(GFXAnimation* anim, double delta_t);
+

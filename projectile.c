@@ -55,7 +55,8 @@ static void update_hurt_box(Projectile* proj)
 void projectile_init()
 {
     plist = list_create((void*)projectiles, MAX_PROJECTILES, sizeof(Projectile));
-    projectile_image_set = gfx_load_image_set("img/projectile_set.png",32,32,NULL);
+    // projectile_image_set = gfx_load_image_set("img/projectile_set.png",32,32,NULL);
+    projectile_image_set = gfx_load_image("img/projectile_set.png", false, false, 32, 32, NULL);
 }
 
 
@@ -90,8 +91,8 @@ void projectile_add(int sprite_index, Gun* gun, float angle_offset)
     float vel = sqrt(proj.vel.x*proj.vel.x + proj.vel.y*proj.vel.y);
     proj.ttl  = 1.0 / (vel / gun->fire_range);
 
-    GFXSubImageData* sid = gfx_images[projectile_image_set].sub_img_data;
-    Rect* vr = &sid->visible_rects[proj.sprite_index];
+    // GFXSubImageData* sid = gfx_images[projectile_image_set].sub_img_data;
+    Rect* vr = &gfx_images[projectile_image_set].visible_rects[proj.sprite_index];
 
     //TODO: refactor this for reusable axis aligned boxes
     Rect r = {0};
@@ -176,7 +177,8 @@ void projectile_draw()
 
         if(is_in_camera_view(&proj->hurt_box))
         {
-            gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0);
+            // gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0);
+            gfx_draw_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0);
 
             if(debug_enabled)
             {
