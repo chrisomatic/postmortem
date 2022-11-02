@@ -66,11 +66,13 @@ void gun_init()
     // memcpy(&gun_arsenal[idx].visible_rect, &gfx_images[gun_image_set].visible_rects[gun_arsenal[idx].sprite_index], sizeof(Rect));
 }
 
-Gun gun_get(GunType type)
+Gun gun_get(void* p, GunType type)
 {
     if(type >= GUN_TYPE_MAX) type--;
     Gun gun;
     memcpy(&gun, &gun_arsenal[type], sizeof(Gun));
+    gun.owner = p;
+
     gun.fire_cooldown = 0.0;    //reset cooldown
     return gun;
 }

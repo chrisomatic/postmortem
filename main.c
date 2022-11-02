@@ -273,11 +273,8 @@ void start_server()
     // server init
     gfx_image_init();
     world_init();
-    projectile_init();
     gun_init();
-
     players_init();
-
     zombie_init();
     projectile_init();
 

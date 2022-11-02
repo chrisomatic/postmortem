@@ -27,6 +27,7 @@
 #define DEFAULT_TIMEOUT 1.0f // seconds
 #define PING_PERIOD 3.0f
 #define DISCONNECTION_TIMEOUT 7.0f // seconds
+#define INPUT_QUEUE_MAX 16
 
 typedef struct
 {
@@ -50,6 +51,8 @@ typedef struct
     ConnectionRejectionReason last_reject_reason;
     PacketError last_packet_error;
     Packet prior_state_pkt;
+    NetPlayerInput net_player_inputs[INPUT_QUEUE_MAX];
+    int input_count;
 } ClientInfo;
 
 struct
@@ -70,7 +73,7 @@ _Static_assert((RAND_MAX & (RAND_MAX + 1u)) == 0, "RAND_MAX not a Mersenne numbe
 // ---
 
 //static NetPlayerState net_player_states[MAX_CLIENTS];
-static NetPlayerInput net_player_inputs[10];
+static NetPlayerInput net_player_inputs[INPUT_QUEUE_MAX]; // shared
 static int input_count = 0;
 static int inputs_per_packet = (TARGET_FPS/TICK_RATE);
 
@@ -412,6 +415,9 @@ static void server_send(PacketType type, ClientInfo* cli)
                 memcpy(&pkt.data[index],&zombies[i].phys.pos.y,sizeof(float)); // pos.y
                 index += sizeof(float);
 
+                memcpy(&pkt.data[index],&zombies[i].scale, sizeof(float)); // scale
+                index += sizeof(float);
+
                 memcpy(&pkt.data[index],&zombies[i].sprite_index,sizeof(uint8_t)); // sprite index
                 index += sizeof(uint8_t);
             }
@@ -443,6 +449,40 @@ static void server_send(PacketType type, ClientInfo* cli)
         default:
             break;
     }
+}
+
+static void server_update_players()
+{
+    //LOGN("got input: keys %X, angle %f, delta_t %f", inputs[i].keys, inputs[i].angle, inputs[i].delta_t);
+
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        ClientInfo* cli = &server.clients[i];
+        if(cli->state != CONNECTED)
+            continue;
+
+        Player* p = &players[cli->client_id];
+
+        //printf("Applying inputs to player. input count: %d\n", cli->input_count);
+
+        for(int i = 0; i < cli->input_count; ++i)
+        {
+            // apply input to player
+            p->keys = cli->net_player_inputs[i].keys;
+            p->mouse_x = cli->net_player_inputs[i].mouse_x;
+            p->mouse_y = cli->net_player_inputs[i].mouse_y;
+
+            player_update(p,cli->net_player_inputs[i].delta_t);
+        }
+
+        cli->input_count = 0;
+
+        cli->player_state.pos.x = p->phys.pos.x;
+        cli->player_state.pos.y = p->phys.pos.y;
+        cli->player_state.angle = p->angle;
+        cli->player_state.sprite_index = p->sprite_index;
+    }
+
 }
 
 int net_server_start()
@@ -573,34 +613,14 @@ int net_server_start()
                     } break;
                     case PACKET_TYPE_INPUT:
                     {
-                        uint8_t input_count = recv_pkt.data[8];
+                        uint8_t _input_count = recv_pkt.data[8];
+                        NetPlayerInput _input;
 
-                        NetPlayerInput inputs[input_count];
-
-                        for(int i = 0; i < input_count; ++i)
+                        for(int i = 0; i < _input_count; ++i)
                         {
-                            // get input
+                            // get input, copy into array
                             int index = 9+(i*sizeof(NetPlayerInput));
-                            memcpy(&inputs[i], &recv_pkt.data[index],sizeof(NetPlayerInput));
-
-                            //LOGN("got input: keys %X, angle %f, delta_t %f", inputs[i].keys, inputs[i].angle, inputs[i].delta_t);
-
-                            // apply input to player
-                            players[client_id].keys = inputs[i].keys;
-                            players[client_id].angle = inputs[i].angle;
-
-                            // simulate player
-                            player_update(&players[client_id],inputs[i].delta_t);
-
-                            // update net player state
-                            //cli->player_state.active = true;
-                            cli->player_state.pos.x = players[client_id].phys.pos.x;
-                            cli->player_state.pos.y = players[client_id].phys.pos.y;
-                            cli->player_state.angle = players[client_id].angle;
-                            cli->player_state.sprite_index = players[client_id].sprite_index;
-
-                            //printf("net player state for client id %d, pos %f %f, angle %f\n",client_id, net_player_states[client_id].pos.x, net_player_states[client_id].pos.y, net_player_states[client_id].angle);
-
+                            memcpy(&cli->net_player_inputs[cli->input_count++], &recv_pkt.data[index],sizeof(NetPlayerInput));
                         }
                     } break;
                     case PACKET_TYPE_PING:
@@ -618,6 +638,15 @@ int net_server_start()
 
             timer_delay_us(1000); // delay 1ms
         }
+
+        server_update_players();
+
+        t1 = timer_get_time();
+        double delta_t = t1-t0;
+
+        // server simulate
+        zombie_update(delta_t);
+        projectile_update(delta_t);
 
         // send state packet to all clients
         if(server.num_clients > 0)
@@ -650,14 +679,6 @@ int net_server_start()
             }
         }
 
-
-        t1 = timer_get_time();
-        double delta_t = t1-t0;
-
-        // server simulate
-        projectile_update(delta_t);
-        zombie_update(delta_t);
-
         timer_wait_for_frame(&server_timer);
 
         t0 = t1;
@@ -686,7 +707,7 @@ struct
 
 bool net_client_add_player_input(NetPlayerInput* input)
 {
-    if(input_count >= 10)
+    if(input_count >= INPUT_QUEUE_MAX)
     {
         LOGW("Input array is full!");
         return false;
@@ -1015,7 +1036,7 @@ void net_client_update()
 
                     zlist->count = num_zombies;
 
-                    float pos_x, pos_y;
+                    float pos_x, pos_y, scale;
                     uint8_t sprite_index;
 
                     for(int i = 0; i < num_zombies; ++i)
@@ -1026,11 +1047,15 @@ void net_client_update()
                         memcpy(&pos_y,&srvpkt.data[index],sizeof(float)); // pos.y
                         index += sizeof(float);
 
+                        memcpy(&scale,&srvpkt.data[index],sizeof(float)); // scale
+                        index += sizeof(float);
+
                         memcpy(&sprite_index,&srvpkt.data[index],sizeof(uint8_t)); // sprite index
                         index += sizeof(uint8_t);
 
                         zombies[i].phys.pos.x = pos_x;
                         zombies[i].phys.pos.y = pos_y;
+                        zombies[i].scale = scale;
                         zombies[i].sprite_index = sprite_index;
 
                         zombie_update_boxes(&zombies[i]);

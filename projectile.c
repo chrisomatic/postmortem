@@ -79,8 +79,11 @@ void projectile_add(int sprite_index, Gun* gun, float angle_offset)
     proj.pos.x = _x;
     proj.pos.y = _y;
 
-    float mx, my;
-    window_get_mouse_world_coords(&mx, &my);
+    Player* owner = (Player*)(gun->owner);
+
+    int mx = owner->mouse_x;
+    int my = owner->mouse_y;
+
     float angle_deg = angle_offset + calc_angle_deg(proj.pos.x, proj.pos.y, mx, my);
     float angle = RAD(angle_deg);
 
@@ -152,6 +155,11 @@ void projectile_update(float delta_t)
                     100.0*sinf(RAD(proj->angle_deg))
                 };
                 //zombie_push(j,&force);
+
+                if(role == ROLE_SERVER)
+                {
+                    printf("Zombie %d hurt for %d damage!\n",j,proj->damage);
+                }
 
                 zombie_hurt(j,proj->damage);
             }

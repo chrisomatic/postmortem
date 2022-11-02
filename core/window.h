@@ -28,7 +28,7 @@ void window_deinit();
 void window_get_mouse_coords(int* x, int* y);
 void window_get_mouse_view_coords(int* x, int* y);
 void window_set_mouse_view_coords(int x, int y);
-void window_get_mouse_world_coords(float* x, float* y);
+void window_get_mouse_world_coords(int* x, int* y);
 void window_set_mouse_world_coords(float x, float y);
 void window_poll_events();
 bool window_should_close();

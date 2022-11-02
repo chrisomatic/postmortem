@@ -12,6 +12,8 @@ typedef enum
 
 typedef struct
 {
+    void* owner;
+
     Vector2f pos;
     // Rect visible_rect;
     float angle;
@@ -43,4 +45,4 @@ void gun_init();
 void gun_update(Gun* gun, float delta_t);
 void gun_draw();
 void gun_fire(Gun* gun, bool held);
-Gun gun_get(GunType type);
+Gun gun_get(void* p, GunType type);

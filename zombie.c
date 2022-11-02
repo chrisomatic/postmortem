@@ -58,8 +58,6 @@ bool zombie_add(ZombieSpawn* spawn)
         zombie.scale = 1.0;
 
     zombie.hp = zombie.hp_max;
-    zombie.phys.pos.w = gfx_images[zombie_image].visible_rects[0].w*zombie.scale;
-    zombie.phys.pos.h = gfx_images[zombie_image].visible_rects[0].h*zombie.scale;
 
     zombie_update_boxes(&zombie);
 
@@ -135,6 +133,10 @@ void zombie_init()
 void zombie_update_boxes(Zombie* zom)
 {
     // const float shrink_factor = 0.80;
+
+    // make sure scale gets recalculated if needed
+    zom->phys.pos.w = gfx_images[zombie_image].visible_rects[0].w*zom->scale;
+    zom->phys.pos.h = gfx_images[zombie_image].visible_rects[0].h*zom->scale;
 
     // Rect* vr = &zom->visible_rect;
     float w = zom->phys.pos.w;

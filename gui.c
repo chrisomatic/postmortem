@@ -132,13 +132,13 @@ void gui_draw()
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", player->angle, DEG(player->angle)); y += size.y+ypad;
 
         // mouse
-        float wmx, wmy;
+        int wmx, wmy;
         int vmx, vmy, mx, my, mr, mc, wr, wc;
         window_get_mouse_world_coords(&wmx, &wmy);
         window_get_mouse_view_coords(&vmx, &vmy);
         window_get_mouse_coords(&mx, &my);
-        coords_to_map_grid(wmx, wmy, &mr, &mc);
-        coords_to_world_grid(wmx, wmy, &wr, &wc);
+        coords_to_map_grid((float)wmx, (float)wmy, &mr, &mc);
+        coords_to_world_grid((float)wmx, (float)wmy, &wr, &wc);
         y += ypad;
         size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Mouse"); y += size.y+ypad;
         size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "World:  %.2f, %.2f", wmx, wmy); y += size.y+ypad;

@@ -74,7 +74,8 @@ typedef struct
     uint8_t sprite_index;
     uint16_t keys;
 
-    Vector2f mouse_pos;
+    int mouse_x;
+    int mouse_y;
 
     PlayerActions actions_prior;
     PlayerActions actions;

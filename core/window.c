@@ -117,7 +117,7 @@ void window_set_mouse_view_coords(int x, int y)
     glfwSetCursorPos(window, _x, _y);
 }
 
-void window_get_mouse_world_coords(float* x, float* y)
+void window_get_mouse_world_coords(int* x, int* y)
 {
     int mouse_x, mouse_y;
     window_get_mouse_view_coords(&mouse_x, &mouse_y);
@@ -126,8 +126,8 @@ void window_get_mouse_world_coords(float* x, float* y)
     float cam_x = view->m[0][3];
     float cam_y = view->m[1][3];
 
-    *x = mouse_x - cam_x;
-    *y = mouse_y - cam_y;
+    *x = (int)(mouse_x - cam_x);
+    *y = (int)(mouse_y - cam_y);
 }
 
 void window_set_mouse_world_coords(float x, float y)
@@ -175,8 +175,8 @@ static void window_size_callback(GLFWwindow* window, int width, int height)
     window_height = height;
     window_width  = width; //ASPECT_RATIO * window_height;
 
-    int start_x = (window_width + window_width) / 2.0f - window_width;
-    int start_y = (window_height + window_height) / 2.0f - window_height;
+    int start_x = 0.0;
+    int start_y = 0.0;
 
     glViewport(start_x,start_y,window_width,window_height);
 }

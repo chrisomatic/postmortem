@@ -31,7 +31,6 @@ int player_count = 0;
 static int player_image_set;
 
 static int crosshair_image;
-static float mouse_x, mouse_y;
 
 static void player_update_sprite_index(Player* p);
 static void player_gun_set_position(Player* p);
@@ -95,7 +94,7 @@ static void player_init(int index)
     p->scale = 0.50;
     p->predicted_state_index = 0;
 
-    p->gun = gun_get(GUN_TYPE_MACHINEGUN);
+    p->gun = gun_get(p,GUN_TYPE_MACHINEGUN);
     p->image = player_image_set;
     p->gun_front = false;
 
@@ -175,14 +174,13 @@ void player_update_other(Player* p, double delta_t)
 
     p->angle = lerp(p->state_prior.angle,p->state_target.angle,t);
 
-    //player_update_sprite_index(p);
     player_gun_set_position(p);
 }
 
 void player_update_sprite_index(Player* p)
 {
-    if(role != ROLE_SERVER && p == player)
-        p->angle = calc_angle_rad(p->phys.pos.x, p->phys.pos.y, mouse_x, mouse_y);
+    //if(p == player)
+        p->angle = calc_angle_rad(p->phys.pos.x, p->phys.pos.y, p->mouse_x, p->mouse_y);
 
     float angle_deg = DEG(p->angle);
 
@@ -287,8 +285,8 @@ void player_gun_set_position(Player* p)
     }
 
 
-    if(role != ROLE_SERVER && p == player)
-        p->gun.angle = calc_angle_rad(gx0, gy0, mouse_x, mouse_y);
+    if(p == player)
+        p->gun.angle = calc_angle_rad(gx0, gy0, p->mouse_x, p->mouse_y);
 
     // Rect r = {0};
     // RectXY rxy_rot = {0};
@@ -343,7 +341,7 @@ void player_update(Player* p, double delta_t)
     {
         int next = p->gun.type+1;
         if(next >= GUN_TYPE_MAX) next = 0;
-        p->gun = gun_get(next);
+        p->gun = gun_get(p,next);
     }
 
     if(fire_toggled)
@@ -379,7 +377,10 @@ void player_update(Player* p, double delta_t)
     if(p->actions.left)  { accel.x -= p->speed; }
     if(p->actions.right) { accel.x += p->speed; }
 
-    window_get_mouse_world_coords(&mouse_x, &mouse_y);
+    if(role != ROLE_SERVER)
+    {
+        window_get_mouse_world_coords(&p->mouse_x, &p->mouse_y);
+    }
 
     player_update_sprite_index(p);
 
@@ -448,9 +449,10 @@ void player_update(Player* p, double delta_t)
 
         p->input.delta_t = delta_t;
         p->input.keys = p->keys;
-        p->input.angle = p->angle;
+        p->input.mouse_x = p->mouse_x;
+        p->input.mouse_y = p->mouse_y;
         
-        if(p->input.keys != p->input_prior.keys || p->input.angle != p->input_prior.angle)
+        if(p->input.keys != p->input_prior.keys || p->input.mouse_x != p->input_prior.mouse_x || p->input.mouse_y != p->input_prior.mouse_y)
         {
             net_client_add_player_input(&p->input);
 
@@ -520,7 +522,7 @@ void player_draw(Player* p)
 
         GFXImage* img = &gfx_images[crosshair_image];
         // gfx_draw_image(crosshair_image,mouse_x,mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
-        gfx_draw_image(crosshair_image,0,mouse_x,mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
+        gfx_draw_image(crosshair_image,0,p->mouse_x,p->mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
     }
 
 
