@@ -13,9 +13,137 @@
 #include "camera.h"
 #include "zombie.h"
 
+static Rect gui_box = {0};
+static float gui_start_x = 20.0, gui_start_y = 20.0;
+
+static Vector2f gui_draw_string(bool draw, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char str[256] = {0};
+    vsprintf(str,fmt, args);
+    va_end(args);
+
+    if(draw)
+    {
+        return gfx_draw_string(x, y, color, scale, rotation, opacity, in_world, drop_shadow, str);
+    }
+
+    return gfx_string_get_size(scale, str);
+}
+
+Rect gui_draw_text(bool draw, float wscale, float hscale)
+{
+    // float start_x = 20.0, start_y = 20.0;
+
+    bool drop_shadow = true;
+
+    float ypad = 3.0;
+    float xpad = 10.0;
+    float xpad_big = 2.0;
+    float text_scale = 0.25;
+    float text_scale_big = 0.3;
+
+    ypad *= hscale;
+    xpad *= wscale;
+    xpad_big *= wscale;
+    text_scale *= wscale;
+    text_scale_big *= wscale;
+
+    // window
+    float fps = timer_get_prior_frame_fps(&game_timer);
+
+    // player
+    bool up               = IS_BIT_SET(player->keys,PLAYER_ACTION_UP);
+    bool down             = IS_BIT_SET(player->keys,PLAYER_ACTION_DOWN);
+    bool left             = IS_BIT_SET(player->keys,PLAYER_ACTION_LEFT);
+    bool right            = IS_BIT_SET(player->keys,PLAYER_ACTION_RIGHT);
+    bool run              = IS_BIT_SET(player->keys,PLAYER_ACTION_RUN);
+    bool jump             = IS_BIT_SET(player->keys,PLAYER_ACTION_JUMP);
+    bool interact         = IS_BIT_SET(player->keys,PLAYER_ACTION_INTERACT);
+    bool primary_action   = IS_BIT_SET(player->keys,PLAYER_ACTION_PRIMARY_ACTION);
+    bool secondary_action = IS_BIT_SET(player->keys,PLAYER_ACTION_SECONDARY_ACTION);
+    bool toggle_fire      = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_FIRE);
+    bool toggle_debug     = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_DEBUG);
+
+    // mouse
+    // float wmx, wmy;
+    int wmx, wmy, vmx, vmy, mx, my, mr, mc, wr, wc;
+    window_get_mouse_world_coords(&wmx, &wmy);
+    window_get_mouse_view_coords(&vmx, &vmy);
+    window_get_mouse_coords(&mx, &my);
+    coords_to_map_grid(wmx, wmy, &mr, &mc);
+    coords_to_world_grid(wmx, wmy, &wr, &wc);
+
+    // camera
+    Rect camera_rect = {0};
+    get_camera_rect(&camera_rect);
+
+    // network
+    char server_ip_str[32] = {0};
+    net_client_get_server_ip_str(server_ip_str);
+    int player_count = net_client_get_player_count();
+
+    Vector2f size = {0};
+    float maxw = 0.0;
+
+    float y = gui_start_y;
+    float x = gui_start_x;
+
+
+    // window
+    y += ypad;
+    size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Window"); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "FPS: %.2f", fps); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "View: %d, %d", view_width, view_height); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Window: %d, %d", window_width, window_height); y += size.y+ypad; maxw = MAX(maxw, size.x);
+
+    // player
+    y += ypad;
+    size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Player"); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", player->angle, DEG(player->angle)); y += size.y+ypad; maxw = MAX(maxw, size.x);
+
+    // mouse
+    y += ypad;
+    size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Mouse"); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "World:  %d, %d", wmx, wmy); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "View:   %d, %d", vmx, vmy); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Window: %d, %d", mx, my); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Map Grid:   %d, %d", mr, mc); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "World Grid: %d, %d", wr, wc); y += size.y+ypad; maxw = MAX(maxw, size.x);
+
+    // camera
+    y += ypad;
+    size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Camera"); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Pos: %.2f, %.2f", camera_rect.x, camera_rect.y); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "w,h: %.2f, %.2f", camera_rect.w, camera_rect.h); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Offset: %.2f, %.2f", aim_camera_offset.x, aim_camera_offset.y); y += size.y+ypad; maxw = MAX(maxw, size.x);
+
+
+    // network
+    if(role == ROLE_CLIENT)
+    {
+        y += ypad;
+        size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Network"); y += size.y+ypad; maxw = MAX(maxw, size.x);
+        size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Server IP: %s",server_ip_str); y += size.y+ypad; maxw = MAX(maxw, size.x);
+        size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Player count: %u",player_count); y += size.y+ypad; maxw = MAX(maxw, size.x);
+        size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Ping: %.0f ms",net_client_get_rtt()); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    }
+
+    Rect ret = {0};
+    ret.w = maxw+xpad*2.0;
+    ret.h = y-gui_start_y+ypad;
+    ret.x = gui_start_x + ret.w/2.0;
+    ret.y = gui_start_y + ret.h/2.0;
+    return ret;
+
+}
+
+
 void gui_draw()
 {
-    Vector2f size = {0};
 
     // test print
     /*
@@ -24,24 +152,51 @@ void gui_draw()
     Vector2f s2 = gfx_string_get_size(1.0,test_str);
     */
 
+    bool have_rect = !(FEQ(gui_box.w,0.0) || FEQ(gui_box.h,0.0));
+    if(!have_rect)
+    {
+        gui_box = gui_draw_text(false, 1.0, 1.0);
+    }
+    float wscale = (window_width/(float)view_width);
+    float hscale = (window_height/(float)view_height);
+    wscale = 1.0/wscale;
+    hscale = 1.0/hscale;
+
+    Rect gbox = {0};
+    gbox.w = gui_box.w*(wscale);
+    gbox.h = gui_box.h*(hscale);
+    gbox.x = gui_start_x + gbox.w/2.0;
+    gbox.y = gui_start_y + gbox.h/2.0;
+
+    // GAME ROLE
+    gfx_draw_string(0,view_height-(64*0.4)-2,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
+
+    if(debug_enabled)
+    {
+        gfx_draw_rect(&gbox, 0x001F1F1F, 1.0, 0.6, true, false);
+        gui_draw_text(true, wscale, hscale);
+    }
+
     if(console_enabled)
     {
-        float scale = 0.12;
+        float scale = 0.24;
+        scale *= wscale;
 
-        // Vector2f size = gfx_string_get_size(scale, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890|[](){}");
         Vector2f size = gfx_string_get_size(scale, "x");
-
 
         float yspace = size.y*1.5;
 
         Rect tbox = {0};
-        tbox.x = view_width*0.5;
         tbox.w = view_width*0.6;
+        if(debug_enabled)
+            tbox.x = gbox.x+gbox.w/2.0 + 5.0 + tbox.w/2.0;
+        else
+            tbox.x = view_width*0.5;
+
         tbox.h = yspace * (CONSOLE_MSG_MAX+1);
         tbox.y = tbox.h/2.0;
 
         gfx_draw_rect(&tbox, 0x001F1F1F, 1.0, 0.6, true, false);
-
 
         float x0 = tbox.x-tbox.w/2.0;
         float y0 = tbox.y-tbox.h/2.0;
@@ -87,98 +242,7 @@ void gui_draw()
 
     }
 
-    gfx_draw_string(0,view_height-(64*0.4)-2,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
-
-    if(debug_enabled)
-    {
-        // -----
-        // Player
-        // ------
-
-        bool up               = IS_BIT_SET(player->keys,PLAYER_ACTION_UP);
-        bool down             = IS_BIT_SET(player->keys,PLAYER_ACTION_DOWN);
-        bool left             = IS_BIT_SET(player->keys,PLAYER_ACTION_LEFT);
-        bool right            = IS_BIT_SET(player->keys,PLAYER_ACTION_RIGHT);
-        bool run              = IS_BIT_SET(player->keys,PLAYER_ACTION_RUN);
-        bool jump             = IS_BIT_SET(player->keys,PLAYER_ACTION_JUMP);
-        bool interact         = IS_BIT_SET(player->keys,PLAYER_ACTION_INTERACT);
-        bool primary_action   = IS_BIT_SET(player->keys,PLAYER_ACTION_PRIMARY_ACTION);
-        bool secondary_action = IS_BIT_SET(player->keys,PLAYER_ACTION_SECONDARY_ACTION);
-        bool toggle_fire      = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_FIRE);
-        bool toggle_debug     = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_DEBUG);
-
-
-        float start_x = 20.0, start_y = 20.0;
-        float y = start_y;
-        float ypad = 3.0;
-        float scale = 0.1;
-        float scale_big = 0.16;
-        bool drop_shadow = true;
-
-        Rect gui_bg = {0};
-        gui_bg.w = 120;
-        if(role == ROLE_CLIENT)
-            gui_bg.h = 220;
-        else
-            gui_bg.h = 170;
-        gui_bg.x = start_x-5 + gui_bg.w/2.0;
-        gui_bg.y = start_y-5 + gui_bg.h/2.0;
-        gfx_draw_rect(&gui_bg, 0x001F1F1F, 1.0, 0.6, true, false);
-
-        // player
-        size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Player"); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", player->angle, DEG(player->angle)); y += size.y+ypad;
-
-        // mouse
-        int wmx, wmy;
-        int vmx, vmy, mx, my, mr, mc, wr, wc;
-        window_get_mouse_world_coords(&wmx, &wmy);
-        window_get_mouse_view_coords(&vmx, &vmy);
-        window_get_mouse_coords(&mx, &my);
-        coords_to_map_grid((float)wmx, (float)wmy, &mr, &mc);
-        coords_to_world_grid((float)wmx, (float)wmy, &wr, &wc);
-        y += ypad;
-        size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Mouse"); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "World:  %.2f, %.2f", wmx, wmy); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "View:   %d, %d", vmx, vmy); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Window: %d, %d", mx, my); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Map Grid:   %d, %d", mr, mc); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "World Grid: %d, %d", wr, wc); y += size.y+ypad;
-
-        // camera
-        Rect camera_rect = {0};
-        get_camera_rect(&camera_rect);
-        y += ypad;
-        size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Camera"); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Pos: %.2f, %.2f", camera_rect.x, camera_rect.y); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "w,h: %.2f, %.2f", camera_rect.w, camera_rect.h); y += size.y+ypad;
-        size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Offset: %.2f, %.2f", aim_camera_offset.x, aim_camera_offset.y); y += size.y+ypad;
-
-        if(role == ROLE_CLIENT)
-        {
-
-            char server_ip_str[32] = {0};
-            net_client_get_server_ip_str(server_ip_str);
-
-            int player_count = net_client_get_player_count();
-
-            // network
-            y += ypad;
-            size = gfx_draw_string(start_x+2, y,0x00FFFFFF,scale_big,0.0, 1.0, false, drop_shadow, "Network"); y += size.y+ypad;
-            size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Server IP: %s",server_ip_str); y += size.y+ypad;
-            size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Player count: %u",player_count); y += size.y+ypad;
-            size = gfx_draw_string(start_x+10,y,0x00FFFFFF,scale,    0.0, 1.0, false, drop_shadow, "Ping: %.0f ms",net_client_get_rtt()); y += size.y+ypad;
-
-        }
-
-        float fps = timer_get_prior_frame_fps(&game_timer);
-        size = gfx_string_get_size(scale, "fps: %.2f", fps);
-        gfx_draw_string(view_width-size.x,0,0x00FFFF00,scale,0.0, 1.0, false,drop_shadow,"fps: %.2f", fps);
-    }
 }
-
 
 void console_message_add(uint32_t color, char* fmt, ...)
 {

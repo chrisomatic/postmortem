@@ -19,6 +19,8 @@
 // Settings
 #define VIEW_WIDTH   800
 #define VIEW_HEIGHT  600
+// #define VIEW_WIDTH   1812
+// #define VIEW_HEIGHT  1359
 
 // =========================
 // Global Vars

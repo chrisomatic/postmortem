@@ -394,18 +394,6 @@ void player_update(Player* p, double delta_t)
         gfx_anim_update(&p->anim,delta_t);
     }
 
-    if(p->gun_ready)
-    {
-        player_gun_set_position(p);
-
-        if(p->actions.primary_action)
-        {
-            gun_fire(&p->gun, !primary_action_toggled);
-        }
-    }
-
-    gun_update(&p->gun,delta_t);
-
     p->phys.max_linear_vel = p->max_base_speed;
 
     if(run_toggled)
@@ -441,6 +429,18 @@ void player_update(Player* p, double delta_t)
     physics_add_force(&p->phys, accel.x, accel.y);
     physics_simulate(&p->phys, delta_t);
     limit_pos(&map.rect, &p->phys.pos);
+
+
+    if(p->gun_ready)
+    {
+        player_gun_set_position(p);
+        if(p->actions.primary_action)
+        {
+            gun_fire(&p->gun, !primary_action_toggled);
+        }
+    }
+    gun_update(&p->gun,delta_t);
+
 
     if(role == ROLE_CLIENT)
     {

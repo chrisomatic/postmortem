@@ -1,23 +1,7 @@
 import sys, os, math
 
-
-
-
 from PyQt5.QtGui import QPainter, QImage
 from PyQt5.QtCore import Qt, QSize
-
-
-# # from PyQt5.QtWidgets import *
-# from PyQt5.QtGui import QKeyEvent, QPainter,QImage, QPen, QIcon, QPixmap, QColor, QBrush, QCursor, QFont, QPalette, QTransform, QLinearGradient, QFontMetrics, QStaticText, qRgba
-# from PyQt5.QtCore import Qt, QPoint, QPointF, QSize, QEvent, QTimer, QCoreApplication, QRect
-
-
-
-
-# # image sets (folders)
-# HUMAN = "human"
-# WEAPON = "weapons"
-
 
 
 slash = "/"
@@ -32,7 +16,6 @@ def printf(fmt, *args):
         print(fmt % args, end="")
     else:
         print(fmt, end="")
-
 
 
 def concat_images(img_lst, cols):
@@ -181,7 +164,6 @@ def main():
 
     PROCESS_ALL = False
 
-
     root = os.path.dirname(os.path.abspath(__file__)) + slash
 
     if(PROCESS_ALL):
@@ -200,8 +182,9 @@ def main():
 
         c = Compositor("human1","walk_normal", 96, 128, True)
 
+        # @TEST
         # # img = QImage(32, 32, QImage.Format_ARGB32)
-        # img_concat = concat_images([img,img,img], 2)
+        # img_concat = concat_images([c.composite_image]*3, 2)
         # img_concat.save(root + "test.png", "PNG")
 
 
