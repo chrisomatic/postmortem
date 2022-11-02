@@ -42,12 +42,11 @@ void player_init_images()
     int eh = 128;
 
     GFXNodeDataInput nd = {
-        .image_path = "img/human_base_nodes.png",
+        .image_path = "img/human_base_full_nodes.png",
         .colors = {COLOR_RED, COLOR_BLUE},
         .num_sets = 2
     };
-    // player_image_set = gfx_load_image("img/human_base.png", false, false, ew, eh, &nd);
-    player_image_set = gfx_load_image("img/human_base_full.png", false, false, ew, eh, NULL);
+    player_image_set = gfx_load_image("img/human_base_full.png", false, false, ew, eh, &nd);
 
     crosshair_image = gfx_load_image("img/crosshair.png", false, false, 0, 0, NULL);
 }
@@ -229,6 +228,9 @@ void player_update_sprite_index(Player* p)
     }
 
     p->sprite_index *= 16;
+    if(p->gun_ready)
+        p->sprite_index += 128;
+
     
     int anim_frame_offset = p->anim.frame_sequence[p->anim.curr_frame];//*sid->elements_per_row;
     assert(anim_frame_offset >= 0);
