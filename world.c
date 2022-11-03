@@ -7,9 +7,11 @@
 #include "window.h"
 #include "gfx.h"
 #include "log.h"
-#include "world.h"
 #include "camera.h"
 #include "player.h"
+#include "lighting.h"
+
+#include "world.h"
 
 int ground_sheet;
 
@@ -93,6 +95,10 @@ void world_init()
     load_map_file("map/test.map");
     ground_sheet = gfx_load_image("img/ground_set.png", false, false, 32, 32, NULL);
 
+    // world lights
+    lighting_point_light_add(100.0,100.0,1.0,0.0,0.0,0.5);
+    lighting_point_light_add(200.0,200.0,0.0,1.0,0.0,0.5);
+    lighting_point_light_add(300.0,300.0,0.0,0.0,1.0,0.5);
 }
 
 void world_update()

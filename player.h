@@ -86,6 +86,8 @@ typedef struct
     NetPlayerState predicted_states[MAX_CLIENT_PREDICTED_STATES];
     int predicted_state_index;
 
+    int point_light;
+
     // Object equipped_object;
 
     Gun gun;

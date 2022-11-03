@@ -8,6 +8,7 @@ gcc core/gfx.c \
     core/physics.c \
     core/math2d.c \
     core/camera.c \
+    core/lighting.c \
     core/window.c \
     core/socket.c \
     core/bitpack.c \

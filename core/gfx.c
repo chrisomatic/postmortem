@@ -11,6 +11,7 @@
 #include "shader.h"
 #include "window.h"
 #include "camera.h"
+#include "lighting.h"
 #include "log.h"
 #include "gfx.h"
 
@@ -31,7 +32,6 @@ typedef struct
     float w,h;
 } FontChar;
 
-
 // static vars
 // --------------------------------------------------------
 static GLuint quad_vao, quad_vbo;
@@ -40,21 +40,15 @@ static GLuint line_vao,line_vbo;
 
 static Matrix proj_matrix;
 
-static GLint loc_basic_image;
-static GLint loc_basic_tint_color;
-static GLint loc_basic_opacity;
-static GLint loc_basic_brightness;
-static GLint loc_basic_model;
-static GLint loc_basic_view;
-static GLint loc_basic_proj;
-
 static GLint loc_sprite_image;
-static GLint loc_sprite_tint_color;
+static GLint loc_sprite_ambient_color;
 static GLint loc_sprite_opacity;
-static GLint loc_sprite_brightness;
 static GLint loc_sprite_model;
 static GLint loc_sprite_view;
 static GLint loc_sprite_proj;
+static GLint loc_sprite_light_pos[MAX_POINT_LIGHTS];
+static GLint loc_sprite_light_color[MAX_POINT_LIGHTS];
+static GLint loc_sprite_light_atten[MAX_POINT_LIGHTS];
 
 static GLint loc_shape_color;
 static GLint loc_shape_opacity;
@@ -152,18 +146,21 @@ void gfx_init(int width, int height)
     glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(LinePoint), (const GLvoid*)8);
 
     // shader locations
-    loc_basic_image      = glGetUniformLocation(program_basic, "image");
-    loc_basic_tint_color = glGetUniformLocation(program_basic, "tint_color");
-    loc_basic_opacity    = glGetUniformLocation(program_basic, "opacity");
-    loc_basic_brightness = glGetUniformLocation(program_basic, "brightness");
-    loc_basic_model      = glGetUniformLocation(program_basic, "model");
-    loc_basic_view       = glGetUniformLocation(program_basic, "view");
-    loc_basic_proj       = glGetUniformLocation(program_basic, "projection");
-
     loc_sprite_image      = glGetUniformLocation(program_sprite, "image");
-    loc_sprite_tint_color = glGetUniformLocation(program_sprite, "tint_color");
+    loc_sprite_ambient_color = glGetUniformLocation(program_sprite, "ambient_color");
+
+    char lookup_str[16+1] = {0};
+    for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
+    {
+        snprintf(lookup_str,16,"light_pos[%d]",i);
+        loc_sprite_light_pos[i]     = glGetUniformLocation(program_sprite, lookup_str);
+        snprintf(lookup_str,16,"light_color[%d]",i);
+        loc_sprite_light_color[i]   = glGetUniformLocation(program_sprite, lookup_str);
+        snprintf(lookup_str,16,"light_atten[%d]",i);
+        loc_sprite_light_atten[i]   = glGetUniformLocation(program_sprite, lookup_str);
+    }
+
     loc_sprite_opacity    = glGetUniformLocation(program_sprite, "opacity");
-    loc_sprite_brightness = glGetUniformLocation(program_sprite, "brightness");
     loc_sprite_model      = glGetUniformLocation(program_sprite, "model");
     loc_sprite_view       = glGetUniformLocation(program_sprite, "view");
     loc_sprite_proj       = glGetUniformLocation(program_sprite, "projection");
@@ -471,9 +468,29 @@ bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t 
 
     //printf("num_in_row: %d, sprite_index: %d\n",num_in_row, sprite_index);
 
-    glUniform3f(loc_sprite_tint_color,r/255.0,g/255.0,b/255.0);
+    float brightness = 1.0;
+
+    //glUniform3f(loc_sprite_tint_color,brightness*r/255.0,brightness*g/255.0,brightness*b/255.0);
+    glUniform3f(loc_sprite_ambient_color,0.4,0.4,0.4);
+
+    for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
+    {
+        if(i < point_light_count)
+        {
+            PointLight* pl = &point_lights[i];
+            glUniform2f(loc_sprite_light_pos[i],pl->pos.x,pl->pos.y);
+            glUniform3f(loc_sprite_light_color[i],pl->color.x,pl->color.y,pl->color.z);
+            glUniform3f(loc_sprite_light_atten[i],pl->attenuation.x,pl->attenuation.y,pl->attenuation.z);
+        }
+        else
+        {
+            glUniform2f(loc_sprite_light_pos[i],0.0,0.0);
+            glUniform3f(loc_sprite_light_color[i],0.0,0.0,0.0);
+            glUniform3f(loc_sprite_light_atten[i],1.0,0.0,0.0);
+        }
+    }
+
     glUniform1f(loc_sprite_opacity,opacity);
-    glUniform1f(loc_sprite_brightness,1.0);
 
     glUniformMatrix4fv(loc_sprite_model,1,GL_TRUE,&model.m[0][0]);
     glUniformMatrix4fv(loc_sprite_view,1,GL_TRUE,&view->m[0][0]);

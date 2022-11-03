@@ -14,6 +14,7 @@
 #include "gui.h"
 #include "net.h"
 #include "log.h"
+#include "lighting.h"
 #include "bitpack.h"
 
 // Settings
@@ -326,7 +327,7 @@ void init()
     LOGI(" - Projectiles.");
     projectile_init();
 
-    camera_move(player->phys.pos.x, player->phys.pos.y, true);
+    camera_move(player->phys.pos.x, player->phys.pos.y, 0.0, true);
 }
 
 void deinit()
@@ -379,7 +380,7 @@ void camera_set()
     cam_rect.w = view_width;
     cam_rect.h = view_height;
     limit_pos(&map.rect, &cam_rect);
-    camera_move(cam_rect.x, cam_rect.y, false);
+    camera_move(cam_rect.x, cam_rect.y, 0.0, false);
 }
 
 void simulate(double delta_t)

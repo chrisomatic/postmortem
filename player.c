@@ -10,6 +10,7 @@
 #include "projectile.h"
 #include "player.h"
 #include "world.h"
+#include "lighting.h"
 #include "net.h"
 #include "main.h"
 
@@ -123,6 +124,11 @@ static void player_init(int index)
     p->anim.frame_sequence[14] = 10;
     p->anim.frame_sequence[15] = 11;
 
+    // light for player
+    p->point_light = -1;
+    if(p == player)
+        p->point_light = lighting_point_light_add(p->phys.pos.x,p->phys.pos.y,1.0,1.0,1.0,1.0);
+
     p->angle = 0.0;
     player_update_sprite_index(p);
 }
@@ -179,8 +185,7 @@ void player_update_other(Player* p, double delta_t)
 
 void player_update_sprite_index(Player* p)
 {
-    //if(p == player)
-        p->angle = calc_angle_rad(p->phys.pos.x, p->phys.pos.y, p->mouse_x, p->mouse_y);
+    p->angle = calc_angle_rad(p->phys.pos.x, p->phys.pos.y, p->mouse_x, p->mouse_y);
 
     float angle_deg = DEG(p->angle);
 
@@ -430,7 +435,6 @@ void player_update(Player* p, double delta_t)
     physics_simulate(&p->phys, delta_t);
     limit_pos(&map.rect, &p->phys.pos);
 
-
     if(p->gun_ready)
     {
         player_gun_set_position(p);
@@ -441,6 +445,7 @@ void player_update(Player* p, double delta_t)
     }
     gun_update(&p->gun,delta_t);
 
+    lighting_point_light_move(p->point_light,p->phys.pos.x, p->phys.pos.y);
 
     if(role == ROLE_CLIENT)
     {

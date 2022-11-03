@@ -20,7 +20,6 @@
 #define COLOR_WHITE     COLOR(0xff,0xff,0xff)
 #define COLOR_TINT_NONE (0xFFFFFFFF)
 
-
 // types
 // --------------------------------------------------------
 
