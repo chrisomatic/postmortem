@@ -13,6 +13,11 @@
 #include "lighting.h"
 #include "net.h"
 #include "main.h"
+#include "weapon.h"
+
+
+#define PLAYER_HEIGHT   128
+static float player_scale = 1.0;
 
 uint32_t player_colors[MAX_CLIENTS] = {
     COLOR_BLUE,
@@ -29,6 +34,10 @@ Player players[MAX_CLIENTS];
 Player* player = &players[0];   //this was index 1?
 int player_count = 0;
 
+int player_image_sets[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][PSTATE_MAX][WEAPON_TYPE_MAX];
+PlayerModel player_models[PLAYER_MODELS_MAX];
+
+
 static int player_image_set;
 
 static int crosshair_image;
@@ -36,19 +45,114 @@ static int crosshair_image;
 static void player_update_sprite_index(Player* p);
 static void player_gun_set_position(Player* p);
 
+
+
+
+void player_update_state(Player* p)
+{
+    if(p->attacking)
+    {
+        p->state = PSTATE_ATTACK1;
+    }
+    else if(p->moving)
+    {
+        p->state = PSTATE_WALK;
+    }
+    else
+    {
+        p->state = PSTATE_IDLE;
+    }
+
+    return;
+}
+
+void player_update_image(Player* p)
+{
+    if(p->weapon_ready)
+    {
+        p->image = player_get_image_index(p->model_index, p->model_texture, p->state, p->weapon.type);
+    }
+    else
+    {
+        p->image = player_get_image_index(p->model_index, p->model_texture, p->state, WEAPON_TYPE_NONE);
+    }
+    return;
+}
+
+
+void player_init_models()
+{
+    int idx = HUMAN1;
+    player_models[idx].index = idx;
+    player_models[idx].name = "human1";
+    player_models[idx].textures = 1;
+    // player_model_texture_count += player_models[idx].textures;
+
+    // idx = HUMAN2;
+    // player_models[idx].index = idx;
+    // player_models[idx].name = "human2";
+    // player_models[idx].textures = 1;
+    // player_model_texture_count += player_models[idx].textures;
+}
+
+
 void player_init_images()
 {
-    int ew = 96;
+
+    int ew = 128;
     int eh = 128;
 
-    GFXNodeDataInput nd = {
-        .image_path = "img/human_base_full_nodes.png",
-        .colors = {COLOR_RED, COLOR_BLUE},
-        .num_sets = 2
-    };
-    player_image_set = gfx_load_image("img/human_base_full.png", false, false, ew, eh, &nd);
+    for(int pm = 0; pm < PLAYER_MODELS_MAX; ++pm)
+    {
+        for(int t = 0; t < PLAYER_TEXTURES_MAX; ++t)
+        {
+            for(int ps = 0; ps < PSTATE_MAX; ++ps)
+            {
+                for(int wt = 0; wt < WEAPON_TYPE_MAX; ++wt)
+                {
+
+                    // printf("%d, %d, %d, %d\n", pm, t, ps, wt);
+                    char fname[100] = {0};
+
+                    if(wt == WEAPON_TYPE_NONE)
+                    {
+                        sprintf(fname, "img/blender_output/%s_%d-%s.png", player_models[pm].name, t, player_state_str(ps));
+                    }
+                    else
+                    {
+                        sprintf(fname, "img/blender_output/%s_%d-%s_%s.png", player_models[pm].name, t, player_state_str(ps), weapon_type_str(wt));
+                    }
+
+
+                    if(access(fname, F_OK) == 0)
+                    {
+                        player_image_sets[pm][t][ps][wt] = gfx_load_image(fname, false, false, ew, eh, NULL);
+                    }
+
+                }
+            }
+
+        }
+    }
+
+
+
+
+
+    // GFXNodeDataInput nd = {
+    //     .image_path = "img/human_base_full_nodes.png",
+    //     .colors = {COLOR_RED, COLOR_BLUE},
+    //     .num_sets = 2
+    // };
+    // player_image_set = gfx_load_image("img/human_base_full.png", false, false, ew, eh, NULL);
 
     crosshair_image = gfx_load_image("img/crosshair.png", false, false, 0, 0, NULL);
+
+    //TODO
+    int img = player_get_image_index(player_models[0].index, 0, PSTATE_IDLE, WEAPON_TYPE_NONE);
+
+    float h = gfx_images[img].visible_rects[0].h;
+    player_scale = (float)PLAYER_HEIGHT/h;
 }
 
 void player_init_controls(Player* p)
@@ -81,6 +185,17 @@ static void player_init(int index)
         sprintf(p->name, "Player %d", p->index);
     }
 
+    p->model_index = HUMAN1;
+    p->model_texture = 0;
+    p->state = PSTATE_IDLE;
+    p->moving = false;
+    p->attacking = false;
+    p->weapon_ready = false;
+
+    // p->image = player_image_set;
+    p->sprite_index = 0;
+
+
     p->phys.pos.x = 400.0;
     p->phys.pos.y = 1000.0;
 
@@ -92,12 +207,13 @@ static void player_init(int index)
     p->speed = 32.0;
     p->max_base_speed = 128.0;
     p->phys.max_linear_vel = p->max_base_speed;
-    p->scale = 0.50;
+    p->scale = player_scale;
     p->predicted_state_index = 0;
 
     p->gun = gun_get(p,GUN_TYPE_MACHINEGUN);
-    p->image = player_image_set;
+    // p->image = player_image_set;
     p->gun_front = false;
+
 
     // animation
     p->anim.curr_frame = 0;
@@ -129,13 +245,18 @@ static void player_init(int index)
     if(p == player)
         p->point_light = lighting_point_light_add(p->phys.pos.x,p->phys.pos.y,1.0,1.0,1.0,1.0);
 
+    player_update_state(p);
+    player_update_image(p);
+
     p->angle = 0.0;
     player_update_sprite_index(p);
 }
 
 void players_init()
 {
+    player_init_models();
     player_init_images();
+
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
         Player* p = &players[i];
@@ -144,7 +265,7 @@ void players_init()
         {
             if(player == p)
             {
-                printf("my player: %d\n", i);
+                LOGI("My player: %d", i);
                 player_init_controls(p);
                 p->active = true;
             }
@@ -153,6 +274,24 @@ void players_init()
         if(p->active)
             player_count++;
     }
+}
+
+const char* player_state_str(PlayerState pstate)
+{
+    switch(pstate)
+    {
+        case PSTATE_IDLE: return "idle";
+        case PSTATE_WALK: return "walk";
+        case PSTATE_ATTACK1: return "attack1";
+        case PSTATE_NONE: return "";
+        default: return "";
+    }
+}
+
+int player_get_image_index(PlayerModelIndex model_index, int texture, PlayerState pstate, WeaponType wtype)
+{
+    // player_image_sets[model][pstate][wtype];
+    return player_image_sets[model_index][texture][pstate][wtype];
 }
 
 int players_get_count()
@@ -231,8 +370,8 @@ void player_update_sprite_index(Player* p)
     }
 
     p->sprite_index *= 16;
-    if(p->gun_ready)
-        p->sprite_index += 128;
+    // if(p->gun_ready)
+    //     p->sprite_index += 128;
 
     
     int anim_frame_offset = p->anim.frame_sequence[p->anim.curr_frame];//*sid->elements_per_row;
@@ -342,20 +481,17 @@ void player_update(Player* p, double delta_t)
 
     memcpy(&p->actions_prior, &p->actions, sizeof(PlayerActions));
 
-    if(gun_toggled)
-    {
-        int next = p->gun.type+1;
-        if(next >= GUN_TYPE_MAX) next = 0;
-        p->gun = gun_get(p,next);
-    }
+    //TODO: weapon
+    // if(gun_toggled)
+    // {
+    //     int next = p->gun.type+1;
+    //     if(next >= GUN_TYPE_MAX) next = 0;
+    //     p->gun = gun_get(p,next);
+    // }
 
     if(fire_toggled)
     {
-        p->gun_ready = !p->gun_ready;
-        //if(p->gun_ready)
-        //    window_disable_cursor();
-        //else
-        //    window_enable_cursor();
+        p->weapon_ready = !p->weapon_ready;
     }
 
     if(debug_toggled)
@@ -375,43 +511,41 @@ void player_update(Player* p, double delta_t)
     }
 
     Vector2f accel = {0};
-    bool player_moving = PLAYER_MOVING(p);
+    bool moving_player = MOVING_PLAYER(p);
 
     if(p->actions.up)    { accel.y -= p->speed; }
     if(p->actions.down)  { accel.y += p->speed; }
     if(p->actions.left)  { accel.x -= p->speed; }
     if(p->actions.right) { accel.x += p->speed; }
 
+
     if(role != ROLE_SERVER)
     {
         window_get_mouse_world_coords(&p->mouse_x, &p->mouse_y);
     }
-
-    player_update_sprite_index(p);
-
-    if(accel.x == 0.0 && accel.y == 0.0)
-    {
-        p->anim.curr_frame = 0;
-        p->anim.curr_frame_time = 0.0;
-    }
-    else
-    {
-        gfx_anim_update(&p->anim,delta_t);
-    }
-
-    p->phys.max_linear_vel = p->max_base_speed;
 
     if(run_toggled)
     {
         p->running = !p->running;
     }
 
-    if(p->running && player_moving)
+    p->phys.max_linear_vel = p->max_base_speed;
+
+    if(p->running && moving_player)
     {
         accel.x *= 10.0;
         accel.y *= 10.0;
         p->phys.max_linear_vel *= 10.0;
     }
+
+    //TODO: weapon
+    if(p->attacking)
+    {
+        accel.x = 0;
+        accel.y = 0;
+    }
+
+
 
 #if 0
     if(role == ROLE_SERVER)
@@ -435,15 +569,43 @@ void player_update(Player* p, double delta_t)
     physics_simulate(&p->phys, delta_t);
     limit_pos(&map.rect, &p->phys.pos);
 
-    if(p->gun_ready)
-    {
-        player_gun_set_position(p);
-        if(p->actions.primary_action)
-        {
-            gun_fire(&p->gun, !primary_action_toggled);
-        }
-    }
-    gun_update(&p->gun,delta_t);
+
+    // // TODO: won't work for idle state
+    // if(FEQ(accel.x,0.0) && FEQ(accel.y,0.0))
+    // {
+    //     p->moving = false;
+    //     p->anim.curr_frame = 0;
+    //     p->anim.curr_frame_time = 0.0;
+    // }
+    // else
+    // {
+    //     p->moving = true;
+    //     gfx_anim_update(&p->anim,delta_t);
+    // }
+
+
+    // is this bueno?
+    p->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
+
+
+    player_update_state(p);
+    player_update_image(p);
+
+    gfx_anim_update(&p->anim,delta_t);
+
+    player_update_sprite_index(p);
+
+
+    //TODO: weapon
+    // if(p->gun_ready)
+    // {
+    //     player_gun_set_position(p);
+    //     if(p->actions.primary_action)
+    //     {
+    //         gun_fire(&p->gun, !primary_action_toggled);
+    //     }
+    // }
+    // gun_update(&p->gun,delta_t);
 
     lighting_point_light_move(p->point_light,p->phys.pos.x, p->phys.pos.y);
 
@@ -497,17 +659,17 @@ void player_draw(Player* p)
         return;
     }
 
-    bool gun_drawn = false;
-    if(p->gun_ready)
-    {
-        if(!p->gun_front)
-        // if(p->sprite_index >= 3 && p->sprite_index <= 5)
-        {
-            // facing up, drawing gun first
-            gun_draw(&p->gun);
-            gun_drawn = true;
-        }
-    }
+    // bool gun_drawn = false;
+    // if(p->gun_ready)
+    // {
+    //     if(!p->gun_front)
+    //     // if(p->sprite_index >= 3 && p->sprite_index <= 5)
+    //     {
+    //         // facing up, drawing gun first
+    //         gun_draw(&p->gun);
+    //         gun_drawn = true;
+    //     }
+    // }
 
     float px = p->phys.pos.x;
     float py = p->phys.pos.y;
@@ -520,16 +682,30 @@ void player_draw(Player* p)
     }
 
 
-    if(p->gun_ready)
-    {
-        if(!gun_drawn)
-            gun_draw(&p->gun);
+    // if(p->gun_ready)
+    // {
+    //     if(!gun_drawn)
+    //         gun_draw(&p->gun);
 
-        GFXImage* img = &gfx_images[crosshair_image];
-        // gfx_draw_image(crosshair_image,mouse_x,mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
-        gfx_draw_image(crosshair_image,0,p->mouse_x,p->mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
+    //     GFXImage* img = &gfx_images[crosshair_image];
+    //     // gfx_draw_image(crosshair_image,mouse_x,mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
+    //     gfx_draw_image(crosshair_image,0,p->mouse_x,p->mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
+    // }
+
+    if(p->weapon_ready)
+    {
+        int wimage = weapons_get_image_index(p->model_index, p->state, p->weapon.type);
+        Rect vr = gfx_images[wimage].visible_rects[p->sprite_index];
+        Rect pvr = gfx_images[p->image].visible_rects[p->sprite_index];
+
+        float gx = p->phys.pos.x + (vr.x-pvr.x)*p->scale;
+        float gy = p->phys.pos.y + (vr.y-pvr.y)*p->scale;
+
+        gfx_draw_image(wimage, p->sprite_index, gx, gy, COLOR_TINT_NONE,p->scale,0.0,1.0);
     }
 
+
+    gfx_draw_image(crosshair_image,0,p->mouse_x,p->mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
 
     Vector2f size = gfx_string_get_size(0.1, p->name);
     gfx_draw_string(p->phys.pos.x - size.x/2.0, p->phys.pos.y + p->phys.pos.h/2.0,player_colors[p->index],0.1,0.0, 0.8, true, true, p->name);

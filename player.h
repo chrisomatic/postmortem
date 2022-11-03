@@ -5,6 +5,46 @@
 #include "gun.h"
 #include "net.h"
 
+#define PLAYER_TEXTURES_MAX     5
+
+typedef enum
+{
+    PSTATE_IDLE,
+    PSTATE_WALK,
+    PSTATE_ATTACK1, // swing
+
+    PSTATE_MAX,
+    PSTATE_NONE    // keep this after MAX
+} PlayerState;
+
+typedef enum
+{
+    HUMAN1,
+
+    PLAYER_MODELS_MAX
+} PlayerModelIndex;
+
+
+typedef struct
+{
+    const char* name;
+    PlayerModelIndex index;
+    int textures;
+} PlayerModel;
+
+
+
+// must include underneath PlayerState
+#include "weapon.h"
+
+
+extern int player_image_sets[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][PSTATE_MAX][WEAPON_TYPE_MAX];
+extern PlayerModel player_models[PLAYER_MODELS_MAX];
+
+
+
+
+
 #define MAX_CLIENT_PREDICTED_STATES 8
 
 #define PLAYER_NAME_MAX 32
@@ -37,24 +77,8 @@ typedef struct
 {
     Vector2f pos;
     float angle;
-} PlayerState;
+} PlayerServerState;
 
-
-// typedef void (*object_primary_action_cb)(GLFWwindow* window, int key, int scan_code, int action, int mods);
-
-
-// typedef struct
-// {
-//     int img_index;
-//     int sprite_index;
-// } Object;
-
-// typedef struct
-// {
-//     Object* obj;
-//     PositionRects pos;
-//     bool draw_front;
-// } PlayerObjectData;
 
 typedef struct
 {
@@ -63,6 +87,22 @@ typedef struct
     bool active;
     int index;
 
+    PlayerModelIndex model_index;
+    int model_texture;
+    PlayerState state;
+    bool moving;
+    bool weapon_ready;
+    bool attacking;
+    Weapon weapon;
+
+
+
+
+    int image;
+    uint8_t sprite_index;
+
+
+
     Physics phys;
     float speed;
     float max_base_speed;
@@ -70,8 +110,7 @@ typedef struct
     float scale;
     bool running;
 
-    int image;
-    uint8_t sprite_index;
+
     uint16_t keys;
 
     int mouse_x;
@@ -88,22 +127,21 @@ typedef struct
 
     int point_light;
 
-    // Object equipped_object;
-
+    // remove
     Gun gun;
     bool gun_ready;
-    bool gun_front; //TODO
+    bool gun_front;
 
     // for client-side interpolation
     float lerp_t;
-    PlayerState state_target;
-    PlayerState state_prior;
+    PlayerServerState state_target;
+    PlayerServerState state_prior;
 
     GFXAnimation anim;
 
 } Player;
 
-#define PLAYER_MOVING(p) (p->actions.up || p->actions.down || p->actions.left || p->actions.right)
+#define MOVING_PLAYER(p) (p->actions.up || p->actions.down || p->actions.left || p->actions.right)
 
 
 extern Player* player;
@@ -114,7 +152,15 @@ extern int player_count;
 void player_init_images();
 void player_init_controls(Player* p);
 void players_init();
+
+const char* player_state_str(PlayerState pstate);
+int player_get_image_index(PlayerModelIndex model_index, int texture, PlayerState pstate, WeaponType wtype);
+
 int players_get_count();
+
+void player_update_state(Player* p);
+void player_update_image(Player* p);
+
 void player_update(Player* p, double delta_t);
 void player_update_other(Player* p, double delta_t);
 void player_draw(Player* p);

@@ -162,25 +162,25 @@ class Compositor():
 
 def main():
 
-    PROCESS_ALL = False
+    PROCESS_ALL = True
 
     root = os.path.dirname(os.path.abspath(__file__)) + slash
 
     if(PROCESS_ALL):
-        models = [x for x in os.listdir(root) if os.path.isdir(root+x)]
+        models = [x for x in os.listdir(root) if os.path.isdir(root+x) and not(x.startswith("!"))]
 
         for m in models:
             mpath = root + m + slash
-            model_sets = [x for x in os.listdir(mpath) if os.path.isdir(mpath+x)]
+            model_sets = [x for x in os.listdir(mpath) if os.path.isdir(mpath+x) and not(x.startswith("!"))]
             if(len(model_sets) == 0):
                 continue
             for ms in model_sets:
-                c = Compositor(m,ms, 96, 128, True)
+                c = Compositor(m,ms, 128, 128, True)
                 print("")
 
     else:
 
-        c = Compositor("human1","walk_normal", 96, 128, True)
+        c = Compositor("human1","walk_gun_ready", 128, 128, True)
 
         # @TEST
         # # img = QImage(32, 32, QImage.Format_ARGB32)

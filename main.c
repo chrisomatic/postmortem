@@ -321,6 +321,9 @@ void init()
     LOGI(" - Player.");
     players_init();
 
+    LOGI(" - Weapons.");
+    weapons_init();
+
     LOGI(" - Zombies.");
     zombie_init();
 
