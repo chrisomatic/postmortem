@@ -8,7 +8,7 @@
 #include "world.h"
 #include "camera.h"
 #include "player.h"
-#include "gun.h"
+// #include "gun.h"
 #include "projectile.h"
 #include "zombie.h"
 #include "gui.h"
@@ -276,7 +276,7 @@ void start_server()
     // server init
     gfx_image_init();
     world_init();
-    gun_init();
+    // gun_init();
     players_init();
     zombie_init();
     projectile_init();
@@ -315,14 +315,8 @@ void init()
     LOGI(" - World.");
     world_init();
 
-    LOGI(" - Guns.");
-    gun_init();
-
     LOGI(" - Player.");
     players_init();
-
-    LOGI(" - Weapons.");
-    weapons_init();
 
     LOGI(" - Zombies.");
     zombie_init();
@@ -331,6 +325,7 @@ void init()
     projectile_init();
 
     camera_move(player->phys.pos.x, player->phys.pos.y, 0.0, true);
+    // camera_update();
 }
 
 void deinit()
@@ -345,7 +340,7 @@ void camera_set()
     int mx, my;
     window_get_mouse_view_coords(&mx, &my);
 
-    if(player->gun_ready)
+    if(player->weapon_ready)
     {
         float r = 0.2;  //should be <= 0.5 to make sense otherwise player will end up off of the screen
         float ox = (mx - view_width/2.0);

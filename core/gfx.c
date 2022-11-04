@@ -832,8 +832,8 @@ void gfx_anim_update(GFXAnimation* anim, double delta_t)
         {
             anim->curr_frame = 0;
 
-            if(anim->finite)
-                anim->curr_loop++;
+            // if(anim->finite)
+            anim->curr_loop++;
         }
     }
 }

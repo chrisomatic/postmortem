@@ -19,6 +19,10 @@ void camera_init()
 
     camera.pos.x = 0.0;
     camera.pos.y = 0.0;
+
+    camera_delta_target.pos.x = 0.0;
+    camera_delta_target.pos.y = 0.0;
+    camera_delta_target.pos.z = 0.0;
 }
 
 void camera_update()
@@ -45,6 +49,7 @@ void camera_move(float x, float y, float z, bool immediate)
         camera_delta_target.pos.x = 0.0;
         camera_delta_target.pos.y = 0.0;
         camera_delta_target.pos.z = 0.0;
+        move_camera(camera.pos.x, camera.pos.y, camera.pos.z);
     }
     else
     {

@@ -13,11 +13,9 @@ gcc core/gfx.c \
     core/socket.c \
     core/bitpack.c \
     main.c \
-    weapon.c \
     world.c \
     player.c \
     zombie.c \
-    gun.c \
     gui.c \
     net.c \
     projectile.c \

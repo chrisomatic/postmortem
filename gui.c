@@ -63,7 +63,7 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
     bool interact         = IS_BIT_SET(player->keys,PLAYER_ACTION_INTERACT);
     bool primary_action   = IS_BIT_SET(player->keys,PLAYER_ACTION_PRIMARY_ACTION);
     bool secondary_action = IS_BIT_SET(player->keys,PLAYER_ACTION_SECONDARY_ACTION);
-    bool toggle_fire      = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_FIRE);
+    bool toggle_equip_weapon= IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_EQUIP_WEAPON);
     bool toggle_debug     = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_DEBUG);
 
     // mouse
@@ -101,9 +101,14 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
     // player
     y += ypad;
     size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Player"); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "State: %s (%d)", player_state_str(player->state), player->state); y += size.y+ypad; maxw = MAX(maxw, size.x);
     size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y); y += size.y+ypad; maxw = MAX(maxw, size.x);
     size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", player->angle, DEG(player->angle)); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    if(draw){
+        size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", player->angle, DEG(player->angle)); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    }else{
+        size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", 5.999, 360.999); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    }
 
     // mouse
     y += ypad;
