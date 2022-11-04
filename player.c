@@ -16,7 +16,7 @@
 #include "weapon.h"
 
 
-#define PLAYER_HEIGHT   128
+#define PLAYER_HEIGHT   96
 static float player_scale = 1.0;
 
 uint32_t player_colors[MAX_CLIENTS] = {
@@ -116,11 +116,11 @@ void player_init_images()
 
                     if(wt == WEAPON_TYPE_NONE)
                     {
-                        sprintf(fname, "img/blender_output/%s_%d-%s.png", player_models[pm].name, t, player_state_str(ps));
+                        sprintf(fname, "img/characters/%s_%d-%s.png", player_models[pm].name, t, player_state_str(ps));
                     }
                     else
                     {
-                        sprintf(fname, "img/blender_output/%s_%d-%s_%s.png", player_models[pm].name, t, player_state_str(ps), weapon_type_str(wt));
+                        sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_state_str(ps), weapon_type_str(wt));
                     }
 
 
