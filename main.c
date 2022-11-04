@@ -18,8 +18,8 @@
 #include "bitpack.h"
 
 // Settings
-#define VIEW_WIDTH   800
-#define VIEW_HEIGHT  600
+#define VIEW_WIDTH   1024
+#define VIEW_HEIGHT  768
 // #define VIEW_WIDTH   1812
 // #define VIEW_HEIGHT  1359
 
@@ -395,6 +395,8 @@ void simulate(double delta_t)
 
     world_update();
     zombie_update(delta_t);
+
+    window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
     player_update(player,delta_t);
     projectile_update(delta_t);
 }
@@ -408,7 +410,9 @@ void simulate_client(double delta_t)
 
     world_update();
     //zombie_update(delta_t);
+    window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
     player_update(player,delta_t);
+    player_handle_net_inputs(player, delta_t);
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {

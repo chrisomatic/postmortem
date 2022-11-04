@@ -146,7 +146,7 @@ void player_init_images()
     // };
     // player_image_set = gfx_load_image("img/human_base_full.png", false, false, ew, eh, NULL);
 
-    crosshair_image = gfx_load_image("img/crosshair.png", false, false, 0, 0, NULL);
+    crosshair_image = gfx_load_image("img/crosshair2.png", false, false, 0, 0, NULL);
 
     //TODO
     int img = player_get_image_index(player_models[0].index, 0, PSTATE_IDLE, WEAPON_TYPE_NONE);
@@ -429,7 +429,7 @@ void player_gun_set_position(Player* p)
     }
 
 
-    if(p == player)
+    if(role == ROLE_SERVER || p == player)
         p->gun.angle = calc_angle_rad(gx0, gy0, p->mouse_x, p->mouse_y);
 
     // Rect r = {0};
@@ -518,12 +518,6 @@ void player_update(Player* p, double delta_t)
     if(p->actions.left)  { accel.x -= p->speed; }
     if(p->actions.right) { accel.x += p->speed; }
 
-
-    if(role != ROLE_SERVER)
-    {
-        window_get_mouse_world_coords(&p->mouse_x, &p->mouse_y);
-    }
-
     if(run_toggled)
     {
         p->running = !p->running;
@@ -569,7 +563,6 @@ void player_update(Player* p, double delta_t)
     physics_simulate(&p->phys, delta_t);
     limit_pos(&map.rect, &p->phys.pos);
 
-
     // // TODO: won't work for idle state
     // if(FEQ(accel.x,0.0) && FEQ(accel.y,0.0))
     // {
@@ -608,45 +601,45 @@ void player_update(Player* p, double delta_t)
     // gun_update(&p->gun,delta_t);
 
     lighting_point_light_move(p->point_light,p->phys.pos.x, p->phys.pos.y);
+}
 
-    if(role == ROLE_CLIENT)
+void player_handle_net_inputs(Player* p, double delta_t)
+{
+    // handle input
+    memcpy(&p->input_prior, &p->input, sizeof(NetPlayerInput));
+
+    p->input.delta_t = delta_t;
+    p->input.keys = p->keys;
+    p->input.mouse_x = p->mouse_x;
+    p->input.mouse_y = p->mouse_y;
+    
+    if(p->input.keys != p->input_prior.keys || p->input.mouse_x != p->input_prior.mouse_x || p->input.mouse_y != p->input_prior.mouse_y)
     {
-        // handle input
-        memcpy(&p->input_prior, &p->input, sizeof(NetPlayerInput));
+        net_client_add_player_input(&p->input);
 
-        p->input.delta_t = delta_t;
-        p->input.keys = p->keys;
-        p->input.mouse_x = p->mouse_x;
-        p->input.mouse_y = p->mouse_y;
-        
-        if(p->input.keys != p->input_prior.keys || p->input.mouse_x != p->input_prior.mouse_x || p->input.mouse_y != p->input_prior.mouse_y)
+        if(net_client_get_input_count() >= 3) // @HARDCODED 3
         {
-            net_client_add_player_input(&p->input);
+            // add position, angle to predicted player state
+            NetPlayerState* state = &p->predicted_states[p->predicted_state_index];
 
-            if(net_client_get_input_count() >= 3) // @HARDCODED 3
+            // circular buffer
+            if(p->predicted_state_index == MAX_CLIENT_PREDICTED_STATES -1)
             {
-                // add position, angle to predicted player state
-                NetPlayerState* state = &p->predicted_states[p->predicted_state_index];
-
-                // circular buffer
-                if(p->predicted_state_index == MAX_CLIENT_PREDICTED_STATES -1)
+                // shift
+                for(int i = 1; i <= MAX_CLIENT_PREDICTED_STATES -1; ++i)
                 {
-                    // shift
-                    for(int i = 1; i <= MAX_CLIENT_PREDICTED_STATES -1; ++i)
-                    {
-                        memcpy(&p->predicted_states[i-1],&p->predicted_states[i],sizeof(NetPlayerState));
-                    }
+                    memcpy(&p->predicted_states[i-1],&p->predicted_states[i],sizeof(NetPlayerState));
                 }
-                else if(p->predicted_state_index < MAX_CLIENT_PREDICTED_STATES -1)
-                {
-                    p->predicted_state_index++;
-                }
-
-                state->associated_packet_id = net_client_get_latest_local_packet_id();
-                state->pos.x = p->phys.pos.x;
-                state->pos.y = p->phys.pos.y;
-                state->angle = p->angle;
             }
+            else if(p->predicted_state_index < MAX_CLIENT_PREDICTED_STATES -1)
+            {
+                p->predicted_state_index++;
+            }
+
+            state->associated_packet_id = net_client_get_latest_local_packet_id();
+            state->pos.x = p->phys.pos.x;
+            state->pos.y = p->phys.pos.y;
+            state->angle = p->angle;
         }
     }
 }

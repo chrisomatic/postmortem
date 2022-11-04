@@ -163,4 +163,5 @@ void player_update_image(Player* p);
 
 void player_update(Player* p, double delta_t);
 void player_update_other(Player* p, double delta_t);
+void player_handle_net_inputs(Player* p, double delta_t);
 void player_draw(Player* p);

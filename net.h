@@ -66,8 +66,8 @@ typedef struct
 {
     double delta_t;
     uint16_t keys;
-    int16_t mouse_x;
-    int16_t mouse_y;
+    int mouse_x;
+    int mouse_y;
 } __attribute__((__packed__)) NetPlayerInput;
 
 typedef struct

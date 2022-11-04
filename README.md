@@ -8,7 +8,6 @@ This is a work-in-progress 2D game
 
 ## TODO
 
-- Add networking
 - Add tile properties
 - Add collision between entities
 - Add objects
@@ -17,10 +16,13 @@ This is a work-in-progress 2D game
 - Add basic GUI
 - Add melee weapons
 - Define hit box and collision boxes for player
-- Write list wrapper
 
 ## DONE
 
+- Add animation support
+- Add point light support
+- Add networking
+- Write list wrapper
 - Add font support
 - Create hit boxes for Zombies
 - Add projectile collision

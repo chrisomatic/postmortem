@@ -15,6 +15,7 @@
 #include "player.h"
 #include "zombie.h"
 #include "projectile.h"
+#include "circbuf.h"
 
 //#define SERVER_PRINT_SIMPLE 1
 //#define SERVER_PRINT_VERBOSE 1
@@ -482,7 +483,6 @@ static void server_update_players()
         cli->player_state.angle = p->angle;
         cli->player_state.sprite_index = p->sprite_index;
     }
-
 }
 
 int net_server_start()
@@ -614,13 +614,33 @@ int net_server_start()
                     case PACKET_TYPE_INPUT:
                     {
                         uint8_t _input_count = recv_pkt.data[8];
-                        NetPlayerInput _input;
 
                         for(int i = 0; i < _input_count; ++i)
                         {
                             // get input, copy into array
                             int index = 9+(i*sizeof(NetPlayerInput));
+
                             memcpy(&cli->net_player_inputs[cli->input_count++], &recv_pkt.data[index],sizeof(NetPlayerInput));
+
+                            /*
+                            NetPlayerInput _input;
+                            memcpy(&_input, &recv_pkt.data[index],sizeof(NetPlayerInput));
+
+                            Player* p = &players[cli->client_id];
+
+                            // apply input
+                            p->keys = _input.keys;
+                            p->mouse_x = _input.mouse_x;
+                            p->mouse_y = _input.mouse_y;
+
+                            player_update(p,_input.delta_t);
+
+                            cli->player_state.pos.x = p->phys.pos.x;
+                            cli->player_state.pos.y = p->phys.pos.y;
+                            cli->player_state.angle = p->angle;
+                            cli->player_state.sprite_index = p->sprite_index;
+                            */
+
                         }
                     } break;
                     case PACKET_TYPE_PING:
@@ -695,6 +715,7 @@ struct
     Address address;
     NodeInfo info;
     ConnectionState state;
+    CircBuf input_packets;
     double time_of_latest_sent_packet;
     double time_of_last_ping;
     double time_of_last_received_ping;
@@ -785,6 +806,7 @@ bool net_client_init()
     socket_create(&sock);
 
     client.info.socket = sock;
+    circbuf_create(&client.input_packets,10, sizeof(Packet));
 
     return true;
 }
@@ -841,6 +863,7 @@ static void client_send(PacketType type)
                 memcpy(&pkt.data[index],&net_player_inputs[i],sizeof(NetPlayerInput));
             }
             pkt.data_len = 9+(input_count*sizeof(NetPlayerInput));
+            circbuf_add(&client.input_packets,&pkt);
             net_send(&client.info,&server.address,&pkt);
             break;
         case PACKET_TYPE_DISCONNECT:
@@ -859,6 +882,24 @@ static void client_send(PacketType type)
     }
 
     client.time_of_latest_sent_packet = timer_get_time();
+}
+
+static bool client_get_input_packet(Packet* input, int packet_id)
+{
+    for(int i = client.input_packets.count -1; i >= 0; --i)
+    {
+        Packet* pkt = (Packet*)circbuf_get_item(&client.input_packets,i);
+
+        if(pkt)
+        {
+            if(pkt->hdr.id == packet_id)
+            {
+                input = pkt;
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 int net_client_connect()
@@ -1003,9 +1044,48 @@ void net_client_update()
                                         LOGW("======");
                                         */
 
+                                        p->predicted_state_index = i; // disregard all predicted state since this correction
+
+                                        // set player's state
                                         p->phys.pos.x = pos.x;
                                         p->phys.pos.y = pos.y;
                                         p->angle = angle;
+
+                                        // re-do any needed sent inputs
+                                        for(int i = srvpkt.hdr.ack+1; i < client.info.local_latest_packet_id; ++i)
+                                        {
+                                            Packet input_pkt = {0};
+
+                                            bool success = client_get_input_packet(&input_pkt,i);
+                                            if(success)
+                                            {
+                                                NetPlayerInput* inputs = (NetPlayerInput*)&input_pkt.data[0];
+                                                for(int j = 0; j < inputs_per_packet; ++j)
+                                                {
+                                                    NetPlayerInput* input = &inputs[j];
+
+                                                    LOGN("Applying input from packet %d:%d",i, j);
+
+                                                    p->keys = input->keys;
+                                                    p->mouse_x = input->mouse_x;
+                                                    p->mouse_y = input->mouse_y;
+
+                                                    player_update(p, input->delta_t);
+                                                }
+                                            }
+                                        }
+                                        
+                                        // re-do unsent inputs
+                                        for(int i = 0; i < input_count; ++i)
+                                        {
+                                            NetPlayerInput* input = &net_player_inputs[i];
+
+                                            p->keys = input->keys;
+                                            p->mouse_x = input->mouse_x;
+                                            p->mouse_y = input->mouse_y;
+
+                                            player_update(p, input->delta_t);
+                                        }
                                     }
                                     break;
                                 }
