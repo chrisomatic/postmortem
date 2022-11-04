@@ -10,6 +10,7 @@
 #include "player.h"
 #include "gui.h"
 #include "world.h"
+#include "imgui.h"
 #include "camera.h"
 #include "zombie.h"
 
@@ -245,6 +246,22 @@ void gui_draw()
 
         size = gfx_draw_string(x0+1.0, y0+yspace*(CONSOLE_MSG_MAX), COLOR_WHITE, scale, 0.0, 1.0, false, false, "%s%s", CONSOLE_PROMPT, console_text+index);// y += size.y+ypad;
 
+    }
+
+    if(true)
+    {
+        imgui_begin(800,100);
+        imgui_text("Test GUI");
+        imgui_set_text_size(12);
+        imgui_set_text_color(0x00FF00FF);
+        imgui_text("My name is %s", "Chris");
+        imgui_text("My name is %s", "Kam");
+        if(imgui_button("Test Button"))
+        {
+            printf("Button clicked!\n");
+        }
+        imgui_button("Dumb Button");
+        imgui_end();
     }
 
 }

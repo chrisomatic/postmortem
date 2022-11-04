@@ -7,7 +7,7 @@
 #define PLAYER_TEXTURES_MAX     5
 #define MAX_CLIENT_PREDICTED_STATES 8
 #define PLAYER_NAME_MAX 32
-#define PLAYER_HEIGHT   96
+#define PLAYER_HEIGHT   64
 
 typedef enum
 {

@@ -100,9 +100,8 @@ void player_init_images()
 
                     if(access(fname, F_OK) == 0)
                     {
-                        player_image_sets[pm][t][ps][wt] = gfx_load_image(fname, false, false, ew, eh, NULL);
+                        player_image_sets[pm][t][ps][wt] = gfx_load_image(fname, false, true, ew, eh, NULL);
                     }
-
                 }
             }
 
