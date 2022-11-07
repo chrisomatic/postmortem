@@ -17,7 +17,6 @@ typedef enum
 
 typedef void (*key_cb_t)(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
-
 extern int window_width;
 extern int window_height;
 extern int view_width;
@@ -50,3 +49,6 @@ void window_disable_cursor();
 
 void windows_text_mode_buf_append(char c);
 void window_text_mode_buf_backspace();
+
+bool window_mouse_left_went_down();
+bool window_mouse_left_went_up();

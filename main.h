@@ -43,6 +43,7 @@ extern GameRole role;
 extern Vector2f aim_camera_offset;
 
 extern bool debug_enabled;
+extern bool editor_enabled;
 
 const char* game_role_to_str(GameRole _role);
 

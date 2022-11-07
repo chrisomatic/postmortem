@@ -157,6 +157,7 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
 
 }
 
+static int num_clicks = 0; // @TEST
 
 void gui_draw()
 {
@@ -258,19 +259,46 @@ void gui_draw()
 
     }
 
-    if(true)
+    // controls
+    imgui_begin(view_width - 150,view_height - 120);
+        imgui_set_text_size(16);
+        imgui_text("Controls");
+        imgui_set_text_size(10);
+        imgui_text("  W,A,S,D: Move");
+        imgui_text("  Tab: Ready/Unready gun");
+        imgui_text("  G: Cycle through guns");
+        imgui_text("  Shift: Toggle Run");
+        imgui_text("  F2: Toggle Debug");
+        imgui_text("  F3: Toggle Editor");
+        imgui_text("  F10: Open Console");
+    imgui_end();
+
+    if(editor_enabled)
     {
         imgui_begin(800,100);
-        imgui_text("Test GUI");
+
+        imgui_set_text_size(32);
+        imgui_text("Editor");
         imgui_set_text_size(12);
-        imgui_set_text_color(0x00FF00FF);
-        imgui_text("My name is %s", "Chris");
-        imgui_text("My name is %s", "Kam");
+        imgui_text_colored(0x00FF00FF, "My name is %s", "Chris");
+        imgui_text_colored(0x0000FFFF, "My name is %s", "Kam");
+
+        static int x = 0;
         if(imgui_button("Test Button"))
         {
-            printf("Button clicked!\n");
+            num_clicks++;
         }
+        imgui_text_colored(0xFFFFFFFF, "Num clicks: %d", num_clicks);
+
         imgui_button("Dumb Button");
+        float r,g,b;
+        imgui_slider_float("Tint R", 0.0,1.0,&r);
+        imgui_slider_float("Tint G", 0.0,1.0,&g);
+        imgui_slider_float("Tint B", 0.0,1.0,&b);
+        imgui_text_colored(COLOR2(r,g,b), "What up homie?");
+
+        int w;
+        imgui_slider_int("Whatever", 0,5,&w);
         imgui_end();
     }
 

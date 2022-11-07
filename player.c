@@ -70,7 +70,6 @@ void player_init_models()
     // player_model_texture_count += player_models[idx].textures;
 }
 
-
 void player_init_images()
 {
 
@@ -134,6 +133,7 @@ void player_init_controls(Player* p)
     window_controls_add_key(&p->keys, GLFW_KEY_E, PLAYER_ACTION_INTERACT);
     window_controls_add_key(&p->keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_EQUIP_WEAPON);
     window_controls_add_key(&p->keys, GLFW_KEY_F2, PLAYER_ACTION_TOGGLE_DEBUG);
+    window_controls_add_key(&p->keys, GLFW_KEY_F3, PLAYER_ACTION_TOGGLE_EDITOR);
     window_controls_add_key(&p->keys, GLFW_KEY_G, PLAYER_ACTION_TOGGLE_GUN);
 
     window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_LEFT, PLAYER_ACTION_PRIMARY_ACTION);
@@ -547,6 +547,7 @@ void player_update(Player* p, double delta_t)
     p->actions.secondary_action = IS_BIT_SET(p->keys,PLAYER_ACTION_SECONDARY_ACTION);
     p->actions.toggle_equip_weapon= IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EQUIP_WEAPON);
     p->actions.toggle_debug     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_DEBUG);
+    p->actions.toggle_editor    = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EDITOR);
     p->actions.toggle_gun       = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_GUN);
 
     bool run_toggled = p->actions.run && !p->actions_prior.run;
@@ -554,6 +555,7 @@ void player_update(Player* p, double delta_t)
     bool secondary_action_toggled = p->actions.secondary_action && !p->actions_prior.secondary_action;
     bool equip_weapon_toggled = p->actions.toggle_equip_weapon && !p->actions_prior.toggle_equip_weapon;
     bool debug_toggled = p->actions.toggle_debug && !p->actions_prior.toggle_debug;
+    bool editor_toggled = p->actions.toggle_editor && !p->actions_prior.toggle_editor;
     bool gun_toggled = p->actions.toggle_gun && !p->actions_prior.toggle_gun;
 
     memcpy(&p->actions_prior, &p->actions, sizeof(PlayerActions));
@@ -628,11 +630,20 @@ void player_update(Player* p, double delta_t)
         debug_enabled = !debug_enabled;
     }
 
+    if(editor_toggled)
+    {
+        editor_enabled = !editor_enabled;
+        if(editor_enabled)
+            window_enable_cursor();
+        else
+            window_disable_cursor();
+    }
+
     if(role != ROLE_SERVER)
     {
         if(p->actions.primary_action)
         {
-            if(window_is_cursor_enabled())
+            if(window_is_cursor_enabled() && !editor_enabled)
             {
                 window_disable_cursor();
             }

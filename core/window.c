@@ -9,6 +9,15 @@
 #include "camera.h"
 #include "window.h"
 
+typedef struct
+{
+    int action;
+    int action_prior;
+} MouseAction;
+
+static MouseAction mouse_left;
+static MouseAction mouse_right;
+
 static GLFWwindow* window;
 
 int window_width = 0;
@@ -92,6 +101,9 @@ bool window_init(int _view_width, int _view_height)
         fprintf(stderr, "Failed to initialize GLEW\n");
         return false;
     }
+
+    mouse_left.action = GLFW_RELEASE;
+    mouse_right.action = GLFW_RELEASE;
 
     return true;
 }
@@ -336,6 +348,17 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
+    if(button == GLFW_MOUSE_BUTTON_LEFT)
+    {
+        mouse_left.action_prior = mouse_left.action;
+        mouse_left.action = action;
+    }
+    else if(button == GLFW_MOUSE_BUTTON_RIGHT)
+    {
+        mouse_right.action_prior = mouse_left.action;
+        mouse_right.action = action;
+    }
+    
     if(action == GLFW_PRESS || action == GLFW_RELEASE)
     {
         for(int i = 0; i < window_mouse_buttons_count; ++i)
@@ -358,6 +381,16 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
             }
         }
     }
+}
+
+bool window_mouse_left_went_down()
+{
+    return (mouse_left.action_prior == GLFW_RELEASE && mouse_left.action == GLFW_PRESS);
+}
+
+bool window_mouse_left_went_up()
+{
+    return (mouse_left.action_prior == GLFW_PRESS && mouse_left.action == GLFW_RELEASE);
 }
 
 void windows_text_mode_buf_append(char c)

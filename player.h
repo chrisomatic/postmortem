@@ -122,7 +122,8 @@ enum PlayerAction
     PLAYER_ACTION_SECONDARY_ACTION = 1<<8,
     PLAYER_ACTION_TOGGLE_EQUIP_WEAPON = 1<<9,
     PLAYER_ACTION_TOGGLE_DEBUG     = 1<<10,
-    PLAYER_ACTION_TOGGLE_GUN       = 1<<11,
+    PLAYER_ACTION_TOGGLE_EDITOR    = 1<<11,
+    PLAYER_ACTION_TOGGLE_GUN       = 1<<12,
 };
 
 typedef struct
@@ -130,7 +131,7 @@ typedef struct
     bool up, down, left, right;
     bool run, jump, interact;
     bool primary_action, secondary_action;
-    bool toggle_equip_weapon, toggle_debug, toggle_gun;
+    bool toggle_equip_weapon, toggle_debug, toggle_editor, toggle_gun;
 } PlayerActions;
 
 typedef struct

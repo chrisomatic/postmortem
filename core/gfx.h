@@ -8,7 +8,8 @@
 
 #define MAX_GFX_IMAGES 256
 
-#define COLOR(r,g,b) (uint32_t)(r<<16|g<<8|b)
+#define COLOR(r,g,b)  (uint32_t)(r<<16|g<<8|b)
+#define COLOR2(r,g,b) (uint32_t)((uint8_t)(r*255.0)<<16|(uint8_t)(g*255.0)<<8|(uint8_t)(b*255.0))
 #define COLOR_RED       COLOR(0xff,0x00,0x00)
 #define COLOR_GREEN     COLOR(0x00,0xff,0x00)
 #define COLOR_BLUE      COLOR(0x00,0x00,0xff)
