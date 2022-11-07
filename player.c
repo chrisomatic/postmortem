@@ -14,6 +14,7 @@
 #include "net.h"
 #include "main.h"
 
+float weapon_angle = 0.0;
 
 // global vars
 // ------------------------------------------------------------
@@ -101,6 +102,7 @@ void player_init_images()
                     if(access(fname, F_OK) == 0)
                     {
                         player_image_sets[pm][t][ps][wt] = gfx_load_image(fname, false, true, ew, eh, NULL);
+                        printf("%s -> %d\n", fname, player_image_sets[pm][t][ps][wt]);
                     }
                 }
             }
@@ -108,16 +110,6 @@ void player_init_images()
         }
     }
 
-
-
-
-
-    // GFXNodeDataInput nd = {
-    //     .image_path = "img/human_base_full_nodes.png",
-    //     .colors = {COLOR_RED, COLOR_BLUE},
-    //     .num_sets = 2
-    // };
-    // player_image_set = gfx_load_image("img/human_base_full.png", false, false, ew, eh, NULL);
 
     crosshair_image = gfx_load_image("img/crosshair2.png", false, false, 0, 0, NULL);
 
@@ -464,6 +456,27 @@ void player_update_image(Player* p)
     return;
 }
 
+void player_update_boxes(Player* p)
+{
+    GFXImage* img = &gfx_images[p->image];
+    Rect* vr = &img->visible_rects[p->sprite_index];
+
+    p->phys.pos.w = vr->w*p->scale;
+    p->phys.pos.h = vr->h*p->scale;
+
+    p->hit_box.x = p->phys.pos.x;
+    p->hit_box.y = p->phys.pos.y;
+    p->hit_box.w = p->phys.pos.w;
+    p->hit_box.h = p->phys.pos.h;
+
+    // if(p->image == 3 && p->sprite_index == 0)
+    // {
+    //     // print_rect(&p->hit_box);
+    //     print_rect(vr);
+    // }
+}
+
+
 void player_update_sprite_index(Player* p)
 {
     p->angle = calc_angle_rad(p->phys.pos.x, p->phys.pos.y, p->mouse_x, p->mouse_y);
@@ -518,10 +531,6 @@ void player_update_sprite_index(Player* p)
 
     p->sprite_index += anim_frame_offset;
     p->sprite_index = MIN(p->sprite_index, gfx_images[p->image].element_count);
-
-    Rect* vr = &gfx_images[p->image].visible_rects[p->sprite_index];
-    p->phys.pos.w = vr->w*p->scale;
-    p->phys.pos.h = vr->h*p->scale;
 }
 
 
@@ -681,7 +690,6 @@ void player_update(Player* p, double delta_t)
     physics_add_friction(&p->phys, 16.0);
     physics_add_force(&p->phys, accel.x, accel.y);
     physics_simulate(&p->phys, delta_t);
-    limit_pos(&map.rect, &p->phys.pos);
 
 
     // // TODO: won't work for idle state
@@ -716,7 +724,9 @@ void player_update(Player* p, double delta_t)
     }
 
     player_update_sprite_index(p);
+    player_update_boxes(p);
 
+    limit_pos(&map.rect, &p->phys.pos);
 
     lighting_point_light_move(p->point_light,p->phys.pos.x, p->phys.pos.y);
 }
@@ -781,47 +791,126 @@ void player_update_other(Player* p, double delta_t)
 
 void player_draw(Player* p)
 {
-
     if(!is_in_camera_view(&p->phys.pos))
     {
         return;
     }
 
-    float px = p->phys.pos.x;
-    float py = p->phys.pos.y;
-    // gfx_draw_image(p->image, p->sprite_index, px, py, COLOR_TINT_NONE,p->scale,DEG(p->angle),1.0);
-    gfx_draw_image(p->image, p->sprite_index, px, py, COLOR_TINT_NONE,p->scale,0.0,1.0);
+    GFXImage* img = &gfx_images[p->image];
+    Rect* vr = &img->visible_rects[p->sprite_index];
+    // float angle_deg = DEG(p->angle);
 
-    if(debug_enabled)
-    {
-        gfx_draw_rect(&p->phys.pos, COLOR_RED, 1.0,1.0, false, true);
-    }
+    // offset for drawing sprites
+    float img_center_x = img->element_width/2.0;
+    float img_center_y = img->element_height/2.0;
+    float offset_x = -(vr->x - img_center_x)*p->scale;
+    float offset_y = -(vr->y - img_center_y)*p->scale;
+    float px = p->phys.pos.x + offset_x;
+    float py = p->phys.pos.y + offset_y;
 
-    if(p->weapon_ready && p->weapon->index != WEAPON_NONE)
+    // player
+    gfx_draw_image(p->image, p->sprite_index, px, py, COLOR_TINT_NONE,p->scale,0.0,1.0,true);
+
+    bool draw_weapon = p->weapon_ready && p->weapon->index != WEAPON_NONE;
+
+    if(draw_weapon)
     {
+
+#if 1
         int wimage = weapons_get_image_index(p->model_index, p->state, p->weapon->type);
-        Rect vr = gfx_images[wimage].visible_rects[p->sprite_index];
-        Rect pvr = gfx_images[p->image].visible_rects[p->sprite_index];
+        GFXImage* wimg = &gfx_images[wimage];
+        Rect* wvr = &wimg->visible_rects[p->sprite_index];
 
-        float gx = p->phys.pos.x + (vr.x-pvr.x)*p->scale;
-        float gy = p->phys.pos.y + (vr.y-pvr.y)*p->scale;
+        p->weapon->pos.x = p->phys.pos.x + (wvr->x-vr->x)*p->scale;
+        p->weapon->pos.y = p->phys.pos.y + (wvr->y-vr->y)*p->scale;
+
+        // weapon
+        gfx_draw_image(wimage, p->sprite_index, px, py, COLOR_TINT_NONE,p->scale,0,1.0,true);
+
+#else
+
+
+        int wimage = weapons_get_image_index(p->model_index, p->state, p->weapon->type);
+        GFXImage* wimg = &gfx_images[wimage];
+        Rect* wvr = &wimg->visible_rects[p->sprite_index];
+
+        float wimg_center_x = wimg->element_width/2.0;
+        float wimg_center_y = wimg->element_height/2.0;
+
+        float gx = p->phys.pos.x + (wvr->x-wimg_center_x)*p->scale + offset_x;
+        float gy = p->phys.pos.y + (wvr->y-wimg_center_y)*p->scale + offset_y;
+
         p->weapon->pos.x = gx;
         p->weapon->pos.y = gy;
 
-        gfx_draw_image(wimage, p->sprite_index, p->weapon->pos.x, p->weapon->pos.y, COLOR_TINT_NONE,p->scale,0.0,1.0);
+
+        // float angle_deg = DEG(p->angle);
+        float angle_deg = calc_angle_deg(p->weapon->pos.x, p->weapon->pos.y, p->mouse_x, p->mouse_y);
+        int sector = angle_sector(angle_deg, 16);
+        // int sector = angle_sector(angle_deg, 16);
+        int sector2 = angle_sector(angle_deg, 8);
+        float sector_center = 0.0;
+
+
+        if(sector == 0)
+            sector_center = 11.25*2;
+        else if(sector == 15)
+            sector_center = 360.0-11.25*2;
+        else if(sector == 1 || sector == 2)
+            sector_center = 45.0;
+        else if(sector == 3 || sector == 4)
+            sector_center = 90.0;
+        else if(sector == 5 || sector == 6)
+            sector_center = 135.0;
+        else if(sector == 7 || sector == 8)
+            sector_center = 180.0;
+        else if(sector == 9 || sector == 10)
+            sector_center = 225.0;
+        else if(sector == 11 || sector == 12)
+            sector_center = 270.0;
+        else if(sector == 13 || sector == 14)
+            sector_center = 315.0;
+
+
+        float angle_rotate = (angle_deg-sector_center)/2.0;
+        weapon_angle = angle_rotate;
+        printf("%.2f (%d, %d),  %.2f,   %.2f\n", angle_deg, sector, sector2, sector_center, angle_rotate);
+
+        // weapon
+        gfx_draw_image(wimage, p->sprite_index, p->weapon->pos.x, p->weapon->pos.y, COLOR_TINT_NONE,p->scale,angle_rotate,1.0,false);
+#endif
     }
 
-    gfx_draw_image(crosshair_image,0,p->mouse_x,p->mouse_y, COLOR_PURPLE,1.0,0.0,0.80);
+
+
+
+    if(debug_enabled)
+    {
+        gfx_draw_rect(&p->hit_box, COLOR_RED, 1.0,1.0, false, true);
+
+        // if(draw_weapon)
+        // {
+        //     Rect rw = {0};
+        //     rw.x = p->weapon->pos.x;
+        //     rw.y = p->weapon->pos.y;
+        //     rw.w = 2;
+        //     rw.h = 2;
+        //     gfx_draw_rect(&rw, COLOR_ORANGE, 1.0,1.0, true, true);
+        // }
+
+        // Rect r = {0};
+        // r.x = p->phys.pos.x;
+        // r.y = p->phys.pos.y;
+        // r.w = 2;
+        // r.h = 2;
+        // gfx_draw_rect(&r, COLOR_PURPLE, 1.0,1.0, true, true);
+    }
+
+    gfx_draw_image(crosshair_image,0,p->mouse_x,p->mouse_y, COLOR_PURPLE,1.0,0.0,0.80, false);
 
     Vector2f size = gfx_string_get_size(0.1, p->name);
     gfx_draw_string(p->phys.pos.x - size.x/2.0, p->phys.pos.y + p->phys.pos.h/2.0,player_colors[p->index],0.1,0.0, 0.8, true, true, p->name);
 }
-
-
-
-
-
-
 
 
 
@@ -924,7 +1013,7 @@ void weapons_init()
 
     weapons[idx].melee.range = 8.0;
     weapons[idx].melee.power = 0.1;
-    weapons[idx].melee.period = 1000.0;
+    weapons[idx].melee.period = 100.0;
 
     weapons_init_images();
 }

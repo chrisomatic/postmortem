@@ -477,7 +477,7 @@ void rectxy_to_rect(RectXY* in, Rect* out)
 
 void print_rect(Rect* r)
 {
-    printf("Rectangle (x,y,w,h): %.1f, %.1f, %.1f, %.1f\n", r->x, r->y, r->w, r->h);
+    printf("Rectangle (x,y,w,h): %.3f, %.3f, %.3f, %.3f\n", r->x, r->y, r->w, r->h);
 }
 
 void print_rectxy(RectXY* r)

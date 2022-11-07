@@ -244,7 +244,7 @@ void zombie_draw()
         if(is_in_camera_view(&zom->phys.pos))
         {
             // gfx_draw_image(zombie_image,(int)zom->phys.pos.x,(int)zom->phys.pos.y, COLOR_TINT_NONE,zom->scale,0.0,1.0);
-            gfx_draw_image(zombie_image, zom->sprite_index,(int)zom->phys.pos.x,(int)zom->phys.pos.y, COLOR_TINT_NONE,zom->scale,0.0,1.0);
+            gfx_draw_image(zombie_image, zom->sprite_index,(int)zom->phys.pos.x,(int)zom->phys.pos.y, COLOR_TINT_NONE,zom->scale,0.0,1.0,true);
 
             if(debug_enabled)
             {

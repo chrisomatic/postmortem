@@ -237,8 +237,7 @@ void projectile_draw()
 
         if(is_in_camera_view(&proj->hurt_box))
         {
-            // gfx_draw_sub_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0);
-            gfx_draw_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0);
+            gfx_draw_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0, false);
 
             if(debug_enabled)
             {

@@ -95,6 +95,7 @@ typedef struct
     const char* name;
     WeaponType type;
     WeaponIndex index;
+    // Vector2f draw_pos;
     Vector2f pos;
 
     WeaponAttack primary_attack;
@@ -171,6 +172,9 @@ typedef struct
     uint8_t sprite_index;
     uint8_t sprite_index_direction;
 
+    Rect hit_box;
+    Rect collision_box;
+
     Physics phys;
     float speed;
     float max_base_speed;
@@ -229,6 +233,7 @@ void player_update_mouse_click(bool active, bool toggled, MouseClick* mouse, flo
 void player_update_anim_timing(Player* p);
 void player_update_state(Player* p);
 void player_update_image(Player* p);
+void player_update_boxes(Player* p);
 void player_update_sprite_index(Player* p);
 void player_update(Player* p, double delta_t);
 void player_update_other(Player* p, double delta_t);
@@ -241,3 +246,4 @@ int weapons_get_image_index(PlayerModelIndex model_index, PlayerState pstate, We
 const char* weapon_type_str(WeaponType wtype);
 void weapon_fire(int mx, int my, Weapon* weapon, bool held);
 
+extern float weapon_angle;

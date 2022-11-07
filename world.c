@@ -177,7 +177,7 @@ void world_draw()
             if(index == 0xFF) continue;
             float x,y;
             map_grid_to_coords(r, c, &x, &y);
-            gfx_draw_image(ground_sheet,index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0);
+            gfx_draw_image(ground_sheet,index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0, true);
 
 #if 0
             if(debug_enabled)

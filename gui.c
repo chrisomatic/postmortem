@@ -110,6 +110,7 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
     // player
     y += ypad;
     size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Player"); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Weapon Angle: %.2f", weapon_angle); y += size.y+ypad; maxw = MAX(maxw, size.x);
     size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "State: %s (%d)", player_state_str(player->state), player->state); y += size.y+ypad; maxw = MAX(maxw, size.x);
     size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y); y += size.y+ypad; maxw = MAX(maxw, size.x);
     size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Vel: %.2f, %.2f (%.2f)", pvx, pvy, pv); y += size.y+ypad; maxw = MAX(maxw, size.x);

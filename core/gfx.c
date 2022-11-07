@@ -267,6 +267,7 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     printf("element count: %d  (%d x %d)\n", img.element_count, img.elements_per_row, img.elements_per_col);
 
     img.visible_rects = malloc(img.element_count * sizeof(Rect));
+    img.sprite_visible_rects = malloc(img.element_count * sizeof(Rect));
     img.sprite_rects = malloc(img.element_count * sizeof(Rect));
 
     int num_cols = img.elements_per_row;
@@ -340,10 +341,16 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
 
         image_get_visible_rect(img.element_width, img.element_height, img.n, temp_data, &img.visible_rects[i]);
         Rect* vr = &img.visible_rects[i];
-        img.sprite_rects[i].x = (float)(start_x+vr->x) / image.w;
-        img.sprite_rects[i].y = (float)(start_y+vr->y) / image.h;
-        img.sprite_rects[i].w = vr->w / image.w;
-        img.sprite_rects[i].h = vr->h / image.h;
+        img.sprite_visible_rects[i].x = (float)(start_x+vr->x) / image.w;
+        img.sprite_visible_rects[i].y = (float)(start_y+vr->y) / image.h;
+        img.sprite_visible_rects[i].w = vr->w / image.w;
+        img.sprite_visible_rects[i].h = vr->h / image.h;
+
+        img.sprite_rects[i].x = (float)(start_x+img.element_width/2.0) / image.w;
+        img.sprite_rects[i].y = (float)(start_y+img.element_height/2.0) / image.h;
+        img.sprite_rects[i].w = (float)img.element_width / image.w;
+        img.sprite_rects[i].h = (float)img.element_height / image.h;
+
 
         for(int c = 0; c < img.node_sets; ++c)
         {
@@ -414,7 +421,7 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     return -1;
 }
 
-bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity)
+bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
@@ -429,12 +436,15 @@ bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t 
         LOGE("Invalid sprite index: %d (%d, %d)", sprite_index, img_index, img->element_count);
         return false;
     }
-    float vw = img->visible_rects[sprite_index].w;
-    float vh = img->visible_rects[sprite_index].h;
-
 
     glUseProgram(program_sprite);
-    Rect* sr = &img->sprite_rects[sprite_index];
+
+    Rect* sr = NULL;
+    if(full_image)
+        sr = &img->sprite_rects[sprite_index];
+    else
+        sr = &img->sprite_visible_rects[sprite_index];
+
     float sprite_x = sr->x-sr->w/2.0;
     float sprite_y = sr->y-sr->h/2.0;
     float sprite_w = sr->w;
@@ -457,7 +467,21 @@ bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t 
 
     Vector3f pos = {x,y,0.0};
     Vector3f rot = {0.0,0.0,360.0-rotation};
-    Vector3f sca = {scale*vw,scale*vh,1.0};
+    Vector3f sca = {0};
+    if(full_image)
+    {
+        // Vector3f sca = {scale*img->element_width,scale*img->element_height,1.0};
+        sca.x = scale*img->element_width;
+        sca.y = scale*img->element_height;
+    }
+    else
+    {
+        // Vector3f sca = {scale*vw,scale*vh,1.0};
+        float vw = img->visible_rects[sprite_index].w;
+        float vh = img->visible_rects[sprite_index].h;
+        sca.x = scale*vw;
+        sca.y = scale*vh;
+    }
 
     get_model_transform(&pos,&rot,&sca,&model);
     Matrix* view = get_camera_transform();
