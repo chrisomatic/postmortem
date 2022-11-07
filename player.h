@@ -67,8 +67,7 @@ typedef enum
 
 typedef struct
 {
-
-    int projectile_type;
+    int projectile_type; // sprite index
 
     float power;
 
@@ -79,9 +78,10 @@ typedef struct
     float fire_spread;
     int fire_count;
 
+    //TODO
     int bullets;
     int bullets_max;
-} Gun2;
+} Gun;
 
 typedef struct
 {
@@ -103,7 +103,7 @@ typedef struct
     WeaponAttack secondary_attack;
     PlayerState secondary_state;
 
-    Gun2 gun;
+    Gun gun;
     Melee melee;
 
 } Weapon;

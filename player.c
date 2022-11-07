@@ -175,16 +175,12 @@ static void player_init(int index)
 
     p->phys.vel.x = 0.0;
     p->phys.vel.y = 0.0;
-    // p->gun_ready = true;
 
     p->speed = 32.0;
     p->max_base_speed = 128.0;
     p->phys.max_linear_vel = p->max_base_speed;
     p->scale = player_scale;
     p->predicted_state_index = 0;
-
-    // p->gun = gun_get(p,GUN_TYPE_MACHINEGUN);
-    // p->gun_front = false;
 
 
     // animation
@@ -391,8 +387,14 @@ void player_update_anim_timing(Player* p)
             p->anim.max_frame_time = 0.15f;
             break;
         case PSTATE_WALK:
+        {
             p->anim.max_frame_time = 0.04f;
-            break;
+            float pvx = player->phys.vel.x;
+            float pvy = player->phys.vel.y;
+            float pv = sqrt(SQ(pvx) + SQ(pvy));
+            float scale = 128.0/pv;
+            p->anim.max_frame_time *= scale;
+        } break;
         case PSTATE_ATTACK1:
             p->anim.max_frame_time = 0.02f;
             break;
@@ -403,8 +405,6 @@ void player_update_anim_timing(Player* p)
 
 }
 
-
-
 void player_update_state(Player* p)
 {
     PlayerState prior = p->state;
@@ -412,6 +412,23 @@ void player_update_state(Player* p)
     if(p->attacking)
     {
         p->state = p->attacking_state;
+        //TEMP
+        p->anim.frame_sequence[0] = 0;
+        p->anim.frame_sequence[1] = 1;
+        p->anim.frame_sequence[2] = 2;
+        p->anim.frame_sequence[3] = 3;
+        p->anim.frame_sequence[4] = 4;
+        p->anim.frame_sequence[5] = 5;
+        p->anim.frame_sequence[6] = 6;
+        p->anim.frame_sequence[7] = 7;
+        p->anim.frame_sequence[8] = 8;
+        p->anim.frame_sequence[9] = 9;
+        p->anim.frame_sequence[10] = 10;
+        p->anim.frame_sequence[11] = 11;
+        p->anim.frame_sequence[12] = 12;
+        p->anim.frame_sequence[13] = 13;
+        p->anim.frame_sequence[14] = 14;
+        p->anim.frame_sequence[15] = 15;
     }
     else if(p->moving)
     {
@@ -425,7 +442,7 @@ void player_update_state(Player* p)
     // reset the animation
     if(p->state != prior)
     {
-        printf("Player state change: %d -> %d\n", prior, p->state);
+        // printf("Player state change: %d -> %d\n", prior, p->state);
         p->anim.curr_frame = 0;
         p->anim.curr_frame_time = 0.0;
         p->anim.curr_loop = 0;
@@ -666,6 +683,7 @@ void player_update(Player* p, double delta_t)
     physics_simulate(&p->phys, delta_t);
     limit_pos(&map.rect, &p->phys.pos);
 
+
     // // TODO: won't work for idle state
     // if(FEQ(accel.x,0.0) && FEQ(accel.y,0.0))
     // {
@@ -769,8 +787,6 @@ void player_draw(Player* p)
         return;
     }
 
-
-
     float px = p->phys.pos.x;
     float py = p->phys.pos.y;
     // gfx_draw_image(p->image, p->sprite_index, px, py, COLOR_TINT_NONE,p->scale,DEG(p->angle),1.0);
@@ -780,7 +796,6 @@ void player_draw(Player* p)
     {
         gfx_draw_rect(&p->phys.pos, COLOR_RED, 1.0,1.0, false, true);
     }
-
 
     if(p->weapon_ready && p->weapon->index != WEAPON_NONE)
     {

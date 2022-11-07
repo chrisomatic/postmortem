@@ -55,6 +55,15 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
     float fps = timer_get_prior_frame_fps(&game_timer);
 
     // player
+    float pvx = player->phys.vel.x;
+    float pvy = player->phys.vel.y;
+    float pv = sqrt(SQ(pvx) + SQ(pvy));
+    if(!draw)
+    {
+        pvx = 999.99f;
+        pvy = 999.99f;
+        pv = 999.99f;
+    }
     bool up               = IS_BIT_SET(player->keys,PLAYER_ACTION_UP);
     bool down             = IS_BIT_SET(player->keys,PLAYER_ACTION_DOWN);
     bool left             = IS_BIT_SET(player->keys,PLAYER_ACTION_LEFT);
@@ -68,7 +77,6 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
     bool toggle_debug     = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_DEBUG);
 
     // mouse
-    // float wmx, wmy;
     int wmx, wmy, vmx, vmy, mx, my, mr, mc, wr, wc;
     window_get_mouse_world_coords(&wmx, &wmy);
     window_get_mouse_view_coords(&vmx, &vmy);
@@ -104,6 +112,7 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
     size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Player"); y += size.y+ypad; maxw = MAX(maxw, size.x);
     size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "State: %s (%d)", player_state_str(player->state), player->state); y += size.y+ypad; maxw = MAX(maxw, size.x);
     size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y); y += size.y+ypad; maxw = MAX(maxw, size.x);
+    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Vel: %.2f, %.2f (%.2f)", pvx, pvy, pv); y += size.y+ypad; maxw = MAX(maxw, size.x);
     size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action); y += size.y+ypad; maxw = MAX(maxw, size.x);
     if(draw){
         size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", player->angle, DEG(player->angle)); y += size.y+ypad; maxw = MAX(maxw, size.x);

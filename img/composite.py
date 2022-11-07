@@ -8,6 +8,8 @@ slash = "/"
 if sys.platform == "win32":
     slash = "\\"
 
+root = os.path.dirname(os.path.abspath(__file__)) + slash + "blender_output" + slash
+
 def bound(_val, _min, _max):
     return max(min(_val, _max), _min)
 
@@ -64,7 +66,8 @@ class Compositor():
         self.slash = "/"
         if sys.platform == "win32":
             self.slash = "\\"
-        self.root = os.path.dirname(os.path.abspath(__file__)) + self.slash
+        # self.root = os.path.dirname(os.path.abspath(__file__)) + self.slash + "blender_output" + self.slash
+        self.root = root
 
         self.model = model
         self.model_set = model_set
@@ -163,8 +166,9 @@ class Compositor():
 def main():
 
     PROCESS_ALL = True
+    PROCESS_ALL = False
 
-    root = os.path.dirname(os.path.abspath(__file__)) + slash
+    # root = os.path.dirname(os.path.abspath(__file__)) + slash + "blender_output" + slash
 
     if(PROCESS_ALL):
         models = [x for x in os.listdir(root) if os.path.isdir(root+x) and not(x.startswith("!"))]
@@ -180,7 +184,7 @@ def main():
 
     else:
 
-        c = Compositor("human1","walk_gun_ready", 128, 128, True)
+        c = Compositor("human1_0","attack1", 128, 128, True)
 
         # @TEST
         # # img = QImage(32, 32, QImage.Format_ARGB32)

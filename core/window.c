@@ -75,7 +75,7 @@ bool window_init(int _view_width, int _view_height)
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-    // glfwMaximizeWindow(window);//TEMP
+    glfwMaximizeWindow(window); //TEMP
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
