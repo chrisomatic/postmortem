@@ -172,10 +172,9 @@ typedef struct
     int image;
     uint8_t sprite_index;
     uint8_t sprite_index_direction;
+    Rect standard_size;
 
-    Rect hit_box;
-    Rect collision_box;
-
+    Rect pos;       // actual position of the player
     Physics phys;
     float speed;
     float max_base_speed;
@@ -247,4 +246,3 @@ int weapons_get_image_index(PlayerModelIndex model_index, PlayerState pstate, We
 const char* weapon_type_str(WeaponType wtype);
 void weapon_fire(int mx, int my, Weapon* weapon, bool held);
 
-extern float weapon_angle;
