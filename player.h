@@ -16,7 +16,7 @@ typedef enum
     PSTATE_ATTACK1, // swing
 
     PSTATE_MAX,
-    PSTATE_NONE    // keep this after MAX
+    PSTATE_NONE    // keep this after MAX (affects image loading/lookup)
 } PlayerState;
 
 typedef enum
