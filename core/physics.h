@@ -17,3 +17,4 @@ void physics_add_force(Physics* phys, float x, float y);
 void physics_add_friction(Physics* phys, float mu);
 void physics_print(Physics* phys, bool force);
 void physics_simulate(Physics* phys, float delta_t);
+void physics_limit_pos(Rect* limit, Rect* pos);

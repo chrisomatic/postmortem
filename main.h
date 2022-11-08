@@ -59,4 +59,3 @@ bool list_add(glist* list, void* item);
 bool list_remove(glist* list, int index);
 void* list_get(glist* list, int index);
 
-void limit_pos(Rect* limit, Rect* pos);

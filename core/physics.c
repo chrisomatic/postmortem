@@ -74,3 +74,29 @@ void physics_simulate(Physics* phys, float delta_t)
     phys->pos.x += delta_t*phys->vel.x;
     phys->pos.y += delta_t*phys->vel.y;
 }
+
+void physics_limit_pos(Rect* limit, Rect* pos)
+{
+    // printf("-------------------------------------\n");
+    // printf("map: "); print_rect(limit);
+    // printf("before: "); print_rect(pos);
+    float lx0 = limit->x - limit->w/2.0;
+    float lx1 = lx0 + limit->w;
+    float ly0 = limit->y - limit->h/2.0;
+    float ly1 = ly0 + limit->h;
+
+    float px0 = pos->x - pos->w/2.0;
+    float px1 = px0 + pos->w;
+    float py0 = pos->y - pos->h/2.0;
+    float py1 = py0 + pos->h;
+
+    if(px0 < lx0)
+        pos->x = lx0+pos->w/2.0;
+    if(px1 > lx1)
+        pos->x = lx1-pos->w/2.0;
+    if(py0 < ly0)
+        pos->y = ly0+pos->h/2.0;
+    if(py1 > ly1)
+        pos->y = ly1-pos->h/2.0;
+    // printf("after: "); print_rect(pos);
+}

@@ -166,10 +166,6 @@ static void player_init(int index)
     {
         Rect* r = &gfx_images[standard_img].visible_rects[0];
         p->scale = (float)PLAYER_HEIGHT/r->h;
-        // p->standard_size.w = r->w*p->scale;
-        // p->standard_size.h = r->h*p->scale;
-        // p->standard_size.w = r->w;
-        // p->standard_size.h = r->h;
         p->standard_size = *r;
     }
     else
@@ -464,26 +460,9 @@ void player_update_boxes(Player* p)
     GFXImage* img = &gfx_images[p->image];
     Rect* vr = &img->visible_rects[p->sprite_index];
 
-    float img_center_x = IMG_ELEMENT_W/2.0;
-    float img_center_y = IMG_ELEMENT_H/2.0;
-    float offset_x = (vr->x - img_center_x)*p->scale;
-    float offset_y = (vr->y - img_center_y)*p->scale;
+    get_actual_pos(p->phys.pos.x, p->phys.pos.y, p->scale, img->element_width, img->element_height, vr, &p->pos);
 
-    // actual position of the player
-    p->pos.x = p->phys.pos.x + offset_x;
-    p->pos.y = p->phys.pos.y + offset_y;
-    p->pos.w = vr->w*p->scale;
-    p->pos.h = vr->h*p->scale;
-
-    Rect pbox = p->pos;
-    limit_pos(&map.rect, &pbox);
-    if(!FEQ(pbox.x, p->pos.x) || !FEQ(pbox.y, p->pos.y))
-    {
-        p->phys.pos.x += (pbox.x - p->pos.x);
-        p->phys.pos.y += (pbox.y - p->pos.y);
-        p->pos.x = pbox.x;
-        p->pos.y = pbox.y;
-    }
+    limit_pos(&map.rect, &p->pos, &p->phys.pos);
 }
 
 
@@ -900,29 +879,12 @@ void player_draw(Player* p)
         // weapon
         gfx_draw_image(wimage, p->sprite_index, p->weapon->pos.x, p->weapon->pos.y, COLOR_TINT_NONE,p->scale,angle_rotate,1.0,false);
 #endif
-
-        // if(debug_enabled)
-        // {
-        //     Rect rw = {0};
-        //     rw.x = p->weapon->pos.x;
-        //     rw.y = p->weapon->pos.y;
-        //     rw.w = 2;
-        //     rw.h = 2;
-        //     gfx_draw_rect(&rw, COLOR_WHITE, 1.0,1.0, true, true);
-        //     rw.w = wvr->w*p->scale;
-        //     rw.h = wvr->h*p->scale;
-        //     gfx_draw_rect(&rw, COLOR_ORANGE, 1.0,1.0, false, true);
-        // }
-
     }
-
-
 
 
     if(debug_enabled)
     {
         gfx_draw_rect(&p->pos, COLOR_RED, 1.0,1.0, false, true);
-
  
         Rect r = {0};
         r.x = p->phys.pos.x;
@@ -939,21 +901,14 @@ void player_draw(Player* p)
 
     gfx_draw_image(crosshair_image, 0, p->mouse_x, p->mouse_y, COLOR_PURPLE,1.0,0.0,0.80, false);
 
+    const float name_size = 0.11;
+    Rect name_rect = {0};
+    get_actual_pos(p->phys.pos.x, p->phys.pos.y, p->scale, IMG_ELEMENT_W, IMG_ELEMENT_H, &p->standard_size, &name_rect);
 
-    //TODO: clean this up
-    float img_center_x = IMG_ELEMENT_W/2.0;
-    float img_center_y = IMG_ELEMENT_H/2.0;
-    float offset_x = (p->standard_size.x - img_center_x)*p->scale;
-    float offset_y = (p->standard_size.y - img_center_y)*p->scale;
-
-    Vector2f size = gfx_string_get_size(0.1, p->name);
-    float nx = p->phys.pos.x + offset_x - size.x/2.0;
-    float ny = p->phys.pos.y + offset_y + p->standard_size.h*0.62*p->scale;
-    gfx_draw_string(nx, ny ,player_colors[p->index],0.1,0.0, 0.8, true, true, p->name);
-
-
-    // Vector2f size = gfx_string_get_size(0.1, p->name);
-    // gfx_draw_string(p->pos.x - size.x/2.0, p->pos.y + p->pos.h/2.0,player_colors[p->index],0.1,0.0, 0.8, true, true, p->name);
+    Vector2f size = gfx_string_get_size(name_size, p->name);
+    name_rect.x -= size.x/2.0;
+    name_rect.y += name_rect.h*0.62;
+    gfx_draw_string(name_rect.x, name_rect.y, player_colors[p->index], name_size, 0.0, 0.8, true, true, p->name);
 }
 
 
@@ -1127,5 +1082,36 @@ void weapon_fire(int mx, int my, Weapon* weapon, bool held)
             angle_offset = rand_float_between(0.0, weapon->gun.recoil_spread/2.0) * direction;
         }
         projectile_add(weapon->gun.projectile_type, weapon, mx, my, angle_offset);
+    }
+}
+
+
+// FULL image drawn at draw_x, draw_y
+// get the translated and scaled visible_rect of the image
+void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret)
+{
+    float img_center_x = img_w/2.0;
+    float img_center_y = img_h/2.0;
+    float offset_x = (visible_rect->x - img_center_x)*scale;
+    float offset_y = (visible_rect->y - img_center_y)*scale;
+
+    // actual position
+    ret->x = draw_x + offset_x;
+    ret->y = draw_y + offset_y;
+    ret->w = visible_rect->w*scale;
+    ret->h = visible_rect->h*scale;
+}
+
+void limit_pos(Rect* limit, Rect* pos, Rect* phys_pos)
+{
+    Rect pos0 = *pos;
+    physics_limit_pos(limit, &pos0);
+
+    if(!FEQ(pos0.x, pos->x) || !FEQ(pos0.y, pos->y))
+    {
+        phys_pos->x += (pos0.x - pos->x);
+        phys_pos->y += (pos0.y - pos->y);
+        pos->x = pos0.x;
+        pos->y = pos0.y;
     }
 }

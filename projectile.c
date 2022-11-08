@@ -112,59 +112,6 @@ void projectile_add(int sprite_index, Weapon* weapon, int mx, int my, float angl
 }
 
 
-// void projectile_add2(int sprite_index, Gun* gun, float angle_offset)
-// {
-//     Projectile proj = {0};
-
-//     float speed = gun->fire_speed;
-//     // speed = 10.0;
-
-//     proj.sprite_index = sprite_index;
-//     proj.damage = gun->power + proj.power;
-//     proj.dead = false;
-
-//     // //spawn at the end of the gun, (could subtract bullet width/height to make spawn inside of gun)
-//     // float _x = gun->pos.x + (gun->visible_rect.w/2.0)*cosf(angle);
-//     // float _y = gun->pos.y + (gun->visible_rect.h/2.0)*sinf(PI*2-angle);
-//     float _x = gun->pos.x;
-//     float _y = gun->pos.y;
-//     proj.pos.x = _x;
-//     proj.pos.y = _y;
-
-//     Player* owner = (Player*)(gun->owner);
-
-//     int mx = owner->mouse_x;
-//     int my = owner->mouse_y;
-
-//     float angle_deg = angle_offset + calc_angle_deg(proj.pos.x, proj.pos.y, mx, my);
-//     float angle = RAD(angle_deg);
-
-//     proj.angle_deg = angle_deg;
-//     proj.vel.x = speed*cosf(angle);
-//     proj.vel.y = speed*sinf(angle);
-//     proj.time = 0.0;
-//     float vel = sqrt(proj.vel.x*proj.vel.x + proj.vel.y*proj.vel.y);
-//     proj.ttl  = 1.0 / (vel / gun->fire_range);
-
-//     // GFXSubImageData* sid = gfx_images[projectile_image_set].sub_img_data;
-//     Rect* vr = &gfx_images[projectile_image_set].visible_rects[proj.sprite_index];
-
-//     //TODO: refactor this for reusable axis aligned boxes
-//     Rect r = {0};
-//     Rect r_rot = {0};
-//     RectXY rxy_rot = {0};
-//     r.x = proj.pos.x;
-//     r.y = proj.pos.y;
-//     r.w = vr->w;
-//     r.h = vr->h;
-
-//     rotate_rect(&r, proj.angle_deg, r.x, r.y, &rxy_rot);
-//     rectxy_to_rect(&rxy_rot, &proj.hurt_box);
-//     update_hurt_box(&proj);
-
-//     list_add(plist, (void*)&proj);
-// }
-
 void projectile_update(float delta_t)
 {
     for(int i = plist->count - 1; i >= 0; --i)

@@ -71,29 +71,6 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
 int main(int argc, char* argv[])
 {
-    // gfx_image_init();
-
-    // GFXNodeDataInput nd = {
-    //     .image_path = "img/human2_nodes.png",
-    //     .colors = {COLOR_RED},
-    //     .num_sets = 1
-    // };
-    // int idx = gfx_load_image2("img/human2.png", false, false, 64, 128, &nd);
-
-    // printf("idx: %d\n", idx);
-
-    // printf("node sets: %d\n", gfx_images2[idx].node_sets);
-    // printf("element count: %d\n", gfx_images2[idx].element_count);
-
-    // for(int n = 0; n < gfx_images2[idx].node_sets; ++n)
-    // {
-    //     for(int i = 0; i < gfx_images2[idx].element_count; ++i)
-    //     {
-    //         printf("%d, %d   %.1f, %.1f\n", n, i, gfx_images2[idx].nodes[n][i].x, gfx_images2[idx].nodes[n][i].y);
-    //     }
-    // }
-    // exit(0);
-
     parse_args(argc, argv);
 
     switch(role)
@@ -325,8 +302,7 @@ void init()
     LOGI(" - Projectiles.");
     projectile_init();
 
-    camera_move(player->phys.pos.x, player->phys.pos.y, 0.0, true);
-    // camera_update();
+    camera_move(player->phys.pos.x, player->phys.pos.y, 0.0, true, &map.rect);
 }
 
 void deinit()
@@ -373,13 +349,7 @@ void camera_set()
 
     float cam_pos_x = player->phys.pos.x + aim_camera_offset.x;
     float cam_pos_y = player->phys.pos.y + aim_camera_offset.y;
-    Rect cam_rect = {0};
-    cam_rect.x = cam_pos_x;
-    cam_rect.y = cam_pos_y;
-    cam_rect.w = view_width;
-    cam_rect.h = view_height;
-    limit_pos(&map.rect, &cam_rect);
-    camera_move(cam_rect.x, cam_rect.y, 0.0, false);
+    camera_move(cam_pos_x, cam_pos_y, 0.0, false, &map.rect);
 }
 
 void simulate(double delta_t)
@@ -435,18 +405,18 @@ void draw()
     zombie_draw();
     projectile_draw();
 
-    // static bool activate_player = false;
-    // if(!activate_player)
-    // {
-    //     players[2].active = true;
-    //     players[2].phys.pos.x = 1000;
-    //     players[2].phys.pos.y = 1000;
-    //     players[2].phys.pos.w = 25;
-    //     players[2].phys.pos.h = 60;
-    //     players[2].sprite_index = 1;
-    //     player_count++;
-    //     activate_player = true;
-    // }
+    static bool activate_player = false;
+    if(!activate_player)
+    {
+        players[2].active = true;
+        players[2].phys.pos.x = 1000;
+        players[2].phys.pos.y = 1000;
+        players[2].phys.pos.w = 25;
+        players[2].phys.pos.h = 60;
+        players[2].sprite_index = 1;
+        player_count++;
+        activate_player = true;
+    }
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
@@ -456,17 +426,19 @@ void draw()
             player_draw(p);
             if(p != player)
             {
-                bool in_view = is_in_camera_view(&p->phys.pos);
+                // Rect* pos = &p->pos; //TODO
+                Rect* pos = &p->phys.pos;
+                bool in_view = is_in_camera_view(pos);
                 if(!in_view)
                 {
                     Rect camera_rect = {0};
                     get_camera_rect(&camera_rect);
                     // float angle = calc_angle_rad(player->phys.pos.x, player->phys.pos.y, p->phys.pos.x, p->phys.pos.y);
                     Rect prect = {0};
-                    memcpy(&prect, &p->phys.pos, sizeof(Rect));
-                    prect.w = 6.0;
-                    prect.h = 6.0;
-                    limit_pos(&camera_rect, &prect);
+                    memcpy(&prect, pos, sizeof(Rect));
+                    prect.w = 5.0;
+                    prect.h = 5.0;
+                    physics_limit_pos(&camera_rect, &prect);
                     gfx_draw_rect(&prect, player_colors[p->index], 1.0, 0.5, true,true);
                 }
             }
@@ -704,30 +676,4 @@ void* list_get(glist* list, int index)
         return NULL;
 
     return list->buf + index*list->item_size;
-}
-
-void limit_pos(Rect* limit, Rect* pos)
-{
-    // printf("-------------------------------------\n");
-    // printf("map: "); print_rect(limit);
-    // printf("before: "); print_rect(pos);
-    float lx0 = limit->x - limit->w/2.0;
-    float lx1 = lx0 + limit->w;
-    float ly0 = limit->y - limit->h/2.0;
-    float ly1 = ly0 + limit->h;
-
-    float px0 = pos->x - pos->w/2.0;
-    float px1 = px0 + pos->w;
-    float py0 = pos->y - pos->h/2.0;
-    float py1 = py0 + pos->h;
-
-    if(px0 < lx0)
-        pos->x = lx0+pos->w/2.0;
-    if(px1 > lx1)
-        pos->x = lx1-pos->w/2.0;
-    if(py0 < ly0)
-        pos->y = ly0+pos->h/2.0;
-    if(py1 > ly1)
-        pos->y = ly1-pos->h/2.0;
-    // printf("after: "); print_rect(pos);
 }

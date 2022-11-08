@@ -227,7 +227,7 @@ void zombie_update(float delta_t)
         physics_add_friction(&zom->phys, 16.0);
         physics_add_force(&zom->phys, accel.x, accel.y);
         physics_simulate(&zom->phys, delta_t);
-        limit_pos(&map.rect, &zom->phys.pos);
+        physics_limit_pos(&map.rect, &zom->phys.pos);
 
         zombie_update_boxes(&zombies[i]);
     }

@@ -7,7 +7,7 @@
 #define PLAYER_TEXTURES_MAX     5
 #define MAX_CLIENT_PREDICTED_STATES 8
 #define PLAYER_NAME_MAX 32
-#define PLAYER_HEIGHT   64
+#define PLAYER_HEIGHT   50
 
 typedef enum
 {
@@ -95,8 +95,8 @@ typedef struct
     const char* name;
     WeaponType type;
     WeaponIndex index;
-    // Vector2f draw_pos;
-    Vector2f pos;
+    // Vector2f pos;
+    Rect pos;
 
     WeaponAttack primary_attack;
     PlayerState primary_state;
@@ -246,3 +246,5 @@ int weapons_get_image_index(PlayerModelIndex model_index, PlayerState pstate, We
 const char* weapon_type_str(WeaponType wtype);
 void weapon_fire(int mx, int my, Weapon* weapon, bool held);
 
+void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret);
+void limit_pos(Rect* limit, Rect* pos, Rect* phys_pos);

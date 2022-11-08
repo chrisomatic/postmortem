@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "window.h"
+#include "physics.h"
 #include "camera.h"
 
 static void move_camera(float x, float y, float z);
@@ -29,23 +30,35 @@ void camera_update()
 {
     if(!FEQ(camera_delta_target.pos.x,0.0) || !FEQ(camera_delta_target.pos.y,0.0) || !FEQ(camera_delta_target.pos.z,0.0))
     {
-
-        float dx = camera_delta_target.pos.x/10.0;
-        float dy = camera_delta_target.pos.y/10.0;
-        float dz = camera_delta_target.pos.z/10.0;
-
+        const int num_frames = 15;
+        float dx = camera_delta_target.pos.x/num_frames;
+        float dy = camera_delta_target.pos.y/num_frames;
+        float dz = camera_delta_target.pos.z/num_frames;
         move_camera(camera.pos.x+dx, camera.pos.y+dy, camera.pos.z+dz);
     }
 }
 
-void camera_move(float x, float y, float z, bool immediate)
+void camera_move(float x, float y, float z, bool immediate, Rect* limit)
 {
+
+    if(limit != NULL)
+    {
+        Rect cam_rect = {0};
+        cam_rect.x = x;
+        cam_rect.y = y;
+        cam_rect.w = view_width;
+        cam_rect.h = view_height;
+        physics_limit_pos(limit, &cam_rect);
+        x = cam_rect.x;
+        y = cam_rect.y;
+    }
 
     if(immediate)
     {
         camera.pos.x = x;
         camera.pos.y = y;
         camera.pos.z = z;
+        // printf("imm cam move: %.2f, %.2f\n", x, y);
         camera_delta_target.pos.x = 0.0;
         camera_delta_target.pos.y = 0.0;
         camera_delta_target.pos.z = 0.0;
@@ -84,6 +97,11 @@ static void move_camera(float x, float y, float z)
     // printf("camera: %.2f, %.2f    %d,%d   \n", camera.pos.x, camera.pos.y, view_width, view_height);
 
     get_translate_transform(&view_matrix,&cam_pos);
+
+    // Rect r = {0};
+    // get_camera_rect(&r);
+    // printf("move_camera: %.2f, %.2f\n", r.x, r.y);
+
 }
 
 Matrix* get_camera_transform()
