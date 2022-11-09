@@ -223,6 +223,11 @@ void imgui_indent_end()
     ctx->indent_amount = 0;
 }
 
+void imgui_newline()
+{
+    ctx->curr_y += theme.text_size_px;
+}
+
 bool imgui_button(char* label, ...)
 {
     bool result = false;
@@ -290,14 +295,18 @@ void imgui_checkbox(char* label, bool* result)
         }
     }
 
+    ctx->curr_w = theme.checkbox_size;
+    ctx->curr_h = theme.checkbox_size;
+
     handle_highlighting(hash);
 
     Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
 
-    ctx->curr_w = text_size.x + 2*theme.text_padding;
-    ctx->curr_h = text_size.y + 2*theme.text_padding;
-
     draw_checkbox(hash, label, *result);
+
+    ctx->curr_w = theme.checkbox_size + text_size.x + theme.text_padding;
+    ctx->curr_h = MAX(theme.checkbox_size, text_size.y) + theme.text_padding;
+
     progress_pos();
 }
 
@@ -544,11 +553,16 @@ static void draw_checkbox(uint32_t hash, char* label, bool result)
         check_color = theme.button_color_background_active;
     }
 
-    // draw check
-    gfx_draw_rect_xywh(ctx->curr_x + theme.text_padding, ctx->curr_y + ctx->curr_h/2.0, theme.checkbox_size, theme.checkbox_size, check_color, 1.0, 1.0, false,false);
-    gfx_draw_rect_xywh(ctx->curr_x + theme.text_padding, ctx->curr_y + ctx->curr_h/2.0, theme.checkbox_size-4, theme.checkbox_size-4, check_color, 1.0, 1.0, result,false);
+    Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
 
-    gfx_draw_string(ctx->curr_x + theme.checkbox_size + theme.text_padding, ctx->curr_y + theme.text_padding, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, label);
+    // draw check
+    float x = ctx->curr_x + theme.text_padding;
+    float y = ctx->curr_y + ctx->curr_h/2.0;
+
+    gfx_draw_rect_xywh(x,y, theme.checkbox_size, theme.checkbox_size, check_color, 1.0, 1.0, false,false);
+    gfx_draw_rect_xywh(x,y, theme.checkbox_size-4, theme.checkbox_size-4, check_color, 1.0, 1.0, result,false);
+
+    gfx_draw_string(ctx->curr_x + theme.checkbox_size + theme.text_padding, ctx->curr_y-text_size.y/2.0, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, label);
 }
 
 static void draw_color_picker(uint32_t hash, char* label, bool result)

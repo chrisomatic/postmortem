@@ -21,3 +21,4 @@ void imgui_set_text_color(uint32_t color);
 // formatting
 void imgui_indent_begin(int indentpx);
 void imgui_indent_end();
+void imgui_newline();
