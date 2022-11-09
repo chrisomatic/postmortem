@@ -35,6 +35,7 @@ typedef struct
 // static vars
 // --------------------------------------------------------
 static GLuint quad_vao, quad_vbo;
+static GLuint rect_vao, rect_vbo;
 static GLuint font_vao, font_vbo;
 static GLuint line_vao,line_vbo;
 
@@ -122,6 +123,25 @@ void gfx_init(int width, int height)
 
     glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vertex), (void*)0);
     glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(Vertex), (const GLvoid*)8);
+
+    // rect (used for drawing empty rectangles
+    glGenVertexArrays(1, &rect_vao);
+    glBindVertexArray(rect_vao);
+
+    Vector2f rect[] =
+    {
+        {-0.5, -0.5},
+        {-0.5, +0.5},
+        {+0.5, +0.5},
+        {+0.5, -0.5},
+        {-0.5, -0.5},
+    };
+
+    glGenBuffers(1, &rect_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, rect_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(rect), rect, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vector2f), (void*)0);
 
     // font char
     glGenVertexArrays(1, &font_vao);
@@ -495,7 +515,7 @@ bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t 
     float brightness = 1.0;
 
     //glUniform3f(loc_sprite_tint_color,brightness*r/255.0,brightness*g/255.0,brightness*b/255.0);
-    glUniform3f(loc_sprite_ambient_color,0.4,0.4,0.4);
+    glUniform3f(loc_sprite_ambient_color,r/255.0,g/255.0,b/255.0);//0.4,0.4,0.4);
 
     for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
     {
@@ -679,19 +699,20 @@ void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, floa
 
     if(filled)
     {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glBindVertexArray(quad_vao);
+        glEnableVertexAttribArray(0);
+        glDrawArrays(GL_TRIANGLES,0,6);
+        glDisableVertexAttribArray(0);
     }
     else
     {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glBindVertexArray(rect_vao);
+        glEnableVertexAttribArray(0);
+        glDrawArrays(GL_LINE_STRIP,0,5);
+        glDisableVertexAttribArray(0);
     }
-
-    glBindVertexArray(quad_vao);
-    glEnableVertexAttribArray(0);
-
-    glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
-
-    glDisableVertexAttribArray(0);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

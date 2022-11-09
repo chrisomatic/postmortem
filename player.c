@@ -801,7 +801,7 @@ void player_draw(Player* p)
     // float angle_deg = DEG(p->angle);
 
     // player
-    gfx_draw_image(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE,p->scale,0.0,1.0,true);
+    gfx_draw_image(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, ambient_light,p->scale,0.0,1.0,true);
 
 
     bool draw_weapon = p->weapon_ready && p->weapon->index != WEAPON_NONE;
@@ -825,7 +825,7 @@ void player_draw(Player* p)
         p->weapon->pos.y = gy;
 
         // weapon
-        gfx_draw_image(wimage, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE, p->scale,0,1.0,true);
+        gfx_draw_image(wimage, p->sprite_index, p->phys.pos.x, p->phys.pos.y, ambient_light, p->scale,0,1.0,true);
 
 #else
 
@@ -877,7 +877,7 @@ void player_draw(Player* p)
         printf("%.2f (%d, %d),  %.2f,   %.2f\n", angle_deg, sector, sector2, sector_center, angle_rotate);
 
         // weapon
-        gfx_draw_image(wimage, p->sprite_index, p->weapon->pos.x, p->weapon->pos.y, COLOR_TINT_NONE,p->scale,angle_rotate,1.0,false);
+        gfx_draw_image(wimage, p->sprite_index, p->weapon->pos.x, p->weapon->pos.y, ambient_light,p->scale,angle_rotate,1.0,false);
 #endif
     }
 

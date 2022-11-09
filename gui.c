@@ -12,6 +12,7 @@
 #include "world.h"
 #include "imgui.h"
 #include "camera.h"
+#include "lighting.h"
 #include "zombie.h"
 
 static Rect gui_box = {0};
@@ -99,6 +100,56 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
     float y = gui_start_y;
     float x = gui_start_x;
 
+#if 1
+    {
+        float factor = (window_height / (float)view_height);
+
+        int big = 22.0/factor;
+        int small = 14.0/factor;
+
+        imgui_begin_panel("Debug",10,10);
+            imgui_set_text_size(small);
+            imgui_text_sized(big,"Window");
+            imgui_indent_begin(small);
+                imgui_text("FPS: %.2f", fps);
+                imgui_text("View: %d, %d", view_width, view_height);
+                imgui_text("Window: %d, %d", window_width, window_height);
+            imgui_indent_end();
+            imgui_text_sized(big,"Player");
+            imgui_indent_begin(small);
+                imgui_text("State: %s (%d)", player_state_str(player->state), player->state);
+                imgui_text("Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y);
+                imgui_text("Vel: %.2f, %.2f (%.2f)", pvx, pvy, pv);
+                imgui_text("Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action);
+                imgui_text("Angle: %.2f, %.2f deg", player->angle, DEG(player->angle));
+                imgui_text("Angle: %.2f, %.2f deg", 5.999, 360.999);
+            imgui_indent_end();
+            imgui_text_sized(big,"Mouse");
+            imgui_indent_begin(small);
+                imgui_text("World:  %d, %d", wmx, wmy);
+                imgui_text("View:   %d, %d", vmx, vmy);
+                imgui_text("Window: %d, %d", mx, my);
+                imgui_text("Map Grid:   %d, %d", mr, mc);
+                imgui_text("World Grid: %d, %d", wr, wc);
+            imgui_indent_end();
+            imgui_text_sized(big,"Camera");
+            imgui_indent_begin(small);
+                imgui_text("Pos: %.2f, %.2f", camera_rect.x, camera_rect.y);
+                imgui_text("w,h: %.2f, %.2f", camera_rect.w, camera_rect.h);
+                imgui_text("Offset: %.2f, %.2f", aim_camera_offset.x, aim_camera_offset.y);
+            imgui_indent_end();
+            if(role == ROLE_CLIENT)
+            {
+                imgui_text_sized(big,"Network");
+                imgui_indent_begin(small);
+                    imgui_text("Server IP: %s",server_ip_str);
+                    imgui_text("Player count: %u",player_count);
+                    imgui_text("Ping: %.0f ms",net_client_get_rtt());
+                imgui_indent_end();
+            }
+        imgui_end();
+    }
+#else
 
     // window
     y += ypad;
@@ -146,6 +197,8 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
         size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Player count: %u",player_count); y += size.y+ypad; maxw = MAX(maxw, size.x);
         size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Ping: %.0f ms",net_client_get_rtt()); y += size.y+ypad; maxw = MAX(maxw, size.x);
     }
+
+#endif
 
     Rect ret = {0};
     ret.w = maxw+xpad*2.0;
@@ -259,22 +312,24 @@ void gui_draw()
     }
 
     // controls
-    imgui_begin(view_width - 150,view_height - 120);
+    imgui_begin("Controls",view_width - 150,view_height - 120);
         imgui_set_text_size(16);
         imgui_text("Controls");
         imgui_set_text_size(10);
-        imgui_text("  W,A,S,D: Move");
-        imgui_text("  Tab: Ready/Unready gun");
-        imgui_text("  G: Cycle through guns");
-        imgui_text("  Shift: Toggle Run");
-        imgui_text("  F2: Toggle Debug");
-        imgui_text("  F3: Toggle Editor");
-        imgui_text("  F10: Open Console");
+        imgui_indent_begin(10);
+            imgui_text("W,A,S,D: Move");
+            imgui_text("Tab: Ready/Unready gun");
+            imgui_text("G: Cycle through guns");
+            imgui_text("Shift: Toggle Run");
+            imgui_text("F2: Toggle Debug");
+            imgui_text("F3: Toggle Editor");
+            imgui_text("F10: Open Console");
+        imgui_indent_end();
     imgui_end();
 
     if(editor_enabled)
     {
-        imgui_begin(800,100);
+        imgui_begin_panel("Editor", 800,100);
 
         imgui_set_text_size(32);
         imgui_text("Editor");
@@ -291,13 +346,23 @@ void gui_draw()
 
         imgui_button("Dumb Button");
         float r,g,b;
-        imgui_slider_float("Tint R", 0.0,1.0,&r);
-        imgui_slider_float("Tint G", 0.0,1.0,&g);
-        imgui_slider_float("Tint B", 0.0,1.0,&b);
+        imgui_slider_float("Ambient R", 0.0,1.0,&r);
+        imgui_slider_float("Ambient G", 0.0,1.0,&g);
+        imgui_slider_float("Ambient B", 0.0,1.0,&b);
         imgui_text_colored(COLOR2(r,g,b), "What up homie?");
 
-        int w;
-        imgui_slider_int("Whatever", 0,5,&w);
+        ambient_light = COLOR2(r,g,b);
+
+        //int w;
+        //imgui_slider_int("Whatever", 0,5,&w);
+        imgui_checkbox("Debug Enabled",&debug_enabled);
+        bool thing;
+
+        imgui_indent_begin(12);
+            imgui_checkbox("whatever",&thing);
+            imgui_checkbox("dawg",&thing);
+        imgui_indent_end();
+
         imgui_end();
     }
 
