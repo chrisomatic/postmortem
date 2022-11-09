@@ -253,6 +253,29 @@ void zombie_draw()
                 Rect* hbox  = &zom->hit_box;
                 gfx_draw_rect(cbox, COLOR_GREEN, 1.0,1.0, false, true);
                 gfx_draw_rect(hbox, COLOR_YELLOW, 1.0,1.0, false, true);
+
+
+                // health bars
+                Rect r = {0};
+                float h = 4.0;
+                float y = zom->phys.pos.y+zom->phys.pos.h*0.55 + h/2.0;
+                float x = zom->phys.pos.x;
+                float w = zom->phys.pos.w;
+
+                r.x = x;
+                r.y = y;
+                r.w = w;
+                r.h = h;
+                gfx_draw_rect(&r, COLOR_WHITE, 1.0,1.0, true, true);
+
+
+                float p = zom->hp/zom->hp_max;
+                r.h *= 0.8;
+                r.x = r.x-r.w/2.0;
+                r.w *= p;
+                r.x = r.x+r.w/2.0;
+                gfx_draw_rect(&r, COLOR_RED, 1.0,1.0, true, true);
+
             }
         }
 
@@ -285,7 +308,7 @@ void zombie_hurt(int index, float val)
     Zombie* zom = &zombies[index];
 
     zom->hp -= val;
-    if(zom->hp < 0.0)
+    if(zom->hp <= 0.0)
     {
         zombie_die(index);
     }

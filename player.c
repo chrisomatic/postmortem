@@ -666,7 +666,7 @@ void player_update(Player* p, double delta_t)
     }
 
 
-    if(gun_toggled)
+    if(p->weapon_ready && gun_toggled)
     {
         int next = p->weapon->index+1;
         if(next >= WEAPON_MAX) next = 0;
@@ -958,7 +958,7 @@ void weapons_init()
     weapons[idx].gun.power = 1.0;
     weapons[idx].gun.recoil_spread = 2.0;
     weapons[idx].gun.fire_range = 500.0;
-    weapons[idx].gun.fire_speed = 1000.0;
+    weapons[idx].gun.fire_speed = 4000.0;
     weapons[idx].gun.fire_period = 500.0; // milliseconds
     weapons[idx].gun.fire_spread = 0.0;
     weapons[idx].gun.fire_count = 1;
