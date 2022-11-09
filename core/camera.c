@@ -58,7 +58,6 @@ void camera_move(float x, float y, float z, bool immediate, Rect* limit)
         camera.pos.x = x;
         camera.pos.y = y;
         camera.pos.z = z;
-        // printf("imm cam move: %.2f, %.2f\n", x, y);
         camera_delta_target.pos.x = 0.0;
         camera_delta_target.pos.y = 0.0;
         camera_delta_target.pos.z = 0.0;
@@ -88,20 +87,7 @@ static void move_camera(float x, float y, float z)
         -camera.pos.z
     };
 
-    // cam_pos.x = MIN(cam_pos.x, 0.0);
-    // cam_pos.y = MIN(cam_pos.y, 0.0);
-
-    // Rect r;
-    // get_camera_rect(&r);
-    // printf("%.2f, %.2f, %.2f, %.2f\n", r.x,r.y,r.w,r.h);
-    // printf("camera: %.2f, %.2f    %d,%d   \n", camera.pos.x, camera.pos.y, view_width, view_height);
-
     get_translate_transform(&view_matrix,&cam_pos);
-
-    // Rect r = {0};
-    // get_camera_rect(&r);
-    // printf("move_camera: %.2f, %.2f\n", r.x, r.y);
-
 }
 
 Matrix* get_camera_transform()

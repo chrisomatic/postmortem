@@ -232,14 +232,13 @@ void gfx_image_init()
 
     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
     {
-        // gfx_images[i].texture = -1;
         gfx_images[i].texture = -1;
     }
 }
 
 bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip)
 {
-    LOGI("Loading image: %s",image_path);
+    // LOGI("Loading image: %s",image_path);
 
     stbi_set_flip_vertically_on_load(flip);
     image->data = stbi_load(image_path,&image->w,&image->h,&image->n,4);
@@ -283,8 +282,7 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     }
     img.element_count = img.elements_per_row * img.elements_per_col;
 
-    printf("image wh: %d, %d\n", img.w, img.h);
-    printf("element count: %d  (%d x %d)\n", img.element_count, img.elements_per_row, img.elements_per_col);
+    LOGI("  Element Count: %d (%d x %d)", img.element_count, img.elements_per_row, img.elements_per_col);
 
     img.visible_rects = malloc(img.element_count * sizeof(Rect));
     img.sprite_visible_rects = malloc(img.element_count * sizeof(Rect));
@@ -393,6 +391,7 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     {
         if(gfx_images[i].texture == -1)
         {
+            LOGI("  Index: %d", i);
 
             GFXImage* p = &gfx_images[i];
             memcpy(p, &img, sizeof(GFXImage));
@@ -423,6 +422,17 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
 
                 glBindTexture(GL_TEXTURE_2D, 0);
             }
+
+
+            // DEBUG
+            // if(p->texture == 17)
+            // {
+            //     for(int idx = 0; idx < img.element_count; ++idx)
+            //     {
+            //         printf("%d) ", idx);
+            //         print_rect(&p->visible_rects[idx]);
+            //     }
+            // }
 
 
             if(temp_data != NULL) free(temp_data);
@@ -866,11 +876,14 @@ void gfx_anim_update(GFXAnimation* anim, double delta_t)
 {
     if(anim->finite && anim->curr_loop >= anim->max_loops)
         return;
-   
+
     anim->curr_frame_time += delta_t;
-    if(anim->curr_frame_time >= anim->max_frame_time)
+    anim->max_frame_time = RANGE(anim->max_frame_time, 0.001, 10);
+
+    while(anim->curr_frame_time >= anim->max_frame_time)
     {
         anim->curr_frame_time -= anim->max_frame_time;
+        // anim->curr_frame_time = 0;
         anim->curr_frame++;
 
         if(anim->curr_frame >= anim->max_frames)
@@ -894,6 +907,7 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
 {
     if(side == 0 || side == 2)
     {
+        bool row_empty = true;
         bool prior_empty = true;
         for(int _y = 0; _y < img_h; ++_y)
         {
@@ -903,7 +917,7 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
             if(side == 2)
                 y = img_h - _y - 1;
 
-            bool row_empty = true;
+            row_empty = true;
 
             for(int x = 0; x < img_w; ++x)
             {
@@ -926,11 +940,19 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
             prior_empty = row_empty;
         }
 
+        // if this happens, then the entire image is blank
+        if(row_empty)
+        {
+            return -1;
+        }
+
+        // I don't think this code ever gets hit
         if(side == 2) return img_h-1;  //bottom
         return 0;   //top
     }
     else if(side == 1 || side == 3)
     {
+        bool col_empty = true;
         bool prior_empty = true;
         for(int _x = 0; _x < img_w; ++_x)
         {
@@ -938,7 +960,7 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
             if(side == 3)
                 x = img_w-_x-1;
 
-            bool col_empty = true;
+            col_empty = true;
 
             for(int y = 0; y < img_h; ++y)
             {
@@ -962,6 +984,13 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
             prior_empty = col_empty;
         }
 
+        // if this happens, then the entire image is blank
+        if(col_empty)
+        {
+            return -1;
+        }
+
+        // I don't think this code ever gets hit
         if(side == 3) return img_w-1;
         return 0;
     }
@@ -971,12 +1000,34 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
 static void image_get_visible_rect(int img_w, int img_h, int img_n, unsigned char* img_data, Rect* ret)
 {
     int top = image_find_first_visible_rowcol(0, img_w, img_h, img_n, img_data);
+
+    // image is blank
+    if(top == -1)
+    {
+        // printf("blank image\n");
+        ret->w = 0;
+        ret->h = 0;
+        ret->x = img_w/2.0;
+        ret->y = img_h/2.0;
+        return;
+    }
+
     int bottom = image_find_first_visible_rowcol(2, img_w, img_h, img_n, img_data);
     int left = image_find_first_visible_rowcol(1, img_w, img_h, img_n, img_data);
     int right = image_find_first_visible_rowcol(3, img_w, img_h, img_n, img_data);
 
     int height = bottom - top + 1;  //top left is origin
     int width = right - left + 1;
+
+    // if(print_debug)
+    // {
+    //     printf("top: %d\n", top);
+    //     printf("bot: %d\n", bottom);
+    //     printf("lef: %d\n", left);
+    //     printf("rig: %d\n", right);
+    //     printf("w:   %d\n", width);
+    //     printf("h:   %d\n", height);
+    // }
 
     ret->w = (float)width;
     ret->h = (float)height;

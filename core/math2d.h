@@ -19,6 +19,8 @@
 #define BOUND(a,l,u)    MAX(MIN(a,u),l)
 #define IS_BIT_SET(x,b) (((x) & (b)) == (b))
 
+#define IS_RECT_EMPTY(r) (FEQ((r)->w,0.0) || FEQ((r)->h,0.0))
+
 typedef struct
 {
     float x,y;

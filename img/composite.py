@@ -184,7 +184,7 @@ def main():
 
     else:
 
-        c = Compositor("human1_0","attack1", 128, 128, True)
+        c = Compositor("human1","attack1_handgun_pistol1", 128, 128, True)
 
         # @TEST
         # # img = QImage(32, 32, QImage.Format_ARGB32)

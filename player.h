@@ -95,8 +95,9 @@ typedef struct
     const char* name;
     WeaponType type;
     WeaponIndex index;
-    // Vector2f pos;
     Rect pos;
+
+    Rect max_size;
 
     WeaponAttack primary_attack;
     PlayerState primary_state;
@@ -172,7 +173,11 @@ typedef struct
     int image;
     uint8_t sprite_index;
     uint8_t sprite_index_direction;
+
     Rect standard_size;
+    Rect max_size;
+
+    Rect melee_box;
 
     Rect pos;       // actual position of the player
     Physics phys;

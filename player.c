@@ -79,6 +79,7 @@ void player_init_images()
             {
                 for(int wt = 0; wt < WEAPON_TYPE_MAX; ++wt)
                 {
+                    player_image_sets[pm][t][ps][wt] = -1;
 
                     // printf("%d, %d, %d, %d\n", pm, t, ps, wt);
                     char fname[100] = {0};
@@ -92,11 +93,10 @@ void player_init_images()
                         sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_state_str(ps), weapon_type_str(wt));
                     }
 
-
                     if(access(fname, F_OK) == 0)
                     {
                         player_image_sets[pm][t][ps][wt] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
-                        printf("%s -> %d\n", fname, player_image_sets[pm][t][ps][wt]);
+                        // printf("%s -> %d\n", fname, player_image_sets[pm][t][ps][wt]);
                     }
                 }
             }
@@ -172,6 +172,28 @@ static void player_init(int index)
     {
         LOGE("Player standard_img is -1");
     }
+    p->standard_size.w *= p->scale;
+    p->standard_size.h *= p->scale;
+
+
+    float maxw=0.0, maxh=0.0;
+    for(int ps = 0; ps < PSTATE_MAX; ++ps)
+    {
+        for(int wt = 0; wt < WEAPON_TYPE_MAX; ++wt)
+        {
+            int img = player_get_image_index(p->model_index, p->model_texture, ps, wt);
+            if(img == -1) continue;
+            for(int i = 0; i < gfx_images[img].element_count; ++i)
+            {
+                Rect* vr = &gfx_images[img].visible_rects[i];
+                if(IS_RECT_EMPTY(vr)) continue;
+                maxw = MAX(maxw, vr->w);
+                maxh = MAX(maxh, vr->h);
+            }
+        }
+    }
+    p->max_size.w = maxw*p->scale;
+    p->max_size.h = maxh*p->scale;
 
     // animation
     p->anim.curr_frame = 0;
@@ -379,15 +401,15 @@ void player_update_anim_timing(Player* p)
             break;
         case PSTATE_WALK:
         {
-            p->anim.max_frame_time = 0.04f;
-            float pvx = player->phys.vel.x;
-            float pvy = player->phys.vel.y;
+            p->anim.max_frame_time = 0.055f;
+            float pvx = p->phys.vel.x;
+            float pvy = p->phys.vel.y;
             float pv = sqrt(SQ(pvx) + SQ(pvy));
             float scale = 128.0/pv;
             p->anim.max_frame_time *= scale;
         } break;
         case PSTATE_ATTACK1:
-            p->anim.max_frame_time = 0.02f;
+            p->anim.max_frame_time = 0.025f;
             break;
         default:
             p->anim.max_frame_time = 0.04f;
@@ -461,8 +483,49 @@ void player_update_boxes(Player* p)
     Rect* vr = &img->visible_rects[p->sprite_index];
 
     get_actual_pos(p->phys.pos.x, p->phys.pos.y, p->scale, img->element_width, img->element_height, vr, &p->pos);
-
     limit_pos(&map.rect, &p->pos, &p->phys.pos);
+
+    float px = p->pos.x;
+    float py = p->pos.y;
+
+    p->standard_size.x = px;
+    p->standard_size.y = py;
+
+    p->max_size.x = px;
+    p->max_size.y = py;
+
+    if(p->attacking)
+    {
+
+        // default values
+        float w = p->standard_size.w*0.3;
+        float h = p->standard_size.h*0.15;
+
+        p->melee_box.w = w;
+        p->melee_box.h = h;
+
+        bool other_weapon = p->weapon_ready && p->weapon->index != WEAPON_NONE;
+        if(other_weapon)
+        {
+            p->melee_box.w = p->weapon->max_size.w*p->scale;
+            p->melee_box.h = p->weapon->max_size.h*p->scale;
+        }
+
+        float r = p->pos.w*1.0;
+
+        p->melee_box.x = px;
+        p->melee_box.y = py - p->pos.h*0.25;
+
+        p->melee_box.x += r*cosf(p->angle);
+        p->melee_box.y -= r*sinf(p->angle);
+    }
+    else
+    {
+        p->melee_box.w = 0;
+        p->melee_box.h = 0;
+    }
+
+
 }
 
 
@@ -555,7 +618,8 @@ void player_update(Player* p, double delta_t)
 
     if(p->weapon != NULL)
     {
-        if(p->weapon_ready || p->weapon->index == WEAPON_NONE)
+        // if(p->weapon_ready || p->weapon->index == WEAPON_NONE)
+        if(p->weapon_ready)
         {
             if(p->lmouse.trigger)
             {
@@ -798,117 +862,81 @@ void player_draw(Player* p)
 
     GFXImage* img = &gfx_images[p->image];
     Rect* vr = &img->visible_rects[p->sprite_index];
-    // float angle_deg = DEG(p->angle);
 
     // player
     gfx_draw_image(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, ambient_light,p->scale,0.0,1.0,true);
 
-
     bool draw_weapon = p->weapon_ready && p->weapon->index != WEAPON_NONE;
-
     if(draw_weapon)
     {
 
-#if 1
-
         int wimage = weapons_get_image_index(p->model_index, p->state, p->weapon->type);
         GFXImage* wimg = &gfx_images[wimage];
         Rect* wvr = &wimg->visible_rects[p->sprite_index];
 
-        float wimg_center_x = IMG_ELEMENT_W/2.0;
-        float wimg_center_y = IMG_ELEMENT_H/2.0;
+        if(!IS_RECT_EMPTY(wvr))
+        {
+            float wimg_center_x = IMG_ELEMENT_W/2.0;
+            float wimg_center_y = IMG_ELEMENT_H/2.0;
 
-        float gx = p->phys.pos.x + (wvr->x-wimg_center_x)*p->scale;
-        float gy = p->phys.pos.y + (wvr->y-wimg_center_y)*p->scale;
+            float gx = p->phys.pos.x + (wvr->x-wimg_center_x)*p->scale;
+            float gy = p->phys.pos.y + (wvr->y-wimg_center_y)*p->scale;
 
-        p->weapon->pos.x = gx;
-        p->weapon->pos.y = gy;
+            p->weapon->pos.x = gx;
+            p->weapon->pos.y = gy;
 
-        // weapon
-        gfx_draw_image(wimage, p->sprite_index, p->phys.pos.x, p->phys.pos.y, ambient_light, p->scale,0,1.0,true);
+            // weapon
+            gfx_draw_image(wimage, p->sprite_index, p->phys.pos.x, p->phys.pos.y, ambient_light, p->scale,0,1.0,true);
+        }
 
-#else
-
-
-        int wimage = weapons_get_image_index(p->model_index, p->state, p->weapon->type);
-        GFXImage* wimg = &gfx_images[wimage];
-        Rect* wvr = &wimg->visible_rects[p->sprite_index];
-
-        float wimg_center_x = wimg->element_width/2.0;
-        float wimg_center_y = wimg->element_height/2.0;
-
-        float gx = p->phys.pos.x + (wvr->x-wimg_center_x)*p->scale + offset_x;
-        float gy = p->phys.pos.y + (wvr->y-wimg_center_y)*p->scale + offset_y;
-
-        p->weapon->pos.x = gx;
-        p->weapon->pos.y = gy;
-
-
-        // float angle_deg = DEG(p->angle);
-        float angle_deg = calc_angle_deg(p->weapon->pos.x, p->weapon->pos.y, p->mouse_x, p->mouse_y);
-        int sector = angle_sector(angle_deg, 16);
-        // int sector = angle_sector(angle_deg, 16);
-        int sector2 = angle_sector(angle_deg, 8);
-        float sector_center = 0.0;
-
-
-        if(sector == 0)
-            sector_center = 11.25*2;
-        else if(sector == 15)
-            sector_center = 360.0-11.25*2;
-        else if(sector == 1 || sector == 2)
-            sector_center = 45.0;
-        else if(sector == 3 || sector == 4)
-            sector_center = 90.0;
-        else if(sector == 5 || sector == 6)
-            sector_center = 135.0;
-        else if(sector == 7 || sector == 8)
-            sector_center = 180.0;
-        else if(sector == 9 || sector == 10)
-            sector_center = 225.0;
-        else if(sector == 11 || sector == 12)
-            sector_center = 270.0;
-        else if(sector == 13 || sector == 14)
-            sector_center = 315.0;
-
-
-        float angle_rotate = (angle_deg-sector_center)/2.0;
-        weapon_angle = angle_rotate;
-        printf("%.2f (%d, %d),  %.2f,   %.2f\n", angle_deg, sector, sector2, sector_center, angle_rotate);
-
-        // weapon
-        gfx_draw_image(wimage, p->sprite_index, p->weapon->pos.x, p->weapon->pos.y, ambient_light,p->scale,angle_rotate,1.0,false);
-#endif
     }
 
 
     if(debug_enabled)
     {
-        gfx_draw_rect(&p->pos, COLOR_RED, 1.0,1.0, false, true);
- 
         Rect r = {0};
+
+        // position box
+        gfx_draw_rect(&p->pos, COLOR_RED, 1.0,1.0, false, true);
+
+        // phys.pos
         r.x = p->phys.pos.x;
         r.y = p->phys.pos.y;
         r.w = 2;
         r.h = 2;
         gfx_draw_rect(&r, COLOR_PURPLE, 1.0,1.0, true, true);
 
+        // pos
         r.x = p->pos.x;
         r.y = p->pos.y;
         gfx_draw_rect(&r, COLOR_ORANGE, 1.0,1.0, true, true);
 
+
+        // max_size
+        r.x = p->pos.x;
+        r.y = p->pos.y;
+        r.w = p->max_size.w*p->scale;
+        r.h = p->max_size.h*p->scale;
+        // gfx_draw_rect(&r, COLOR_BLUE, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->max_size, COLOR_BLUE, 1.0,1.0, false, true);
+
+        // melee
+        if(!IS_RECT_EMPTY(&p->melee_box))
+        {
+            gfx_draw_rect(&p->melee_box, COLOR_CYAN, 1.0,1.0, false, true);
+        }
+
     }
 
-    gfx_draw_image(crosshair_image, 0, p->mouse_x, p->mouse_y, COLOR_PURPLE,1.0,0.0,0.80, false);
+    // crosshair
+    gfx_draw_image(crosshair_image, 0, p->mouse_x, p->mouse_y, COLOR_PURPLE, 1.0,0.0,0.80, false);
 
+    // name
     const float name_size = 0.11;
-    Rect name_rect = {0};
-    get_actual_pos(p->phys.pos.x, p->phys.pos.y, p->scale, IMG_ELEMENT_W, IMG_ELEMENT_H, &p->standard_size, &name_rect);
-
     Vector2f size = gfx_string_get_size(name_size, p->name);
-    name_rect.x -= size.x/2.0;
-    name_rect.y += name_rect.h*0.62;
-    gfx_draw_string(name_rect.x, name_rect.y, player_colors[p->index], name_size, 0.0, 0.8, true, true, p->name);
+    float x = p->phys.pos.x - size.x/2.0;
+    float y = p->phys.pos.y + p->max_size.h*0.55;
+    gfx_draw_string(x, y, player_colors[p->index], name_size, 0.0, 0.8, true, true, p->name);
 }
 
 
@@ -945,7 +973,7 @@ void weapons_init()
 
     idx = WEAPON_MACHINEGUN1;
     weapons[idx].index = idx;
-    weapons[idx].name = "pistol1";
+    weapons[idx].name = "pistol1";  //TODO
     weapons[idx].type = WEAPON_TYPE_HANDGUN;
 
     weapons[idx].primary_attack = ATTACK_SHOOT;
@@ -973,7 +1001,7 @@ void weapons_init()
 
     idx = WEAPON_SHOTGUN1;
     weapons[idx].index = idx;
-    weapons[idx].name = "pistol1";
+    weapons[idx].name = "pistol1";  //TODO
     weapons[idx].type = WEAPON_TYPE_HANDGUN;
 
     weapons[idx].primary_attack = ATTACK_SHOOT;
@@ -1015,6 +1043,27 @@ void weapons_init()
     weapons[idx].melee.period = 100.0;
 
     weapons_init_images();
+
+
+    for(int w = 0; w < WEAPON_MAX; ++w)
+    {
+        float maxw=0.0, maxh=0.0;
+        for(int ps = 0; ps < PSTATE_MAX; ++ps)
+        {
+            int img = weapons_get_image_index(HUMAN1, ps, w);
+            if(img == -1) continue;
+            for(int i = 0; i < gfx_images[img].element_count; ++i)
+            {
+                Rect* vr = &gfx_images[img].visible_rects[i];
+                if(IS_RECT_EMPTY(vr)) continue;
+                maxw = MAX(maxw, vr->w);
+                maxh = MAX(maxh, vr->h);
+            }
+        }
+        weapons[w].max_size.w = maxw;
+        weapons[w].max_size.h = maxh;
+    }
+
 }
 
 // must call this after players_init()
@@ -1027,6 +1076,8 @@ void weapons_init_images()
         {
             for(int w = 0; w < WEAPON_MAX; ++w)
             {
+                weapon_image_sets[pm][ps][w] = -1;
+
                 if(w == WEAPON_NONE)
                 {
                     weapon_image_sets[pm][ps][w] = weapon_image_sets[pm][ps][WEAPON_PISTOL1];
