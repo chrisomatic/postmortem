@@ -12,7 +12,7 @@
 
 #define NOMINAL_FONT_SIZE 64.0 // px for 1.0 scale
 #define MAX_CONTEXTS 32
-#define MAX_INT_LOOKUPS 32
+#define MAX_INT_LOOKUPS 64
 
 typedef struct
 {
@@ -28,26 +28,29 @@ typedef struct
     uint32_t highlighted_id;
     uint32_t active_id;
 
-    bool is_horizontal;
-
     // formatting
-    int curr_x, curr_y;
-    int curr_w, curr_h;
+    Rect curr;
 
     int start_x, start_y;
     int total_width, total_height;
     int indent_amount;
 
+    bool is_horizontal;
+
     IntLookup int_lookups[MAX_INT_LOOKUPS];
 
+    int prior_mouse_x, prior_mouse_y;
     int mouse_x, mouse_y;
+    int pinned_mouse_x, pinned_mouse_y;
+
+    int val; // @TEST
 
 } ImGuiContext;
 
 typedef struct
 {
     // general
-    int vert_spacing;
+    int spacing;
 
     // text
     int text_size_px;
@@ -75,6 +78,9 @@ typedef struct
     float slider_handle_width;
     float slider_opacity;
 
+    // number box
+    int number_box_width;
+
     // panel
     uint32_t panel_color;
     float panel_opacity;
@@ -90,20 +96,24 @@ static ImGuiContext* ctx;
 static inline bool is_mouse_inside(int x, int y, int width, int height);
 static inline bool is_highlighted(uint32_t hash);
 static inline bool is_active(uint32_t hash);
-static inline bool is_inside();
+static inline bool is_inside(Rect* r);
 static inline void set_highlighted(uint32_t hash);
 static inline void set_active(uint32_t hash);
 static inline void clear_highlighted();
 static inline void clear_active();
 static void assign_context(uint32_t hash);
-static void handle_highlighting(uint32_t hash);
+static void handle_highlighting(uint32_t hash, Rect* r);
 static void imgui_slider_float_internal(char* label, float min, float max, float* result, char* format);
+static IntLookup* get_int_lookup(uint32_t hash);
 static void progress_pos();
 
-static void draw_button(uint32_t hash, char* str);
+static void draw_button(uint32_t hash, char* str, Rect* r);
 static void draw_checkbox(uint32_t hash, char* label, bool result);
 static void draw_slider(uint32_t hash, char* str, int slider_x, char* val_format, float val);
-static void draw_color_picker(uint32_t hash, char* label, bool result);
+static void draw_color_box(Rect* r, uint32_t color);
+static void draw_label(int x, int y, uint32_t color, char* label);
+static void draw_number_box(uint32_t hash, char* label, Rect* r, int val, int max);
+static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text);
 static void draw_panel();
 
 void imgui_begin(char* name, int x, int y)
@@ -114,18 +124,18 @@ void imgui_begin(char* name, int x, int y)
     ctx->start_x = x;
     ctx->start_y = y;
     
-    ctx->curr_x = x;
-    ctx->curr_y = y;
+    ctx->curr.x = x;
+    ctx->curr.y = y;
 
     ctx->indent_amount = 0;
 
     // set theme
     // text
-    theme.vert_spacing = 4;
+    theme.spacing = 8;
     theme.text_size_px = 20;
     theme.text_scale = theme.text_size_px / NOMINAL_FONT_SIZE;
     theme.text_color = 0xFFFFFFFF;
-    theme.text_padding = 5;
+    theme.text_padding = 4;
 
     // checkbox
     theme.checkbox_size = 10;
@@ -147,9 +157,17 @@ void imgui_begin(char* name, int x, int y)
     theme.slider_handle_width = 16;
     theme.slider_opacity = 0.8;
 
+    // number box
+    theme.number_box_width = 40;
+
     // panel
     theme.panel_color = 0x20202020;
     theme.panel_opacity = 0.75;
+
+    ctx->prior_mouse_x = ctx->mouse_x;
+    ctx->prior_mouse_y = ctx->mouse_y;
+
+    if(ctx->val == 0) ctx->val = 100;
 
     window_get_mouse_view_coords(&ctx->mouse_x, &ctx->mouse_y);
 }
@@ -158,7 +176,7 @@ void imgui_begin_panel(char* name, int x, int y)
 {
     imgui_begin(name, x,y);
     draw_panel();
-    ctx->curr_x += 4;
+    ctx->curr.x += theme.spacing;
 }
 
 void imgui_set_text_size(int pxsize)
@@ -191,9 +209,9 @@ void imgui_text_sized(int pxsize, char* text, ...)
     vsprintf(str,text, args);
     va_end(args);
 
-    Vector2f size = gfx_draw_string(ctx->curr_x, ctx->curr_y, theme.text_color, (pxsize / NOMINAL_FONT_SIZE), 0.0, 1.0, false, true, str);
-    ctx->curr_w = size.x;
-    ctx->curr_h = size.y;
+    Vector2f size = gfx_draw_string(ctx->curr.x, ctx->curr.y, theme.text_color, (pxsize / NOMINAL_FONT_SIZE), 0.0, 1.0, false, true, str);
+    ctx->curr.w = size.x+theme.spacing;
+    ctx->curr.h = 1.3*size.y;
     progress_pos();
 }
 
@@ -205,27 +223,39 @@ void imgui_text_colored(uint32_t color, char* text, ...)
     vsprintf(str,text, args);
     va_end(args);
 
-    Vector2f size = gfx_draw_string(ctx->curr_x, ctx->curr_y, color, theme.text_scale, 0.0, 1.0, false, true, str);
-    ctx->curr_w = size.x;
-    ctx->curr_h = size.y;
+    Vector2f size = gfx_draw_string(ctx->curr.x, ctx->curr.y, color, theme.text_scale, 0.0, 1.0, false, true, str);
+    ctx->curr.w = size.x+theme.spacing;
+    ctx->curr.h = 1.3*size.y;
     progress_pos();
 }
 
 void imgui_indent_begin(int indentpx)
 {
     ctx->indent_amount = indentpx;
-    ctx->curr_x += indentpx;
+    ctx->curr.x += indentpx;
 }
 
 void imgui_indent_end()
 {
-    ctx->curr_x -= ctx->indent_amount;
+    ctx->curr.x -= ctx->indent_amount;
     ctx->indent_amount = 0;
 }
 
 void imgui_newline()
 {
-    ctx->curr_y += theme.text_size_px;
+    ctx->curr.y += theme.text_size_px;
+}
+
+void imgui_horizontal_begin()
+{
+    ctx->is_horizontal = true;
+}
+
+void imgui_horizontal_end()
+{
+    ctx->is_horizontal = false;
+    ctx->curr.x = ctx->start_x + theme.spacing + ctx->indent_amount;
+    progress_pos();
 }
 
 bool imgui_button(char* label, ...)
@@ -260,12 +290,14 @@ bool imgui_button(char* label, ...)
 
     Vector2f text_size = gfx_string_get_size(theme.text_scale, str);
 
-    ctx->curr_w = text_size.x + 2*theme.text_padding;
-    ctx->curr_h = text_size.y + 2*theme.text_padding;
+    Rect interactive = {ctx->curr.x, ctx->curr.y, text_size.x + 2*theme.text_padding, text_size.y + 2*theme.text_padding};
+    handle_highlighting(hash, &interactive);
 
-    handle_highlighting(hash);
+    draw_button(hash, str, &interactive);
 
-    draw_button(hash, str);
+    ctx->curr.w = text_size.x + 2*theme.text_padding + theme.spacing;
+    ctx->curr.h = text_size.y + 2*theme.text_padding + theme.spacing;
+
     progress_pos();
 
     return result;
@@ -295,49 +327,156 @@ void imgui_checkbox(char* label, bool* result)
         }
     }
 
-    ctx->curr_w = theme.checkbox_size;
-    ctx->curr_h = theme.checkbox_size;
-
-    handle_highlighting(hash);
+    Rect interactive = {ctx->curr.x, ctx->curr.y, theme.checkbox_size, theme.checkbox_size};
+    handle_highlighting(hash, &interactive);
 
     Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
 
     draw_checkbox(hash, label, *result);
-
-    ctx->curr_w = theme.checkbox_size + text_size.x + theme.text_padding;
-    ctx->curr_h = MAX(theme.checkbox_size, text_size.y) + theme.text_padding;
-
     progress_pos();
 }
 
 void imgui_color_picker(char* label, uint32_t* result)
 {
-    uint32_t hash = hash_str(label,strlen(label),0x0);
+    int r = (*result >> 16) & 0xFF;
+    int g = (*result >>  8) & 0xFF;
+    int b = (*result >>  0) & 0xFF;
 
-    Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
-    ctx->curr_w = text_size.x + 2*theme.text_padding;
-    ctx->curr_h = text_size.y + 2*theme.text_padding;
-
-    draw_color_picker(hash, label, *result);
-    progress_pos();
+    imgui_horizontal_begin();
+        imgui_number_box("R",0, 255, &r);
+        imgui_number_box("G",0, 255, &g);
+        imgui_number_box("B",0, 255, &b);
+        *result = COLOR((uint8_t)r,(uint8_t)g,(uint8_t)b);
+        Rect box = {ctx->curr.x,ctx->curr.y, 20, 20};
+        draw_color_box(&box,*result);
+        draw_label(ctx->curr.x + 20 + theme.text_padding, ctx->curr.y, theme.text_color, label);
+    imgui_horizontal_end();
 }
 
 void imgui_slider_float(char* label, float min, float max, float* result)
 {
-    imgui_slider_float_internal(label, min, max, result, "%.2f");
+    imgui_slider_float_internal(label, min, max, result, "%.4f");
     progress_pos();
 }
 
-void imgui_slider_int(char* label, int min, int max, int* result)
+void imgui_number_box(char* label, int min, int max, int* result)
 {
-    imgui_slider_float_internal(label, min, max, (float*)result, "%d");
+    uint32_t hash = hash_str(label,strlen(label),0x0);
+
+    IntLookup* lookup = get_int_lookup(hash);
+    int *val = &lookup->val;
+
+    if(*result >= min && *result <= max)
+        *val = *result;
+
+    if(is_active(hash))
+    {
+        if(window_mouse_left_went_up())
+        {
+            clear_active();
+        }
+        else
+        {
+            // update val
+            *val += (ctx->mouse_x - ctx->prior_mouse_x);
+            *val = RANGE(*val, min,max);
+        }
+    }
+    else if(is_highlighted(hash))
+    {
+        if(window_mouse_left_went_down())
+        {
+            set_active(hash);
+        }
+    }
+
+    Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
+
+    Rect interactive = {ctx->curr.x, ctx->curr.y, theme.number_box_width, text_size.y + 2*theme.text_padding};
+    handle_highlighting(hash, &interactive);
+
+    draw_number_box(hash, label, &interactive, *val,max);
+
+    ctx->curr.w = theme.number_box_width + text_size.x + theme.text_padding + theme.spacing;
+    ctx->curr.h = text_size.y + 2*theme.text_padding + theme.spacing;
+
     progress_pos();
+
+    *result = *val;
+}
+void imgui_inputtext(char* label, char* buf, int bufsize)
+{
+    uint32_t hash = hash_str(label,strlen(label),0x0);
+
+    Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
+    Rect interactive = {ctx->curr.x, ctx->curr.y, 150, text_size.y + 2*theme.text_padding};
+
+    int num_chars = strlen(buf);
+    if(num_chars < bufsize-1)
+    {
+        int key = window_get_key_pressed();
+        if(key > 0)
+        {
+            buf[num_chars] = key;
+        }
+    }
+    draw_input_box(hash, label, &interactive, buf);
+
+    ctx->curr.w = 150 + text_size.x + theme.text_padding + theme.spacing;
+    ctx->curr.h = text_size.y + 2*theme.text_padding + theme.spacing;
+
+    progress_pos();
+}
+
+// demo vars
+static int num_clicks = 0;
+static uint32_t color = 0x00FE2225;
+static char name[20] = {0};
+static bool my_check = true;
+static int ri = 10;
+
+void imgui_draw_demo(int x, int y)
+{
+    imgui_begin_panel("Demo", x,y);
+
+        imgui_set_text_size(28);
+        imgui_text("Demo");
+        imgui_set_text_size(12);
+        imgui_text_colored(0x00FF00FF, "My name is %s", "Chris");
+        imgui_text_colored(0x0000FFFF, "My name is %s", "Kam");
+
+        if(imgui_button("Test Button"))
+        {
+            num_clicks++;
+        }
+        imgui_text_colored(0xFFFFFFFF, "Num clicks: %d", num_clicks);
+
+        imgui_button("Dumb Button");
+        float v1,v2;
+        imgui_slider_float("Slider 1", 0.0,1.0,&v1);
+        imgui_slider_float("Slider 2", 0.0,1.0,&v2);
+
+        imgui_checkbox("Checkbox 1",&my_check);
+
+        bool thing;
+        imgui_indent_begin(12);
+            imgui_checkbox("whatever",&thing);
+            imgui_checkbox("dawg",&thing);
+        imgui_indent_end();
+
+        imgui_number_box("Some Int",0, 100, &ri);
+
+        imgui_color_picker("Test Color", &color);
+        imgui_text_colored(0xFFFFFFFF, "Test");
+        //imgui_inputtext("Name",name,IM_ARRAYSIZE(name));
+
+    imgui_end();
 }
 
 void imgui_end()
 {
     ctx->total_width = 210; // @TODO
-    ctx->total_height = (ctx->curr_y-ctx->start_y);
+    ctx->total_height = (ctx->curr.y-ctx->start_y);
 }
 
 // ============================
@@ -357,9 +496,9 @@ static inline bool is_active(uint32_t hash)
 {
     return (ctx->active_id == hash);
 }
-static inline bool is_inside()
+static inline bool is_inside(Rect* r)
 {
-    return is_mouse_inside(ctx->curr_x, ctx->curr_y, ctx->curr_w, ctx->curr_h);
+    return is_mouse_inside(r->x, r->y, r->w, r->h);
 }
 static inline void set_highlighted(uint32_t hash)
 {
@@ -371,6 +510,9 @@ static inline void set_highlighted(uint32_t hash)
 static inline void set_active(uint32_t hash)
 {
     ctx->active_id = hash;
+
+    ctx->pinned_mouse_x = ctx->mouse_x;
+    ctx->pinned_mouse_y = ctx->mouse_y;
 }
 
 static inline void clear_highlighted()
@@ -381,17 +523,20 @@ static inline void clear_highlighted()
 static inline void clear_active()
 {
     ctx->active_id = 0x0;
+
+    ctx->pinned_mouse_x = 0;
+    ctx->pinned_mouse_y = 0;
 }
 
 static void progress_pos()
 {
     if(ctx->is_horizontal)
     {
-        ctx->curr_x += ctx->curr_h;
+        ctx->curr.x += ctx->curr.w;
     }
     else
     {
-        ctx->curr_y += 1.3*ctx->curr_h;
+        ctx->curr.y += ctx->curr.h;
     }
 }
 
@@ -429,8 +574,8 @@ static void imgui_slider_float_internal(char* label, float min, float max, float
 
     Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
 
-    ctx->curr_w = theme.slider_width;
-    ctx->curr_h = text_size.y + 2*theme.text_padding;
+    ctx->curr.w = theme.slider_width;
+    ctx->curr.h = text_size.y + 2*theme.text_padding;
 
     uint32_t hash = hash_str(label,strlen(label),0x0);
 
@@ -449,8 +594,8 @@ static void imgui_slider_float_internal(char* label, float min, float max, float
             clear_active();
         }
 
-        *slider_x = ctx->mouse_x-ctx->curr_x-theme.slider_handle_width/2.0;
-        *slider_x = RANGE(*slider_x, 0, ctx->curr_w - theme.slider_handle_width);
+        *slider_x = ctx->mouse_x-ctx->curr.x-theme.slider_handle_width/2.0;
+        *slider_x = RANGE(*slider_x, 0, ctx->curr.w - theme.slider_handle_width);
 
     }
     else if(is_highlighted(hash))
@@ -461,19 +606,21 @@ static void imgui_slider_float_internal(char* label, float min, float max, float
         }
     }
 
-    handle_highlighting(hash);
+    handle_highlighting(hash, &ctx->curr);
 
-    float slider_val = (*slider_x / (ctx->curr_w - theme.slider_handle_width));
+    float slider_val = (*slider_x / (ctx->curr.w - theme.slider_handle_width));
     slider_val *= (max-min);
     slider_val += min;
     draw_slider(hash,label, *slider_x, format, slider_val);
 
+    ctx->curr.h += theme.spacing;
+
     *result = slider_val;
 }
 
-static void handle_highlighting(uint32_t hash)
+static void handle_highlighting(uint32_t hash, Rect* r)
 {
-    if(is_inside())
+    if(is_inside(r))
     {
         set_highlighted(hash);
     }
@@ -486,7 +633,7 @@ static void handle_highlighting(uint32_t hash)
     }
 }
 
-static void draw_button(uint32_t hash, char* str)
+static void draw_button(uint32_t hash, char* str, Rect* r)
 {
     // draw button
     uint32_t button_color = theme.button_color_background;
@@ -500,15 +647,15 @@ static void draw_button(uint32_t hash, char* str)
         button_color = theme.button_color_background_active;
     }
 
-    gfx_draw_rect_xywh(ctx->curr_x + ctx->curr_w/2.0, ctx->curr_y + (ctx->curr_h+theme.text_padding)/2.0, ctx->curr_w, ctx->curr_h, button_color, 1.0, theme.button_opacity, true,false);
+    gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, button_color, 1.0, theme.button_opacity, true,false);
 
-    gfx_draw_string(ctx->curr_x + theme.text_padding, ctx->curr_y + theme.text_padding, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, str);
+    gfx_draw_string(r->x + theme.text_padding, r->y + theme.text_padding, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, str);
 }
 
 static void draw_slider(uint32_t hash, char* str, int slider_x, char* val_format, float val)
 {
     // draw bar
-    gfx_draw_rect_xywh(ctx->curr_x + ctx->curr_w/2.0, ctx->curr_y + ctx->curr_h/2.0, ctx->curr_w, ctx->curr_h, theme.slider_color_background, 1.0, theme.slider_opacity, true,false);
+    gfx_draw_rect_xywh(ctx->curr.x + ctx->curr.w/2.0, ctx->curr.y + ctx->curr.h/2.0, ctx->curr.w, ctx->curr.h, theme.slider_color_background, 1.0, theme.slider_opacity, true,false);
 
     // draw handle
     uint32_t handle_color = theme.slider_color_handle;
@@ -522,21 +669,21 @@ static void draw_slider(uint32_t hash, char* str, int slider_x, char* val_format
         handle_color = theme.slider_color_handle_active;
     }
 
-    gfx_draw_rect_xywh(ctx->curr_x + theme.slider_handle_width/2.0 + slider_x, ctx->curr_y + ctx->curr_h/2.0, theme.slider_handle_width-4, ctx->curr_h-4, handle_color, 1.0, theme.slider_opacity, true,false);
+    gfx_draw_rect_xywh(ctx->curr.x + theme.slider_handle_width/2.0 + slider_x, ctx->curr.y + ctx->curr.h/2.0, theme.slider_handle_width-4, ctx->curr.h-4, handle_color, 1.0, theme.slider_opacity, true,false);
 
     // draw value
     char val_str[16] = {0};
     snprintf(val_str,15,val_format,val);
     Vector2f val_size = gfx_string_get_size(theme.text_scale, val_str);
-    gfx_draw_string(ctx->curr_x + (ctx->curr_w-val_size.x)/2.0, ctx->curr_y + theme.text_padding, theme.slider_color_foreground, theme.text_scale, 0.0, 1.0, false, false, val_str);
+    gfx_draw_string(ctx->curr.x + (ctx->curr.w-val_size.x)/2.0, ctx->curr.y + theme.text_padding, theme.slider_color_foreground, theme.text_scale, 0.0, 1.0, false, false, val_str);
 
     // draw label
-    gfx_draw_string(ctx->curr_x + 2.0*ctx->curr_w/2.0 + theme.text_padding, ctx->curr_y + theme.text_padding, theme.slider_color_foreground, theme.text_scale, 0.0, 1.0, false, false, str);
+    gfx_draw_string(ctx->curr.x + 2.0*ctx->curr.w/2.0 + theme.text_padding, ctx->curr.y + theme.text_padding, theme.slider_color_foreground, theme.text_scale, 0.0, 1.0, false, false, str);
 }
 
 static void draw_panel()
 {
-    gfx_draw_rect_xywh(ctx->start_x+ctx->total_width/2.0, ctx->start_y+ctx->total_height/2.0, ctx->total_width, ctx->total_height, theme.panel_color, 1.0, theme.panel_opacity,true,false);
+    gfx_draw_rect_xywh(ctx->start_x+ctx->total_width/2.0, ctx->start_y+ctx->total_height/2.0, ctx->total_width, ctx->total_height+theme.spacing, theme.panel_color, 1.0, theme.panel_opacity,true,false);
 }
 
 static void draw_checkbox(uint32_t hash, char* label, bool result)
@@ -556,23 +703,70 @@ static void draw_checkbox(uint32_t hash, char* label, bool result)
     Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
 
     // draw check
-    float x = ctx->curr_x + theme.text_padding;
-    float y = ctx->curr_y + ctx->curr_h/2.0;
+    float x = ctx->curr.x + theme.checkbox_size/2.0;
+    float y = ctx->curr.y + theme.checkbox_size/2.0;
 
     gfx_draw_rect_xywh(x,y, theme.checkbox_size, theme.checkbox_size, check_color, 1.0, 1.0, false,false);
     gfx_draw_rect_xywh(x,y, theme.checkbox_size-4, theme.checkbox_size-4, check_color, 1.0, 1.0, result,false);
 
-    gfx_draw_string(ctx->curr_x + theme.checkbox_size + theme.text_padding, ctx->curr_y-text_size.y/2.0, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, label);
+    gfx_draw_string(ctx->curr.x + theme.checkbox_size + theme.text_padding, ctx->curr.y + (theme.checkbox_size - text_size.y)/2.0, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, label);
+
+    ctx->curr.w = theme.checkbox_size + 2.0*theme.text_padding + text_size.x;
+    ctx->curr.h = MAX(theme.checkbox_size, text_size.y)+theme.text_padding;
 }
 
-static void draw_color_picker(uint32_t hash, char* label, bool result)
+static void draw_number_box(uint32_t hash, char* label, Rect* r, int val, int max)
 {
-    // draw r,g,b rects
+    uint32_t box_color = theme.button_color_background;
 
-    /*
-    gfx_draw_rect_xywh(ctx->curr_x + theme.text_padding, ctx->curr_y + ctx->curr_h/2.0, theme.checkbox_size, theme.checkbox_size, check_color, 1.0, 1.0, false,false);
+    if(is_highlighted(hash))
+    {
+        box_color = theme.button_color_background_highlighted;
+    }
+    if(is_active(hash))
+    {
+        box_color = theme.button_color_background_active;
+    }
 
-    gfx_draw_string(ctx->curr_x + theme.checkbox_size + theme.text_padding, ctx->curr_y + theme.text_padding, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, "R");
-    
-    */
+    float pct = val/(float)max;
+
+    gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, box_color, 1.0, theme.button_opacity, true,false);
+    gfx_draw_rect_xywh(r->x + (r->w*pct)/2.0, r->y + r->h/2.0, r->w*pct, r->h, 0x00FFFFFF, 1.0, 0.4,true,false);
+
+    char val_str[16] = {0};
+    snprintf(val_str,15,"%d",val);
+    Vector2f val_size = gfx_string_get_size(theme.text_scale, val_str);
+
+    gfx_draw_string(r->x + (r->w - val_size.x)/2.0 , r->y + (r->h-val_size.y)/2.0, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, val_str);
+
+    gfx_draw_string(r->x + r->w + theme.text_padding, r->y + (r->h-val_size.y)/2.0, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, label);
+}
+
+static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text)
+{
+    uint32_t box_color = theme.button_color_background;
+
+    if(is_highlighted(hash))
+    {
+        box_color = theme.button_color_background_highlighted;
+    }
+    if(is_active(hash))
+    {
+        box_color = theme.button_color_background_active;
+    }
+
+    gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, box_color, 1.0, theme.button_opacity, true,false);
+    gfx_draw_string(r->x, r->y, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, text);
+
+    draw_label(r->w+theme.text_padding, r->y, theme.text_color, label);
+}
+
+static void draw_label(int x, int y, uint32_t color, char* label)
+{
+    gfx_draw_string(x, y, color, theme.text_scale, 0.0, 1.0, false, false, label);
+}
+
+static void draw_color_box(Rect* r, uint32_t color)
+{
+    gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, color, 1.0, 1.0, true,false);
 }

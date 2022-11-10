@@ -219,11 +219,8 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
 
 }
 
-static int num_clicks = 0; // @TEST
-
 void gui_draw()
 {
-
     // test print
     /*
     char* test_str = "Hejg'\",.; _-QW!M-\"(0)\"";
@@ -238,6 +235,7 @@ void gui_draw()
     }
     float wscale = (window_width/(float)view_width);
     float hscale = (window_height/(float)view_height);
+
     wscale = 1.0/wscale;
     hscale = 1.0/hscale;
 
@@ -340,43 +338,18 @@ void gui_draw()
 
     if(editor_enabled)
     {
-        imgui_begin_panel("Editor", 800,100);
-
-        imgui_set_text_size(32);
-        imgui_text("Editor");
-        imgui_set_text_size(12);
-        imgui_text_colored(0x00FF00FF, "My name is %s", "Chris");
-        imgui_text_colored(0x0000FFFF, "My name is %s", "Kam");
-
-        static int x = 0;
-        if(imgui_button("Test Button"))
-        {
-            num_clicks++;
-        }
-        imgui_text_colored(0xFFFFFFFF, "Num clicks: %d", num_clicks);
-
-        imgui_button("Dumb Button");
-        float r,g,b;
-        imgui_slider_float("Ambient R", 0.0,1.0,&r);
-        imgui_slider_float("Ambient G", 0.0,1.0,&g);
-        imgui_slider_float("Ambient B", 0.0,1.0,&b);
-        imgui_text_colored(COLOR2(r,g,b), "What up homie?");
-
-        ambient_light = COLOR2(r,g,b);
-
-        //int w;
-        //imgui_slider_int("Whatever", 0,5,&w);
-        imgui_checkbox("Debug Enabled",&debug_enabled);
-        bool thing;
-
-        imgui_indent_begin(12);
-            imgui_checkbox("whatever",&thing);
-            imgui_checkbox("dawg",&thing);
-        imgui_indent_end();
-
+        imgui_begin_panel("Editor", 10,600);
+            imgui_set_text_size(28);
+            imgui_text("Editor");
+            imgui_set_text_size(12);
+            imgui_newline();
+            imgui_color_picker("Ambient Color", &ambient_light);
+            imgui_checkbox("Debug Enabled",&debug_enabled);
         imgui_end();
-    }
 
+        // for testing new gui features
+        imgui_draw_demo(800,10);
+    }
 }
 
 void console_message_add(uint32_t color, char* fmt, ...)

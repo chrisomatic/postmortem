@@ -10,8 +10,7 @@
 PointLight point_lights[MAX_POINT_LIGHTS] = {0};
 int point_light_count = 0;
 
-// uint32_t ambient_light = 0x00000000;
-uint32_t ambient_light = 0xffffffff;
+uint32_t ambient_light = 0xFFFFFFFF;
 
 int lighting_point_light_add(float x, float y, float r, float g, float b, float radius)
 {

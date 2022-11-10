@@ -18,6 +18,8 @@ typedef struct
 static MouseAction mouse_left;
 static MouseAction mouse_right;
 
+static int last_key_pressed = 0;
+
 static GLFWwindow* window;
 
 int window_width = 0;
@@ -307,6 +309,8 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
 {
     // printf("key callback: %d\n", key);
 
+    last_key_pressed = (action == GLFW_PRESS || action == GLFW_REPEAT) ? key : 0;
+
     if(action == GLFW_PRESS || action == GLFW_RELEASE)
     {
         if(key_mode == KEY_MODE_NORMAL)
@@ -391,6 +395,13 @@ bool window_mouse_left_went_down()
 bool window_mouse_left_went_up()
 {
     return (mouse_left.action_prior == GLFW_PRESS && mouse_left.action == GLFW_RELEASE);
+}
+
+int window_get_key_pressed()
+{
+    int k = last_key_pressed;
+    last_key_pressed = 0;
+    return k;
 }
 
 void windows_text_mode_buf_append(char c)
