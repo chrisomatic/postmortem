@@ -9,6 +9,7 @@
 #define PLAYER_NAME_MAX 32
 #define PLAYER_HEIGHT   50
 
+// animation states
 typedef enum
 {
     PSTATE_IDLE,
@@ -38,8 +39,11 @@ typedef struct
 typedef enum
 {
     WEAPON_TYPE_HANDGUN,
-    WEAPON_TYPE_MELEE,
+    WEAPON_TYPE_RIFLE,
+    WEAPON_TYPE_BOW,
 
+    // keep these below the guns
+    WEAPON_TYPE_MELEE,
     WEAPON_TYPE_NONE,
     WEAPON_TYPE_MAX
 } WeaponType;
@@ -78,9 +82,10 @@ typedef struct
     float fire_spread;
     int fire_count;
 
-    //TODO
+
     int bullets;
     int bullets_max;
+    float reload_time;
 } Gun;
 
 typedef struct
@@ -125,6 +130,7 @@ enum PlayerAction
     PLAYER_ACTION_TOGGLE_DEBUG     = 1<<10,
     PLAYER_ACTION_TOGGLE_EDITOR    = 1<<11,
     PLAYER_ACTION_TOGGLE_GUN       = 1<<12,
+    PLAYER_ACTION_RELOAD           = 1<<13,
 };
 
 typedef struct
@@ -133,6 +139,7 @@ typedef struct
     bool run, jump, interact;
     bool primary_action, secondary_action;
     bool toggle_equip_weapon, toggle_debug, toggle_editor, toggle_gun;
+    bool reload;
 } PlayerActions;
 
 typedef struct
@@ -161,12 +168,15 @@ typedef struct
 
     PlayerModelIndex model_index;
     int model_texture;
-    PlayerState state;
+    PlayerState state;  //this is more of an animation state
+
     bool moving;
     bool weapon_ready;
+    bool attacking; //melee
+    bool reloading;
+    float reload_timer;
 
     Weapon* weapon;
-    bool attacking; //melee
     PlayerState attacking_state;
 
 
@@ -214,6 +224,7 @@ typedef struct
     GFXAnimation anim;
 
 } Player;
+
 
 #define MOVING_PLAYER(p) (p->actions.up || p->actions.down || p->actions.left || p->actions.right)
 

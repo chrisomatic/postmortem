@@ -118,6 +118,7 @@ void player_init_controls(Player* p)
     window_controls_add_key(&p->keys, GLFW_KEY_S, PLAYER_ACTION_DOWN);
     window_controls_add_key(&p->keys, GLFW_KEY_A, PLAYER_ACTION_LEFT);
     window_controls_add_key(&p->keys, GLFW_KEY_D, PLAYER_ACTION_RIGHT);
+    window_controls_add_key(&p->keys, GLFW_KEY_R, PLAYER_ACTION_RELOAD);
     window_controls_add_key(&p->keys, GLFW_KEY_LEFT_SHIFT, PLAYER_ACTION_RUN);
     window_controls_add_key(&p->keys, GLFW_KEY_SPACE, PLAYER_ACTION_JUMP);
     window_controls_add_key(&p->keys, GLFW_KEY_E, PLAYER_ACTION_INTERACT);
@@ -144,8 +145,9 @@ static void player_init(int index)
     p->model_texture = 0;
     p->state = PSTATE_IDLE;
     p->moving = false;
-    p->attacking = false;
     p->weapon_ready = false;
+    p->attacking = false;
+    p->reloading = false;
     p->weapon = NULL;
     player_set_weapon(p, WEAPON_NONE);
 
@@ -504,18 +506,17 @@ void player_update_boxes(Player* p)
         p->melee_box.w = w;
         p->melee_box.h = h;
 
-        bool other_weapon = p->weapon_ready && p->weapon->index != WEAPON_NONE;
-        if(other_weapon)
+        p->melee_box.x = px;
+        p->melee_box.y = py - p->pos.h*0.25;
+
+        bool weapon_out = p->weapon_ready && p->weapon->index != WEAPON_NONE;
+        if(weapon_out)
         {
             p->melee_box.w = p->weapon->max_size.w*p->scale;
             p->melee_box.h = p->weapon->max_size.h*p->scale;
         }
 
         float r = p->pos.w*1.0;
-
-        p->melee_box.x = px;
-        p->melee_box.y = py - p->pos.h*0.25;
-
         p->melee_box.x += r*cosf(p->angle);
         p->melee_box.y -= r*sinf(p->angle);
     }
@@ -601,6 +602,7 @@ void player_update(Player* p, double delta_t)
     p->actions.toggle_debug     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_DEBUG);
     p->actions.toggle_editor    = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EDITOR);
     p->actions.toggle_gun       = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_GUN);
+    p->actions.reload           = IS_BIT_SET(p->keys,PLAYER_ACTION_RELOAD);
 
     bool run_toggled = p->actions.run && !p->actions_prior.run;
     bool primary_action_toggled = p->actions.primary_action && !p->actions_prior.primary_action;
@@ -611,6 +613,25 @@ void player_update(Player* p, double delta_t)
     bool gun_toggled = p->actions.toggle_gun && !p->actions_prior.toggle_gun;
 
     memcpy(&p->actions_prior, &p->actions, sizeof(PlayerActions));
+
+    bool gun_equipped = p->weapon_ready && p->weapon->type < WEAPON_TYPE_MELEE;
+    if(p->actions.reload && gun_equipped && p->weapon->gun.bullets < p->weapon->gun.bullets_max)
+    {
+        if(!p->reloading && !p->attacking)
+        {
+            p->reload_timer = p->weapon->gun.reload_time+delta_t;
+            p->reloading = true;
+        }
+    }
+    if(p->reloading)
+    {
+        p->reload_timer -= delta_t*1000.0;
+        if(p->reload_timer <= 0.0)
+        {
+            p->reloading = false;
+            p->weapon->gun.bullets = p->weapon->gun.bullets_max;
+        }
+    }
 
     player_update_mouse_click(p->actions.primary_action, primary_action_toggled, &p->lmouse, delta_t);
     player_update_mouse_click(p->actions.secondary_action, secondary_action_toggled, &p->rmouse, delta_t);
@@ -666,17 +687,21 @@ void player_update(Player* p, double delta_t)
     }
 
 
-    if(p->weapon_ready && gun_toggled)
+    if(!p->reloading)
     {
-        int next = p->weapon->index+1;
-        if(next >= WEAPON_MAX) next = 0;
-        player_set_weapon(p, next);
+        if(p->weapon_ready && gun_toggled)
+        {
+            int next = p->weapon->index+1;
+            if(next >= WEAPON_MAX) next = 0;
+            player_set_weapon(p, next);
+        }
+
+        if(equip_weapon_toggled)
+        {
+            p->weapon_ready = !p->weapon_ready;
+        }
     }
 
-    if(equip_weapon_toggled)
-    {
-        p->weapon_ready = !p->weapon_ready;
-    }
 
     if(debug_toggled)
     {
@@ -718,7 +743,7 @@ void player_update(Player* p, double delta_t)
 
     p->phys.max_linear_vel = p->max_base_speed;
 
-    if(p->running && moving_player)
+    if(p->running && moving_player && !p->reloading)
     {
         accel.x *= 10.0;
         accel.y *= 10.0;
@@ -962,8 +987,9 @@ void weapons_init()
     weapons[idx].gun.fire_period = 500.0; // milliseconds
     weapons[idx].gun.fire_spread = 0.0;
     weapons[idx].gun.fire_count = 1;
-    weapons[idx].gun.bullets = 100;
-    weapons[idx].gun.bullets_max = 100;
+    weapons[idx].gun.bullets = 7;
+    weapons[idx].gun.bullets_max = 7;
+    weapons[idx].gun.reload_time = 1000.0;
     weapons[idx].gun.projectile_type = PROJECTILE_TYPE_BULLET;
 
     weapons[idx].melee.range = 8.0;
@@ -985,12 +1011,13 @@ void weapons_init()
     weapons[idx].gun.power = 1.0;
     weapons[idx].gun.recoil_spread = 4.0;
     weapons[idx].gun.fire_range = 500.0;
-    weapons[idx].gun.fire_speed = 1000.0;
+    weapons[idx].gun.fire_speed = 4000.0;
     weapons[idx].gun.fire_period = 100.0; // milliseconds
     weapons[idx].gun.fire_spread = 0.0;
     weapons[idx].gun.fire_count = 1;
-    weapons[idx].gun.bullets = 100;
-    weapons[idx].gun.bullets_max = 100;
+    weapons[idx].gun.bullets = 32;
+    weapons[idx].gun.bullets_max = 32;
+    weapons[idx].gun.reload_time = 1000.0;
     weapons[idx].gun.projectile_type = PROJECTILE_TYPE_BULLET;
 
     weapons[idx].melee.range = 8.0;
@@ -1013,12 +1040,13 @@ void weapons_init()
     weapons[idx].gun.power = 1.0;
     weapons[idx].gun.recoil_spread = 0.0;
     weapons[idx].gun.fire_range = 200.0;
-    weapons[idx].gun.fire_speed = 1000.0;
+    weapons[idx].gun.fire_speed = 4000.0;
     weapons[idx].gun.fire_period = 400.0; // milliseconds
     weapons[idx].gun.fire_spread = 30.0;
     weapons[idx].gun.fire_count = 5;
-    weapons[idx].gun.bullets = 100;
-    weapons[idx].gun.bullets_max = 100;
+    weapons[idx].gun.bullets = 12;
+    weapons[idx].gun.bullets_max = 12;
+    weapons[idx].gun.reload_time = 1000.0;
     weapons[idx].gun.projectile_type = PROJECTILE_TYPE_BULLET;
 
     weapons[idx].melee.range = 8.0;
@@ -1115,6 +1143,9 @@ const char* weapon_type_str(WeaponType wtype)
 
 void weapon_fire(int mx, int my, Weapon* weapon, bool held)
 {
+
+    if(weapon->gun.bullets <= 0) return; 
+
     if(weapon->gun.fire_count > 1)
     {
         for(int i = 0; i < weapon->gun.fire_count; ++i)
@@ -1134,6 +1165,7 @@ void weapon_fire(int mx, int my, Weapon* weapon, bool held)
         }
         projectile_add(weapon->gun.projectile_type, weapon, mx, my, angle_offset);
     }
+    weapon->gun.bullets--;
 }
 
 

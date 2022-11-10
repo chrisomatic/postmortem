@@ -122,8 +122,18 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
                 imgui_text("Vel: %.2f, %.2f (%.2f)", pvx, pvy, pv);
                 imgui_text("Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action);
                 imgui_text("Angle: %.2f, %.2f deg", player->angle, DEG(player->angle));
-                imgui_text("Angle: %.2f, %.2f deg", 5.999, 360.999);
+                // imgui_text("Angle: %.2f, %.2f deg", 5.999, 360.999);
             imgui_indent_end();
+
+            imgui_text_sized(big,"Weapon");
+            imgui_indent_begin(small);
+                imgui_text("Equipped: %s", player->weapon_ready ? "true" :  "false");
+                imgui_text("Reloading: %s (%.2f)", player->reloading ? "true" :  "false", player->reload_timer);
+                imgui_text("Index: %d", player->weapon->index);
+                imgui_text("Type: %s (%d)", weapon_type_str(player->weapon->type), player->weapon->index);
+                imgui_text("Bullets: %d (max: %d)", player->weapon->gun.bullets, player->weapon->gun.bullets_max);
+            imgui_indent_end();
+
             imgui_text_sized(big,"Mouse");
             imgui_indent_begin(small);
                 imgui_text("World:  %d, %d", wmx, wmy);
