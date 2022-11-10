@@ -12,6 +12,7 @@
 #include "world.h"
 #include "lighting.h"
 #include "net.h"
+#include "zombie.h"
 #include "main.h"
 
 
@@ -644,43 +645,35 @@ void player_update(Player* p, double delta_t)
         {
             if(p->lmouse.trigger)
             {
-
-                if(p->weapon->primary_attack == ATTACK_SHOOT)
+                WeaponAttack pa = p->weapon->primary_attack;
+                if(pa == ATTACK_SHOOT)
                 {
                     // spawn projectile
                     weapon_fire(p->mouse_x, p->mouse_y, p->weapon, p->lmouse.held);
-
                 }
-                else if(p->weapon->primary_attack == ATTACK_MELEE)
+                else if(pa == ATTACK_MELEE || pa == ATTACK_POWER_MELEE)
                 {
+                    p->melee_hit = false;
                     p->attacking = true;
                     p->attacking_state = p->weapon->primary_state;
+                    p->attacking_type = pa;
                 }
-                else if(p->weapon->primary_attack == ATTACK_POWER_MELEE)
-                {
-                    p->attacking = true;
-                    p->attacking_state = p->weapon->primary_state;
-                }
-
             }
 
             if(p->rmouse.trigger)
             {
-                if(p->weapon->secondary_attack == ATTACK_SHOOT)
+                WeaponAttack sa = p->weapon->secondary_attack;
+                if(sa == ATTACK_SHOOT)
                 {
                     // spawn projectile
                     weapon_fire(p->mouse_x, p->mouse_y, p->weapon, p->rmouse.held);
-
                 }
-                else if(p->weapon->secondary_attack == ATTACK_MELEE)
+                else if(sa == ATTACK_MELEE || sa == ATTACK_POWER_MELEE)
                 {
+                    p->melee_hit = false;
                     p->attacking = true;
                     p->attacking_state = p->weapon->secondary_state;
-                }
-                else if(p->weapon->secondary_attack == ATTACK_POWER_MELEE)
-                {
-                    p->attacking = true;
-                    p->attacking_state = p->weapon->secondary_state;
+                    p->attacking_type = sa;
                 }
             }
         }
@@ -750,15 +743,6 @@ void player_update(Player* p, double delta_t)
         p->phys.max_linear_vel *= 10.0;
     }
 
-    // //TODO: weapon
-    // if(p->attacking)
-    // {
-    //     accel.x = 0;
-    //     accel.y = 0;
-    // }
-
-
-
 #if 0
     if(role == ROLE_SERVER)
     {
@@ -808,6 +792,7 @@ void player_update(Player* p, double delta_t)
     if(p->attacking && p->anim.curr_loop > 0)
     {
         p->attacking = false;
+        p->attacking_type = ATTACK_NONE;
         player_update_state(p);
         player_update_image(p);
     }
@@ -816,6 +801,8 @@ void player_update(Player* p, double delta_t)
     player_update_boxes(p);
 
     // limit_pos(&map.rect, &p->phys.pos);
+
+    player_weapon_melee_check_collision(p);
 
 
     lighting_point_light_move(p->point_light,p->pos.x, p->pos.y);
@@ -1166,6 +1153,37 @@ void weapon_fire(int mx, int my, Weapon* weapon, bool held)
         projectile_add(weapon->gun.projectile_type, weapon, mx, my, angle_offset);
     }
     weapon->gun.bullets--;
+}
+
+void player_weapon_melee_check_collision(Player* p)
+{
+    if(IS_RECT_EMPTY(&p->melee_box) || p->melee_hit)
+        return;
+
+    if(zlist->count == 0)
+        return;
+
+    if(p->attacking && (p->attacking_type == ATTACK_MELEE || p->attacking_type == ATTACK_POWER_MELEE))
+    {
+
+        float f = 1.0;
+        if(p->attacking_type == ATTACK_POWER_MELEE)
+            f = 1.5;
+
+        for(int j = zlist->count - 1; j >= 0; --j)
+        {
+
+            if(rectangles_colliding(&p->melee_box, &zombies[j].hit_box))
+            {
+                float damage = p->weapon->melee.power*f;
+                zombie_hurt(j,damage);
+                p->melee_hit = true;
+                return;
+            }
+
+        }
+
+    }
 }
 
 

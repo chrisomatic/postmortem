@@ -90,9 +90,9 @@ typedef struct
 
 typedef struct
 {
-    float range;
-    float power;
     float period;
+    float power;
+    float range;
 } Melee;
 
 typedef struct
@@ -178,7 +178,10 @@ typedef struct
 
     Weapon* weapon;
     PlayerState attacking_state;
+    WeaponAttack attacking_type;
 
+    Rect melee_box;
+    bool melee_hit;
 
     int image;
     uint8_t sprite_index;
@@ -187,7 +190,6 @@ typedef struct
     Rect standard_size;
     Rect max_size;
 
-    Rect melee_box;
 
     Rect pos;       // actual position of the player
     Physics phys;
@@ -261,6 +263,7 @@ void weapons_init_images();
 int weapons_get_image_index(PlayerModelIndex model_index, PlayerState pstate, WeaponType wtype);
 const char* weapon_type_str(WeaponType wtype);
 void weapon_fire(int mx, int my, Weapon* weapon, bool held);
+void player_weapon_melee_check_collision(Player* p);
 
 void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret);
 void limit_pos(Rect* limit, Rect* pos, Rect* phys_pos);
