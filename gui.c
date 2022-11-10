@@ -322,13 +322,14 @@ void gui_draw()
     }
 
     // controls
-    imgui_begin("Controls",view_width - 150,view_height - 120);
+    imgui_begin("Controls",view_width - 150,view_height - 130);
         imgui_set_text_size(16);
         imgui_text("Controls");
         imgui_set_text_size(10);
         imgui_indent_begin(10);
             imgui_text("W,A,S,D: Move");
             imgui_text("Tab: Ready/Unready gun");
+            imgui_text("R: Reload");
             imgui_text("G: Cycle through guns");
             imgui_text("Shift: Toggle Run");
             imgui_text("F2: Toggle Debug");

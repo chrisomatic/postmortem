@@ -497,35 +497,35 @@ void player_update_boxes(Player* p)
     p->max_size.x = px;
     p->max_size.y = py;
 
-    if(p->attacking)
-    {
+    // if(p->attacking)
+    // {
 
-        // default values
-        float w = p->standard_size.w*0.3;
-        float h = p->standard_size.h*0.15;
+    //     // default values
+    //     float w = p->standard_size.w*0.3;
+    //     float h = p->standard_size.h*0.15;
 
-        p->melee_box.w = w;
-        p->melee_box.h = h;
+    //     p->melee_box.w = w;
+    //     p->melee_box.h = h;
 
-        p->melee_box.x = px;
-        p->melee_box.y = py - p->pos.h*0.25;
+    //     p->melee_box.x = px;
+    //     p->melee_box.y = py - p->pos.h*0.25;
 
-        bool weapon_out = p->weapon_ready && p->weapon->index != WEAPON_NONE;
-        if(weapon_out)
-        {
-            p->melee_box.w = p->weapon->max_size.w*p->scale;
-            p->melee_box.h = p->weapon->max_size.h*p->scale;
-        }
+    //     bool weapon_out = p->weapon_ready && p->weapon->index != WEAPON_NONE;
+    //     if(weapon_out)
+    //     {
+    //         p->melee_box.w = p->weapon->max_size.w*p->scale;
+    //         p->melee_box.h = p->weapon->max_size.h*p->scale;
+    //     }
 
-        float r = p->pos.w*1.0;
-        p->melee_box.x += r*cosf(p->angle);
-        p->melee_box.y -= r*sinf(p->angle);
-    }
-    else
-    {
-        p->melee_box.w = 0;
-        p->melee_box.h = 0;
-    }
+    //     float r = p->pos.w*1.0;
+    //     p->melee_box.x += r*cosf(p->angle);
+    //     p->melee_box.y -= r*sinf(p->angle);
+    // }
+    // else
+    // {
+    //     p->melee_box.w = 0;
+    //     p->melee_box.h = 0;
+    // }
 
 
 }
@@ -806,6 +806,27 @@ void player_update(Player* p, double delta_t)
 
 
     lighting_point_light_move(p->point_light,p->pos.x, p->pos.y);
+
+
+    if(debug_enabled)
+    {
+        float px = p->phys.pos.x;
+        float py = p->phys.pos.y;
+        // gfx_add_line(px,py,p->mouse_x,p->mouse_y,0x00FF0000);
+
+        if(p->attacking && (p->attacking_type == ATTACK_MELEE || p->attacking_type == ATTACK_POWER_MELEE))
+        {
+            float d = p->weapon->melee.range;
+            float a0 = p->angle - RAD(15);
+            float a1 = p->angle + RAD(15);
+            float x0 = px + d*cosf(a0);
+            float y0 = py - d*sinf(a0);
+            float x1 = px + d*cosf(a1);
+            float y1 = py - d*sinf(a1);
+            gfx_add_line(px,py,x0,y0,0x00FF0000);
+            gfx_add_line(px,py,x1,y1,0x00FF0000);
+        }
+    }
 }
 
 void player_handle_net_inputs(Player* p, double delta_t)
@@ -932,11 +953,11 @@ void player_draw(Player* p)
         // gfx_draw_rect(&r, COLOR_BLUE, 1.0,1.0, false, true);
         gfx_draw_rect(&p->max_size, COLOR_BLUE, 1.0,1.0, false, true);
 
-        // melee
-        if(!IS_RECT_EMPTY(&p->melee_box))
-        {
-            gfx_draw_rect(&p->melee_box, COLOR_CYAN, 1.0,1.0, false, true);
-        }
+        // // melee
+        // if(!IS_RECT_EMPTY(&p->melee_box))
+        // {
+        //     gfx_draw_rect(&p->melee_box, COLOR_CYAN, 1.0,1.0, false, true);
+        // }
 
     }
 
@@ -979,8 +1000,8 @@ void weapons_init()
     weapons[idx].gun.reload_time = 1000.0;
     weapons[idx].gun.projectile_type = PROJECTILE_TYPE_BULLET;
 
-    weapons[idx].melee.range = 8.0;
-    weapons[idx].melee.power = 0.1;
+    weapons[idx].melee.range = 45.0;
+    weapons[idx].melee.power = 0.2;
     weapons[idx].melee.period = 1000.0;
 
 
@@ -1007,8 +1028,8 @@ void weapons_init()
     weapons[idx].gun.reload_time = 1000.0;
     weapons[idx].gun.projectile_type = PROJECTILE_TYPE_BULLET;
 
-    weapons[idx].melee.range = 8.0;
-    weapons[idx].melee.power = 0.1;
+    weapons[idx].melee.range = 45.0;
+    weapons[idx].melee.power = 0.2;
     weapons[idx].melee.period = 1000.0;
 
 
@@ -1026,7 +1047,7 @@ void weapons_init()
 
     weapons[idx].gun.power = 1.0;
     weapons[idx].gun.recoil_spread = 0.0;
-    weapons[idx].gun.fire_range = 200.0;
+    weapons[idx].gun.fire_range = 300.0;
     weapons[idx].gun.fire_speed = 4000.0;
     weapons[idx].gun.fire_period = 400.0; // milliseconds
     weapons[idx].gun.fire_spread = 30.0;
@@ -1036,8 +1057,8 @@ void weapons_init()
     weapons[idx].gun.reload_time = 1000.0;
     weapons[idx].gun.projectile_type = PROJECTILE_TYPE_BULLET;
 
-    weapons[idx].melee.range = 8.0;
-    weapons[idx].melee.power = 0.1;
+    weapons[idx].melee.range = 200.0;
+    weapons[idx].melee.power = 0.2;
     weapons[idx].melee.period = 1000.0;
 
 
@@ -1053,8 +1074,8 @@ void weapons_init()
     weapons[idx].secondary_attack = ATTACK_POWER_MELEE;
     weapons[idx].secondary_state = PSTATE_ATTACK1;
 
-    weapons[idx].melee.range = 8.0;
-    weapons[idx].melee.power = 0.1;
+    weapons[idx].melee.range = 40.0;
+    weapons[idx].melee.power = 0.5;
     weapons[idx].melee.period = 100.0;
 
     weapons_init_images();
@@ -1157,11 +1178,15 @@ void weapon_fire(int mx, int my, Weapon* weapon, bool held)
 
 void player_weapon_melee_check_collision(Player* p)
 {
-    if(IS_RECT_EMPTY(&p->melee_box) || p->melee_hit)
+    // if(IS_RECT_EMPTY(&p->melee_box) || p->melee_hit)
+    if(p->melee_hit)
         return;
 
     if(zlist->count == 0)
         return;
+
+    float px = p->phys.pos.x;
+    float py = p->phys.pos.y;
 
     if(p->attacking && (p->attacking_type == ATTACK_MELEE || p->attacking_type == ATTACK_POWER_MELEE))
     {
@@ -1173,7 +1198,28 @@ void player_weapon_melee_check_collision(Player* p)
         for(int j = zlist->count - 1; j >= 0; --j)
         {
 
-            if(rectangles_colliding(&p->melee_box, &zombies[j].hit_box))
+            bool collision = rectangles_colliding(&p->pos, &zombies[j].hit_box);
+            // collision = false;
+
+            if(!collision)
+            {
+                float zx = zombies[j].phys.pos.x;
+                float zy = zombies[j].phys.pos.y;
+                float angle = calc_angle_rad(px, py, zx, zy);
+
+                bool within_angle_range = ABS(angle - p->angle) <= RAD(30);
+
+                if(within_angle_range)
+                {
+                    float zr = MAX(zombies[j].hit_box.w, zombies[j].hit_box.h)/2.0;
+                    float d = dist(px, py, zx, zy);
+                    if(d <= (zr+p->weapon->melee.range))
+                        collision = true;
+                }
+            }
+
+            // if(rectangles_colliding(&p->melee_box, &zombies[j].hit_box))
+            if(collision)
             {
                 float damage = p->weapon->melee.power*f;
                 zombie_hurt(j,damage);

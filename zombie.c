@@ -114,7 +114,8 @@ void zombie_init()
             ZombieSpawn spawn = {0};
             spawn.pos.x = rand() % view_width;
             spawn.pos.y = rand() % view_height;
-            spawn.scale = rand_float_between(0.2, 1.2);
+            spawn.scale = rand_float_between(0.5, 1.2);
+            // spawn.scale = 2.0;
             // printf("%d) %.0f %.0f\n", i, spawn.pos.x, spawn.pos.y);
             zombie_add(&spawn);
         }
@@ -169,7 +170,7 @@ void zombie_update_boxes(Zombie* zom)
 void zombie_update(float delta_t)
 {
     // //TEMP
-    // for(int i = 0; i < num_zombies; ++i)
+    // for(int i = 0; i < zlist->count; ++i)
     //     zombie_update_boxes(&zombies[i]);
     // return;
 

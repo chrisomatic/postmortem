@@ -90,6 +90,7 @@ typedef struct
 
 typedef struct
 {
+    //TODO: add vars for power attack vs. regular attack
     float period;
     float power;
     float range;
