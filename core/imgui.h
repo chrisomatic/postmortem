@@ -4,7 +4,7 @@
 
 void imgui_begin(char* name, int x, int y);
 void imgui_begin_panel(char* name, int x, int y);
-void imgui_end();
+Vector2f imgui_end(); // returns size of imgui area
 
 // widgets
 void imgui_text(char* text, ...);
@@ -17,7 +17,7 @@ void imgui_slider_float(char* label, float min, float max, float* result);
 void imgui_number_box(char* label, int min, int max, int* result);
 void imgui_inputtext(char* label, char* buf, int bufsize);
 
-void imgui_draw_demo(int x, int y); // for showcasing widgets
+Vector2f imgui_draw_demo(int x, int y); // for showcasing widgets
 
 // properties
 void imgui_set_text_size(int pxsize);
@@ -29,3 +29,4 @@ void imgui_indent_end();
 void imgui_newline();
 void imgui_horizontal_begin();
 void imgui_horizontal_end();
+void imgui_deselect_text_box();

@@ -52,4 +52,6 @@ void window_text_mode_buf_backspace();
 
 bool window_mouse_left_went_down();
 bool window_mouse_left_went_up();
-int window_get_key_pressed();
+
+void window_mouse_set_cursor_ibeam();
+void window_mouse_set_cursor_normal();

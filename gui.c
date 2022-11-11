@@ -100,14 +100,13 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
     float y = gui_start_y;
     float x = gui_start_x;
 
-#if 1
     {
         float factor = (window_height / (float)view_height);
 
         int big = 22.0/factor;
         int small = 14.0/factor;
 
-        imgui_begin_panel("Debug",10,10);
+        imgui_begin_panel("Debug",800,10);
             imgui_set_text_size(small);
             imgui_text_sized(big,"Window");
             imgui_indent_begin(small);
@@ -159,56 +158,6 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
             }
         imgui_end();
     }
-#else
-
-    // window
-    y += ypad;
-    size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Window"); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "FPS: %.2f", fps); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "View: %d, %d", view_width, view_height); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Window: %d, %d", window_width, window_height); y += size.y+ypad; maxw = MAX(maxw, size.x);
-
-    // player
-    y += ypad;
-    size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Player"); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "State: %s (%d)", player_state_str(player->state), player->state); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Vel: %.2f, %.2f (%.2f)", pvx, pvy, pv); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    if(draw){
-        size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", player->angle, DEG(player->angle)); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    }else{
-        size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Angle: %.2f, %.2f deg", 5.999, 360.999); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    }
-
-    // mouse
-    y += ypad;
-    size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Mouse"); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "World:  %d, %d", wmx, wmy); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "View:   %d, %d", vmx, vmy); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Window: %d, %d", mx, my); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Map Grid:   %d, %d", mr, mc); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "World Grid: %d, %d", wr, wc); y += size.y+ypad; maxw = MAX(maxw, size.x);
-
-    // camera
-    y += ypad;
-    size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Camera"); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Pos: %.2f, %.2f", camera_rect.x, camera_rect.y); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "w,h: %.2f, %.2f", camera_rect.w, camera_rect.h); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Offset: %.2f, %.2f", aim_camera_offset.x, aim_camera_offset.y); y += size.y+ypad; maxw = MAX(maxw, size.x);
-
-
-    // network
-    if(role == ROLE_CLIENT)
-    {
-        y += ypad;
-        size = gui_draw_string(draw, x+xpad_big, y,0x00FFFFFF,text_scale_big,0.0, 1.0, false, drop_shadow, "Network"); y += size.y+ypad; maxw = MAX(maxw, size.x);
-        size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Server IP: %s",server_ip_str); y += size.y+ypad; maxw = MAX(maxw, size.x);
-        size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Player count: %u",player_count); y += size.y+ypad; maxw = MAX(maxw, size.x);
-        size = gui_draw_string(draw, x+xpad,y,0x00FFFFFF,text_scale,    0.0, 1.0, false, drop_shadow, "Ping: %.0f ms",net_client_get_rtt()); y += size.y+ypad; maxw = MAX(maxw, size.x);
-    }
-
-#endif
 
     Rect ret = {0};
     ret.w = maxw+xpad*2.0;
@@ -338,17 +287,19 @@ void gui_draw()
 
     if(editor_enabled)
     {
-        imgui_begin_panel("Editor", 10,600);
+        imgui_begin_panel("Editor", 10,10);
             imgui_set_text_size(28);
             imgui_text("Editor");
             imgui_set_text_size(12);
             imgui_newline();
             imgui_color_picker("Ambient Color", &ambient_light);
             imgui_checkbox("Debug Enabled",&debug_enabled);
-        imgui_end();
-
+        Vector2f size = imgui_end();
+        
         // for testing new gui features
-        imgui_draw_demo(800,10);
+        imgui_draw_demo(10,size.y+20);
+
+
     }
 }
 

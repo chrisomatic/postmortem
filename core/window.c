@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 
 #include "camera.h"
+#include "imgui.h"
 #include "window.h"
 
 typedef struct
@@ -18,8 +19,7 @@ typedef struct
 static MouseAction mouse_left;
 static MouseAction mouse_right;
 
-static int last_key_pressed = 0;
-
+static GLFWcursor* cursor_ibeam;
 static GLFWwindow* window;
 
 int window_width = 0;
@@ -87,6 +87,8 @@ bool window_init(int _view_width, int _view_height)
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     glfwMaximizeWindow(window); //TEMP
+
+    cursor_ibeam = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -309,8 +311,6 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
 {
     // printf("key callback: %d\n", key);
 
-    last_key_pressed = (action == GLFW_PRESS || action == GLFW_REPEAT) ? key : 0;
-
     if(action == GLFW_PRESS || action == GLFW_RELEASE)
     {
         if(key_mode == KEY_MODE_NORMAL)
@@ -339,6 +339,10 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                 {
                     window_text_mode_buf_backspace();
                 }
+                else if(key == GLFW_KEY_ESCAPE)
+                {
+                    imgui_deselect_text_box();
+                }
             }
         }
 
@@ -361,6 +365,11 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
     {
         mouse_right.action_prior = mouse_left.action;
         mouse_right.action = action;
+    }
+
+    if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        imgui_deselect_text_box();
     }
     
     if(action == GLFW_PRESS || action == GLFW_RELEASE)
@@ -397,11 +406,14 @@ bool window_mouse_left_went_up()
     return (mouse_left.action_prior == GLFW_PRESS && mouse_left.action == GLFW_RELEASE);
 }
 
-int window_get_key_pressed()
+void window_mouse_set_cursor_ibeam()
 {
-    int k = last_key_pressed;
-    last_key_pressed = 0;
-    return k;
+    glfwSetCursor(window,cursor_ibeam);
+}
+
+void window_mouse_set_cursor_normal()
+{
+    glfwSetCursor(window,NULL); // standard
 }
 
 void windows_text_mode_buf_append(char c)

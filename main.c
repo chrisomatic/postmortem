@@ -276,7 +276,6 @@ void init()
     }
 
     window_controls_set_cb(key_cb);
-    window_controls_set_text_buf(console_text, CONSOLE_TEXT_MAX);
     window_controls_set_key_mode(KEY_MODE_NORMAL);
 
     LOGI("Initializing...");
@@ -467,6 +466,7 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
             else if(key == GLFW_KEY_F10)
             {
                 window_controls_set_key_mode(KEY_MODE_TEXT);
+                window_controls_set_text_buf(console_text, CONSOLE_TEXT_MAX);
                 console_enabled = true;
             }
             else if(key == GLFW_KEY_ESCAPE)
