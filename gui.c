@@ -303,11 +303,14 @@ void gui_draw()
 
             float v1,v2;
 
+            Matrix* view = get_camera_transform();
+            
             switch(selection)
             {
                 case 0: // game
                     imgui_color_picker("Ambient Color", &ambient_light);
                     imgui_checkbox("Debug Enabled",&debug_enabled);
+                    imgui_slider_float("Camera Z", -1.0,1.0,camera_z);
                     break;
                 case 1:
                     imgui_slider_float("Slider 1", 0.0,1.0,&v1);

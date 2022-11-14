@@ -7,6 +7,8 @@ typedef struct
     Vector3f pos;
 } Camera;
 
+extern float* camera_z;
+
 void camera_init();
 void camera_update();
 void camera_move(float x, float y, float z, bool immediate, Rect* limit);

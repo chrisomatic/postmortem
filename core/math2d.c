@@ -43,7 +43,7 @@ void ortho(Matrix* m, float left, float right, float bottom, float top, float zn
     m->m[2][2] = -2.0f/(zfar-znear);
     m->m[0][3] = -(right+left) / (right - left);
     m->m[1][3] = -(top+bottom) / (top-bottom);
-    m->m[3][2] = -(zfar+znear) / (zfar-znear);
+    m->m[3][2] = (zfar+znear) / (zfar-znear);
 }
 
 void get_model_transform(Vector3f* pos, Vector3f* rotation, Vector3f* scale, Matrix* model)
@@ -196,7 +196,6 @@ void mult_v2f_mat4(Vector2f* v, Matrix* m, Vector2f* result)
     result->x = (m->m[0][0] * v->x + m->m[0][1] * v->y + m->m[0][3]);
     result->y = (m->m[1][0] * v->x + m->m[1][1] * v->y + m->m[1][3]);
 }
-
 
 bool onSegment(Vector2f p, Vector2f q, Vector2f r)
 {

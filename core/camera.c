@@ -14,12 +14,17 @@ static Matrix view_matrix;
 static Camera camera;                //current position
 static Camera camera_delta_target;   //target delta position
 
+float* camera_z;
+
 void camera_init()
 {
     memcpy(&view_matrix,&IDENTITY_MATRIX, sizeof(Matrix));
 
     camera.pos.x = 0.0;
     camera.pos.y = 0.0;
+    camera.pos.z = 0.0;
+
+    camera_z = &camera.pos.z;
 
     camera_delta_target.pos.x = 0.0;
     camera_delta_target.pos.y = 0.0;

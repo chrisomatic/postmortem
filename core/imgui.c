@@ -9,6 +9,7 @@
 #include "window.h"
 #include "hash.h"
 #include "imgui.h"
+#include <math.h>
 
 #define NOMINAL_FONT_SIZE 64.0 // px for 1.0 scale
 #define MAX_CONTEXTS 32
@@ -18,6 +19,7 @@
 
 typedef struct
 {
+    bool used;
     uint32_t hash;
     int val;
 } IntLookup;
@@ -774,6 +776,7 @@ static IntLookup* get_int_lookup(uint32_t hash)
         if(ctx->int_lookups[i].hash == 0x0 || ctx->int_lookups[i].hash == hash)
         {
             IntLookup* lookup = &ctx->int_lookups[i];
+            lookup->used = (lookup->hash != 0x0);
             lookup->hash = hash;
             return lookup;
         }
@@ -800,6 +803,15 @@ static void imgui_slider_float_internal(char* label, float min, float max, float
     int slider_index = -1;
 
     IntLookup* lookup = get_int_lookup(hash);
+    if(!lookup->used)
+    {
+        float val = 0.0;
+        val = *result;
+        val -= min;
+        val /= (max-min);
+        val *= (float)(ctx->curr.w - theme.slider_handle_width);
+        lookup->val = roundf(val);
+    }
 
     int *slider_x = &lookup->val;
 
@@ -827,6 +839,7 @@ static void imgui_slider_float_internal(char* label, float min, float max, float
     float slider_val = (*slider_x / (ctx->curr.w - theme.slider_handle_width));
     slider_val *= (max-min);
     slider_val += min;
+
     draw_slider(hash,label, *slider_x, format, slider_val);
 
     ctx->curr.h += theme.spacing;

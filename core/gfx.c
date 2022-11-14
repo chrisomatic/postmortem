@@ -206,7 +206,7 @@ void gfx_init(int width, int height)
 
     ortho(&proj_matrix,0.0,(float)width,(float)height,0.0, 0.0, 1.0);
 
-    //print_matrix(&proj_matrix);
+    print_matrix(&proj_matrix);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -497,7 +497,8 @@ bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t 
 
     Vector3f pos = {x,y,0.0};
     Vector3f rot = {0.0,0.0,360.0-rotation};
-    Vector3f sca = {0};
+    Vector3f sca = {1.0,1.0,1.0};
+
     if(full_image)
     {
         // Vector3f sca = {scale*img->element_width,scale*img->element_height,1.0};
@@ -515,6 +516,22 @@ bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t 
 
     get_model_transform(&pos,&rot,&sca,&model);
     Matrix* view = get_camera_transform();
+
+    /*
+    if(img_index == 3)
+    {
+        Matrix r;
+        dot_product_mat(*view, model, &r);
+        printf("===========\n");
+        printf("view-model\n");
+        print_matrix(&r);
+        printf("===========\n");
+        printf("view-model-proj\n");
+        Matrix vmp;
+        dot_product_mat(proj_matrix,r,&vmp);
+        print_matrix(&vmp);
+    }
+    */
 
     uint8_t r = color >> 16;
     uint8_t g = color >> 8;

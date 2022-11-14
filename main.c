@@ -348,7 +348,7 @@ void camera_set()
 
     float cam_pos_x = player->phys.pos.x + aim_camera_offset.x;
     float cam_pos_y = player->phys.pos.y + aim_camera_offset.y;
-    camera_move(cam_pos_x, cam_pos_y, -0.32, false, &map.rect);
+    camera_move(cam_pos_x, cam_pos_y, 0.00, false, &map.rect);
 }
 
 void simulate(double delta_t)
