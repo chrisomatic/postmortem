@@ -651,8 +651,9 @@ void player_update(Player* p, double delta_t)
                     // spawn projectile
                     weapon_fire(p->mouse_x, p->mouse_y, p->weapon, p->lmouse.held);
                 }
-                else if(pa == ATTACK_MELEE || pa == ATTACK_POWER_MELEE)
+                else if(!p->attacking && (pa == ATTACK_MELEE || pa == ATTACK_POWER_MELEE))
                 {
+                    // printf("attacking = true\n");
                     p->melee_hit = false;
                     p->attacking = true;
                     p->attacking_state = p->weapon->primary_state;
@@ -668,8 +669,9 @@ void player_update(Player* p, double delta_t)
                     // spawn projectile
                     weapon_fire(p->mouse_x, p->mouse_y, p->weapon, p->rmouse.held);
                 }
-                else if(sa == ATTACK_MELEE || sa == ATTACK_POWER_MELEE)
+                else if(!p->attacking && (sa == ATTACK_MELEE || sa == ATTACK_POWER_MELEE))
                 {
+                    // printf("attacking = true\n");
                     p->melee_hit = false;
                     p->attacking = true;
                     p->attacking_state = p->weapon->secondary_state;
@@ -791,6 +793,7 @@ void player_update(Player* p, double delta_t)
 
     if(p->attacking && p->anim.curr_loop > 0)
     {
+        // printf("attacking = false\n");
         p->attacking = false;
         p->attacking_type = ATTACK_NONE;
         player_update_state(p);
@@ -1222,6 +1225,7 @@ void player_weapon_melee_check_collision(Player* p)
             if(collision)
             {
                 float damage = p->weapon->melee.power*f;
+                // printf("zombie hurt\n");
                 zombie_hurt(j,damage);
                 p->melee_hit = true;
                 return;

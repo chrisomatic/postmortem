@@ -15,6 +15,9 @@
 
 #include "zombie.h"
 
+
+#define ZOMBIES_IDLE 0
+
 Zombie zombies[MAX_ZOMBIES] = {0};
 glist* zlist = NULL;
 
@@ -109,15 +112,18 @@ void zombie_init()
         }
         */
 
-        for(int i = 0; i < 10; ++i)
+        for(int i = 0; i < 1; ++i)
         {
             ZombieSpawn spawn = {0};
             spawn.pos.x = rand() % view_width;
             spawn.pos.y = rand() % view_height;
-            spawn.scale = rand_float_between(0.5, 1.2);
-            // spawn.scale = 2.0;
-            // printf("%d) %.0f %.0f\n", i, spawn.pos.x, spawn.pos.y);
-            zombie_add(&spawn);
+            for(int j = 0; j < 10; ++j)
+            {
+                spawn.scale = rand_float_between(0.5, 1.2);
+                // spawn.scale = 2.0;
+                // printf("%d) %.0f %.0f\n", i, spawn.pos.x, spawn.pos.y);
+                zombie_add(&spawn);
+            }
         }
     //}
 
@@ -177,9 +183,11 @@ void zombie_update(float delta_t)
     for(int i = zlist->count - 1; i >= 0 ; --i)
     {
         Zombie* zom = &zombies[i];
+        Vector2f accel = {0.0,0.0};
+
+#if !ZOMBIES_IDLE
         wander(zom, delta_t);
 
-        Vector2f accel = {0.0,0.0};
         float amt = zom->speed;
 
         switch(zom->action)
@@ -224,6 +232,7 @@ void zombie_update(float delta_t)
         {
             accel.y -= zom->push_vel.y;
         }
+#endif
 
         physics_begin(&zom->phys);
         physics_add_friction(&zom->phys, 16.0);
