@@ -607,9 +607,11 @@ Vector2f imgui_draw_demo(int x, int y)
    return imgui_end();
 }
 
+static bool _editor_test = false;
+static char _editor_text[20]= {0};
+
 void imgui_theme_editor()
 {
-    //imgui_begin("Theme", x,y);
     int prior_text_size = theme.text_size_px;
     int prior_spacing = theme.spacing;
     imgui_set_text_size(8);
@@ -640,6 +642,7 @@ void imgui_theme_editor()
     imgui_text_sized(header_size,"Checkboxes");
     imgui_indent_begin(10);
     imgui_number_box("Checkbox Size", 0, 100, &theme.checkbox_size);
+    imgui_checkbox("Test##Checkbox",&_editor_test);
     imgui_indent_end();
 
     imgui_text_sized(header_size,"Sliders");
@@ -663,6 +666,7 @@ void imgui_theme_editor()
     imgui_indent_begin(10);
     imgui_color_picker("InputText Background", &theme.inputtext_color_background);
     imgui_color_picker("InputText Highlighted", &theme.inputtext_color_highlighted);
+    imgui_inputtext("Test##inputtext",_editor_text,IM_ARRAYSIZE(_editor_text));
     imgui_indent_end();
 
     imgui_text_sized(header_size,"Panels");
@@ -672,12 +676,14 @@ void imgui_theme_editor()
     imgui_number_box("Panel min width", 0, 1000, &theme.panel_min_width);
     imgui_indent_end();
 
+    imgui_horizontal_begin();
     if(imgui_button("Defaults"))
     {
         set_default_theme();
     }
 
     imgui_button("Save");
+    imgui_horizontal_end();
 
     imgui_set_text_size(prior_text_size);
     imgui_set_spacing(prior_spacing);
