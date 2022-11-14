@@ -318,6 +318,8 @@ void gui_draw()
                     break;
                 case 2:
                     break;
+                case 3:
+                    imgui_theme_editor();
                 default:
                     break;
             }

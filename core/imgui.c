@@ -52,6 +52,7 @@ typedef struct
     int mouse_x, mouse_y;
 
     bool inputtext_highlighted;
+    bool theme_initialized;
 
 } ImGuiContext;
 
@@ -97,6 +98,7 @@ typedef struct
     uint32_t panel_color;
     float panel_opacity;
     int panel_min_width;
+    int panel_spacing;
 
 } ImGuiTheme;
 
@@ -120,6 +122,7 @@ static void imgui_slider_float_internal(char* label, float min, float max, float
 static IntLookup* get_int_lookup(uint32_t hash);
 static void progress_pos();
 static void mask_off_hidden(char* label, char* new_label, int max_size);
+static void set_default_theme();
 
 static void draw_button(uint32_t hash, char* str, Rect* r);
 static void draw_toggle_button(uint32_t hash, char* str, Rect* r, bool toggled);
@@ -149,45 +152,11 @@ void imgui_begin(char* name, int x, int y)
 
     ctx->inputtext_highlighted = false;
 
-    // set theme
-    // text
-    theme.spacing = 8;
-    theme.text_size_px = 20;
-    theme.text_scale = theme.text_size_px / NOMINAL_FONT_SIZE;
-    theme.text_color = 0xFFFFFFFF;
-    theme.text_padding = 4;
-
-    // checkbox
-    theme.checkbox_size = 10;
-
-    // button
-    theme.button_color_background = 0x55555555;
-    theme.button_color_background_highlighted = 0xAAAAAAAA;
-    theme.button_color_background_active = 0x0000AAAA;
-    theme.button_color_foreground = 0xFFFFFFFF;
-    theme.button_opacity = 0.8;
-
-    // slider
-    theme.slider_color_foreground = 0xFFFFFFFF;
-    theme.slider_color_background = 0x55555555;
-    theme.slider_color_handle = 0x8888888;
-    theme.slider_color_handle_highlighted = 0xAAAAAAAA;
-    theme.slider_color_handle_active = 0x0000AAAA;
-    theme.slider_width = 150.0;
-    theme.slider_handle_width = 16;
-    theme.slider_opacity = 0.8;
-
-    // number box
-    theme.number_box_width = 40;
-
-    // inputtext
-    theme.inputtext_color_background = 0x55555555;
-    theme.inputtext_color_highlighted = 0x66666666;
-
-    // panel
-    theme.panel_color = 0x20202020;
-    theme.panel_opacity = 0.75;
-    theme.panel_min_width = 200;
+    if(!ctx->theme_initialized)
+    {
+        set_default_theme();
+        ctx->theme_initialized = true;
+    }
 
     ctx->prior_mouse_x = ctx->mouse_x;
     ctx->prior_mouse_y = ctx->mouse_y;
@@ -199,7 +168,7 @@ void imgui_begin_panel(char* name, int x, int y)
 {
     imgui_begin(name, x,y);
     draw_panel();
-    ctx->curr.x += theme.spacing;
+    ctx->curr.x += theme.panel_spacing;
 }
 
 void imgui_set_text_size(int pxsize)
@@ -290,7 +259,7 @@ void imgui_horizontal_end()
 {
     ctx->is_horizontal = false;
 
-    ctx->curr.x = ctx->start_x + theme.spacing + ctx->indent_amount;
+    ctx->curr.x = ctx->start_x + theme.panel_spacing + ctx->indent_amount;
     ctx->curr.y += ctx->horiontal_max_height;
 
     ctx->horiontal_max_height = 0;
@@ -476,19 +445,22 @@ void imgui_color_picker(char* label, uint32_t* result)
     snprintf(lg,31,"##%s_G",label);
     snprintf(lb,31,"##%s_B",label);
 
+
+
     imgui_horizontal_begin();
         imgui_number_box(lr, 0, 255, &r);
         imgui_number_box(lg, 0, 255, &g);
         imgui_number_box(lb, 0, 255, &b);
         *result = COLOR((uint8_t)r,(uint8_t)g,(uint8_t)b);
-        Rect box = {ctx->curr.x,ctx->curr.y, 20, 20};
-        draw_color_box(&box,*result);
 
         Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
-        draw_label(ctx->curr.x + 20 + theme.text_padding, ctx->curr.y-(text_size.y-20)/2.0, theme.text_color, label);
+        Rect box = {ctx->curr.x,ctx->curr.y, 20, text_size.y+2.0*theme.text_padding};
+        draw_color_box(&box,*result);
 
-        ctx->curr.w = 20 + text_size.x + theme.text_padding;
-        ctx->curr.h = MAX(text_size.y,20);
+        draw_label(ctx->curr.x + box.w + theme.text_padding, ctx->curr.y-(text_size.y-box.h)/2.0, theme.text_color, label);
+
+        ctx->curr.w = box.w + text_size.x + theme.text_padding;
+        ctx->curr.h = MAX(text_size.y,box.h);
     imgui_horizontal_end();
 }
 
@@ -605,7 +577,8 @@ Vector2f imgui_draw_demo(int x, int y)
         imgui_text_colored(0xFFFFFFFF, "Num clicks: %d", num_clicks);
 
         imgui_button("Dumb Button");
-        float v1,v2;
+        float v1 = 0.0;
+        float v2 = 0.0;
         imgui_slider_float("Slider 1", 0.0,1.0,&v1);
         imgui_slider_float("Slider 2", 0.0,1.0,&v2);
 
@@ -632,6 +605,82 @@ Vector2f imgui_draw_demo(int x, int y)
         imgui_text_colored(0x00FF00FF,buttons[selection]);
 
    return imgui_end();
+}
+
+void imgui_theme_editor()
+{
+    //imgui_begin("Theme", x,y);
+    int prior_text_size = theme.text_size_px;
+    int prior_spacing = theme.spacing;
+    imgui_set_text_size(8);
+    imgui_set_spacing(2);
+
+    int header_size = 12;
+    imgui_text_sized(header_size,"General");
+    imgui_indent_begin(10);
+    imgui_number_box("Spacing", 0, 100, &theme.spacing);
+    imgui_indent_end();
+
+    imgui_text_sized(header_size,"Text");
+    imgui_indent_begin(10);
+    imgui_number_box("Text Size", 0, 100, &theme.text_size_px);
+    imgui_color_picker("Text Color", &theme.text_color);
+    imgui_number_box("Text Padding", 0, 20, &theme.text_padding);
+    imgui_indent_end();
+
+    imgui_text_sized(header_size,"Buttons");
+    imgui_indent_begin(10);
+    imgui_color_picker("Button Background", &theme.button_color_background);
+    imgui_color_picker("Button Foreground", &theme.button_color_foreground);
+    imgui_color_picker("Button Highlighted", &theme.button_color_background_highlighted);
+    imgui_color_picker("Button Active", &theme.button_color_background_active);
+    imgui_slider_float("Button Opacity", 0.0,1.0,&theme.button_opacity);
+    imgui_indent_end();
+
+    imgui_text_sized(header_size,"Checkboxes");
+    imgui_indent_begin(10);
+    imgui_number_box("Checkbox Size", 0, 100, &theme.checkbox_size);
+    imgui_indent_end();
+
+    imgui_text_sized(header_size,"Sliders");
+    imgui_indent_begin(10);
+    imgui_color_picker("Slider Background", &theme.slider_color_background);
+    imgui_color_picker("Slider Foreground", &theme.slider_color_foreground);
+    imgui_color_picker("Handle Color", &theme.slider_color_handle);
+    imgui_color_picker("Handle Highlighted", &theme.slider_color_handle_highlighted);
+    imgui_color_picker("Handle Active", &theme.slider_color_handle_active);
+    //imgui_slider_float("Slider Width", 0.0,500.0,&theme.slider_width);
+    imgui_slider_float("Slider Handle Width", 0.0,50.0,&theme.slider_handle_width);
+    imgui_slider_float("Slider Opacity", 0.0,1.0,&theme.slider_opacity);
+    imgui_indent_end();
+
+    imgui_text_sized(header_size,"Number Box");
+    imgui_indent_begin(10);
+    imgui_number_box("Number box width", 0, 100, &theme.number_box_width);
+    imgui_indent_end();
+
+    imgui_text_sized(header_size,"Input Text");
+    imgui_indent_begin(10);
+    imgui_color_picker("InputText Background", &theme.inputtext_color_background);
+    imgui_color_picker("InputText Highlighted", &theme.inputtext_color_highlighted);
+    imgui_indent_end();
+
+    imgui_text_sized(header_size,"Panels");
+    imgui_indent_begin(10);
+    imgui_color_picker("Panel Color", &theme.panel_color);
+    imgui_slider_float("Panel Opacity", 0.0,1.0,&theme.panel_opacity);
+    imgui_number_box("Panel min width", 0, 1000, &theme.panel_min_width);
+    imgui_indent_end();
+
+    if(imgui_button("Defaults"))
+    {
+        set_default_theme();
+    }
+
+    imgui_button("Save");
+
+    imgui_set_text_size(prior_text_size);
+    imgui_set_spacing(prior_spacing);
 }
 
 void imgui_deselect_text_box()
@@ -709,6 +758,50 @@ static inline void clear_highlighted()
 static inline void clear_active()
 {
     ctx->active_id = 0x0;
+}
+
+static void set_default_theme()
+{
+    // set theme
+    // text
+    theme.spacing = 8;
+    theme.text_size_px = 20;
+    theme.text_scale = theme.text_size_px / NOMINAL_FONT_SIZE;
+    theme.text_color = 0xFFFFFFFF;
+    theme.text_padding = 4;
+
+    // checkbox
+    theme.checkbox_size = 10;
+
+    // button
+    theme.button_color_background = 0x55555555;
+    theme.button_color_background_highlighted = 0xAAAAAAAA;
+    theme.button_color_background_active = 0x0000AAAA;
+    theme.button_color_foreground = 0xFFFFFFFF;
+    theme.button_opacity = 0.8;
+
+    // slider
+    theme.slider_color_foreground = 0xFFFFFFFF;
+    theme.slider_color_background = 0x55555555;
+    theme.slider_color_handle = 0x8888888;
+    theme.slider_color_handle_highlighted = 0xAAAAAAAA;
+    theme.slider_color_handle_active = 0x0000AAAA;
+    theme.slider_width = 132.0;
+    theme.slider_handle_width = 16;
+    theme.slider_opacity = 0.8;
+
+    // number box
+    theme.number_box_width = 40;
+
+    // inputtext
+    theme.inputtext_color_background = 0x55555555;
+    theme.inputtext_color_highlighted = 0x66666666;
+
+    // panel
+    theme.panel_color = 0x20202020;
+    theme.panel_opacity = 0.75;
+    theme.panel_min_width = 200;
+    theme.panel_spacing = 8;
 }
 
 static void progress_pos()
@@ -803,15 +896,13 @@ static void imgui_slider_float_internal(char* label, float min, float max, float
     int slider_index = -1;
 
     IntLookup* lookup = get_int_lookup(hash);
-    if(!lookup->used)
-    {
-        float val = 0.0;
-        val = *result;
-        val -= min;
-        val /= (max-min);
-        val *= (float)(ctx->curr.w - theme.slider_handle_width);
-        lookup->val = roundf(val);
-    }
+
+    float val = 0.0;
+    val = *result;
+    val -= min;
+    val /= (max-min);
+    val *= (float)(ctx->curr.w - theme.slider_handle_width);
+    lookup->val = roundf(val);
 
     int *slider_x = &lookup->val;
 
