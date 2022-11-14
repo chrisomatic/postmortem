@@ -358,11 +358,6 @@ void simulate(double delta_t)
     camera_set();
     camera_update();
 
-    Matrix* m = get_camera_transform();
-
-    printf("View Matrix:\n");
-    print_matrix(m);
-
     world_update();
     zombie_update(delta_t);
 
