@@ -120,6 +120,7 @@ static void progress_pos();
 static void mask_off_hidden(char* label, char* new_label, int max_size);
 
 static void draw_button(uint32_t hash, char* str, Rect* r);
+static void draw_toggle_button(uint32_t hash, char* str, Rect* r, bool toggled);
 static void draw_checkbox(uint32_t hash, char* label, bool result);
 static void draw_slider(uint32_t hash, char* str, int slider_x, char* val_format, float val);
 static void draw_color_box(Rect* r, uint32_t color);
@@ -208,6 +209,16 @@ void imgui_set_text_size(int pxsize)
 void imgui_set_text_color(uint32_t color)
 {
     theme.text_color = color;
+}
+
+void imgui_set_text_padding(int padding)
+{
+    theme.text_padding = padding;
+}
+
+void imgui_set_spacing(int spacing)
+{
+    theme.spacing = spacing;
 }
 
 void imgui_text(char* text, ...)
@@ -335,6 +346,82 @@ bool imgui_button(char* label, ...)
     progress_pos();
 
     return result;
+}
+
+void imgui_toggle_button(bool* toggle, char* label, ...)
+{
+    uint32_t hash = hash_str(label,strlen(label),0x0);
+
+    char new_label[32] = {0};
+    mask_off_hidden(label, new_label, 32);
+
+    if(is_highlighted(hash))
+    {
+        if(window_mouse_left_went_down())
+        {
+            if(*toggle)
+                *toggle = false;
+            else
+                *toggle = true;
+        }
+    }
+
+    va_list args;
+    va_start(args, label);
+    char str[256] = {0};
+    vsprintf(str,label, args);
+    va_end(args);
+
+    Vector2f text_size = gfx_string_get_size(theme.text_scale, str);
+
+    Rect interactive = {ctx->curr.x, ctx->curr.y, text_size.x + 2*theme.text_padding, text_size.y + 2*theme.text_padding};
+    handle_highlighting(hash, &interactive);
+
+    draw_toggle_button(hash, str, &interactive, *toggle);
+
+    ctx->curr.w = text_size.x + 2*theme.text_padding + theme.spacing;
+    ctx->curr.h = text_size.y + 2*theme.text_padding + theme.spacing;
+
+    progress_pos();
+}
+
+int imgui_button_select(int num_buttons, char* button_labels[], char* label)
+{
+    if(num_buttons < 0 || num_buttons >= 32)
+        return 0;
+
+    char _str[100] = {0};
+    snprintf(_str,99,"%s_%s##select%d",label,button_labels[0],num_buttons);
+
+    uint32_t hash = hash_str(_str,strlen(_str),0x0);
+    IntLookup* lookup = get_int_lookup(hash);
+    int *val = &lookup->val;
+
+    bool results[32] = {false};
+    int selection = 0;
+
+    int prior_spacing = theme.spacing;
+    imgui_set_spacing(1);
+    imgui_horizontal_begin();
+
+    for(int i = 0; i < num_buttons; ++i)
+    {
+        if(i == *val)
+        {
+            results[i] = true;
+        }
+
+        imgui_toggle_button(&results[i], button_labels[i]);
+        if(results[i])
+        {
+            selection = i;
+            *val = i;
+        }
+    }
+    imgui_set_spacing(prior_spacing);
+    imgui_text(label);
+    imgui_horizontal_end();
+    return selection;
 }
 
 void imgui_checkbox(char* label, bool* result)
@@ -497,6 +584,7 @@ static char name[20] = {'H','e','l','l','o','\0'};
 static char something[20] = {0};
 static bool my_check = true;
 static int ri = 10;
+static bool toggle = false;
 
 Vector2f imgui_draw_demo(int x, int y)
 {
@@ -534,6 +622,12 @@ Vector2f imgui_draw_demo(int x, int y)
         imgui_text_colored(0xFFFFFFFF, "Test");
         imgui_inputtext("Name",name,IM_ARRAYSIZE(name));
         imgui_inputtext("Something else",something,IM_ARRAYSIZE(something));
+        imgui_toggle_button(&toggle, "Toggle me");
+
+        char* buttons[] = {"Apples", "Bananas", "Oranges"};
+        int selection = imgui_button_select(3, buttons, "Best Fruit");
+
+        imgui_text_colored(0x00FF00FF,buttons[selection]);
 
    return imgui_end();
 }
@@ -765,6 +859,25 @@ static void draw_button(uint32_t hash, char* str, Rect* r)
         button_color = theme.button_color_background_highlighted;
     }
     if(is_active(hash))
+    {
+        button_color = theme.button_color_background_active;
+    }
+
+    gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, button_color, 1.0, theme.button_opacity, true,false);
+
+    gfx_draw_string(r->x + theme.text_padding, r->y + theme.text_padding, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, str);
+}
+
+static void draw_toggle_button(uint32_t hash, char* str, Rect* r, bool toggled)
+{
+    // draw button
+    uint32_t button_color = theme.button_color_background;
+
+    if(is_highlighted(hash))
+    {
+        button_color = theme.button_color_background_highlighted;
+    }
+    if(toggled)
     {
         button_color = theme.button_color_background_active;
     }

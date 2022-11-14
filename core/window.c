@@ -398,12 +398,16 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 
 bool window_mouse_left_went_down()
 {
-    return (mouse_left.action_prior == GLFW_RELEASE && mouse_left.action == GLFW_PRESS);
+    bool went_down_this_frame = (mouse_left.action_prior == GLFW_RELEASE && mouse_left.action == GLFW_PRESS);
+    mouse_left.action_prior = mouse_left.action;
+    return went_down_this_frame;
 }
 
 bool window_mouse_left_went_up()
 {
-    return (mouse_left.action_prior == GLFW_PRESS && mouse_left.action == GLFW_RELEASE);
+    bool went_up_this_frame = (mouse_left.action_prior == GLFW_PRESS && mouse_left.action == GLFW_RELEASE);
+    mouse_left.action_prior = mouse_left.action;
+    return went_up_this_frame;
 }
 
 void window_mouse_set_cursor_ibeam()

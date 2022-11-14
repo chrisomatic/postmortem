@@ -288,18 +288,40 @@ void gui_draw()
     if(editor_enabled)
     {
         imgui_begin_panel("Editor", 10,10);
+
             imgui_set_text_size(28);
             imgui_text("Editor");
             imgui_set_text_size(12);
             imgui_newline();
-            imgui_color_picker("Ambient Color", &ambient_light);
-            imgui_checkbox("Debug Enabled",&debug_enabled);
+
+            char* buttons[] = {"Game", "Weapons", "Particles", "UI Theme"};
+            int selection = imgui_button_select(IM_ARRAYSIZE(buttons), buttons, "");
+
+            imgui_newline();
+            imgui_text_sized(20,buttons[selection]);
+            imgui_newline();
+
+            float v1,v2;
+
+            switch(selection)
+            {
+                case 0: // game
+                    imgui_color_picker("Ambient Color", &ambient_light);
+                    imgui_checkbox("Debug Enabled",&debug_enabled);
+                    break;
+                case 1:
+                    imgui_slider_float("Slider 1", 0.0,1.0,&v1);
+                    imgui_slider_float("Slider 2", 0.0,1.0,&v2);
+                    break;
+                case 2:
+                    break;
+                default:
+                    break;
+            }
         Vector2f size = imgui_end();
         
         // for testing new gui features
-        imgui_draw_demo(10,size.y+20);
-
-
+        //imgui_draw_demo(10,size.y+20);
     }
 }
 

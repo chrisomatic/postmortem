@@ -204,9 +204,9 @@ void gfx_init(int width, int height)
     loc_font_view     = glGetUniformLocation(program_font, "view");
     loc_font_proj     = glGetUniformLocation(program_font, "projection");
 
-    ortho(&proj_matrix,0.0,(float)width,(float)height,0.0, -1.0, 1.0);
+    ortho(&proj_matrix,0.0,(float)width,(float)height,0.0, 0.0, 1.0);
 
-    //print_matrix(&proj_matrix);
+    print_matrix(&proj_matrix);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

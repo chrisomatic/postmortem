@@ -348,7 +348,7 @@ void camera_set()
 
     float cam_pos_x = player->phys.pos.x + aim_camera_offset.x;
     float cam_pos_y = player->phys.pos.y + aim_camera_offset.y;
-    camera_move(cam_pos_x, cam_pos_y, 0.0, false, &map.rect);
+    camera_move(cam_pos_x, cam_pos_y, -0.32, false, &map.rect);
 }
 
 void simulate(double delta_t)
@@ -357,6 +357,11 @@ void simulate(double delta_t)
 
     camera_set();
     camera_update();
+
+    Matrix* m = get_camera_transform();
+
+    printf("View Matrix:\n");
+    print_matrix(m);
 
     world_update();
     zombie_update(delta_t);

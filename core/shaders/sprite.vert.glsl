@@ -16,7 +16,7 @@ void main()
 {
     tex_coord0 = tex_coord;
 
-    vec4 world_pos = model * vec4(position.xy, 0.0,1.0);
+    vec4 world_pos = model * vec4(position.xy,0.0,1.0);
     for(int i = 0; i < 16; ++i)
     {
         to_light_vector[i] = light_pos[i] - world_pos.xy;
