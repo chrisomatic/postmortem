@@ -445,9 +445,10 @@ void imgui_color_picker(char* label, uint32_t* result)
     snprintf(lg,31,"##%s_G",label);
     snprintf(lb,31,"##%s_B",label);
 
-
-
+    int prior_spacing = theme.spacing;
+    imgui_set_spacing(2);
     imgui_horizontal_begin();
+        
         imgui_number_box(lr, 0, 255, &r);
         imgui_number_box(lg, 0, 255, &g);
         imgui_number_box(lb, 0, 255, &b);
@@ -462,6 +463,7 @@ void imgui_color_picker(char* label, uint32_t* result)
         ctx->curr.w = box.w + text_size.x + theme.text_padding;
         ctx->curr.h = MAX(text_size.y,box.h);
     imgui_horizontal_end();
+    imgui_set_spacing(prior_spacing);
 }
 
 void imgui_slider_float(char* label, float min, float max, float* result)
@@ -511,7 +513,7 @@ void imgui_number_box(char* label, int min, int max, int* result)
 
     draw_number_box(hash, new_label, &interactive, *val,max);
 
-    ctx->curr.w = theme.number_box_width + text_size.x + theme.text_padding + theme.spacing;
+    ctx->curr.w = theme.number_box_width + text_size.x + theme.spacing;
     ctx->curr.h = text_size.y + 2*theme.text_padding + theme.spacing;
 
     progress_pos();

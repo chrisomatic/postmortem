@@ -4,6 +4,7 @@
 
 #define PI        3.14159265358f
 #define PI_OVER_2 1.57079632679f
+#define SQRT2OVER2 0.707106781187
 
 #define RAD(x) (((x) * PI) / 180.0f)
 #define DEG(x) (((x) * 180.0f) / PI)

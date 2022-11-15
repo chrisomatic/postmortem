@@ -731,6 +731,14 @@ void player_update(Player* p, double delta_t)
     if(p->actions.left)  { accel.x -= p->speed; }
     if(p->actions.right) { accel.x += p->speed; }
 
+    if((p->actions.up || p->actions.down) && (p->actions.left || p->actions.right))
+    {
+        // moving diagonally
+        accel.x *= SQRT2OVER2;
+        accel.y *= SQRT2OVER2;
+    }
+
+
     if(run_toggled)
     {
         p->running = !p->running;

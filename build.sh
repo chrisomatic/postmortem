@@ -13,6 +13,7 @@ gcc core/gfx.c \
     core/socket.c \
     core/bitpack.c \
     core/imgui.c \
+    core/particles.c \
     main.c \
     world.c \
     player.c \
