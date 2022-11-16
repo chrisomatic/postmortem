@@ -27,4 +27,5 @@ void console_text_hist_add(char* text);
 int console_text_hist_get(int direction);
 void run_console_command(char* text);
 
+void gui_init();
 void gui_draw();

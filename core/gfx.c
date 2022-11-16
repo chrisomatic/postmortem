@@ -712,19 +712,19 @@ void gfx_draw_lines()
 
 }
 
-void gfx_draw_rect(Rect* r, uint32_t color, float scale, float opacity, bool filled, bool in_world)
+void gfx_draw_rect(Rect* r, uint32_t color, float rotation, float scale, float opacity, bool filled, bool in_world)
 {
-    gfx_draw_rect_xywh(r->x, r->y, r->w, r->h, color, scale, opacity, filled, in_world);
+    gfx_draw_rect_xywh(r->x, r->y, r->w, r->h, color, rotation, scale, opacity, filled, in_world);
 }
 
-void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, float scale, float opacity, bool filled, bool in_world)
+void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, float rotation, float scale, float opacity, bool filled, bool in_world)
 {
     glUseProgram(program_shape);
 
     Matrix model = {0};
 
     Vector3f pos = {x,y,0.0};
-    Vector3f rot = {0.0,0.0,0.0};
+    Vector3f rot = {0.0,0.0,rotation};
     Vector3f sca = {scale*w,-scale*h,1.0};
 
     get_model_transform(&pos,&rot,&sca,&model);

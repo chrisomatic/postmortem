@@ -164,6 +164,15 @@ void projectile_update(float delta_t)
             }
 #endif
         }
+
+        float x0 = proj->hurt_box.x + proj->hurt_box.w/2.0;
+        float y0 = proj->hurt_box.y + proj->hurt_box.h/2.0;
+        float x1 = proj->hurt_box_prior.x + proj->hurt_box_prior.w/2.0;
+        float y1 = proj->hurt_box_prior.y + proj->hurt_box_prior.h/2.0;
+
+        //printf("p0 (%f %f) -> p1 (%f %f)\n",x0,y0,x1,y1);
+        gfx_add_line(x0,y0,x1,y1, 0x00FFFF00);
+        gfx_add_line(x0+1,y0+1,x1+1,y1+1, 0x00555555);
     }
 
     for(int i = plist->count - 1; i >= 0; --i)
@@ -184,11 +193,13 @@ void projectile_draw()
 
         if(is_in_camera_view(&proj->hurt_box))
         {
+            //gfx_add_line(proj->hurt_box.x + proj->hurt_box.w/2.0, proj->hurt_box.y + proj->hurt_box.h/2.0, proj->hurt_box_prior.x + proj->hurt_box_prior.w/2.0, proj->hurt_box_prior.y + proj->hurt_box_prior.h/2.0, 0x00FFFF00);
+
             gfx_draw_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0, false);
 
             if(debug_enabled)
             {
-                gfx_draw_rect(&proj->hurt_box, 0x0000FFFF, 1.0,1.0, false, true);
+                gfx_draw_rect(&proj->hurt_box, 0x0000FFFF, 0.0, 1.0,1.0, false, true);
             }
         }
     }

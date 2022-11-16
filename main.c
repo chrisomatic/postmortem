@@ -15,6 +15,7 @@
 #include "net.h"
 #include "log.h"
 #include "lighting.h"
+#include "particles.h"
 #include "bitpack.h"
 
 // Settings
@@ -67,7 +68,6 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 // =========================
 // Main Loop
 // =========================
-
 
 int main(int argc, char* argv[])
 {
@@ -302,6 +302,12 @@ void init()
     LOGI(" - Projectiles.");
     projectile_init();
 
+    LOGI(" - Particles.");
+    particles_init();
+
+    LOGI(" - GUI.");
+    gui_init();
+
     camera_move(player->phys.pos.x, player->phys.pos.y, 0.0, true, &map.rect);
 }
 
@@ -365,6 +371,8 @@ void simulate(double delta_t)
     // window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);   //MOVED to player_update
     player_update(player,delta_t);
     projectile_update(delta_t);
+
+    particles_update(delta_t);
 }
 
 void simulate_client(double delta_t)
@@ -439,12 +447,14 @@ void draw()
                     prect.w = 5.0;
                     prect.h = 5.0;
                     physics_limit_pos(&camera_rect, &prect);
-                    gfx_draw_rect(&prect, player_colors[p->index], 1.0, 0.5, true,true);
+                    gfx_draw_rect(&prect, player_colors[p->index], 0.0, 1.0, 0.5, true,true);
                 }
             }
 
         }
     }
+
+    particles_draw();
 
     gui_draw();
 }
@@ -608,73 +618,4 @@ void handle_backspace_timer()
             t0_backspace = timer_get_time();
         }
     }
-}
-
-
-// lists
-// -------------------------------------------------------------------------------
-
-glist* list_create(void* buf, int max_count, int item_size)
-{
-    if(item_size <= 0 || max_count <= 1)
-    {
-        LOGE("Invalid item_size (%d) or max_count (%d) for list", item_size, max_count);
-        return NULL;
-    }
-    if(buf == NULL)
-    {
-        LOGE("List buffer is NULL");
-        return NULL;
-    }
-
-    glist* list = calloc(1, sizeof(glist));
-    list->count = 0;
-    list->max_count = max_count;
-    list->item_size = item_size;
-    list->buf = buf;
-    // if(list->buf == NULL)
-    // {
-    //     LOGI("Allocating %d bytes for list %p", max_count*item_size, list);
-    //     list->buf = calloc(max_count, item_size);
-    // }
-    return list;
-}
-
-void list_delete(glist* list)
-{
-    if(list != NULL) free(list);
-    list = NULL;
-}
-
-bool list_add(glist* list, void* item)
-{
-    if(list == NULL)
-        return false;
-
-    if(list->count >= list->max_count)
-        return false;
-
-    memcpy(list->buf + list->count*list->item_size, item, list->item_size);
-    list->count++;
-    return true;
-}
-
-bool list_remove(glist* list, int index)
-{
-    if(list == NULL)
-        return false;
-
-    if(index >= list->count)
-        return false;
-
-    memcpy(list->buf + index*list->item_size, list->buf+(list->count-1)*list->item_size, list->item_size);
-    list->count--;
-}
-
-void* list_get(glist* list, int index)
-{
-    if(list == NULL)
-        return NULL;
-
-    return list->buf + index*list->item_size;
 }

@@ -9,7 +9,6 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
-
 #include "log.h"
 #include "timer.h"
 #include "math2d.h"
@@ -20,14 +19,6 @@ typedef enum
     ROLE_CLIENT,
     ROLE_SERVER,
 } GameRole;
-
-typedef struct
-{
-    int max_count;
-    int count;
-    int item_size;
-    void* buf;
-} glist;
 
 // strings
 #define STR_EMPTY(x)      (x == 0 || strlen(x) == 0)
@@ -51,11 +42,3 @@ char* string_split_index(char* str, const char* delim, int index, int* ret_len, 
 char* string_split_index_copy(char* str, const char* delim, int index, bool split_past_index);
 
 void handle_backspace_timer();
-
-// lists
-glist* list_create(void* buf, int max_count, int item_size);
-void list_delete(glist* list);
-bool list_add(glist* list, void* item);
-bool list_remove(glist* list, int index);
-void* list_get(glist* list, int index);
-

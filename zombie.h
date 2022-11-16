@@ -1,6 +1,6 @@
 #pragma once
 
-#include "main.h"
+#include "glist.h"
 
 #define MAX_ZOMBIES 2000
 

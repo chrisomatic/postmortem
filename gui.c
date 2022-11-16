@@ -8,14 +8,15 @@
 #include "gfx.h"
 #include "timer.h"
 #include "player.h"
-#include "gui.h"
 #include "world.h"
 #include "imgui.h"
 #include "camera.h"
 #include "lighting.h"
 #include "zombie.h"
+#include "particles.h"
+#include "gui.h"
 
-static Rect gui_box = {0};
+static int particle_spawner_test_id;
 static float gui_start_x = 20.0, gui_start_y = 20.0;
 
 static Vector2f gui_draw_string(bool draw, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
@@ -34,24 +35,31 @@ static Vector2f gui_draw_string(bool draw, float x, float y, uint32_t color, flo
     return gfx_string_get_size(scale, str);
 }
 
-Rect gui_draw_text(bool draw, float wscale, float hscale)
+void gui_init()
 {
-    // float start_x = 20.0, start_y = 20.0;
+    // create particle effect used for editor
+    ParticleEffect effect = {
+        .life = {3.0,5.0,1.0},
+        .scale = {0.2,0.5,-0.05},
+        .velocity = {-16.0,16.0,0.0},
+        .opacity = {0.6,1.0,-0.2},
+        .angular_vel = {0.0,0.0,10.0},
+        .spawn_pos_offset_min.x = 0.0,
+        .spawn_pos_offset_min.y = 0.0,
+        .spawn_pos_offset_max.x = 0.0,
+        .spawn_pos_offset_max.y = 0.0,
+        .spawn_time_min = 0.2,
+        .spawn_time_max = 0.5,
+        .burst_count_min = 1,
+        .burst_count_max = 3,
+        .sprite_index = 0,
+    };
 
-    bool drop_shadow = true;
+    particle_spawner_test_id = particles_spawn_effect(300, 300, &effect, false, true);
+}
 
-    float ypad = 3.0;
-    float xpad = 10.0;
-    float xpad_big = 2.0;
-    float text_scale = 0.25;
-    float text_scale_big = 0.3;
-
-    ypad *= hscale;
-    xpad *= wscale;
-    xpad_big *= wscale;
-    text_scale *= wscale;
-    text_scale_big *= wscale;
-
+void gui_draw_text()
+{
     // window
     float fps = timer_get_prior_frame_fps(&game_timer);
 
@@ -59,12 +67,7 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
     float pvx = player->phys.vel.x;
     float pvy = player->phys.vel.y;
     float pv = sqrt(SQ(pvx) + SQ(pvy));
-    if(!draw)
-    {
-        pvx = 999.99f;
-        pvy = 999.99f;
-        pv = 999.99f;
-    }
+
     bool up               = IS_BIT_SET(player->keys,PLAYER_ACTION_UP);
     bool down             = IS_BIT_SET(player->keys,PLAYER_ACTION_DOWN);
     bool left             = IS_BIT_SET(player->keys,PLAYER_ACTION_LEFT);
@@ -159,14 +162,11 @@ Rect gui_draw_text(bool draw, float wscale, float hscale)
         imgui_end();
     }
 
-    Rect ret = {0};
-    ret.w = maxw+xpad*2.0;
-    ret.h = y-gui_start_y+ypad;
-    ret.x = gui_start_x + ret.w/2.0;
-    ret.y = gui_start_y + ret.h/2.0;
-    return ret;
+    return;
 
 }
+
+int prior_selection = 0;
 
 void gui_draw()
 {
@@ -177,36 +177,19 @@ void gui_draw()
     Vector2f s2 = gfx_string_get_size(1.0,test_str);
     */
 
-    bool have_rect = !(FEQ(gui_box.w,0.0) || FEQ(gui_box.h,0.0));
-    if(!have_rect)
-    {
-        gui_box = gui_draw_text(false, 1.0, 1.0);
-    }
-    float wscale = (window_width/(float)view_width);
-    float hscale = (window_height/(float)view_height);
-
-    wscale = 1.0/wscale;
-    hscale = 1.0/hscale;
-
-    Rect gbox = {0};
-    gbox.w = gui_box.w*(wscale);
-    gbox.h = gui_box.h*(hscale);
-    gbox.x = gui_start_x + gbox.w/2.0;
-    gbox.y = gui_start_y + gbox.h/2.0;
-
-    // GAME ROLE
-    gfx_draw_string(0,view_height-(64*0.4)-2,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
-
     if(debug_enabled)
     {
-        gfx_draw_rect(&gbox, 0x001F1F1F, 1.0, 0.6, true, false);
-        gui_draw_text(true, wscale, hscale);
+        //gfx_draw_rect(&gbox, 0x001F1F1F, 0.0, 1.0, 0.6, true, false);
+        gui_draw_text();
+
+        // GAME ROLE
+        gfx_draw_string(0,view_height-(64*0.4)-2,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
     }
 
     if(console_enabled)
     {
         float scale = 0.24;
-        scale *= wscale;
+        scale *= 1.0;
 
         Vector2f size = gfx_string_get_size(scale, "x");
 
@@ -214,15 +197,12 @@ void gui_draw()
 
         Rect tbox = {0};
         tbox.w = view_width*0.6;
-        if(debug_enabled)
-            tbox.x = gbox.x+gbox.w/2.0 + 5.0 + tbox.w/2.0;
-        else
-            tbox.x = view_width*0.5;
+        tbox.x = view_width*0.5;
 
         tbox.h = yspace * (CONSOLE_MSG_MAX+1);
         tbox.y = tbox.h/2.0;
 
-        gfx_draw_rect(&tbox, 0x001F1F1F, 1.0, 0.6, true, false);
+        gfx_draw_rect(&tbox, 0x001F1F1F, 0.0, 1.0, 0.6, true, false);
 
         float x0 = tbox.x-tbox.w/2.0;
         float y0 = tbox.y-tbox.h/2.0;
@@ -285,10 +265,14 @@ void gui_draw()
         imgui_indent_end();
     imgui_end();
 
+    ParticleSpawner* spawner = particles_get_spawner(particle_spawner_test_id);
+    spawner->hidden = true;
+
     if(editor_enabled)
     {
         imgui_begin_panel("Editor", 10,10);
 
+            imgui_store_theme();
             imgui_set_text_size(28);
             imgui_text("Editor");
             imgui_set_text_size(12);
@@ -296,6 +280,8 @@ void gui_draw()
 
             char* buttons[] = {"Game", "Weapons", "Particles", "UI Theme"};
             int selection = imgui_button_select(IM_ARRAYSIZE(buttons), buttons, "");
+
+            spawner->hidden = (selection != 2);
 
             imgui_newline();
             imgui_text_sized(20,buttons[selection]);
@@ -317,12 +303,46 @@ void gui_draw()
                     imgui_slider_float("Slider 2", 0.0,1.0,&v2);
                     break;
                 case 2:
+                    /*
+                    ParticleParam life;
+                    ParticleParam scale;
+                    ParticleParam velocity;
+                    ParticleParam opacity;
+                    ParticleParam angular_vel;
+
+                    Vector2f spawn_pos_offset_min;
+                    Vector2f spawn_pos_offset_max;
+                    float spawn_time_min;
+                    float spawn_time_max;
+                    int burst_count_min;
+                    int burst_count_max;
+                    int sprite_index;
+                    */
+
+                    imgui_set_slider_width(60);
+                    imgui_text_sized(20,"Life");
+                    imgui_horizontal_begin();
+                        imgui_slider_float("Min##life", 0.0,100.0,&spawner->effect.life.init_min);
+                        imgui_slider_float("Max##life", 0.0,100.0,&spawner->effect.life.init_max);
+                        imgui_slider_float("Rate##life", -10.0,10.0,&spawner->effect.life.rate);
+                    imgui_horizontal_end();
+
+                    imgui_text_sized(20,"Scale");
+                    imgui_horizontal_begin();
+                        imgui_slider_float("Min##scale", 0.0,10.0,&spawner->effect.scale.init_min);
+                        imgui_slider_float("Max##scale", 0.0,10.0,&spawner->effect.scale.init_max);
+                        imgui_slider_float("Rate##scale", -10.0,10.0,&spawner->effect.scale.rate);
+                    imgui_horizontal_end();
                     break;
                 case 3:
                     imgui_theme_editor();
                 default:
                     break;
             }
+
+            prior_selection = selection;
+
+        imgui_restore_theme();
         Vector2f size = imgui_end();
         
         // for testing new gui features

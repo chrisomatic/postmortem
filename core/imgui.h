@@ -18,15 +18,19 @@ void imgui_slider_float(char* label, float min, float max, float* result);
 void imgui_number_box(char* label, int min, int max, int* result);
 void imgui_inputtext(char* label, char* buf, int bufsize);
 int imgui_button_select(int num_buttons, char* button_labels[], char* label);
-void imgui_theme_editor();
 
 Vector2f imgui_draw_demo(int x, int y); // for showcasing widgets
+void imgui_theme_editor(); // for editing theme properties
+
+void imgui_store_theme();
+void imgui_restore_theme();
 
 // properties
 void imgui_set_text_size(int pxsize);
 void imgui_set_text_color(uint32_t color);
 void imgui_set_text_padding(int padding);
 void imgui_set_spacing(int spacing);
+void imgui_set_slider_width(int width);
 
 // formatting
 void imgui_indent_begin(int indentpx);

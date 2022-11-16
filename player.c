@@ -991,14 +991,14 @@ void player_draw(Player* p)
     {
         Rect r = {0};
         map_grid_to_rect(blocks[i].x, blocks[i].y, &r);
-        gfx_draw_rect(&r, COLOR_BLACK, 1.0, 0.50, true, true);
+        gfx_draw_rect(&r, COLOR_BLACK, 0.0, 1.0, 0.50, true, true);
     }
 
     if(p->block_ready)
     {
         Rect r = {0};
         map_grid_to_rect(p->mouse_r, p->mouse_c, &r);
-        gfx_draw_rect(&r, COLOR_BLUE, 1.0, 0.15, true, true);
+        gfx_draw_rect(&r, COLOR_BLUE, 0.0, 1.0, 0.15, true, true);
     }
 
     // player
@@ -1035,19 +1035,19 @@ void player_draw(Player* p)
         Rect r = {0};
 
         // position box
-        gfx_draw_rect(&p->pos, COLOR_RED, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->pos, COLOR_RED, 0.0, 1.0,1.0, false, true);
 
         // phys.pos
         r.x = p->phys.pos.x;
         r.y = p->phys.pos.y;
         r.w = 2;
         r.h = 2;
-        gfx_draw_rect(&r, COLOR_PURPLE, 1.0,1.0, true, true);
+        gfx_draw_rect(&r, COLOR_PURPLE, 0.0, 1.0,1.0, true, true);
 
         // pos
         r.x = p->pos.x;
         r.y = p->pos.y;
-        gfx_draw_rect(&r, COLOR_ORANGE, 1.0,1.0, true, true);
+        gfx_draw_rect(&r, COLOR_ORANGE, 0.0, 1.0,1.0, true, true);
 
 
         // max_size
@@ -1055,13 +1055,13 @@ void player_draw(Player* p)
         r.y = p->pos.y;
         r.w = p->max_size.w*p->scale;
         r.h = p->max_size.h*p->scale;
-        // gfx_draw_rect(&r, COLOR_BLUE, 1.0,1.0, false, true);
-        gfx_draw_rect(&p->max_size, COLOR_BLUE, 1.0,1.0, false, true);
+        // gfx_draw_rect(&r, COLOR_BLUE, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->max_size, COLOR_BLUE, 0.0, 1.0,1.0, false, true);
 
         // // melee
         // if(!IS_RECT_EMPTY(&p->melee_box))
         // {
-        //     gfx_draw_rect(&p->melee_box, COLOR_CYAN, 1.0,1.0, false, true);
+        //     gfx_draw_rect(&p->melee_box, COLOR_CYAN, 0.0, 1.0,1.0, false, true);
         // }
 
     }

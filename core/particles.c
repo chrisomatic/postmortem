@@ -8,98 +8,134 @@
 #include "gfx.h"
 #include "math2d.h"
 #include "log.h"
+#include "glist.h"
 #include "particles.h"
 
-#define MAX_PARTICLE_SPAWNERS 100
-#define MAX_PARTICLES_PER_SPAWNER 100
-
-typedef struct
-{
-    Vector2f pos;
-    Vector2f vel;
-    Vector3f color;
-    float rotation;
-    float scale;
-    float opacity;
-    float life;
-    float life_max;
-} Particle;
-
-typedef struct
-{
-    Vector2f pos;
-    ParticleEffect effect;
-    float life;
-    float life_max;
-    float spawn_time;
-    float spawn_time_max;
-    Particle particles[MAX_PARTICLES_PER_SPAWNER];
-    int num_particles;
-    bool mortal;
-    bool in_world;
-} ParticleSpawner;
-
 static ParticleSpawner spawners[MAX_PARTICLE_SPAWNERS] = {0};
-static int num_spawners;
+static glist* spawner_list;
+static int global_id_count = 0;
+
+static void print_particle(Particle* p)
+{
+    printf("===================\n");
+    printf("Particle:\n");
+    printf("  position: %f %f\n", p->pos.x, p->pos.y);
+    printf("  velocity: %f %f\n", p->vel.x, p->vel.y);
+    printf("  color: %f %f %f\n", p->color.x, p->color.y, p->color.z);
+    printf("  scale: %f\n", p->scale);
+    printf("  opacity: %f\n", p->opacity);
+    printf("  life: %f\n", p->life);
+    printf("  life_max: %f\n", p->life_max);
+    printf("===================\n");
+}
 
 static void emit_particle(ParticleSpawner* s)
 {
+    Particle* p = &s->particles[s->particle_list->count++];
 
+    p->pos.x = s->pos.x;
+    p->pos.y = s->pos.y;
+    p->vel.x = RAND_FLOAT(s->effect.velocity.init_min, s->effect.velocity.init_max);
+    p->vel.y = RAND_FLOAT(s->effect.velocity.init_min, s->effect.velocity.init_max);
+    p->color.x = 0.8;
+    p->color.y = 0.0;
+    p->color.z = 0.0;
+    p->rotation = RAND_FLOAT(s->effect.angular_vel.init_min, s->effect.angular_vel.init_max);
+    p->scale = RAND_FLOAT(s->effect.scale.init_min, s->effect.scale.init_max);
+    p->opacity = RAND_FLOAT(s->effect.opacity.init_min, s->effect.opacity.init_max);
+    p->life_max = RAND_FLOAT(s->effect.life.init_min, s->effect.life.init_max);
+    p->life = 0.0;
 }
 
-static void delete_particle(int index)
+static void delete_particle(ParticleSpawner* spawner, int index)
 {
-
+    list_remove(spawner->particle_list, index);
 }
 
-static void delete_spawner(int index)
+static int get_id()
 {
-
+    return global_id_count++;
 }
 
-void particles_spawn_effect(float x, float y, ParticleEffect* effect, bool in_world)
+static ParticleSpawner* get_spawner_by_id(int id)
 {
-    if(num_spawners >= MAX_PARTICLE_SPAWNERS)
+    for(int i = 0; i < spawner_list->count; ++i)
+    {
+        if(spawners[i].id == id)
+        {
+            return &spawners[i];
+        }
+    }
+    return NULL;
+}
+
+void delete_spawner(int index)
+{
+    list_delete(spawners[index].particle_list);
+    list_remove(spawner_list, index);
+}
+
+void particles_show_spawner(int id, bool show)
+{
+    ParticleSpawner* spawner = get_spawner_by_id(id);
+
+    if(spawner)
+    {
+        spawner->hidden = !show;
+    }
+}
+
+ParticleSpawner* particles_get_spawner(int id)
+{
+    ParticleSpawner* spawner = get_spawner_by_id(id);
+
+    if(spawner)
+    {
+        return spawner;
+    }
+}
+
+void particles_init()
+{
+    spawner_list = list_create(spawners,MAX_PARTICLE_SPAWNERS,sizeof(ParticleSpawner));
+}
+
+int particles_spawn_effect(float x, float y, ParticleEffect* effect, bool in_world, bool hidden)
+{
+    if(list_is_full(spawner_list))
     {
         LOGW("Too many spawners!");
-        return;
+        return -1;
     }
 
-    ParticleSpawner* spawner = &spawners[num_spawners++];
+    ParticleSpawner* spawner = &spawners[spawner_list->count++];
 
+    spawner->particle_list = list_create(spawner->particles,MAX_PARTICLES_PER_SPAWNER,sizeof(Particle));
+
+    if(effect)
+    {
+        memcpy(&spawner->effect, effect, sizeof(ParticleEffect));
+    }
+
+    
+    spawner->id = get_id();
     spawner->pos.x = x;
     spawner->pos.y = y;
     spawner->in_world = in_world;
+    spawner->spawn_time = 0.0;
+    spawner->spawn_time_max = RAND_FLOAT(spawner->effect.spawn_time_min, spawner->effect.spawn_time_max);
+    spawner->hidden = hidden;
 
-    // effect
-    spawner->effect.life.init_min = 1.0;
-    spawner->effect.life.init_max = 2.0;
-    spawner->effect.life.rate     = 1.0;
-
-    spawner->effect.scale.init_min = 1.0;
-    spawner->effect.scale.init_max = 2.0;
-    spawner->effect.scale.rate     = 0.4;
-
-    spawner->effect.velocity.init_min = 1.0;
-    spawner->effect.velocity.init_max = 2.0;
-    spawner->effect.velocity.rate     = 0.4;
-
-    spawner->effect.opacity.init_min = 1.0;
-    spawner->effect.opacity.init_max = 2.0;
-    spawner->effect.opacity.rate     = 0.4;
-
-    spawner->effect.angular_vel.init_min = 0.0;
-    spawner->effect.angular_vel.init_max = 2.0;
-    spawner->effect.angular_vel.rate     = 0.4;
+    return (spawner->id);
 }
 
 void particles_update(double delta_t)
 {
-    for(int i = num_spawners-1; i >= 0; --i)
+    for(int i = spawner_list->count-1; i >= 0; --i)
     {
         ParticleSpawner* spawner = &spawners[i];
 
-        for(int j = spawner->num_particles-1; j >= 0; --j)
+        for(int j = spawner->particle_list->count-1; j >= 0; --j)
         {
             // update each particle
             Particle* p = &spawner->particles[j];
@@ -110,7 +146,7 @@ void particles_update(double delta_t)
             // check for death
             if(p->life >= p->life_max)
             {
-                delete_particle(j);
+                delete_particle(spawner,j);
                 continue;
             }
 
@@ -125,20 +161,29 @@ void particles_update(double delta_t)
             // update position
             p->pos.x += p->vel.x*delta_t;
             p->pos.y += p->vel.y*delta_t;
+
+            // limit
+            p->scale    = MAX(p->scale,0.0);
+            p->opacity  = RANGE(p->opacity,0.0,1.0);
         }
 
         if(spawner->mortal)
         {
-            if(spawner->life >= spawner->life_max)
+            if(!spawner->dead && spawner->life >= spawner->life_max)
+            {
+                spawner->dead = true;
+            }
+
+            if(spawner->dead && list_is_empty(spawner->particle_list))
             {
                 delete_spawner(i);
             }
         }
 
         spawner->spawn_time += delta_t;
-        while(spawner->spawn_time >= spawner->spawn_time_max)
+        if(spawner->spawn_time >= spawner->spawn_time_max)
         {
-            spawner->spawn_time -= delta_t;
+            spawner->spawn_time = 0.0;
             emit_particle(spawner);
         }
     }
@@ -146,16 +191,17 @@ void particles_update(double delta_t)
 
 void particles_draw()
 {
-
-    for(int i = 0; i < num_spawners; ++i)
+    for(int i = 0; i < spawner_list->count; ++i)
     {
         ParticleSpawner* spawner = &spawners[i];
 
-        for(int j = 0; j < spawner->num_particles; ++j)
+        if(spawner->hidden)
+            continue;
+
+        for(int j = 0; j < spawner->particle_list->count; ++j)
         {
             Particle* p = &spawner->particles[j];
-
-            //gfx_draw_rect_xywh(p->pos.x, p->pos.y, p->float w, float h, uint32_t color, float scale, float opacity, bool filled, bool in_world);
+            gfx_draw_rect_xywh(p->pos.x, p->pos.y, 32.0, 32.0, COLOR2(p->color.x, p->color.y, p->color.z), p->rotation, p->scale, p->opacity, true,spawner->in_world);
         }
     }
 }
