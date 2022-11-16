@@ -107,3 +107,5 @@ Vector2f gfx_string_get_size(float scale, char* fmt, ...);
 // Animation
 void gfx_anim_update(GFXAnimation* anim, double delta_t);
 
+void gfx_print_times();
+

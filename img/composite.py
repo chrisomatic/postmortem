@@ -1,4 +1,5 @@
 import sys, os, math
+import subprocess
 
 from PyQt5.QtGui import QPainter, QImage
 from PyQt5.QtCore import Qt, QSize
@@ -9,6 +10,8 @@ if sys.platform == "win32":
     slash = "\\"
 
 root = os.path.dirname(os.path.abspath(__file__)) + slash + "blender_output" + slash
+output = os.path.dirname(os.path.abspath(__file__)) + slash + "blender_output" + slash
+output_bg = os.path.dirname(os.path.abspath(__file__)) + slash + "blender_output" + slash + "composites_with_bg" + slash
 
 def bound(_val, _min, _max):
     return max(min(_val, _max), _min)
@@ -20,6 +23,19 @@ def printf(fmt, *args):
         print(fmt, end="")
 
 
+
+def run_cmd(cmd, cwd=None):
+    # if(type(cmd) == list):
+    #     printf("Executing command: '%s'\n", " ".join(cmd))
+    # else:
+    #     printf("Executing command: '%s'\n", cmd)
+    p = subprocess.Popen(cmd, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, err = p.communicate()
+    rc = p.returncode
+    return (output, err, rc)
+
+# run_cmd("magick '/home/kameron/dev/postmortem/img/blender_output/composites_with_bg/human1-attack1_handgun_pistol1_bg.png' -fuzz 5%% -transparent black -opaque black '/home/kameron/dev/postmortem/img/blender_output/human1-attack1_handgun_pistol1_bg.png'")
+# exit(1)
 def concat_images(img_lst, cols):
     largest_w = img_lst[0].width()
     largest_h = img_lst[0].height()
@@ -61,6 +77,12 @@ def concat_images(img_lst, cols):
 class Compositor():
     def __init__(self, model, model_set, scale_w, scale_h, save=False):
 
+        if(not(os.path.isdir(output_bg))):
+            os.mkdir(output_bg)
+
+        if(not(os.path.isdir(output))):
+            os.mkdir(output)
+
         self.composite_image = None
 
         self.slash = "/"
@@ -81,6 +103,9 @@ class Compositor():
             printf("Directory doesn't exist: %s\n", self.path)
             return
 
+
+        self.save_path = output + self.model + "-" + self.model_set + ".png"
+        self.save_path_bg = output_bg + self.model + "-" + self.model_set + "_bg.png"
 
         # self.folders = ["walk_normal", "walk_gun_ready"]
         self.orientations = ["front" , "front_right", "right", "back_right", "back", "back_left", "left", "front_left"]
@@ -105,12 +130,13 @@ class Compositor():
             for p in pics:
                 self.pic_data[self.path+p] = {}
 
+        printf("%s\n", self.path)
+
         self.keys = [x for x in self.pic_data.keys()]
         if(len(self.keys) == 0):
             printf("No images found\n")
             return
 
-        printf("%s\n", self.path)
         self.krange = range(len(self.keys))
         for i in self.krange:
             path = self.keys[i]
@@ -157,16 +183,31 @@ class Compositor():
         if(self.composite_image is None):
             printf("Composite image is None\n")
             return
+        self.composite_image.save(self.save_path_bg, "PNG")
+        printf("Saved: %s\n", self.save_path_bg)
 
-        path = self.root + self.model + "-" + self.model_set + ".png"
-        self.composite_image.save(path, "PNG")
-        printf("Saved: %s\n", path)
+        # https://www.imagemagick.org/Usage/color_basics/#fuzz
+        cmd = ["magick", self.save_path_bg ,"-fuzz", "5%%", "-transparent", "black", "-opaque", "black", self.save_path]
+        output, err, rc = run_cmd(cmd)
+        # print(output)
+        # print(err)
+        # print(rc)
+
+        if(rc != 0):
+            printf("Failed to erase background with magick")
+        else:
+            printf("Saved: %s\n", self.save_path)
+
+        # print("")
 
 
 def main():
 
-    PROCESS_ALL = True
     PROCESS_ALL = False
+    PROCESS_ALL = True
+
+    sprite_w = 128
+    sprite_h = 128
 
     # root = os.path.dirname(os.path.abspath(__file__)) + slash + "blender_output" + slash
 
@@ -179,12 +220,12 @@ def main():
             if(len(model_sets) == 0):
                 continue
             for ms in model_sets:
-                c = Compositor(m,ms, 128, 128, True)
+                c = Compositor(m,ms, sprite_w, sprite_h, True)
                 print("")
 
     else:
 
-        c = Compositor("human1","attack1_handgun_pistol1", 128, 128, True)
+        c = Compositor("human1","attack1_handgun_pistol1", sprite_w, sprite_h, True)
 
         # @TEST
         # # img = QImage(32, 32, QImage.Format_ARGB32)

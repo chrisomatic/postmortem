@@ -78,6 +78,11 @@ static int num_line_points = 0;
 static FontChar font_chars[255];
 
 
+static double vr_time = 0;
+static double img_time = 0;
+static double other_time = 0;
+
+
 // global vars
 // --------------------------------------------------------
 GFXImage gfx_images[MAX_GFX_IMAGES] = {0};
@@ -258,8 +263,15 @@ bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip)
 int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int element_width, int element_height, GFXNodeDataInput* node_input)
 {
     GFXImageData image = {0};
+    
+    Timer _timer = {0};
+    timer_begin(&_timer);   //img_time
     bool load = gfx_load_image_data(image_path, &image, flip);
+    img_time += timer_get_elapsed(&_timer);
+
     if(!load) return -1;
+
+    timer_begin(&_timer);   //other_time
 
     GFXImage img = {0};
     img.w = image.w;
@@ -324,8 +336,12 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     size_t temp_size = img.element_width*img.element_height*img.n*sizeof(unsigned char);
     unsigned char* temp_data = malloc(temp_size);
 
+    other_time += timer_get_elapsed(&_timer);
+
     for(int i = 0; i < img.element_count; ++i)
     {
+        timer_begin(&_timer);   //other_time
+
         int start_x = (i % num_cols) * img.element_width;
         int start_y = (i / num_cols) * img.element_height;
         for(int y = 0; y < img.element_height; ++y)
@@ -357,6 +373,8 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
             }//element_width
         }//element_height
 
+        other_time += timer_get_elapsed(&_timer);
+
         image_get_visible_rect(img.element_width, img.element_height, img.n, temp_data, &img.visible_rects[i]);
         Rect* vr = &img.visible_rects[i];
         img.sprite_visible_rects[i].x = (float)(start_x+vr->x) / image.w;
@@ -385,6 +403,8 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
 
     }//element_count
 
+
+    timer_begin(&_timer);   //other_time
 
     //assign image
     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
@@ -438,6 +458,8 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
             if(temp_data != NULL) free(temp_data);
             if(image.data != NULL) free(image.data);
             if(node_image.data != NULL) free(node_image.data);
+
+            other_time += timer_get_elapsed(&_timer);
 
             return i;
             // return p->texture;
@@ -914,6 +936,14 @@ void gfx_anim_update(GFXAnimation* anim, double delta_t)
 }
 
 
+void gfx_print_times()
+{
+    printf("Image load time:   %.4f\n", img_time);
+    printf("Visible rect time: %.4f\n", vr_time);
+    printf("Other time:        %.4f\n", other_time);
+}
+
+
 
 // static functions
 // --------------------------------------------------------
@@ -1016,6 +1046,9 @@ static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int i
 
 static void image_get_visible_rect(int img_w, int img_h, int img_n, unsigned char* img_data, Rect* ret)
 {
+    Timer _timer = {0};
+    timer_begin(&_timer);
+
     int top = image_find_first_visible_rowcol(0, img_w, img_h, img_n, img_data);
 
     // image is blank
@@ -1026,6 +1059,8 @@ static void image_get_visible_rect(int img_w, int img_h, int img_n, unsigned cha
         ret->h = 0;
         ret->x = img_w/2.0;
         ret->y = img_h/2.0;
+        vr_time += timer_get_elapsed(&_timer);
+        // printf("vr time: %.4f\n", vr_time);
         return;
     }
 
@@ -1050,6 +1085,9 @@ static void image_get_visible_rect(int img_w, int img_h, int img_n, unsigned cha
     ret->h = (float)height;
     ret->x = (float)left + ret->w/2.0;
     ret->y = (float)top + ret->h/2.0;
+
+    vr_time += timer_get_elapsed(&_timer);
+    // printf("vr time: %.4f\n", vr_time);
 }
 
 static void load_font()

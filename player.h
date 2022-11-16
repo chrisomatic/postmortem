@@ -132,15 +132,15 @@ enum PlayerAction
     PLAYER_ACTION_TOGGLE_EDITOR    = 1<<11,
     PLAYER_ACTION_TOGGLE_GUN       = 1<<12,
     PLAYER_ACTION_RELOAD           = 1<<13,
+    PLAYER_ACTION_TOGGLE_BLOCK     = 1<<14,
 };
 
 typedef struct
 {
     bool up, down, left, right;
     bool run, jump, interact;
-    bool primary_action, secondary_action;
-    bool toggle_equip_weapon, toggle_debug, toggle_editor, toggle_gun;
-    bool reload;
+    bool primary_action, secondary_action, reload;
+    bool toggle_equip_weapon, toggle_debug, toggle_editor, toggle_gun, toggle_block;
 } PlayerActions;
 
 typedef struct
@@ -172,6 +172,7 @@ typedef struct
     PlayerState state;  //this is more of an animation state
 
     bool moving;
+    bool block_ready;
     bool weapon_ready;
     bool attacking; //melee
     bool reloading;
@@ -207,6 +208,8 @@ typedef struct
 
     int mouse_x;
     int mouse_y;
+    int mouse_r;
+    int mouse_c;
 
     PlayerActions actions_prior;
     PlayerActions actions;

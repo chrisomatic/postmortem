@@ -146,6 +146,7 @@ void window_get_mouse_world_coords(int* x, int* y)
     *y = (int)(mouse_y - cam_y);
 }
 
+//TODO: change to float args to ints I think
 void window_set_mouse_world_coords(float x, float y)
 {
     Matrix* view = get_camera_transform();

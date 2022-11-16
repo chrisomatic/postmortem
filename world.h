@@ -33,6 +33,8 @@ void world_draw();
 
 uint8_t map_get_tile_index(int row, int col);
 
+
+//TODO: change floats to ints
 void coords_to_map_grid(float x, float y, int* row, int* col);
 void map_grid_to_coords(int row, int col, float* x, float* y);
 void map_grid_to_coords_tl(int row, int col, float* x, float* y);

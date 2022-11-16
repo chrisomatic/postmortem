@@ -33,7 +33,8 @@ static uint64_t get_timer_value(void)
     }
 }
 
-static void init_timer(void)
+// static void init_timer(void)
+void init_timer(void)
 {
 #if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
     struct timespec ts;
@@ -61,7 +62,7 @@ static double get_time()
 
 void timer_begin(Timer* timer)
 {
-    init_timer();
+    // init_timer();
     timer->time_start = get_time();
     timer->time_last = timer->time_start;
     timer->frame_fps = 0.0f;

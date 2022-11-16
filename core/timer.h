@@ -9,6 +9,8 @@ typedef struct
     double frame_fps;
 } Timer;
 
+void init_timer(void);
+
 void timer_begin(Timer* timer);
 void timer_set_fps(Timer* timer, float fps);
 void timer_wait_for_frame(Timer* timer);

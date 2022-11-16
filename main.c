@@ -71,6 +71,8 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
 int main(int argc, char* argv[])
 {
+    init_timer();
+    log_init(0);
     parse_args(argc, argv);
 
     switch(role)
@@ -139,9 +141,8 @@ void start_local()
     time_t t;
     srand((unsigned) time(&t));
 
-    // player = &players[0];
-
     init();
+    gfx_print_times();  //DEBUG
 
     timer_set_fps(&game_timer,TARGET_FPS);
     timer_begin(&game_timer);
@@ -316,7 +317,7 @@ void camera_set()
     int mx, my;
     window_get_mouse_view_coords(&mx, &my);
 
-    if(player->weapon_ready)
+    if(player->weapon_ready || player->block_ready)
     {
         float r = 0.2;  //should be <= 0.5 to make sense otherwise player will end up off of the screen
         float ox = (mx - view_width/2.0);
@@ -361,7 +362,7 @@ void simulate(double delta_t)
     world_update();
     zombie_update(delta_t);
 
-    window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
+    // window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);   //MOVED to player_update
     player_update(player,delta_t);
     projectile_update(delta_t);
 }
@@ -375,7 +376,7 @@ void simulate_client(double delta_t)
 
     world_update();
     //zombie_update(delta_t);
-    window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
+    // window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
     player_update(player,delta_t);
     player_handle_net_inputs(player, delta_t);
 

@@ -47,6 +47,11 @@ static int weapon_image_sets[PLAYER_MODELS_MAX][PSTATE_MAX][WEAPON_MAX];
 static int crosshair_image;
 
 
+//TEMP: blocks
+#define MAX_BLOCKS  1000
+Vector2f blocks[MAX_BLOCKS] = {0};
+glist* blist = NULL;
+
 // ------------------------------------------------------------
 
 
@@ -127,6 +132,7 @@ void player_init_controls(Player* p)
     window_controls_add_key(&p->keys, GLFW_KEY_F2, PLAYER_ACTION_TOGGLE_DEBUG);
     window_controls_add_key(&p->keys, GLFW_KEY_F3, PLAYER_ACTION_TOGGLE_EDITOR);
     window_controls_add_key(&p->keys, GLFW_KEY_G, PLAYER_ACTION_TOGGLE_GUN);
+    window_controls_add_key(&p->keys, GLFW_KEY_B, PLAYER_ACTION_TOGGLE_BLOCK);
 
     window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_LEFT, PLAYER_ACTION_PRIMARY_ACTION);
     window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
@@ -146,6 +152,7 @@ static void player_init(int index)
     p->model_texture = 0;
     p->state = PSTATE_IDLE;
     p->moving = false;
+    p->block_ready = false;
     p->weapon_ready = false;
     p->attacking = false;
     p->reloading = false;
@@ -260,6 +267,14 @@ void players_init()
         if(p->active)
             player_count++;
     }
+
+    //TEMP: blocks
+    blist = list_create((void*)blocks, MAX_BLOCKS, sizeof(blocks[0]));
+    if(blist == NULL)
+    {
+        LOGE("block list failed to create");
+    }
+
 }
 
 const char* player_state_str(PlayerState pstate)
@@ -537,7 +552,7 @@ void player_update_sprite_index(Player* p)
 
     float angle_deg = DEG(p->angle);
 
-    if(p->weapon_ready)
+    if(p->weapon_ready || p->block_ready)
     {
         int sector = angle_sector(angle_deg, 16);
 
@@ -590,6 +605,9 @@ void player_update_sprite_index(Player* p)
 
 void player_update(Player* p, double delta_t)
 {
+    window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
+    coords_to_map_grid(p->mouse_x, p->mouse_y, &p->mouse_r, &p->mouse_c);
+
     p->actions.up               = IS_BIT_SET(p->keys,PLAYER_ACTION_UP);
     p->actions.down             = IS_BIT_SET(p->keys,PLAYER_ACTION_DOWN);
     p->actions.left             = IS_BIT_SET(p->keys,PLAYER_ACTION_LEFT);
@@ -603,6 +621,7 @@ void player_update(Player* p, double delta_t)
     p->actions.toggle_debug     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_DEBUG);
     p->actions.toggle_editor    = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EDITOR);
     p->actions.toggle_gun       = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_GUN);
+    p->actions.toggle_block     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_BLOCK);
     p->actions.reload           = IS_BIT_SET(p->keys,PLAYER_ACTION_RELOAD);
 
     bool run_toggled = p->actions.run && !p->actions_prior.run;
@@ -612,6 +631,7 @@ void player_update(Player* p, double delta_t)
     bool debug_toggled = p->actions.toggle_debug && !p->actions_prior.toggle_debug;
     bool editor_toggled = p->actions.toggle_editor && !p->actions_prior.toggle_editor;
     bool gun_toggled = p->actions.toggle_gun && !p->actions_prior.toggle_gun;
+    bool block_toggled = p->actions.toggle_block && !p->actions_prior.toggle_block;
 
     memcpy(&p->actions_prior, &p->actions, sizeof(PlayerActions));
 
@@ -681,9 +701,64 @@ void player_update(Player* p, double delta_t)
         }
     }
 
+    if(p->block_ready)
+    {
+        if(p->lmouse.trigger)
+        {
+            bool add_block = true;
+            for(int i = 0; i < blist->count; ++i)
+            {
+                if(FEQ(p->mouse_r, blocks[i].x) && FEQ(p->mouse_c, blocks[i].y))
+                {
+                    add_block = false;
+                    break;
+                }
+            }
+            if(add_block)
+            {
+                Vector2f block = {0};
+                block.x = p->mouse_r;
+                block.y = p->mouse_c;
+                list_add(blist, (void*)&block);
+            }
+        }
+
+        if(p->rmouse.trigger)
+        {
+            for(int i = 0; i < blist->count; ++i)
+            {
+                if(FEQ(p->mouse_r, blocks[i].x) && FEQ(p->mouse_c, blocks[i].y))
+                {
+                    list_remove(blist, i);
+                    break;
+                }
+            }
+        }
+    }
+
 
     if(!p->reloading)
     {
+
+        if(block_toggled)
+        {
+            p->block_ready = !p->block_ready;
+            p->weapon_ready = false;
+            if(p->block_ready)
+            {
+                p->lmouse.cooldown = 0.0;
+                p->lmouse.period = 20.0;
+                p->lmouse.trigger_on_held = true;
+                p->lmouse.trigger_on_press = true;
+                p->lmouse.trigger_on_release = false;
+                p->rmouse.cooldown = 0.0;
+                p->rmouse.period = 20.0;
+                p->rmouse.trigger_on_held = true;
+                p->rmouse.trigger_on_press = true;
+                p->rmouse.trigger_on_release = false;
+            }
+        }
+
         if(p->weapon_ready && gun_toggled)
         {
             int next = p->weapon->index+1;
@@ -694,6 +769,11 @@ void player_update(Player* p, double delta_t)
         if(equip_weapon_toggled)
         {
             p->weapon_ready = !p->weapon_ready;
+            if(p->weapon_ready)
+            {
+                player_set_weapon(p, p->weapon->index);
+            }
+            p->block_ready = false;
         }
     }
 
@@ -907,6 +987,20 @@ void player_draw(Player* p)
     GFXImage* img = &gfx_images[p->image];
     Rect* vr = &img->visible_rects[p->sprite_index];
 
+    for(int i = 0; i < blist->count; ++i)
+    {
+        Rect r = {0};
+        map_grid_to_rect(blocks[i].x, blocks[i].y, &r);
+        gfx_draw_rect(&r, COLOR_BLACK, 1.0, 0.50, true, true);
+    }
+
+    if(p->block_ready)
+    {
+        Rect r = {0};
+        map_grid_to_rect(p->mouse_r, p->mouse_c, &r);
+        gfx_draw_rect(&r, COLOR_BLUE, 1.0, 0.15, true, true);
+    }
+
     // player
     gfx_draw_image(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, ambient_light,p->scale,0.0,1.0,true);
 
@@ -974,6 +1068,7 @@ void player_draw(Player* p)
 
     // crosshair
     gfx_draw_image(crosshair_image, 0, p->mouse_x, p->mouse_y, COLOR_PURPLE, 1.0,0.0,0.80, false);
+
 
     // name
     const float name_size = 0.11;
