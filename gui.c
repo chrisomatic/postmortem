@@ -16,7 +16,7 @@
 #include "particles.h"
 #include "gui.h"
 
-static int particle_spawner_test_id;
+static ParticleSpawner* particle_spawner;
 static float gui_start_x = 20.0, gui_start_y = 20.0;
 
 static Vector2f gui_draw_string(bool draw, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
@@ -41,21 +41,25 @@ void gui_init()
     ParticleEffect effect = {
         .life = {3.0,5.0,1.0},
         .scale = {0.2,0.5,-0.05},
-        .velocity = {-16.0,16.0,0.0},
+        .velocity_x = {-16.0,16.0,0.0},
+        .velocity_y = {-16.0,16.0,0.0},
         .opacity = {0.6,1.0,-0.2},
-        .angular_vel = {0.0,0.0,10.0},
-        .spawn_pos_offset_min.x = 0.0,
-        .spawn_pos_offset_min.y = 0.0,
-        .spawn_pos_offset_max.x = 0.0,
-        .spawn_pos_offset_max.y = 0.0,
+        .angular_vel = {0.0,0.0,0.0},
+        .rotation_init_min = 0.0,
+        .rotation_init_max = 0.0,
+        .color1 = 0x00FF00FF,
+        .color2 = 0x00CC0000,
+        .color3 = 0x00202020,
+        .spawn_radius = 0.0,
         .spawn_time_min = 0.2,
         .spawn_time_max = 0.5,
         .burst_count_min = 1,
         .burst_count_max = 3,
         .sprite_index = 0,
+        .use_sprite = false,
     };
 
-    particle_spawner_test_id = particles_spawn_effect(300, 300, &effect, false, true);
+    particle_spawner = particles_spawn_effect(200, 120, &effect, 0, false, true);
 }
 
 void gui_draw_text()
@@ -166,7 +170,178 @@ void gui_draw_text()
 
 }
 
-int prior_selection = 0;
+static void editor_draw()
+{
+    imgui_begin_panel("Editor", 10,10);
+
+        imgui_store_theme();
+        imgui_set_text_size(28);
+        imgui_text("Editor");
+        imgui_set_text_size(12);
+        imgui_newline();
+
+        char* buttons[] = {"Game", "Weapons", "Particles", "UI Theme"};
+        int selection = imgui_button_select(IM_ARRAYSIZE(buttons), buttons, "");
+
+        imgui_newline();
+        imgui_text_sized(20,buttons[selection]);
+        imgui_newline();
+
+        float v1,v2;
+
+        Matrix* view = get_camera_transform();
+        
+        switch(selection)
+        {
+            case 0: // game
+                imgui_color_picker("Ambient Color", &ambient_light);
+                imgui_checkbox("Debug Enabled",&debug_enabled);
+                imgui_slider_float("Camera Z", -1.0,1.0,camera_z);
+                break;
+            case 1:
+                imgui_slider_float("Slider 1", 0.0,1.0,&v1);
+                imgui_slider_float("Slider 2", 0.0,1.0,&v2);
+                break;
+            case 2:
+                {
+
+                ParticleEffect* effect = &particle_spawner->effect;
+
+                int big = 12;
+
+                //imgui_set_slider_width(60);
+                if(imgui_button("Randomize##particle_spawner"))
+                {
+                    effect->life.init_min = RAND_FLOAT(0.1,5.0);
+                    effect->life.init_max = RAND_FLOAT(0.1,5.0);
+                    effect->life.rate     = RAND_FLOAT(1.0,1.0);
+
+                    effect->rotation_init_min = RAND_FLOAT(-360.0,360.0);
+                    effect->rotation_init_max = RAND_FLOAT(-360.0,360.0);
+
+                    effect->scale.init_min = RAND_FLOAT(0.01,1.0);
+                    effect->scale.init_max = RAND_FLOAT(0.01,1.0);
+                    effect->scale.rate     = RAND_FLOAT(-0.5,0.5);
+
+                    effect->velocity_x.init_min = RAND_FLOAT(-32.0,32.0);
+                    effect->velocity_x.init_max = RAND_FLOAT(-32.0,32.0);
+                    effect->velocity_x.rate     = RAND_FLOAT(-32.0,32.0);
+
+                    effect->velocity_y.init_min = RAND_FLOAT(-32.0,32.0);
+                    effect->velocity_y.init_max = RAND_FLOAT(-32.0,32.0);
+                    effect->velocity_y.rate     = RAND_FLOAT(-32.0,32.0);
+
+                    effect->opacity.init_min = RAND_FLOAT(0.01,1.0);
+                    effect->opacity.init_max = RAND_FLOAT(0.01,1.0);
+                    effect->opacity.rate     = RAND_FLOAT(-1.0,1.0);
+
+                    effect->angular_vel.init_min = RAND_FLOAT(-360.0, 360.0);
+                    effect->angular_vel.init_max = RAND_FLOAT(-360.0, 360.0);
+                    effect->angular_vel.rate     = RAND_FLOAT(-360.0, 360.0);
+
+                    effect->spawn_radius  = RAND_FLOAT(0.0, 32.0);
+
+                    effect->spawn_time_min  = RAND_FLOAT(0.01, 2.0);
+                    effect->spawn_time_max  = RAND_FLOAT(0.01, 2.0);
+
+                    effect->burst_count_min  = RAND_FLOAT(1, 20);
+                    effect->burst_count_max  = RAND_FLOAT(1, 20);
+
+                    effect->sprite_index = RAND_RANGE(0,MAX_GFX_IMAGES-1);
+
+                    effect->color1 = RAND_RANGE(0x0,0x00FFFFFF);
+                    effect->color2 = RAND_RANGE(0x0,0x00FFFFFF);
+                    effect->color3 = RAND_RANGE(0x0,0x00FFFFFF);
+
+                }
+                imgui_text_sized(big,"Particle Life");
+                imgui_horizontal_begin();
+                    imgui_slider_float("Min##life", 0.1,5.0,&effect->life.init_min);
+                    imgui_slider_float("Max##life", 0.1,5.0,&effect->life.init_max);
+                    effect->life.init_max = (effect->life.init_min > effect->life.init_max ? effect->life.init_min : effect->life.init_max);
+                    imgui_slider_float("Rate##life", 0.1,5.0,&effect->life.rate);
+                imgui_horizontal_end();
+                imgui_text_sized(big,"Rotation");
+                imgui_horizontal_begin();
+                    imgui_slider_float("Min##rotation", -360.0,360.0,&effect->rotation_init_min);
+                    imgui_slider_float("Max##rotation", -360.0,360.0,&effect->rotation_init_max);
+                    effect->rotation_init_max = (effect->rotation_init_min > effect->rotation_init_max ? effect->rotation_init_min : effect->rotation_init_max);
+                imgui_horizontal_end();
+                imgui_text_sized(big,"Scale");
+                imgui_horizontal_begin();
+                    imgui_slider_float("Min##scale", 0.01,3.00,&effect->scale.init_min);
+                    imgui_slider_float("Max##scale", 0.01,3.00,&effect->scale.init_max);
+                    effect->scale.init_max = (effect->scale.init_min > effect->scale.init_max ? effect->scale.init_min : effect->scale.init_max);
+                    imgui_slider_float("Rate##scale", -1.0,1.0,&effect->scale.rate);
+                imgui_horizontal_end();
+                imgui_text_sized(big,"Velocity X");
+                imgui_horizontal_begin();
+                    imgui_slider_float("Min##velx", -32.0,32.0,&effect->velocity_x.init_min);
+                    imgui_slider_float("Max##velx", -32.0,32.0,&effect->velocity_x.init_max);
+                    effect->velocity_x.init_max = (effect->velocity_x.init_min > effect->velocity_x.init_max ? effect->velocity_x.init_min : effect->velocity_x.init_max);
+                    imgui_slider_float("Rate##velx", -32.0,32.0,&effect->velocity_x.rate);
+                imgui_horizontal_end();
+                imgui_text_sized(big,"Velocity Y");
+                imgui_horizontal_begin();
+                    imgui_slider_float("Min##vely", -32.0,32.0,&effect->velocity_y.init_min);
+                    imgui_slider_float("Max##vely", -32.0,32.0,&effect->velocity_y.init_max);
+                    effect->velocity_y.init_max = (effect->velocity_y.init_min > effect->velocity_y.init_max ? effect->velocity_y.init_min : effect->velocity_y.init_max);
+                    imgui_slider_float("Rate##vely", -32.0,32.0,&effect->velocity_y.rate);
+                imgui_horizontal_end();
+                imgui_text_sized(big,"Opacity");
+                imgui_horizontal_begin();
+                    imgui_slider_float("Min##opacity", 0.01,1.0,&effect->opacity.init_min);
+                    imgui_slider_float("Max##opacity", 0.01,1.0,&effect->opacity.init_max);
+                    effect->opacity.init_max = (effect->opacity.init_min > effect->opacity.init_max ? effect->opacity.init_min : effect->opacity.init_max);
+                    imgui_slider_float("Rate##opacity", -1.0,1.0,&effect->opacity.rate);
+                imgui_horizontal_end();
+                imgui_text_sized(big,"Angular Velocity");
+                imgui_horizontal_begin();
+                    imgui_slider_float("Min##angular_vel", -360.0,360.0,&effect->angular_vel.init_min);
+                    imgui_slider_float("Max##angular_vel", -360.0,360.0,&effect->angular_vel.init_max);
+                    effect->angular_vel.init_max = (effect->angular_vel.init_min > effect->angular_vel.init_max ? effect->angular_vel.init_min : effect->angular_vel.init_max);
+                    imgui_slider_float("Rate##angular_vel", -360.0,360.0,&effect->angular_vel.rate);
+                imgui_horizontal_end();
+                imgui_text_sized(big,"Spawn Radius");
+                    imgui_slider_float("radius##spawn", 0.0,32.0,&effect->spawn_radius);
+                imgui_text_sized(big,"Spawn Time");
+                imgui_horizontal_begin();
+                    imgui_slider_float("Min##spawn_time", 0.01,2.0,&effect->spawn_time_min);
+                    imgui_slider_float("Max##spawn_time", 0.01,2.0,&effect->spawn_time_max);
+                    effect->spawn_time_max = (effect->spawn_time_min > effect->spawn_time_max ? effect->spawn_time_min : effect->spawn_time_max);
+                imgui_horizontal_end();
+                imgui_text_sized(big,"Burst Count");
+                imgui_horizontal_begin();
+                    imgui_number_box("Min##burst_count", 1, 20, &effect->burst_count_min);
+                    imgui_number_box("Max##burst_count", 1, 20, &effect->burst_count_max);
+                    effect->burst_count_max = (effect->burst_count_min > effect->burst_count_max ? effect->burst_count_min : effect->burst_count_max);
+                imgui_horizontal_end();
+                imgui_checkbox("Use Sprite",&effect->use_sprite);
+                if(effect->use_sprite)
+                {
+                    imgui_text_sized(big,"Sprite Index");
+                    imgui_number_box("Index##sprite_index", 0, MAX_GFX_IMAGES-1, &effect->sprite_index);
+                }
+                imgui_text_sized(big,"Colors");
+                imgui_color_picker("1##colors", &effect->color1);
+                imgui_color_picker("2##colors", &effect->color2);
+                imgui_color_picker("3##colors", &effect->color3);
+
+                // show preview
+                particles_draw_spawner(particle_spawner);
+
+                } break;
+            case 3:
+                imgui_theme_editor();
+                break;
+            default:
+                break;
+        }
+
+    imgui_restore_theme();
+    Vector2f size = imgui_end();
+
+}
 
 void gui_draw()
 {
@@ -265,86 +440,10 @@ void gui_draw()
         imgui_indent_end();
     imgui_end();
 
-    ParticleSpawner* spawner = particles_get_spawner(particle_spawner_test_id);
-    spawner->hidden = true;
-
     if(editor_enabled)
     {
-        imgui_begin_panel("Editor", 10,10);
+        editor_draw();
 
-            imgui_store_theme();
-            imgui_set_text_size(28);
-            imgui_text("Editor");
-            imgui_set_text_size(12);
-            imgui_newline();
-
-            char* buttons[] = {"Game", "Weapons", "Particles", "UI Theme"};
-            int selection = imgui_button_select(IM_ARRAYSIZE(buttons), buttons, "");
-
-            spawner->hidden = (selection != 2);
-
-            imgui_newline();
-            imgui_text_sized(20,buttons[selection]);
-            imgui_newline();
-
-            float v1,v2;
-
-            Matrix* view = get_camera_transform();
-            
-            switch(selection)
-            {
-                case 0: // game
-                    imgui_color_picker("Ambient Color", &ambient_light);
-                    imgui_checkbox("Debug Enabled",&debug_enabled);
-                    imgui_slider_float("Camera Z", -1.0,1.0,camera_z);
-                    break;
-                case 1:
-                    imgui_slider_float("Slider 1", 0.0,1.0,&v1);
-                    imgui_slider_float("Slider 2", 0.0,1.0,&v2);
-                    break;
-                case 2:
-                    /*
-                    ParticleParam life;
-                    ParticleParam scale;
-                    ParticleParam velocity;
-                    ParticleParam opacity;
-                    ParticleParam angular_vel;
-
-                    Vector2f spawn_pos_offset_min;
-                    Vector2f spawn_pos_offset_max;
-                    float spawn_time_min;
-                    float spawn_time_max;
-                    int burst_count_min;
-                    int burst_count_max;
-                    int sprite_index;
-                    */
-
-                    imgui_set_slider_width(60);
-                    imgui_text_sized(20,"Life");
-                    imgui_horizontal_begin();
-                        imgui_slider_float("Min##life", 0.0,100.0,&spawner->effect.life.init_min);
-                        imgui_slider_float("Max##life", 0.0,100.0,&spawner->effect.life.init_max);
-                        imgui_slider_float("Rate##life", -10.0,10.0,&spawner->effect.life.rate);
-                    imgui_horizontal_end();
-
-                    imgui_text_sized(20,"Scale");
-                    imgui_horizontal_begin();
-                        imgui_slider_float("Min##scale", 0.0,10.0,&spawner->effect.scale.init_min);
-                        imgui_slider_float("Max##scale", 0.0,10.0,&spawner->effect.scale.init_max);
-                        imgui_slider_float("Rate##scale", -10.0,10.0,&spawner->effect.scale.rate);
-                    imgui_horizontal_end();
-                    break;
-                case 3:
-                    imgui_theme_editor();
-                default:
-                    break;
-            }
-
-            prior_selection = selection;
-
-        imgui_restore_theme();
-        Vector2f size = imgui_end();
-        
         // for testing new gui features
         //imgui_draw_demo(10,size.y+20);
     }

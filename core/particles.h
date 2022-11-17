@@ -1,7 +1,7 @@
 #pragma once
 
-#define MAX_PARTICLE_SPAWNERS 100
-#define MAX_PARTICLES_PER_SPAWNER 100
+#define MAX_PARTICLE_SPAWNERS 50
+#define MAX_PARTICLES_PER_SPAWNER 500
 
 typedef struct
 {
@@ -14,24 +14,32 @@ typedef struct
 {
     ParticleParam life;
     ParticleParam scale;
-    ParticleParam velocity;
+    ParticleParam velocity_x;
+    ParticleParam velocity_y;
     ParticleParam opacity;
     ParticleParam angular_vel;
 
-    Vector2f spawn_pos_offset_min;
-    Vector2f spawn_pos_offset_max;
-    float spawn_time_min;
+    uint32_t color1;
+    uint32_t color2;
+    uint32_t color3;
+
+    float spawn_radius;
+    float rotation_init_min;
+    float rotation_init_max;
     float spawn_time_max;
+    float spawn_time_min;
     int burst_count_min;
     int burst_count_max;
     int sprite_index;
+    bool use_sprite;
 } ParticleEffect;
 
 typedef struct
 {
     Vector2f pos;
     Vector2f vel;
-    Vector3f color;
+    uint32_t color;
+    float angular_vel;
     float rotation;
     float scale;
     float opacity;
@@ -57,8 +65,9 @@ typedef struct
 } ParticleSpawner;
 
 void particles_init();
-int particles_spawn_effect(float x, float y, ParticleEffect* effect, bool in_world, bool hidden);
+ParticleSpawner* particles_spawn_effect(float x, float y, ParticleEffect* effect, float lifetime, bool in_world, bool hidden);
 void particles_update(double delta_t);
 void particles_show_spawner(int id, bool show);
 void particles_draw();
+void particles_draw_spawner(ParticleSpawner* spawner);
 ParticleSpawner* particles_get_spawner(int id);

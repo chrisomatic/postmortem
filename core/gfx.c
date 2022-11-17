@@ -935,6 +935,14 @@ void gfx_anim_update(GFXAnimation* anim, double delta_t)
     }
 }
 
+// Misc
+
+void gfx_color2floats(uint32_t color, float* r, float* g, float* b)
+{
+    *r = ((color >> 16) & 0xFF)/255.0f;
+    *g = ((color >>  8) & 0xFF)/255.0f;
+    *b = ((color >>  0) & 0xFF)/255.0f;
+}
 
 void gfx_print_times()
 {

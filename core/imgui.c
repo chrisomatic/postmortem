@@ -13,7 +13,7 @@
 
 #define NOMINAL_FONT_SIZE 64.0 // px for 1.0 scale
 #define MAX_CONTEXTS 32
-#define MAX_INT_LOOKUPS 64
+#define MAX_INT_LOOKUPS 256
 
 #define DRAW_DEBUG_BOXES 0
 
@@ -292,8 +292,6 @@ bool imgui_button(char* label, ...)
     bool result = false;
     uint32_t hash = hash_str(label,strlen(label),0x0);
 
-    char new_label[32] = {0};
-    mask_off_hidden(label, new_label, 32);
 
     if(is_active(hash))
     {
@@ -320,12 +318,15 @@ bool imgui_button(char* label, ...)
     vsprintf(str,label, args);
     va_end(args);
 
-    Vector2f text_size = gfx_string_get_size(theme.text_scale, str);
+    char new_label[256] = {0};
+    mask_off_hidden(str, new_label, 256);
+
+    Vector2f text_size = gfx_string_get_size(theme.text_scale, new_label);
 
     Rect interactive = {ctx->curr.x, ctx->curr.y, text_size.x + 2*theme.text_padding, text_size.y + 2*theme.text_padding};
     handle_highlighting(hash, &interactive);
 
-    draw_button(hash, str, &interactive);
+    draw_button(hash, new_label, &interactive);
 
     ctx->curr.w = text_size.x + 2*theme.text_padding + theme.spacing;
     ctx->curr.h = text_size.y + 2*theme.text_padding + theme.spacing;
@@ -461,6 +462,9 @@ void imgui_color_picker(char* label, uint32_t* result)
     snprintf(lg,31,"##%s_G",label);
     snprintf(lb,31,"##%s_B",label);
 
+    char new_label[32] = {0};
+    mask_off_hidden(label, new_label, 32);
+
     int prior_spacing = theme.spacing;
     imgui_set_spacing(2);
     imgui_horizontal_begin();
@@ -470,11 +474,11 @@ void imgui_color_picker(char* label, uint32_t* result)
         imgui_number_box(lb, 0, 255, &b);
         *result = COLOR((uint8_t)r,(uint8_t)g,(uint8_t)b);
 
-        Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
+        Vector2f text_size = gfx_string_get_size(theme.text_scale, new_label);
         Rect box = {ctx->curr.x,ctx->curr.y, 20, text_size.y+2.0*theme.text_padding};
         draw_color_box(&box,*result);
 
-        draw_label(ctx->curr.x + box.w + theme.text_padding, ctx->curr.y-(text_size.y-box.h)/2.0, theme.text_color, label);
+        draw_label(ctx->curr.x + box.w + theme.text_padding, ctx->curr.y-(text_size.y-box.h)/2.0, theme.text_color, new_label);
 
         ctx->curr.w = box.w + text_size.x + theme.text_padding;
         ctx->curr.h = MAX(text_size.y,box.h);
@@ -823,7 +827,7 @@ static void set_default_theme()
 
     // panel
     theme.panel_color = 0x20202020;
-    theme.panel_opacity = 0.75;
+    theme.panel_opacity = 0.85;
     theme.panel_min_width = 200;
     theme.panel_spacing = 8;
 }
