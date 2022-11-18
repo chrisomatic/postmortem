@@ -323,7 +323,8 @@ void camera_set()
     int mx, my;
     window_get_mouse_view_coords(&mx, &my);
 
-    if(player->weapon_ready || player->block_ready)
+    // if(player->weapon_ready || player->block_ready)
+    if(player->item.mouse_aim)
     {
         float r = 0.2;  //should be <= 0.5 to make sense otherwise player will end up off of the screen
         float ox = (mx - view_width/2.0);
@@ -413,18 +414,18 @@ void draw()
     zombie_draw();
     projectile_draw();
 
-    static bool activate_player = false;
-    if(!activate_player)
-    {
-        players[2].active = true;
-        players[2].phys.pos.x = 1000;
-        players[2].phys.pos.y = 1000;
-        players[2].phys.pos.w = 25;
-        players[2].phys.pos.h = 60;
-        players[2].sprite_index = 1;
-        player_count++;
-        activate_player = true;
-    }
+    // static bool activate_player = false;
+    // if(!activate_player)
+    // {
+    //     players[2].active = true;
+    //     players[2].phys.pos.x = 1000;
+    //     players[2].phys.pos.y = 1000;
+    //     players[2].phys.pos.w = 25;
+    //     players[2].phys.pos.h = 60;
+    //     players[2].sprite_index = 1;
+    //     player_count++;
+    //     activate_player = true;
+    // }
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {

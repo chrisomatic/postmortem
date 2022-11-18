@@ -77,7 +77,7 @@ typedef struct
     Vector2f pos;
     float angle;
     uint8_t sprite_index;
-} __attribute__((__packed__)) NetPlayerState;
+} __attribute__((__packed__)) PlayerNetState;
 
 extern char* server_ip_address;
 

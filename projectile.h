@@ -14,6 +14,6 @@ typedef enum
 extern glist* plist;
 
 void projectile_init();
-void projectile_add(int sprite_index, Weapon* weapon, int mx, int my, float angle_offset);
+void projectile_add(int sprite_index, Gun* gun, int mx, int my, float angle_offset);
 void projectile_update(float delta_t);
 void projectile_draw();

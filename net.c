@@ -48,7 +48,7 @@ typedef struct
     uint8_t client_salt[8];
     uint8_t server_salt[8];
     uint8_t xor_salts[8];
-    NetPlayerState player_state;
+    PlayerNetState player_state;
     ConnectionRejectionReason last_reject_reason;
     PacketError last_packet_error;
     Packet prior_state_pkt;
@@ -73,7 +73,7 @@ _Static_assert((RAND_MAX & (RAND_MAX + 1u)) == 0, "RAND_MAX not a Mersenne numbe
 
 // ---
 
-//static NetPlayerState net_player_states[MAX_CLIENTS];
+//static PlayerNetState net_player_states[MAX_CLIENTS];
 static NetPlayerInput net_player_inputs[INPUT_QUEUE_MAX]; // shared
 static int input_count = 0;
 static int inputs_per_packet = (TARGET_FPS/TICK_RATE);
@@ -1023,7 +1023,7 @@ void net_client_update()
                         {
                             for(int i = p->predicted_state_index; i >= 0; --i)
                             {
-                                NetPlayerState* pstate = &p->predicted_states[i];
+                                PlayerNetState* pstate = &p->predicted_states[i];
 
                                 if(pstate->associated_packet_id == srvpkt.hdr.ack)
                                 {
@@ -1093,16 +1093,16 @@ void net_client_update()
                         }
                         else
                         {
-                            p->state_prior.pos.x = p->phys.pos.x;
-                            p->state_prior.pos.y = p->phys.pos.y;
+                            p->server_state_prior.pos.x = p->phys.pos.x;
+                            p->server_state_prior.pos.y = p->phys.pos.y;
 
-                            p->state_target.pos.x = pos.x;
-                            p->state_target.pos.y = pos.y;
+                            p->server_state_target.pos.x = pos.x;
+                            p->server_state_target.pos.y = pos.y;
 
                             p->lerp_t = 0.0;
 
-                            p->state_prior.angle = p->angle;
-                            p->state_target.angle = angle;
+                            p->server_state_prior.angle = p->angle;
+                            p->server_state_target.angle = angle;
                             p->sprite_index = sprite_index;
                         }
                     }

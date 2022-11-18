@@ -9,16 +9,62 @@
 #define PLAYER_NAME_MAX 32
 #define PLAYER_HEIGHT   50
 
+//TEMP: blocks
+#define MAX_BLOCKS  1000
+typedef enum
+{
+    BLOCK_0,
+    BLOCK_1,
+
+    BLOCK_MAX
+} BlockType;
+typedef struct
+{
+    BlockType type;
+    float hp;
+    int image;
+    int sprite_index;
+    uint32_t color;
+} BlockProp;
+typedef struct
+{
+    int row;
+    int col;
+    float hp;
+    BlockType type;
+} block_t;
+
+
+
+typedef enum
+{
+    ITEM_TYPE_NONE,
+    ITEM_TYPE_MELEE,
+    ITEM_TYPE_GUN,
+    ITEM_TYPE_BLOCK,
+    ITEM_TYPE_OBJECT,
+} PlayerItemType;
+
+typedef struct
+{
+    PlayerItemType item_type;
+    void* props;
+    bool drawable;
+    bool mouse_aim;
+    Rect pos;
+} PlayerItem;
+
 // animation states
 typedef enum
 {
-    PSTATE_IDLE,
-    PSTATE_WALK,
-    PSTATE_ATTACK1, // swing
+    ANIM_IDLE,
+    ANIM_WALK,
 
-    PSTATE_MAX,
-    PSTATE_NONE    // keep this after MAX (affects image loading/lookup)
-} PlayerState;
+    ANIM_ATTACK1, // swing
+
+    ANIM_MAX,
+    ANIM_NONE    // keep this after MAX (affects image loading/lookup)
+} PlayerAnimState;
 
 typedef enum
 {
@@ -36,41 +82,51 @@ typedef struct
 } PlayerModel;
 
 
-typedef enum
-{
-    WEAPON_TYPE_HANDGUN,
-    WEAPON_TYPE_RIFLE,
-    WEAPON_TYPE_BOW,
+// typedef enum
+// {
+//     //guns
+//     WEAPON_TYPE_HANDGUN,
+//     WEAPON_TYPE_RIFLE,
+//     WEAPON_TYPE_BOW,
 
-    // keep these below the guns
-    WEAPON_TYPE_MELEE,
-    WEAPON_TYPE_NONE,
-    WEAPON_TYPE_MAX
-} WeaponType;
+//     //melee
+//     WEAPON_TYPE_MELEE0,
 
-typedef enum
-{
-    ATTACK_NONE,
-    ATTACK_SHOOT,
-    ATTACK_MELEE,
-    ATTACK_POWER_MELEE,
+//     WEAPON_TYPE_NONE,
+//     WEAPON_TYPE_MAX
+// } WeaponType;
 
-    ATTACK_MAX
-} WeaponAttack;
 
 typedef enum
 {
-    WEAPON_PISTOL1,
-    WEAPON_MACHINEGUN1,
-    WEAPON_SHOTGUN1,
+    GUN_TYPE_HANDGUN,
+    GUN_TYPE_RIFLE,
+    GUN_TYPE_BOW,
 
-    WEAPON_NONE,
-    WEAPON_MAX
-} WeaponIndex;
+    GUN_TYPE_MAX
+} GunType;
+
+typedef enum
+{
+    GUN_PISTOL1,
+    GUN_MACHINEGUN1,
+    GUN_SHOTGUN1,
+
+    GUN_MAX
+} GunIndex;
+
 
 
 typedef struct
 {
+    GunIndex index;
+    GunType type;
+    const char* name;
+
+    PlayerAnimState anim_state;
+    Rect pos;
+
+    // should get rid of this probably
     int projectile_type; // sprite index
 
     float power;
@@ -88,33 +144,38 @@ typedef struct
     float reload_time;
 } Gun;
 
+
+//TODO
+typedef enum
+{
+    MELEE_TYPE0,
+    MELEE_TYPE1,
+
+    MELEE_TYPE_MAX
+} MeleeType;
+
+typedef enum
+{
+    MELEE_KNIFE1,
+
+    MELEE_MAX
+} MeleeIndex;
+
 typedef struct
 {
-    //TODO: add vars for power attack vs. regular attack
+    MeleeIndex index;
+    MeleeType type;
+    const char* name;
+
+    PlayerAnimState anim_state;
+    Rect pos;
+
     float period;
     float power;
     float range;
 } Melee;
 
-typedef struct
-{
-    const char* name;
-    WeaponType type;
-    WeaponIndex index;
-    Rect pos;
 
-    Rect max_size;
-
-    WeaponAttack primary_attack;
-    PlayerState primary_state;
-
-    WeaponAttack secondary_attack;
-    PlayerState secondary_state;
-
-    Gun gun;
-    Melee melee;
-
-} Weapon;
 
 enum PlayerAction
 {
@@ -132,7 +193,7 @@ enum PlayerAction
     PLAYER_ACTION_TOGGLE_EDITOR    = 1<<11,
     PLAYER_ACTION_TOGGLE_GUN       = 1<<12,
     PLAYER_ACTION_RELOAD           = 1<<13,
-    PLAYER_ACTION_TOGGLE_BLOCK     = 1<<14,
+    PLAYER_ACTION_TOGGLE_BLOCK     = 1<<14,//place block
 };
 
 typedef struct
@@ -149,85 +210,118 @@ typedef struct
     float angle;
 } PlayerServerState;
 
+
+typedef enum
+{
+    MOUSE_TRIGGER_NONE,
+    MOUSE_TRIGGER_PRESS,
+    MOUSE_TRIGGER_HOLD,
+    MOUSE_TRIGGER_RELEASE
+} MouseTrigger;
+
+typedef void (*mouse_trigger_cb_t)(void* player, MouseTrigger trigger);
+
 typedef struct
 {
-    bool trigger;
+    bool triggered;
     float period;
     float cooldown;
     bool held;
     bool trigger_on_release;
     bool trigger_on_press;
     bool trigger_on_held;
-} MouseClick;
+    mouse_trigger_cb_t cb;
+} MouseData;
+
+typedef enum
+{
+    PSTATE_NONE,
+    PSTATE_ATTACKING,
+    PSTATE_RELOADING
+} PlayerState;
 
 typedef struct
 {
+    int index;
+    bool active;
     char name[PLAYER_NAME_MAX+1];
 
-    bool active;
-    int index;
 
+    // physical/graphical properties of the player
     PlayerModelIndex model_index;
     int model_texture;
-    PlayerState state;  //this is more of an animation state
 
-    bool moving;
-    bool block_ready;
-    bool weapon_ready;
-    bool attacking; //melee
-    bool reloading;
-    float reload_timer;
-
-    Weapon* weapon;
-    PlayerState attacking_state;
-    WeaponAttack attacking_type;
-
-    Rect melee_box;
-    bool melee_hit;
+    GFXAnimation anim;
+    PlayerAnimState anim_state;
 
     int image;
     uint8_t sprite_index;
-    uint8_t sprite_index_direction;
+    uint8_t sprite_index_direction; // 0-7
 
     Rect standard_size;
     Rect max_size;
-
-
     Rect pos;       // actual position of the player
     Physics phys;
-    float speed;
-    float max_base_speed;
     float angle;
     float scale;
+    float speed;
+    float max_base_speed;
+
+
+    PlayerState state;
+    bool busy;
+
+
+    // bool block_ready;
+    // bool weapon_ready;
+    // bool attacking; //melee
+    // bool reloading;
+
+    bool moving;
     bool running;
+    float reload_timer;
 
-    MouseClick lmouse;
-    MouseClick rmouse;
+    PlayerItem item;    //equipped item
 
-    uint16_t keys;
+    //TEMP
+    int item_index;
 
+    //TODO
+    // Weapon* weapon;
+    PlayerAnimState attacking_state;
+    // WeaponAttackType attacking_type;
+    uint8_t melee_hit_count;
+
+
+    // mouse stuff
+    MouseData lmouse;
+    MouseData rmouse;
     int mouse_x;
     int mouse_y;
     int mouse_r;
     int mouse_c;
 
+    // keys/actions
+    uint16_t keys;
     PlayerActions actions_prior;
     PlayerActions actions;
 
-    NetPlayerInput input_prior;
-    NetPlayerInput input;
 
-    NetPlayerState predicted_states[MAX_CLIENT_PREDICTED_STATES];
-    int predicted_state_index;
 
     int point_light;
 
+    // net stuff
+    NetPlayerInput input;
+    NetPlayerInput input_prior;
     // for client-side interpolation
     float lerp_t;
-    PlayerServerState state_target;
-    PlayerServerState state_prior;
+    PlayerServerState server_state_target;
+    PlayerServerState server_state_prior;
 
-    GFXAnimation anim;
+    PlayerNetState predicted_states[MAX_CLIENT_PREDICTED_STATES];
+    int predicted_state_index;
+
+
 
 } Player;
 
@@ -238,22 +332,31 @@ extern Player players[MAX_CLIENTS];
 extern Player* player;
 extern int player_count;
 extern uint32_t player_colors[MAX_CLIENTS];
-extern int player_image_sets[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][PSTATE_MAX][WEAPON_TYPE_MAX];
+// // extern int player_image_sets[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][ANIM_MAX][WEAPON_TYPE_MAX];
+// extern int player_image_sets[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][ANIM_MAX][2][MAX(MELEE_TYPE_MAX,GUN_TYPE_MAX)];
 extern PlayerModel player_models[PLAYER_MODELS_MAX];
 
-extern Weapon weapons[WEAPON_MAX];
+extern Gun guns[GUN_MAX];
+extern Melee melees[MELEE_MAX];
 
 
 void player_init_images();
 void player_init_controls(Player* p);
 void players_init();
-const char* player_state_str(PlayerState pstate);
-int player_get_image_index(PlayerModelIndex model_index, int texture, PlayerState pstate, WeaponType wtype);
+const char* player_state_str(PlayerAnimState anim_state);
+// int player_get_image_index(PlayerModelIndex model_index, int texture, PlayerAnimState anim_state, WeaponType wtype);
+int player_get_image_index(Player* p);
 int players_get_count();
-void player_set_weapon(Player* p, WeaponIndex weapon_index);
-void player_update_mouse_click(bool active, bool toggled, MouseClick* mouse, float delta_t);
+
+// void player_set_weapon(Player* p, WeaponIndex weapon_index);
+void player_set_equipped_item(Player* p, int idx);
+void player_equip_item(Player* p, PlayerItemType itype, void* props, bool drawable, bool mouse_aim);
+
+void player_set_mouse(MouseData* mouse_data, bool held, bool press, bool release, float period, mouse_trigger_cb_t cb);
+void player_update_mouse_click(Player* p, bool active, bool toggled, MouseData* mouse, float delta_t);
+
 void player_update_anim_timing(Player* p);
-void player_update_state(Player* p);
+void player_update_anim_state(Player* p);
 void player_update_image(Player* p);
 void player_update_boxes(Player* p);
 void player_update_sprite_index(Player* p);
@@ -264,9 +367,13 @@ void player_draw(Player* p);
 
 void weapons_init();
 void weapons_init_images();
-int weapons_get_image_index(PlayerModelIndex model_index, PlayerState pstate, WeaponType wtype);
-const char* weapon_type_str(WeaponType wtype);
-void weapon_fire(int mx, int my, Weapon* weapon, bool held);
+
+int gun_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state, GunType gtype);
+int melee_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state, MeleeType mtype);
+// const char* weapon_type_str(WeaponType wtype);
+const char* gun_type_str(GunType gtype);
+const char* melee_type_str(MeleeType mtype);
+void gun_fire(int mx, int my, Gun* gun, bool held);
 void player_weapon_melee_check_collision(Player* p);
 
 void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret);

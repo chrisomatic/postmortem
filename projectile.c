@@ -58,26 +58,27 @@ void projectile_init()
     projectile_image_set = gfx_load_image("img/projectile_set.png", false, false, 32, 32, NULL);
 }
 
-void projectile_add(int sprite_index, Weapon* weapon, int mx, int my, float angle_offset)
+void projectile_add(int sprite_index, Gun* gun, int mx, int my, float angle_offset)
 {
     Projectile proj = {0};
 
-    float speed = weapon->gun.fire_speed;
+    float speed = gun->fire_speed;
     // speed = 10.0;
 
     proj.sprite_index = sprite_index;
-    proj.damage = weapon->gun.power + proj.power;
+    proj.damage = gun->power + proj.power;
     proj.dead = false;
 
     // //spawn at the end of the gun, (could subtract bullet width/height to make spawn inside of gun)
     // float _x = gun->pos.x + (gun->visible_rect.w/2.0)*cosf(angle);
     // float _y = gun->pos.y + (gun->visible_rect.h/2.0)*sinf(PI*2-angle);
-    float _x = weapon->pos.x;
-    float _y = weapon->pos.y;
+
+    float _x = gun->pos.x;
+    float _y = gun->pos.y;
     proj.pos.x = _x;
     proj.pos.y = _y;
 
-    // Player* owner = (Player*)(weapon->owner);
+    // Player* owner = (Player*)(gun->owner);
 
     // int mx = p->mouse_x;
     // int my = p->mouse_y;
@@ -90,7 +91,7 @@ void projectile_add(int sprite_index, Weapon* weapon, int mx, int my, float angl
     proj.vel.y = speed*sinf(angle);
     proj.time = 0.0;
     float vel = sqrt(proj.vel.x*proj.vel.x + proj.vel.y*proj.vel.y);
-    proj.ttl  = 1.0 / (vel / weapon->gun.fire_range);
+    proj.ttl  = 1.0 / (vel / gun->fire_range);
 
     // GFXSubImageData* sid = gfx_images[projectile_image_set].sub_img_data;
     Rect* vr = &gfx_images[projectile_image_set].visible_rects[proj.sprite_index];
