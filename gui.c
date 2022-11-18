@@ -74,6 +74,7 @@ void gui_draw_text()
     float pvy = player->phys.vel.y;
     float pv = sqrt(SQ(pvx) + SQ(pvy));
 
+    //TODO
     bool up               = IS_BIT_SET(player->keys,PLAYER_ACTION_UP);
     bool down             = IS_BIT_SET(player->keys,PLAYER_ACTION_DOWN);
     bool left             = IS_BIT_SET(player->keys,PLAYER_ACTION_LEFT);
@@ -83,7 +84,7 @@ void gui_draw_text()
     bool interact         = IS_BIT_SET(player->keys,PLAYER_ACTION_INTERACT);
     bool primary_action   = IS_BIT_SET(player->keys,PLAYER_ACTION_PRIMARY_ACTION);
     bool secondary_action = IS_BIT_SET(player->keys,PLAYER_ACTION_SECONDARY_ACTION);
-    bool toggle_equip_weapon= IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_EQUIP_WEAPON);
+    bool toggle_equip_weapon= IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_EQUIP);
     bool toggle_debug     = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_DEBUG);
 
     // mouse
