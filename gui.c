@@ -227,13 +227,13 @@ static void editor_draw()
                     effect->scale.init_max = RAND_FLOAT(0.01,1.0);
                     effect->scale.rate     = RAND_FLOAT(-0.5,0.5);
 
-                    effect->velocity_x.init_min = RAND_FLOAT(-100.0,100.0);
-                    effect->velocity_x.init_max = RAND_FLOAT(-100.0,100.0);
-                    effect->velocity_x.rate     = RAND_FLOAT(-100.0,100.0);
+                    effect->velocity_x.init_min = RAND_FLOAT(-32.0,32.0);
+                    effect->velocity_x.init_max = RAND_FLOAT(-32.0,32.0);
+                    effect->velocity_x.rate     = RAND_FLOAT(-32.0,32.0);
 
-                    effect->velocity_y.init_min = RAND_FLOAT(-100.0,100.0);
-                    effect->velocity_y.init_max = RAND_FLOAT(-100.0,100.0);
-                    effect->velocity_y.rate     = RAND_FLOAT(-100.0,100.0);
+                    effect->velocity_y.init_min = RAND_FLOAT(-32.0,32.0);
+                    effect->velocity_y.init_max = RAND_FLOAT(-32.0,32.0);
+                    effect->velocity_y.rate     = RAND_FLOAT(-32.0,32.0);
 
                     effect->opacity.init_min = RAND_FLOAT(0.01,1.0);
                     effect->opacity.init_max = RAND_FLOAT(0.01,1.0);
