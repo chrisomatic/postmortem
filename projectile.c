@@ -12,6 +12,8 @@
 #include "log.h"
 #include "player.h"
 #include "zombie.h"
+#include "effects.h"
+#include "particles.h"
 #include "projectile.h"
 
 typedef struct
@@ -110,6 +112,9 @@ void projectile_add(int sprite_index, Gun* gun, int mx, int my, float angle_offs
     update_hurt_box(&proj);
 
     list_add(plist, (void*)&proj);
+
+    particles_spawn_effect(proj.pos.x, proj.pos.y-5, &particle_effects[0], 0.5, true, false);
+    particles_spawn_effect(proj.pos.x, proj.pos.y-5, &particle_effects[1], 0.5, true, false); // sparks
 }
 
 
@@ -196,7 +201,7 @@ void projectile_draw()
         {
             //gfx_add_line(proj->hurt_box.x + proj->hurt_box.w/2.0, proj->hurt_box.y + proj->hurt_box.h/2.0, proj->hurt_box_prior.x + proj->hurt_box_prior.w/2.0, proj->hurt_box_prior.y + proj->hurt_box_prior.h/2.0, 0x00FFFF00);
 
-            gfx_draw_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0, false);
+            gfx_draw_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0, false,true);
 
             if(debug_enabled)
             {

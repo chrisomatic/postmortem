@@ -19,6 +19,7 @@ gcc core/gfx.c \
     world.c \
     player.c \
     zombie.c \
+    effects.c \
     gui.c \
     net.c \
     projectile.c \

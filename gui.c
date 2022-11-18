@@ -14,6 +14,8 @@
 #include "lighting.h"
 #include "zombie.h"
 #include "particles.h"
+#include "io.h"
+#include "effects.h"
 #include "gui.h"
 
 static ParticleSpawner* particle_spawner;
@@ -55,7 +57,7 @@ void gui_init()
         .spawn_time_max = 0.5,
         .burst_count_min = 1,
         .burst_count_max = 3,
-        .sprite_index = 0,
+        .sprite_index = 57,
         .use_sprite = false,
     };
 
@@ -170,6 +172,8 @@ void gui_draw_text()
 
 }
 
+static char particles_file_name[20] = {0};
+
 static void editor_draw()
 {
     imgui_begin_panel("Editor", 10,10);
@@ -209,7 +213,6 @@ static void editor_draw()
 
                 int big = 12;
 
-                //imgui_set_slider_width(60);
                 if(imgui_button("Randomize##particle_spawner"))
                 {
                     effect->life.init_min = RAND_FLOAT(0.1,5.0);
@@ -223,13 +226,13 @@ static void editor_draw()
                     effect->scale.init_max = RAND_FLOAT(0.01,1.0);
                     effect->scale.rate     = RAND_FLOAT(-0.5,0.5);
 
-                    effect->velocity_x.init_min = RAND_FLOAT(-32.0,32.0);
-                    effect->velocity_x.init_max = RAND_FLOAT(-32.0,32.0);
-                    effect->velocity_x.rate     = RAND_FLOAT(-32.0,32.0);
+                    effect->velocity_x.init_min = RAND_FLOAT(-100.0,100.0);
+                    effect->velocity_x.init_max = RAND_FLOAT(-100.0,100.0);
+                    effect->velocity_x.rate     = RAND_FLOAT(-100.0,100.0);
 
-                    effect->velocity_y.init_min = RAND_FLOAT(-32.0,32.0);
-                    effect->velocity_y.init_max = RAND_FLOAT(-32.0,32.0);
-                    effect->velocity_y.rate     = RAND_FLOAT(-32.0,32.0);
+                    effect->velocity_y.init_min = RAND_FLOAT(-100.0,100.0);
+                    effect->velocity_y.init_max = RAND_FLOAT(-100.0,100.0);
+                    effect->velocity_y.rate     = RAND_FLOAT(-100.0,100.0);
 
                     effect->opacity.init_min = RAND_FLOAT(0.01,1.0);
                     effect->opacity.init_max = RAND_FLOAT(0.01,1.0);
@@ -247,13 +250,15 @@ static void editor_draw()
                     effect->burst_count_min  = RAND_FLOAT(1, 20);
                     effect->burst_count_max  = RAND_FLOAT(1, 20);
 
-                    effect->sprite_index = RAND_RANGE(0,MAX_GFX_IMAGES-1);
+                    effect->sprite_index = RAND_RANGE(0,79);
 
                     effect->color1 = RAND_RANGE(0x0,0x00FFFFFF);
                     effect->color2 = RAND_RANGE(0x0,0x00FFFFFF);
                     effect->color3 = RAND_RANGE(0x0,0x00FFFFFF);
-
                 }
+
+                //imgui_set_slider_width(60);
+                imgui_text_sized(10,"Particle Count: %d",particle_spawner->particle_list->count);
                 imgui_text_sized(big,"Particle Life");
                 imgui_horizontal_begin();
                     imgui_slider_float("Min##life", 0.1,5.0,&effect->life.init_min);
@@ -276,17 +281,17 @@ static void editor_draw()
                 imgui_horizontal_end();
                 imgui_text_sized(big,"Velocity X");
                 imgui_horizontal_begin();
-                    imgui_slider_float("Min##velx", -32.0,32.0,&effect->velocity_x.init_min);
-                    imgui_slider_float("Max##velx", -32.0,32.0,&effect->velocity_x.init_max);
+                    imgui_slider_float("Min##velx", -100.0,100.0,&effect->velocity_x.init_min);
+                    imgui_slider_float("Max##velx", -100.0,100.0,&effect->velocity_x.init_max);
                     effect->velocity_x.init_max = (effect->velocity_x.init_min > effect->velocity_x.init_max ? effect->velocity_x.init_min : effect->velocity_x.init_max);
-                    imgui_slider_float("Rate##velx", -32.0,32.0,&effect->velocity_x.rate);
+                    imgui_slider_float("Rate##velx", -100.0,100.0,&effect->velocity_x.rate);
                 imgui_horizontal_end();
                 imgui_text_sized(big,"Velocity Y");
                 imgui_horizontal_begin();
-                    imgui_slider_float("Min##vely", -32.0,32.0,&effect->velocity_y.init_min);
-                    imgui_slider_float("Max##vely", -32.0,32.0,&effect->velocity_y.init_max);
+                    imgui_slider_float("Min##vely", -100.0,100.0,&effect->velocity_y.init_min);
+                    imgui_slider_float("Max##vely", -100.0,100.0,&effect->velocity_y.init_max);
                     effect->velocity_y.init_max = (effect->velocity_y.init_min > effect->velocity_y.init_max ? effect->velocity_y.init_min : effect->velocity_y.init_max);
-                    imgui_slider_float("Rate##vely", -32.0,32.0,&effect->velocity_y.rate);
+                    imgui_slider_float("Rate##vely", -100.0,100.0,&effect->velocity_y.rate);
                 imgui_horizontal_end();
                 imgui_text_sized(big,"Opacity");
                 imgui_horizontal_begin();
@@ -323,9 +328,40 @@ static void editor_draw()
                     imgui_number_box("Index##sprite_index", 0, MAX_GFX_IMAGES-1, &effect->sprite_index);
                 }
                 imgui_text_sized(big,"Colors");
-                imgui_color_picker("1##colors", &effect->color1);
-                imgui_color_picker("2##colors", &effect->color2);
-                imgui_color_picker("3##colors", &effect->color3);
+                imgui_horizontal_begin();
+                    imgui_color_picker("1##colors", &effect->color1);
+                    imgui_color_picker("2##colors", &effect->color2);
+                    imgui_color_picker("3##colors", &effect->color3);
+                imgui_horizontal_end();
+                imgui_newline();
+
+                imgui_horizontal_begin();
+
+                    imgui_inputtext("##file_name_particles",particles_file_name,IM_ARRAYSIZE(particles_file_name));
+
+                    char file_path[64]= {0};
+                    snprintf(file_path,63,"effects/%s.effect",particles_file_name);
+
+                    if(imgui_button("Save##particles"))
+                    {
+                        effects_save(file_path, effect);
+                    }
+                    if(imgui_button("Load##particles"))
+                    {
+                        ParticleEffect loaded_effect = {0};
+                        bool res = effects_load(file_path, &loaded_effect);
+                        if(res)
+                        {
+                            memcpy(effect,&loaded_effect,sizeof(ParticleEffect));
+                        }
+                    }
+
+                imgui_horizontal_end();
+
+                if(io_file_exists(file_path))
+                {
+                    imgui_text_colored(0x00CC8800, "File Exists!");
+                }
 
                 // show preview
                 particles_draw_spawner(particle_spawner);

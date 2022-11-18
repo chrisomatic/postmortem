@@ -473,7 +473,7 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     return -1;
 }
 
-bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image)
+bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
@@ -586,7 +586,12 @@ bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t 
     glUniform1f(loc_sprite_opacity,opacity);
 
     glUniformMatrix4fv(loc_sprite_model,1,GL_TRUE,&model.m[0][0]);
-    glUniformMatrix4fv(loc_sprite_view,1,GL_TRUE,&view->m[0][0]);
+
+    if(in_world)
+        glUniformMatrix4fv(loc_sprite_view,1,GL_TRUE,&view->m[0][0]);
+    else
+        glUniformMatrix4fv(loc_sprite_view,1,GL_TRUE,&IDENTITY_MATRIX.m[0][0]);
+
     glUniformMatrix4fv(loc_sprite_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
 
     glActiveTexture(GL_TEXTURE0);

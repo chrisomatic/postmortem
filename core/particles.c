@@ -12,24 +12,12 @@
 #include "lighting.h"
 #include "particles.h"
 
+#define PARTICLES_EFFECT_VERSION 1
+
 static ParticleSpawner spawners[MAX_PARTICLE_SPAWNERS] = {0};
 static glist* spawner_list;
 static int global_id_count = 0;
 static int particles_image;
-
-static void print_particle(Particle* p)
-{
-    printf("===================\n");
-    printf("Particle:\n");
-    printf("  position: %f %f\n", p->pos.x, p->pos.y);
-    printf("  velocity: %f %f\n", p->vel.x, p->vel.y);
-    printf("  color: %08X\n", p->color);
-    printf("  scale: %f\n", p->scale);
-    printf("  opacity: %f\n", p->opacity);
-    printf("  life: %f\n", p->life);
-    printf("  life_max: %f\n", p->life_max);
-    printf("===================\n");
-}
 
 static void emit_particle(ParticleSpawner* s)
 {
@@ -78,6 +66,44 @@ static ParticleSpawner* get_spawner_by_id(int id)
     return NULL;
 }
 
+void print_particle(Particle* p)
+{
+    printf("===================\n");
+    printf("Particle:\n");
+    printf("  position: %f %f\n", p->pos.x, p->pos.y);
+    printf("  velocity: %f %f\n", p->vel.x, p->vel.y);
+    printf("  color: %08X\n", p->color);
+    printf("  scale: %f\n", p->scale);
+    printf("  opacity: %f\n", p->opacity);
+    printf("  life: %f\n", p->life);
+    printf("  life_max: %f\n", p->life_max);
+    printf("===================\n");
+}
+
+void print_particle_effect(ParticleEffect* e)
+{
+    printf("===================\n");
+    printf("Particle Effect:\n");
+    printf("  version: %u\n", e->version);
+    printf("  life: %f %f, %f\n", e->life.init_min, e->life.init_max, e->life.rate);
+    printf("  scale: %f %f, %f\n", e->scale.init_min, e->scale.init_max, e->scale.rate);
+    printf("  velocity_x: %f %f, %f\n", e->velocity_x.init_min, e->velocity_x.init_max, e->velocity_x.rate);
+    printf("  velocity_y: %f %f, %f\n", e->velocity_y.init_min, e->velocity_y.init_max, e->velocity_y.rate);
+    printf("  opacity: %f %f, %f\n", e->opacity.init_min, e->opacity.init_max, e->opacity.rate);
+    printf("  angular_vel: %f %f, %f\n", e->angular_vel.init_min, e->angular_vel.init_max, e->angular_vel.rate);
+    printf("  color1: %08X\n", e->color1);
+    printf("  color2: %08X\n", e->color2);
+    printf("  color3: %08X\n", e->color3);
+    printf("  spawn_radius: %f\n", e->spawn_radius);
+    printf("  rotation: %f %f\n", e->rotation_init_min, e->rotation_init_max);
+    printf("  spawn_time: %f %f\n", e->spawn_time_min, e->spawn_time_max);
+    printf("  burst_count: %d %d\n", e->burst_count_min, e->burst_count_max);
+    printf("  sprite_index: %d\n", e->sprite_index);
+    printf("  use_sprite: %s\n", e->use_sprite ? "true" : "false");
+    printf("===================\n");
+}
+
+
 void delete_spawner(int index)
 {
     list_delete(spawners[index].particle_list);
@@ -121,6 +147,8 @@ ParticleSpawner* particles_spawn_effect(float x, float y, ParticleEffect* effect
 
     ParticleSpawner* spawner = &spawners[spawner_list->count++];
 
+    memset(spawner,0,sizeof(ParticleSpawner));
+
     spawner->particle_list = list_create(spawner->particles,MAX_PARTICLES_PER_SPAWNER,sizeof(Particle));
 
     if(effect)
@@ -128,16 +156,18 @@ ParticleSpawner* particles_spawn_effect(float x, float y, ParticleEffect* effect
         memcpy(&spawner->effect, effect, sizeof(ParticleEffect));
     }
 
+    spawner->effect.version = PARTICLES_EFFECT_VERSION;
     spawner->id = get_id();
     spawner->pos.x = x;
     spawner->pos.y = y;
     spawner->in_world = in_world;
-    spawner->spawn_time = 0.0;
     spawner->spawn_time_max = RAND_FLOAT(spawner->effect.spawn_time_min, spawner->effect.spawn_time_max);
+    spawner->spawn_time = spawner->spawn_time_max;
     spawner->hidden = hidden;
     spawner->mortal = (lifetime > 0.0);
     spawner->life = 0.0;
     spawner->life_max = lifetime;
+    spawner->dead = false;
 
     return (spawner);
 }
@@ -198,6 +228,8 @@ void particles_update(double delta_t)
 
         if(spawner->mortal)
         {
+            spawner->life += delta_t;
+
             if(!spawner->dead && spawner->life >= spawner->life_max)
             {
                 spawner->dead = true;
@@ -209,18 +241,23 @@ void particles_update(double delta_t)
             }
         }
 
-        spawner->spawn_time += delta_t;
-        if(spawner->spawn_time >= spawner->spawn_time_max)
+        if(!spawner->dead)
         {
-            spawner->spawn_time = 0.0;
-            int burst_count = spawner->effect.burst_count_min;
-            if(spawner->effect.burst_count_min < spawner->effect.burst_count_max)
-                burst_count = RAND_RANGE(spawner->effect.burst_count_min,spawner->effect.burst_count_max);
-
-            burst_count = MAX(0, burst_count);
-            for(int i = 0; i < burst_count; ++i)
+            spawner->spawn_time += delta_t;
+            if(spawner->spawn_time >= spawner->spawn_time_max)
             {
-                emit_particle(spawner);
+                spawner->spawn_time = 0.0;
+                spawner->spawn_time_max = RAND_FLOAT(spawner->effect.spawn_time_min, spawner->effect.spawn_time_max);
+
+                int burst_count = spawner->effect.burst_count_min;
+                if(spawner->effect.burst_count_min < spawner->effect.burst_count_max)
+                    burst_count = RAND_RANGE(spawner->effect.burst_count_min,spawner->effect.burst_count_max);
+
+                burst_count = MAX(0, burst_count);
+                for(int i = 0; i < burst_count; ++i)
+                {
+                    emit_particle(spawner);
+                }
             }
         }
     }
@@ -233,7 +270,7 @@ void particles_draw_spawner(ParticleSpawner* spawner)
         Particle* p = &spawner->particles[j];
         if(spawner->effect.use_sprite)
         {
-            gfx_draw_image(particles_image, spawner->effect.sprite_index, p->pos.x, p->pos.y, ambient_light,p->scale,p->rotation,p->opacity,false);
+            gfx_draw_image(particles_image, spawner->effect.sprite_index, p->pos.x,p->pos.y, p->color,p->scale,p->rotation,p->opacity,false, spawner->in_world);
         }
         else
         {

@@ -14,6 +14,7 @@
 #define NOMINAL_FONT_SIZE 64.0 // px for 1.0 scale
 #define MAX_CONTEXTS 32
 #define MAX_INT_LOOKUPS 256
+#define MAX_HORIZONTAL_STACK 10
 
 #define DRAW_DEBUG_BOXES 0
 
@@ -44,6 +45,7 @@ typedef struct
 
     int indent_amount;
 
+    bool horizontal_stack[MAX_HORIZONTAL_STACK];
     bool is_horizontal;
 
     IntLookup int_lookups[MAX_INT_LOOKUPS];
@@ -268,23 +270,53 @@ void imgui_newline()
 
 void imgui_horizontal_begin()
 {
-    ctx->is_horizontal = true;
+    for(int i = 0; i < MAX_HORIZONTAL_STACK; ++i)
+    {
+        if(ctx->horizontal_stack[i] == false)
+        {
+            ctx->horizontal_stack[i] = true;
+            ctx->is_horizontal = true;
+            break;
+        }
+    }
 }
 
 void imgui_horizontal_end()
 {
-    ctx->is_horizontal = false;
+    for(int i = 0; i < MAX_HORIZONTAL_STACK; ++i)
+    {
+        if(ctx->horizontal_stack[i] == false)
+        {
+            if(i > 0)
+            {
+                ctx->horizontal_stack[i-1] = false;
 
-    ctx->curr.x = ctx->start_x + theme.panel_spacing + ctx->indent_amount;
-    ctx->curr.y += ctx->horiontal_max_height;
+                if(i == 1)
+                {
+                    ctx->is_horizontal = false;
+                }
+                else
+                {
+                    progress_pos();
+                }
+            }
+            break;
+        }
+    }
 
-    ctx->horiontal_max_height = 0;
+    if(!ctx->is_horizontal)
+    {
+        ctx->curr.x = ctx->start_x + theme.panel_spacing + ctx->indent_amount;
+        ctx->curr.y += ctx->horiontal_max_height;
 
-    ctx->accum_width += ctx->curr.w;
-    if(ctx->accum_width + ctx->indent_amount > ctx->max_width)
-        ctx->max_width = ctx->accum_width + ctx->indent_amount;
+        ctx->horiontal_max_height = 0;
 
-    ctx->accum_width = 0;
+        ctx->accum_width += ctx->curr.w;
+        if(ctx->accum_width + ctx->indent_amount > ctx->max_width)
+            ctx->max_width = ctx->accum_width + ctx->indent_amount;
+
+        ctx->accum_width = 0;
+    }
 }
 
 bool imgui_button(char* label, ...)
@@ -469,9 +501,9 @@ void imgui_color_picker(char* label, uint32_t* result)
     imgui_set_spacing(2);
     imgui_horizontal_begin();
         
-        imgui_number_box(lr, 0, 255, &r);
-        imgui_number_box(lg, 0, 255, &g);
-        imgui_number_box(lb, 0, 255, &b);
+        Vector2f s1 = imgui_number_box(lr, 0, 255, &r);
+        Vector2f s2 = imgui_number_box(lg, 0, 255, &g);
+        Vector2f s3 = imgui_number_box(lb, 0, 255, &b);
         *result = COLOR((uint8_t)r,(uint8_t)g,(uint8_t)b);
 
         Vector2f text_size = gfx_string_get_size(theme.text_scale, new_label);
@@ -480,7 +512,7 @@ void imgui_color_picker(char* label, uint32_t* result)
 
         draw_label(ctx->curr.x + box.w + theme.text_padding, ctx->curr.y-(text_size.y-box.h)/2.0, theme.text_color, new_label);
 
-        ctx->curr.w = box.w + text_size.x + theme.text_padding;
+        ctx->curr.w = s1.x + s2.x + s3.x + box.w + text_size.x + 2.0*theme.text_padding;
         ctx->curr.h = MAX(text_size.y,box.h);
     imgui_horizontal_end();
     imgui_set_spacing(prior_spacing);
@@ -492,7 +524,7 @@ void imgui_slider_float(char* label, float min, float max, float* result)
     progress_pos();
 }
 
-void imgui_number_box(char* label, int min, int max, int* result)
+Vector2f imgui_number_box(char* label, int min, int max, int* result)
 {
     uint32_t hash = hash_str(label,strlen(label),0x0);
 
@@ -539,6 +571,9 @@ void imgui_number_box(char* label, int min, int max, int* result)
     progress_pos();
 
     *result = *val;
+
+    Vector2f ret = {ctx->curr.w, ctx->curr.h};
+    return ret;
 }
 void imgui_inputtext(char* label, char* buf, int bufsize)
 {
@@ -560,11 +595,11 @@ void imgui_inputtext(char* label, char* buf, int bufsize)
         }
     }
 
-    Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
+    Vector2f text_size = gfx_string_get_size(theme.text_scale, new_label);
     Rect interactive = {ctx->curr.x, ctx->curr.y, 150, text_size.y + 2*theme.text_padding};
     handle_highlighting(hash, &interactive);
 
-    draw_input_box(hash, label, &interactive, buf);
+    draw_input_box(hash, new_label, &interactive, buf);
 
     ctx->curr.w = 150 + text_size.x + theme.text_padding + theme.spacing;
     ctx->curr.h = text_size.y + 2*theme.text_padding + theme.spacing;

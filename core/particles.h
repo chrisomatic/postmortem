@@ -1,5 +1,9 @@
 #pragma once
 
+#include <stdint.h>
+#include "math2d.h"
+#include "glist.h"
+
 #define MAX_PARTICLE_SPAWNERS 50
 #define MAX_PARTICLES_PER_SPAWNER 500
 
@@ -12,6 +16,8 @@ typedef struct
 
 typedef struct
 {
+    uint8_t version;
+
     ParticleParam life;
     ParticleParam scale;
     ParticleParam velocity_x;
@@ -71,3 +77,6 @@ void particles_show_spawner(int id, bool show);
 void particles_draw();
 void particles_draw_spawner(ParticleSpawner* spawner);
 ParticleSpawner* particles_get_spawner(int id);
+
+void print_particle(Particle* p);
+void print_particle_effect(ParticleEffect* e);

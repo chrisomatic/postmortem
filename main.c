@@ -11,6 +11,7 @@
 // #include "gun.h"
 #include "projectile.h"
 #include "zombie.h"
+#include "effects.h"
 #include "gui.h"
 #include "net.h"
 #include "log.h"
@@ -305,6 +306,9 @@ void init()
     LOGI(" - Particles.");
     particles_init();
 
+    LOGI(" - Effects.");
+    effects_load_all();
+
     LOGI(" - GUI.");
     gui_init();
 
@@ -456,7 +460,6 @@ void draw()
     }
 
     particles_draw();
-
     gui_draw();
 }
 

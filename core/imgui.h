@@ -15,7 +15,7 @@ void imgui_toggle_button(bool* toggle, char* text, ...);
 void imgui_checkbox(char* label, bool* result);
 void imgui_color_picker(char* label, uint32_t* result);
 void imgui_slider_float(char* label, float min, float max, float* result);
-void imgui_number_box(char* label, int min, int max, int* result);
+Vector2f imgui_number_box(char* label, int min, int max, int* result);
 void imgui_inputtext(char* label, char* buf, int bufsize);
 int imgui_button_select(int num_buttons, char* button_labels[], char* label);
 
