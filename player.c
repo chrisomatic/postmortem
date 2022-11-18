@@ -31,7 +31,6 @@ uint32_t player_colors[MAX_CLIENTS] = {
     COLOR_PINK,
     COLOR_YELLOW,
 };
-// int player_image_sets[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][ANIM_MAX][WEAPON_TYPE_MAX];
 
 int player_image_sets_none[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][ANIM_MAX];
 int player_image_sets_guns[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][ANIM_MAX][GUN_TYPE_MAX];
@@ -62,10 +61,10 @@ BlockProp block_props[BLOCK_MAX] = {0};
 // ------------------------------------------------------------
 
 
-void mouse_gun_cb(void* player, MouseTrigger trigger);
-void mouse_melee_cb(void* player, MouseTrigger trigger);
-void mouse_block_cb(void* player, MouseTrigger trigger);
-void mouse_block_remove_cb(void* player, MouseTrigger trigger);
+static void mouse_gun_cb(void* player, MouseTrigger trigger);
+static void mouse_melee_cb(void* player, MouseTrigger trigger);
+static void mouse_block_cb(void* player, MouseTrigger trigger);
+static void mouse_block_remove_cb(void* player, MouseTrigger trigger);
 
 
 // ------------------------------------------------------------
@@ -161,6 +160,7 @@ void player_init_images()
     crosshair_image = gfx_load_image("img/crosshair2.png", false, false, 0, 0, NULL);
 }
 
+
 void player_init_controls(Player* p)
 {
     window_controls_clear_keys();
@@ -170,18 +170,21 @@ void player_init_controls(Player* p)
     window_controls_add_key(&p->keys, GLFW_KEY_S, PLAYER_ACTION_DOWN);
     window_controls_add_key(&p->keys, GLFW_KEY_A, PLAYER_ACTION_LEFT);
     window_controls_add_key(&p->keys, GLFW_KEY_D, PLAYER_ACTION_RIGHT);
-    window_controls_add_key(&p->keys, GLFW_KEY_R, PLAYER_ACTION_RELOAD);
+
     window_controls_add_key(&p->keys, GLFW_KEY_LEFT_SHIFT, PLAYER_ACTION_RUN);
     window_controls_add_key(&p->keys, GLFW_KEY_SPACE, PLAYER_ACTION_JUMP);
     window_controls_add_key(&p->keys, GLFW_KEY_E, PLAYER_ACTION_INTERACT);
-    window_controls_add_key(&p->keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_EQUIP_WEAPON);
-    window_controls_add_key(&p->keys, GLFW_KEY_F2, PLAYER_ACTION_TOGGLE_DEBUG);
-    window_controls_add_key(&p->keys, GLFW_KEY_F3, PLAYER_ACTION_TOGGLE_EDITOR);
-    window_controls_add_key(&p->keys, GLFW_KEY_G, PLAYER_ACTION_TOGGLE_GUN);
-    window_controls_add_key(&p->keys, GLFW_KEY_B, PLAYER_ACTION_TOGGLE_BLOCK);
 
     window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_LEFT, PLAYER_ACTION_PRIMARY_ACTION);
     window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
+    window_controls_add_key(&p->keys, GLFW_KEY_R, PLAYER_ACTION_RELOAD);
+
+    window_controls_add_key(&p->keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_EQUIP);
+    window_controls_add_key(&p->keys, GLFW_KEY_1, PLAYER_ACTION_CYCLE_EQUIP_DOWN);
+    window_controls_add_key(&p->keys, GLFW_KEY_2, PLAYER_ACTION_CYCLE_EQUIP_UP);
+
+    window_controls_add_key(&p->keys, GLFW_KEY_F2, PLAYER_ACTION_TOGGLE_DEBUG);
+    window_controls_add_key(&p->keys, GLFW_KEY_F3, PLAYER_ACTION_TOGGLE_EDITOR);
 }
 
 static void player_init(int index)
@@ -198,15 +201,13 @@ static void player_init(int index)
     p->model_texture = 0;
     p->anim_state = ANIM_IDLE;
 
+    p->state = PSTATE_NONE;
+    p->busy = false;
     p->moving = false;
     p->running = false;
 
-    p->state = PSTATE_NONE;
-    // p->block_ready = false;
-    // p->weapon_ready = false;
-    // p->attacking = false;
-    // p->reloading = false;
-
+    p->item_equipped = false;
+    p->item_index = 1;
     player_set_equipped_item(p, 0);
 
 
@@ -223,7 +224,6 @@ static void player_init(int index)
     p->phys.max_linear_vel = p->max_base_speed;
 
 
-    // int standard_img = player_get_image_index(p->model_index, p->model_texture, ANIM_IDLE, WEAPON_TYPE_NONE);
     int standard_img = player_image_sets_none[p->model_index][p->model_texture][ANIM_IDLE];
     if(standard_img != -1)
     {
@@ -238,29 +238,10 @@ static void player_init(int index)
     p->standard_size.w *= p->scale;
     p->standard_size.h *= p->scale;
 
-
-    // float maxw=0.0, maxh=0.0;
-    // for(int ps = 0; ps < ANIM_MAX; ++ps)
-    // {
-    //     for(int wt = 0; wt < WEAPON_TYPE_MAX; ++wt)
-    //     {
-    //         int img = player_get_image_index(p->model_index, p->model_texture, ps, wt);
-    //         if(img == -1) continue;
-    //         for(int i = 0; i < gfx_images[img].element_count; ++i)
-    //         {
-    //             Rect* vr = &gfx_images[img].visible_rects[i];
-    //             if(IS_RECT_EMPTY(vr)) continue;
-    //             maxw = MAX(maxw, vr->w);
-    //             maxh = MAX(maxh, vr->h);
-    //         }
-    //     }
-    // }
-    // p->max_size.w = maxw*p->scale;
-    // p->max_size.h = maxh*p->scale;
-
-    //TODO
-    p->max_size.w = p->standard_size.w*1.4;
-    p->max_size.h = p->standard_size.h*1.4;
+    float maxw=0.0, maxh=0.0;
+    player_get_maxwh(p, &maxw, &maxh);
+    p->max_size.w = maxw*p->scale;
+    p->max_size.h = maxh*p->scale;
 
     // animation
     p->anim.curr_frame = 0;
@@ -314,6 +295,11 @@ void players_init()
     block_props[idx].hp = 100.0;
     block_props[idx].color = COLOR_BLUE;
 
+    blist = list_create((void*)blocks, MAX_BLOCKS, sizeof(blocks[0]));
+    if(blist == NULL)
+    {
+        LOGE("block list failed to create");
+    }
 
 
     player_init_models();
@@ -339,13 +325,6 @@ void players_init()
             player_count++;
     }
 
-    //TEMP: blocks
-    blist = list_create((void*)blocks, MAX_BLOCKS, sizeof(blocks[0]));
-    if(blist == NULL)
-    {
-        LOGE("block list failed to create");
-    }
-
 }
 
 const char* player_state_str(PlayerAnimState anim_state)
@@ -360,7 +339,6 @@ const char* player_state_str(PlayerAnimState anim_state)
     }
 }
 
-// int player_get_image_index(PlayerModelIndex model_index, int texture, PlayerAnimState anim_state, WeaponType wtype)
 int player_get_image_index(Player* p)
 {
 
@@ -376,11 +354,6 @@ int player_get_image_index(Player* p)
     }
 
     return player_image_sets_none[p->model_index][p->model_texture][p->anim_state];
-
-
-    return -1;
-    // // player_image_sets[model][anim_state][wtype];
-    // return player_image_sets[model_index][texture][anim_state][wtype];
 }
 
 int players_get_count()
@@ -395,60 +368,63 @@ int players_get_count()
     return player_count;
 }
 
-// void player_set_weapon(Player* p, WeaponIndex weapon_index)
-// {
-//     if(p->weapon != NULL)
-//     {
-//         if(p->weapon->index == weapon_index)
-//             return;
-//     }
+void player_get_maxwh(Player* p, float* w, float* h)
+{
+    float maxw = 0.0;
+    float maxh = 0.0;
 
-//     Weapon* w = &weapons[weapon_index];
-//     p->weapon = w;
+    // none
+    for(int ps = 0; ps < ANIM_MAX; ++ps)
+    {
+        int img = player_image_sets_none[p->model_index][p->model_texture][ps];
+        if(img == -1) continue;
+        for(int i = 0; i < gfx_images[img].element_count; ++i)
+        {
+            Rect* vr = &gfx_images[img].visible_rects[i];
+            if(IS_RECT_EMPTY(vr)) continue;
+            maxw = MAX(maxw, vr->w);
+            maxh = MAX(maxh, vr->h);
+        }
+    }
 
-//     player_set_mouse(&p->lmouse, true, true, false, w->gun.fire_period, mouse_gun_cb);
+    // guns
+    for(int ps = 0; ps < ANIM_MAX; ++ps)
+    {
+        for(int wt = 0; wt < GUN_TYPE_MAX; ++wt)
+        {
+            int img = player_image_sets_guns[p->model_index][p->model_texture][ps][wt];
+            if(img == -1) continue;
+            for(int i = 0; i < gfx_images[img].element_count; ++i)
+            {
+                Rect* vr = &gfx_images[img].visible_rects[i];
+                if(IS_RECT_EMPTY(vr)) continue;
+                maxw = MAX(maxw, vr->w);
+                maxh = MAX(maxh, vr->h);
+            }
+        }
+    }
 
-//     // p->lmouse.cooldown = 0.0;
-//     // p->lmouse.trigger_on_held = true;
-//     // p->lmouse.trigger_on_press = true;
-//     // p->lmouse.trigger_on_release = false;
-//     // p->rmouse.cooldown = 0.0;
-//     // p->rmouse.trigger_on_held = true;
-//     // p->rmouse.trigger_on_press = true;
-//     // p->rmouse.trigger_on_release = false;
-
-
-//     // // left mouse
-//     // if(w->primary_attack == ATTACK_SHOOT)
-//     // {
-//     //     p->lmouse.period = w->gun.fire_period;
-//     // }
-//     // else if(w->primary_attack == ATTACK_MELEE)
-//     // {
-//     //     p->lmouse.period = w->melee.period;
-//     // }
-//     // else if(w->primary_attack == ATTACK_POWER_MELEE)
-//     // {
-//     //     p->lmouse.period = w->melee.period;
-//     // }
-
-//     // // right mouse
-//     // if(w->secondary_attack == ATTACK_SHOOT)
-//     // {
-//     //     p->rmouse.period = w->gun.fire_period;
-
-//     // }
-//     // else if(w->secondary_attack == ATTACK_MELEE)
-//     // {
-//     //     p->rmouse.period = w->melee.period;
-//     // }
-//     // else if(w->secondary_attack == ATTACK_POWER_MELEE)
-//     // {
-//     //     p->rmouse.period = w->melee.period;
-//     // }
+    // melees
+    for(int ps = 0; ps < ANIM_MAX; ++ps)
+    {
+        for(int wt = 0; wt < MELEE_TYPE_MAX; ++wt)
+        {
+            int img = player_image_sets_melees[p->model_index][p->model_texture][ps][wt];
+            if(img == -1) continue;
+            for(int i = 0; i < gfx_images[img].element_count; ++i)
+            {
+                Rect* vr = &gfx_images[img].visible_rects[i];
+                if(IS_RECT_EMPTY(vr)) continue;
+                maxw = MAX(maxw, vr->w);
+                maxh = MAX(maxh, vr->h);
+            }
+        }
+    }
+    *w = maxw;
+    *h = maxh;
+}
 
 
-// }
 
 void player_equip_gun(Player* p, GunIndex index)
 {
@@ -481,10 +457,25 @@ void player_equip_block(Player* p, BlockType index)
     player_set_mouse(&p->rmouse, true, true, false, 20.0, mouse_block_remove_cb);
 }
 
-void player_set_equipped_item(Player* p, int idx)
+void player_set_equipped_item(Player* p, int idx) //TEMP
 {
+    if(!p->item_equipped)
+    {
+        player_equip_item(p, ITEM_TYPE_NONE, NULL, false, false);
+        return;
+    }
 
     p->item_index = idx;
+    if(idx > 6)
+    {
+        p->item_index = 1;
+    }
+    else if(idx <= 0)
+    {
+        p->item_index = 6;
+    }
+    idx = p->item_index;
+
 
     if(idx == 1)
     {
@@ -505,19 +496,16 @@ void player_set_equipped_item(Player* p, int idx)
     else if(idx == 5)
     {
         player_equip_block(p, BLOCK_0);
-        // player_equip_item(p, ITEM_TYPE_OBJECT, NULL, false, true);
     }
     else if(idx == 6)
     {
         player_equip_block(p, BLOCK_1);
-        // player_equip_item(p, ITEM_TYPE_OBJECT, NULL, false, true);
     }
-    else
-    {
-        player_equip_item(p, ITEM_TYPE_NONE, NULL, false, false);
-        p->item_index = 0;
-    }
-
+    // else
+    // {
+    //     player_equip_item(p, ITEM_TYPE_NONE, NULL, false, false);
+    //     p->item_equipped = false;
+    // }
 
 }
 
@@ -532,7 +520,7 @@ void player_equip_item(Player* p, PlayerItemType itype, void* props, bool drawab
 
 
 // void* to avoid circular reference in player struct
-void mouse_gun_cb(void* player, MouseTrigger trigger)
+static void mouse_gun_cb(void* player, MouseTrigger trigger)
 {
     Player* p = (Player*)player;
 
@@ -549,7 +537,7 @@ void mouse_gun_cb(void* player, MouseTrigger trigger)
     gun_fire(p->mouse_x, p->mouse_y, gun, trigger == MOUSE_TRIGGER_HOLD);
 }
 
-void mouse_melee_cb(void* player, MouseTrigger trigger)
+static void mouse_melee_cb(void* player, MouseTrigger trigger)
 {
     Player* p = (Player*)player;
 
@@ -566,7 +554,7 @@ void mouse_melee_cb(void* player, MouseTrigger trigger)
     p->busy = true;
 }
 
-void mouse_block_cb(void* player, MouseTrigger trigger)
+static void mouse_block_cb(void* player, MouseTrigger trigger)
 {
     Player* p = (Player*)player;
 
@@ -587,10 +575,6 @@ void mouse_block_cb(void* player, MouseTrigger trigger)
     }
     if(add_block)
     {
-        // Vector2f block = {0};
-        // block.x = p->mouse_r;
-        // block.y = p->mouse_c;
-
         BlockProp* bp = (BlockProp*)p->item.props;
 
         block_t b = {0};
@@ -602,15 +586,12 @@ void mouse_block_cb(void* player, MouseTrigger trigger)
     }
 }
 
-void mouse_block_remove_cb(void* player, MouseTrigger trigger)
+static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
 {
     Player* p = (Player*)player;
 
     if(p->busy)
         return;
-
-    // if(p->item.props == NULL)
-    //     return;
 
     for(int i = 0; i < blist->count; ++i)
     {
@@ -772,16 +753,6 @@ void player_update_anim_state(Player* p)
 void player_update_image(Player* p)
 {
     p->image = player_get_image_index(p);
-
-    // if(p->weapon_ready && p->weapon->index != WEAPON_NONE)
-    // {
-    //     p->image = player_get_image_index(p->model_index, p->model_texture, p->anim_state, p->weapon->type);
-    // }
-    // else
-    // {
-    //     p->image = player_get_image_index(p->model_index, p->model_texture, p->anim_state, WEAPON_TYPE_NONE);
-    // }
-    return;
 }
 
 void player_update_boxes(Player* p)
@@ -789,24 +760,8 @@ void player_update_boxes(Player* p)
     GFXImage* img = &gfx_images[p->image];
     Rect* vr = &img->visible_rects[p->sprite_index];
 
-    // if(p->item.item_type == ITEM_TYPE_OBJECT)
-    // {
-    //     printf("   update boxes 1\n");
-    //     printf("p->sprite_index: %d, image: %d\n", p->sprite_index, p->image);
-    //     print_rect(&p->phys.pos);
-    // }
     get_actual_pos(p->phys.pos.x, p->phys.pos.y, p->scale, img->element_width, img->element_height, vr, &p->pos);
-    // if(p->item.item_type == ITEM_TYPE_OBJECT)
-    // {
-    //     printf("   update boxes 2\n");
-    //     print_rect(&p->phys.pos);
-    // }
     limit_pos(&map.rect, &p->pos, &p->phys.pos);
-    // if(p->item.item_type == ITEM_TYPE_OBJECT)
-    // {
-    //     printf("   update boxes 3\n");
-    //     print_rect(&p->phys.pos);
-    // }
 
     float px = p->pos.x;
     float py = p->pos.y;
@@ -826,7 +781,6 @@ void player_update_sprite_index(Player* p)
 
     float angle_deg = DEG(p->angle);
 
-    // if(p->weapon_ready || p->block_ready)
     if(p->item.mouse_aim)
     {
         int sector = angle_sector(angle_deg, 16);
@@ -883,6 +837,7 @@ void player_update(Player* p, double delta_t)
     window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
     coords_to_map_grid(p->mouse_x, p->mouse_y, &p->mouse_r, &p->mouse_c);
 
+    //TODO: rework this
     p->actions.up               = IS_BIT_SET(p->keys,PLAYER_ACTION_UP);
     p->actions.down             = IS_BIT_SET(p->keys,PLAYER_ACTION_DOWN);
     p->actions.left             = IS_BIT_SET(p->keys,PLAYER_ACTION_LEFT);
@@ -890,45 +845,57 @@ void player_update(Player* p, double delta_t)
     p->actions.run              = IS_BIT_SET(p->keys,PLAYER_ACTION_RUN);
     p->actions.jump             = IS_BIT_SET(p->keys,PLAYER_ACTION_JUMP);
     p->actions.interact         = IS_BIT_SET(p->keys,PLAYER_ACTION_INTERACT);
+
     p->actions.primary_action   = IS_BIT_SET(p->keys,PLAYER_ACTION_PRIMARY_ACTION);
     p->actions.secondary_action = IS_BIT_SET(p->keys,PLAYER_ACTION_SECONDARY_ACTION);
-    p->actions.toggle_equip_weapon= IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EQUIP_WEAPON);
+    p->actions.reload           = IS_BIT_SET(p->keys,PLAYER_ACTION_RELOAD);
+
+    p->actions.toggle_equip     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EQUIP);
+    p->actions.cycle_down       = IS_BIT_SET(p->keys,PLAYER_ACTION_CYCLE_EQUIP_DOWN);
+    p->actions.cycle_up         = IS_BIT_SET(p->keys,PLAYER_ACTION_CYCLE_EQUIP_UP);
+
     p->actions.toggle_debug     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_DEBUG);
     p->actions.toggle_editor    = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EDITOR);
-    p->actions.toggle_gun       = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_GUN);
-    p->actions.toggle_block     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_BLOCK);
-    p->actions.reload           = IS_BIT_SET(p->keys,PLAYER_ACTION_RELOAD);
 
     bool run_toggled = p->actions.run && !p->actions_prior.run;
     bool primary_action_toggled = p->actions.primary_action && !p->actions_prior.primary_action;
     bool secondary_action_toggled = p->actions.secondary_action && !p->actions_prior.secondary_action;
-    bool equip_weapon_toggled = p->actions.toggle_equip_weapon && !p->actions_prior.toggle_equip_weapon;
+
+    bool equip_toggled = p->actions.toggle_equip && !p->actions_prior.toggle_equip;
+    bool c_down_toggled = p->actions.cycle_down && !p->actions_prior.cycle_down;
+    bool c_up_toggled = p->actions.cycle_up && !p->actions_prior.cycle_up;
+
     bool debug_toggled = p->actions.toggle_debug && !p->actions_prior.toggle_debug;
     bool editor_toggled = p->actions.toggle_editor && !p->actions_prior.toggle_editor;
-    bool gun_toggled = p->actions.toggle_gun && !p->actions_prior.toggle_gun;
-    bool block_toggled = p->actions.toggle_block && !p->actions_prior.toggle_block;
+
 
     memcpy(&p->actions_prior, &p->actions, sizeof(PlayerActions));
 
-    // static int prior_index = 0;
-    // if(equip_weapon_toggled)
-    // {
-    //     if(p->actions.toggle_equip_weapon)
-    //     {
-    //         player_set_equipped_item(p, prior_index);
-    //     }
-    //     else
-    //     {
-    //         prior_index = p->item_index;
-    //         player_set_equipped_item(p, 0);
-    //     }
-    // }
-
     if(!p->busy)
     {
-        if(equip_weapon_toggled)
+        if(equip_toggled)
         {
-            player_set_equipped_item(p, p->item_index+1);
+            p->item_equipped = !p->item_equipped;
+            if(p->item_equipped)
+            {
+                player_set_equipped_item(p, p->item_index);
+            }
+            else
+            {
+                player_set_equipped_item(p, 0);
+            }
+        }
+
+        if(p->item_equipped)
+        {
+            if(c_up_toggled)
+            {
+                player_set_equipped_item(p, p->item_index+1);
+            }
+            if(c_down_toggled)
+            {
+                player_set_equipped_item(p, p->item_index-1);
+            }
         }
 
         if(p->actions.reload)
@@ -960,150 +927,8 @@ void player_update(Player* p, double delta_t)
     }
 
 
-    //TODO
-    // bool gun_equipped = p->weapon_ready && p->weapon->type < WEAPON_TYPE_MELEE;
-    // if(p->actions.reload && gun_equipped && p->weapon->gun.bullets < p->weapon->gun.bullets_max)
-    // {
-    //     if(!p->reloading && !p->attacking)
-    //     {
-    //         p->reload_timer = p->weapon->gun.reload_time+delta_t;
-    //         p->reloading = true;
-    //     }
-    // }
-    // if(p->reloading)
-    // {
-    //     p->reload_timer -= delta_t*1000.0;
-    //     if(p->reload_timer <= 0.0)
-    //     {
-    //         p->reloading = false;
-    //         p->weapon->gun.bullets = p->weapon->gun.bullets_max;
-    //     }
-    // }
-
-    // p->weapon_ready = true;
-
     player_update_mouse_click(p, p->actions.primary_action, primary_action_toggled, &p->lmouse, delta_t);
     player_update_mouse_click(p, p->actions.secondary_action, secondary_action_toggled, &p->rmouse, delta_t);
-
-
-    // if(p->weapon != NULL)
-    // {
-    //     // if(p->weapon_ready || p->weapon->index == WEAPON_NONE)
-    //     if(p->weapon_ready)
-    //     {
-    //         if(p->lmouse.triggered)
-    //         {
-    //             WeaponAttackType pa = p->weapon->primary_attack;
-    //             if(pa == ATTACK_SHOOT)
-    //             {
-    //                 // spawn projectile
-    //                 weapon_fire(p->mouse_x, p->mouse_y, p->weapon, p->lmouse.held);
-    //             }
-    //             else if(!p->attacking && (pa == ATTACK_MELEE || pa == ATTACK_POWER_MELEE))
-    //             {
-    //                 // printf("attacking = true\n");
-    //                 p->melee_hit_count = 0;
-    //                 p->attacking = true;
-    //                 p->attacking_state = p->weapon->primary_state;
-    //                 p->attacking_type = pa;
-    //             }
-    //         }
-
-    //         if(p->rmouse.triggered)
-    //         {
-    //             WeaponAttackType sa = p->weapon->secondary_attack;
-    //             if(sa == ATTACK_SHOOT)
-    //             {
-    //                 // spawn projectile
-    //                 weapon_fire(p->mouse_x, p->mouse_y, p->weapon, p->rmouse.held);
-    //             }
-    //             else if(!p->attacking && (sa == ATTACK_MELEE || sa == ATTACK_POWER_MELEE))
-    //             {
-    //                 // printf("attacking = true\n");
-    //                 p->melee_hit_count = 0;
-    //                 p->attacking = true;
-    //                 p->attacking_state = p->weapon->secondary_state;
-    //                 p->attacking_type = sa;
-    //             }
-    //         }
-    //     }
-    // }
-
-    // if(p->block_ready)
-    // {
-    //     if(p->lmouse.triggered)
-    //     {
-    //         bool add_block = true;
-    //         for(int i = 0; i < blist->count; ++i)
-    //         {
-    //             if(FEQ(p->mouse_r, blocks[i].x) && FEQ(p->mouse_c, blocks[i].y))
-    //             {
-    //                 add_block = false;
-    //                 break;
-    //             }
-    //         }
-    //         if(add_block)
-    //         {
-    //             Vector2f block = {0};
-    //             block.x = p->mouse_r;
-    //             block.y = p->mouse_c;
-    //             list_add(blist, (void*)&block);
-    //         }
-    //     }
-
-    //     if(p->rmouse.triggered)
-    //     {
-    //         for(int i = 0; i < blist->count; ++i)
-    //         {
-    //             if(FEQ(p->mouse_r, blocks[i].x) && FEQ(p->mouse_c, blocks[i].y))
-    //             {
-    //                 list_remove(blist, i);
-    //                 break;
-    //             }
-    //         }
-    //     }
-    // }
-
-
-    // if(!p->reloading)
-    // {
-
-    //     if(block_toggled)
-    //     {
-    //         p->block_ready = !p->block_ready;
-    //         p->weapon_ready = false;
-    //         if(p->block_ready)
-    //         {
-    //             p->lmouse.cooldown = 0.0;
-    //             p->lmouse.period = 20.0;
-    //             p->lmouse.trigger_on_held = true;
-    //             p->lmouse.trigger_on_press = true;
-    //             p->lmouse.trigger_on_release = false;
-    //             p->rmouse.cooldown = 0.0;
-    //             p->rmouse.period = 20.0;
-    //             p->rmouse.trigger_on_held = true;
-    //             p->rmouse.trigger_on_press = true;
-    //             p->rmouse.trigger_on_release = false;
-    //         }
-    //     }
-
-    //     if(p->weapon_ready && gun_toggled)
-    //     {
-    //         int next = p->weapon->index+1;
-    //         if(next >= WEAPON_MAX) next = 0;
-    //         player_set_weapon(p, next);
-    //     }
-
-    //     if(equip_weapon_toggled)
-    //     {
-    //         p->weapon_ready = !p->weapon_ready;
-    //         if(p->weapon_ready)
-    //         {
-    //             player_set_weapon(p, p->weapon->index);
-    //         }
-    //         p->block_ready = false;
-    //     }
-    // }
 
 
     if(debug_toggled)
@@ -1177,40 +1002,12 @@ void player_update(Player* p, double delta_t)
     }
 #endif
 
-    // if(p->item.item_type == ITEM_TYPE_OBJECT)
-    // {
-    //     printf("before\n");
-    //     print_rect(&p->phys.pos);
-    // }
-
     physics_begin(&p->phys);
     physics_add_friction(&p->phys, 16.0);
     physics_add_force(&p->phys, accel.x, accel.y);
     physics_simulate(&p->phys, delta_t);
 
-    // if(p->item.item_type == ITEM_TYPE_OBJECT)
-    // {
-    //     printf("after\n");
-    //     print_rect(&p->phys.pos);
-    // }
-
-    // // TODO: won't work for idle state
-    // if(FEQ(accel.x,0.0) && FEQ(accel.y,0.0))
-    // {
-    //     p->moving = false;
-    //     p->anim.curr_frame = 0;
-    //     p->anim.curr_frame_time = 0.0;
-    // }
-    // else
-    // {
-    //     p->moving = true;
-    //     gfx_anim_update(&p->anim,delta_t);
-    // }
-
-
-    // is this bueno?
     p->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
-
 
     player_update_anim_state(p);
     player_update_anim_timing(p);
@@ -1230,13 +1027,9 @@ void player_update(Player* p, double delta_t)
     player_update_sprite_index(p);
     player_update_boxes(p);
 
-    // limit_pos(&map.rect, &p->phys.pos);
-
     player_weapon_melee_check_collision(p);
 
-
     lighting_point_light_move(p->point_light, p->pos.x, p->pos.y);
-
 
     if(debug_enabled)
     {
@@ -1244,7 +1037,6 @@ void player_update(Player* p, double delta_t)
         float py = p->phys.pos.y;
         // gfx_add_line(px,py,p->mouse_x,p->mouse_y,0x00FF0000);
 
-        // if(p->attacking && (p->attacking_type == ATTACK_MELEE || p->attacking_type == ATTACK_POWER_MELEE))
         if(p->state == PSTATE_ATTACKING)
         {
             Melee* melee = (Melee*)p->item.props;
@@ -1328,13 +1120,6 @@ void player_draw(Player* p)
     GFXImage* img = &gfx_images[p->image];
     Rect* vr = &img->visible_rects[p->sprite_index];
 
-
-    // if(p->item.item_type == ITEM_TYPE_OBJECT)
-    // {
-    //     printf("vr:\n");
-    //   anim_state  print_rect(vr);
-    // }
-
     //TEMP: blocks
     for(int i = 0; i < blist->count; ++i)
     {
@@ -1343,12 +1128,6 @@ void player_draw(Player* p)
         gfx_draw_rect(&r, block_props[blocks[i].type].color, 0.0, 1.0, 0.50, true, true);
     }
 
-    // if(p->block_ready)
-    // {
-    //     Rect r = {0};
-    //     map_grid_to_rect(p->mouse_r, p->mouse_c, &r);
-    //     gfx_draw_rect(&r, COLOR_BLUE, 0.0, 1.0, 0.15, true, true);
-    // }
 
     // player
     gfx_draw_image(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, ambient_light,p->scale,0.0,1.0,true);
@@ -1402,31 +1181,6 @@ void player_draw(Player* p)
 
     }
 
-    // bool draw_weapon = p->weapon_ready && p->weapon->index != WEAPON_NONE;
-    // if(draw_weapon)
-    // {
-
-    //     GFXImage* wimg = &gfx_images[wimage];
-    //     Rect* wvr = &wimg->visible_rects[p->sprite_index];
-
-    //     if(!IS_RECT_EMPTY(wvr))
-    //     {
-    //         float wimg_center_x = IMG_ELEMENT_W/2.0;
-    //         float wimg_center_y = IMG_ELEMENT_H/2.0;
-
-    //         float gx = p->phys.pos.x + (wvr->x-wimg_center_x)*p->scale;
-    //         float gy = p->phys.pos.y + (wvr->y-wimg_center_y)*p->scale;
-
-    //         p->weapon->pos.x = gx;
-    //         p->weapon->pos.y = gy;
-
-    //         // weapon
-    //         gfx_draw_image(wimage, p->sprite_index, p->phys.pos.x, p->phys.pos.y, ambient_light, p->scale,0,1.0,true);
-    //     }
-
-    // }
-
-
     if(debug_enabled)
     {
         Rect r = {0};
@@ -1454,18 +1208,10 @@ void player_draw(Player* p)
         r.h = p->max_size.h*p->scale;
         // gfx_draw_rect(&r, COLOR_BLUE, 0.0, 1.0,1.0, false, true);
         gfx_draw_rect(&p->max_size, COLOR_BLUE, 0.0, 1.0,1.0, false, true);
-
-        // // melee
-        // if(!IS_RECT_EMPTY(&p->melee_box))
-        // {
-        //     gfx_draw_rect(&p->melee_box, COLOR_CYAN, 0.0, 1.0,1.0, false, true);
-        // }
-
     }
 
     // crosshair
     gfx_draw_image(crosshair_image, 0, p->mouse_x, p->mouse_y, COLOR_PURPLE, 1.0,0.0,0.80, false);
-
 
     // name
     const float name_size = 0.11;
@@ -1545,29 +1291,9 @@ void weapons_init()
 
     weapons_init_images();
 
-
-    // for(int w = 0; w < WEAPON_MAX; ++w)
-    // {
-    //     float maxw=0.0, maxh=0.0;
-    //     for(int ps = 0; ps < ANIM_MAX; ++ps)
-    //     {
-    //         int img = weapons_get_image_index(HUMAN1, ps, w);
-    //         if(img == -1) continue;
-    //         for(int i = 0; i < gfx_images[img].element_count; ++i)
-    //         {
-    //             Rect* vr = &gfx_images[img].visible_rects[i];
-    //             if(IS_RECT_EMPTY(vr)) continue;
-    //             maxw = MAX(maxw, vr->w);
-    //             maxh = MAX(maxh, vr->h);
-    //         }
-    //     }
-    //     weapons[w].max_size.w = maxw;
-    //     weapons[w].max_size.h = maxh;
-    // }
-
 }
 
-// must call this after players_init()
+// must call this after players_init()?
 void weapons_init_images()
 {
 
@@ -1614,18 +1340,6 @@ int melee_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_sta
     return melee_image_sets[model_index][anim_state][mtype];
 }
 
-// const char* weapon_type_str(WeaponType wtype)
-// {
-//     switch(wtype)
-//     {
-//         case WEAPON_TYPE_HANDGUN: return "handgun";
-//         case WEAPON_TYPE_RIFLE: return "rifle";
-//         case WEAPON_TYPE_BOW: return "bow";
-
-//         case WEAPON_TYPE_MELEE0: return "bow";
-//         default: return "";
-//     }
-// }
 
 const char* gun_type_str(GunType gtype)
 {
@@ -1697,14 +1411,8 @@ void player_weapon_melee_check_collision(Player* p)
 
     Melee* melee = (Melee*)p->item.props;
 
-    //TODO
-    // if(p->attacking && (p->attacking_type == ATTACK_MELEE || p->attacking_type == ATTACK_POWER_MELEE))
     if(p->state == PSTATE_ATTACKING)
     {
-
-        float f = 1.0;
-        // if(p->attacking_type == ATTACK_POWER_MELEE)
-        //     f = 1.5;
 
         for(int j = zlist->count - 1; j >= 0; --j)
         {
@@ -1718,7 +1426,7 @@ void player_weapon_melee_check_collision(Player* p)
                 float zy = zombies[j].phys.pos.y;
                 float angle = calc_angle_rad(px, py, zx, zy);
 
-                bool within_angle_range = ABS(angle - p->angle) <= RAD(30);
+                bool within_angle_range = ABS(angle - p->angle) <= RAD(30); //hardcoded
 
                 if(within_angle_range)
                 {
@@ -1731,7 +1439,7 @@ void player_weapon_melee_check_collision(Player* p)
 
             if(collision)
             {
-                float damage = melee->power*f;
+                float damage = melee->power;
                 // printf("zombie hurt\n");
                 zombie_hurt(j,damage);
                 p->melee_hit_count++;

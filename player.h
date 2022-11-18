@@ -81,22 +81,6 @@ typedef struct
     int textures;
 } PlayerModel;
 
-
-// typedef enum
-// {
-//     //guns
-//     WEAPON_TYPE_HANDGUN,
-//     WEAPON_TYPE_RIFLE,
-//     WEAPON_TYPE_BOW,
-
-//     //melee
-//     WEAPON_TYPE_MELEE0,
-
-//     WEAPON_TYPE_NONE,
-//     WEAPON_TYPE_MAX
-// } WeaponType;
-
-
 typedef enum
 {
     GUN_TYPE_HANDGUN,
@@ -176,7 +160,7 @@ typedef struct
 } Melee;
 
 
-
+//TODO
 enum PlayerAction
 {
     PLAYER_ACTION_UP               = 1<<0,
@@ -186,14 +170,17 @@ enum PlayerAction
     PLAYER_ACTION_RUN              = 1<<4,
     PLAYER_ACTION_JUMP             = 1<<5,
     PLAYER_ACTION_INTERACT         = 1<<6,
-    PLAYER_ACTION_PRIMARY_ACTION   = 1<<7,
-    PLAYER_ACTION_SECONDARY_ACTION = 1<<8,
-    PLAYER_ACTION_TOGGLE_EQUIP_WEAPON = 1<<9,
-    PLAYER_ACTION_TOGGLE_DEBUG     = 1<<10,
-    PLAYER_ACTION_TOGGLE_EDITOR    = 1<<11,
-    PLAYER_ACTION_TOGGLE_GUN       = 1<<12,
-    PLAYER_ACTION_RELOAD           = 1<<13,
-    PLAYER_ACTION_TOGGLE_BLOCK     = 1<<14,//place block
+
+    PLAYER_ACTION_PRIMARY_ACTION   = 1<<7,//lmouse
+    PLAYER_ACTION_SECONDARY_ACTION = 1<<8,//rmouse
+    PLAYER_ACTION_RELOAD           = 1<<9,
+
+    PLAYER_ACTION_TOGGLE_EQUIP     = 1<<10,
+    PLAYER_ACTION_CYCLE_EQUIP_DOWN = 1<<11,
+    PLAYER_ACTION_CYCLE_EQUIP_UP   = 1<<12,
+
+    PLAYER_ACTION_TOGGLE_DEBUG     = 1<<13,
+    PLAYER_ACTION_TOGGLE_EDITOR    = 1<<14,
 };
 
 typedef struct
@@ -201,7 +188,8 @@ typedef struct
     bool up, down, left, right;
     bool run, jump, interact;
     bool primary_action, secondary_action, reload;
-    bool toggle_equip_weapon, toggle_debug, toggle_editor, toggle_gun, toggle_block;
+    bool toggle_equip, cycle_down, cycle_up;
+    bool toggle_debug, toggle_editor;
 } PlayerActions;
 
 typedef struct
@@ -267,29 +255,20 @@ typedef struct
     float speed;
     float max_base_speed;
 
-
     PlayerState state;
     bool busy;
-
-
-    // bool block_ready;
-    // bool weapon_ready;
-    // bool attacking; //melee
-    // bool reloading;
-
     bool moving;
     bool running;
     float reload_timer;
 
+    bool item_equipped;
     PlayerItem item;    //equipped item
 
     //TEMP
     int item_index;
 
     //TODO
-    // Weapon* weapon;
     PlayerAnimState attacking_state;
-    // WeaponAttackType attacking_type;
     uint8_t melee_hit_count;
 
 
@@ -347,8 +326,11 @@ const char* player_state_str(PlayerAnimState anim_state);
 // int player_get_image_index(PlayerModelIndex model_index, int texture, PlayerAnimState anim_state, WeaponType wtype);
 int player_get_image_index(Player* p);
 int players_get_count();
+void player_get_maxwh(Player* p, float* w, float* h);
 
-// void player_set_weapon(Player* p, WeaponIndex weapon_index);
+void player_equip_gun(Player* p, GunIndex index);
+void player_equip_melee(Player* p, MeleeIndex index);
+void player_equip_block(Player* p, BlockType index);
 void player_set_equipped_item(Player* p, int idx);
 void player_equip_item(Player* p, PlayerItemType itype, void* props, bool drawable, bool mouse_aim);
 
