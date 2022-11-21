@@ -2,8 +2,6 @@
 
 #include "player.h"
 #include "glist.h"
-// #include "gun.h"
-// #include "weapon.h"
 
 typedef enum
 {
@@ -14,6 +12,7 @@ typedef enum
 extern glist* plist;
 
 void projectile_init();
-void projectile_add(int sprite_index, Gun* gun, int mx, int my, float angle_offset);
+void projectile_add(Player* p, Gun* gun, float angle_offset);
+
 void projectile_update(float delta_t);
 void projectile_draw();

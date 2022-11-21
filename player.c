@@ -539,7 +539,7 @@ static void mouse_gun_cb(void* player, MouseTrigger trigger)
         return;
 
     Gun* gun = (Gun*)p->item.props;
-    gun_fire(p->mouse_x, p->mouse_y, gun, trigger == MOUSE_TRIGGER_HOLD);
+    gun_fire(p, gun, trigger == MOUSE_TRIGGER_HOLD);
 }
 
 static void mouse_melee_cb(void* player, MouseTrigger trigger)
@@ -1404,10 +1404,10 @@ const char* melee_type_str(MeleeType mtype)
 
 
 
-void gun_fire(int mx, int my, Gun* gun, bool held)
+void gun_fire(Player* p, Gun* gun, bool held)
 {
 
-    if(gun->bullets <= 0) return; 
+    if(gun->bullets <= 0) return;
 
     if(gun->fire_count > 1)
     {
@@ -1415,7 +1415,7 @@ void gun_fire(int mx, int my, Gun* gun, bool held)
         {
             int direction = rand()%2 == 0 ? -1 : 1;
             float angle_offset = rand_float_between(0.0, gun->fire_spread/2.0) * direction;
-            projectile_add(gun->projectile_type, gun, mx, my, angle_offset);
+            projectile_add(p, gun, angle_offset);
         }
     }
     else
@@ -1425,8 +1425,14 @@ void gun_fire(int mx, int my, Gun* gun, bool held)
         {
             int direction = rand()%2 == 0 ? -1 : 1;
             angle_offset = rand_float_between(0.0, gun->recoil_spread/2.0) * direction;
+
+            // recoil_camera_offset.x = 5.0*cosf(RAD(angle_offset));
+            // recoil_camera_offset.y = 5.0*sinf(RAD(angle_offset));
+            // float cam_pos_x = player->phys.pos.x + aim_camera_offset.x + recoil_camera_offset.x;
+            // float cam_pos_y = player->phys.pos.y + aim_camera_offset.y + recoil_camera_offset.y;
+            // camera_move(cam_pos_x, cam_pos_y, 0.00, true, &map.rect);
         }
-        projectile_add(gun->projectile_type, gun, mx, my, angle_offset);
+        projectile_add(p, gun, angle_offset);
     }
     gun->bullets--;
 }

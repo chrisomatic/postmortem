@@ -32,6 +32,7 @@
 Timer game_timer = {0};
 GameRole role;
 Vector2f aim_camera_offset = {0};
+Vector2f recoil_camera_offset = {0};
 
 // gui might be a good spot for some of these variables
 

@@ -348,7 +348,8 @@ int gun_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state
 int melee_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state, MeleeType mtype);
 const char* gun_type_str(GunType gtype);
 const char* melee_type_str(MeleeType mtype);
-void gun_fire(int mx, int my, Gun* gun, bool held);
+void gun_fire(Player* p, Gun* gun, bool held);
+// void gun_fire(int mx, int my, Gun* gun, bool held);
 void player_weapon_melee_check_collision(Player* p);
 
 void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret);
