@@ -59,7 +59,6 @@ typedef enum
 {
     ANIM_IDLE,
     ANIM_WALK,
-
     ANIM_ATTACK1, // swing
 
     ANIM_MAX,
@@ -325,6 +324,7 @@ void player_equip_block(Player* p, BlockType index);
 void player_set_equipped_item(Player* p, int idx);
 void player_equip_item(Player* p, PlayerItemType itype, void* props, bool drawable, bool mouse_aim);
 
+void player_set_mouse_nothing(MouseData* mouse_data);
 void player_set_mouse(MouseData* mouse_data, bool held, bool press, bool release, float period, mouse_trigger_cb_t cb);
 void player_update_mouse_click(Player* p, bool active, bool toggled, MouseData* mouse, float delta_t);
 
@@ -349,7 +349,6 @@ int melee_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_sta
 const char* gun_type_str(GunType gtype);
 const char* melee_type_str(MeleeType mtype);
 void gun_fire(Player* p, Gun* gun, bool held);
-// void gun_fire(int mx, int my, Gun* gun, bool held);
 void player_weapon_melee_check_collision(Player* p);
 
 void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret);

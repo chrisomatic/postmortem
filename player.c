@@ -443,6 +443,7 @@ void player_equip_gun(Player* p, GunIndex index)
     player_equip_item(p, ITEM_TYPE_GUN, (void*)gun, true, true);
 
     player_set_mouse(&p->lmouse, true, true, false, gun->fire_period, mouse_gun_cb);
+    player_set_mouse_nothing(&p->rmouse);
 }
 
 void player_equip_melee(Player* p, MeleeIndex index)
@@ -451,6 +452,7 @@ void player_equip_melee(Player* p, MeleeIndex index)
     player_equip_item(p, ITEM_TYPE_MELEE, (void*)melee, true, true);
 
     player_set_mouse(&p->lmouse, true, true, false, melee->period, mouse_melee_cb);
+    player_set_mouse_nothing(&p->rmouse);
 }
 
 void player_equip_block(Player* p, BlockType index)
@@ -606,6 +608,16 @@ static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
             break;
         }
     }
+}
+
+void player_set_mouse_nothing(MouseData* mouse_data)
+{
+    mouse_data->cooldown = 0.0;
+    mouse_data->period = 9999999.0;
+    mouse_data->cb = NULL;
+    mouse_data->trigger_on_held = false;
+    mouse_data->trigger_on_press = false;
+    mouse_data->trigger_on_release = false;
 }
 
 void player_set_mouse(MouseData* mouse_data, bool held, bool press, bool release, float period, mouse_trigger_cb_t cb)
@@ -855,40 +867,6 @@ void player_update(Player* p, double delta_t)
         }
         pa->prior_state = pa->state;
     }
-
-    // //TODO: rework this
-    // p->actions[PLAYER_ACTION_UP].state               = IS_BIT_SET(p->keys,PLAYER_ACTION_UP);
-    // p->actions[PLAYER_ACTION_DOWN].state             = IS_BIT_SET(p->keys,PLAYER_ACTION_DOWN);
-    // p->actions[PLAYER_ACTION_LEFT].state             = IS_BIT_SET(p->keys,PLAYER_ACTION_LEFT);
-    // p->actions[PLAYER_ACTION_RIGHT].state            = IS_BIT_SET(p->keys,PLAYER_ACTION_RIGHT);
-    // p->actions.run              = IS_BIT_SET(p->keys,PLAYER_ACTION_RUN);
-    // p->actions.jump             = IS_BIT_SET(p->keys,PLAYER_ACTION_JUMP);
-    // p->actions.interact         = IS_BIT_SET(p->keys,PLAYER_ACTION_INTERACT);
-
-    // p->actions.primary_action   = IS_BIT_SET(p->keys,PLAYER_ACTION_PRIMARY_ACTION);
-    // p->actions.secondary_action = IS_BIT_SET(p->keys,PLAYER_ACTION_SECONDARY_ACTION);
-    // p->actions.reload           = IS_BIT_SET(p->keys,PLAYER_ACTION_RELOAD);
-
-    // p->actions.toggle_equip     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EQUIP);
-    // p->actions.cycle_down       = IS_BIT_SET(p->keys,PLAYER_ACTION_CYCLE_EQUIP_DOWN);
-    // p->actions.cycle_up         = IS_BIT_SET(p->keys,PLAYER_ACTION_CYCLE_EQUIP_UP);
-
-    // p->actions.toggle_debug     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_DEBUG);
-    // p->actions.toggle_editor    = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EDITOR);
-
-    // bool run_toggled = p->actions.run && !p->actions_prior.run;
-    // bool primary_action_toggled = p->actions.primary_action && !p->actions_prior.primary_action;
-    // bool secondary_action_toggled = p->actions.secondary_action && !p->actions_prior.secondary_action;
-
-    // bool equip_toggled = p->actions.toggle_equip && !p->actions_prior.toggle_equip;
-    // bool c_down_toggled = p->actions.cycle_down && !p->actions_prior.cycle_down;
-    // bool c_up_toggled = p->actions.cycle_up && !p->actions_prior.cycle_up;
-
-    // bool debug_toggled = p->actions.toggle_debug && !p->actions_prior.toggle_debug;
-    // bool editor_toggled = p->actions.toggle_editor && !p->actions_prior.toggle_editor;
-
-
-    // memcpy(&p->actions_prior, &p->actions, sizeof(PlayerActions));
 
     if(!p->busy)
     {

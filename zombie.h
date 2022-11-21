@@ -2,6 +2,37 @@
 
 #include "glist.h"
 
+#define ZOMBIE_TEXTURES_MAX     5
+
+typedef enum
+{
+    ZANIM_IDLE,
+    ZANIM_WALK,
+    ZANIM_ATTACK1, // swing
+
+    ZANIM_MAX,
+    ZANIM_NONE    // keep this after MAX (affects image loading/lookup)
+} ZombieAnimState;
+
+
+typedef enum
+{
+    ZOMBIE1,
+
+    ZOMBIE_MODELS_MAX
+} ZombieModelIndex;
+
+
+typedef struct
+{
+    const char* name;
+    ZombieModelIndex index;
+    int textures;
+} ZombieModel;
+
+extern ZombieModel zombie_models[ZOMBIE_MODELS_MAX];
+
+
 #define MAX_ZOMBIES 2000
 
 typedef enum
@@ -33,15 +64,30 @@ typedef struct
     Rect hit_box;
     Rect collision_box;
 
+    bool moving;
+
     // based on collision_box
     int map_row;
     int map_col;
     int world_row;
     int world_col;
 
-    int sprite_index;
+    // int sprite_index;
 
-    // bool dead;
+    // physical/graphical properties of the player
+    GFXAnimation anim;
+    ZombieAnimState anim_state;
+    ZombieModelIndex model_index;
+    int model_texture;
+    int image;
+    uint8_t sprite_index;
+    uint8_t sprite_index_direction; // 0-7
+
+    // //TODO
+    // Rect standard_size;
+    // Rect max_size;
+    // Rect pos;       // actual position of the player
+
 } Zombie;
 
 typedef struct
@@ -53,6 +99,11 @@ typedef struct
     float hp_max;
     ZombieAction action;
     float action_timer_max;
+
+    ZombieModelIndex model_index;
+    int model_texture;
+
+
 } ZombieSpawn;
 
 extern Zombie zombies[MAX_ZOMBIES];
