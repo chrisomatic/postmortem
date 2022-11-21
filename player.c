@@ -99,7 +99,7 @@ void player_init_images()
                 player_image_sets_none[pm][t][ps] = -1;
 
                 char fname[100] = {0};
-                sprintf(fname, "img/characters/%s_%d-%s.png", player_models[pm].name, t, player_state_str(ps));
+                sprintf(fname, "img/characters/%s_%d-%s.png", player_models[pm].name, t, player_anim_state_str(ps));
                 if(access(fname, F_OK) == 0)
                 {
                     player_image_sets_none[pm][t][ps] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
@@ -122,7 +122,7 @@ void player_init_images()
                     player_image_sets_guns[pm][t][ps][wt] = -1;
 
                     char fname[100] = {0};
-                    sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_state_str(ps), gun_type_str(wt));
+                    sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_anim_state_str(ps), gun_type_str(wt));
                     if(access(fname, F_OK) == 0)
                     {
                         player_image_sets_guns[pm][t][ps][wt] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
@@ -145,7 +145,7 @@ void player_init_images()
                     player_image_sets_melees[pm][t][ps][wt] = -1;
 
                     char fname[100] = {0};
-                    sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_state_str(ps), melee_type_str(wt));
+                    sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_anim_state_str(ps), melee_type_str(wt));
                     if(access(fname, F_OK) == 0)
                     {
                         player_image_sets_melees[pm][t][ps][wt] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
@@ -185,26 +185,6 @@ void player_init_controls(Player* p)
 
     window_controls_add_key(&p->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
     window_controls_add_key(&p->actions[PLAYER_ACTION_EDITOR].state, GLFW_KEY_F3);
-
-    // window_controls_add_key(&p->keys, GLFW_KEY_W, PLAYER_ACTION_UP);
-    // window_controls_add_key(&p->keys, GLFW_KEY_S, PLAYER_ACTION_DOWN);
-    // window_controls_add_key(&p->keys, GLFW_KEY_A, PLAYER_ACTION_LEFT);
-    // window_controls_add_key(&p->keys, GLFW_KEY_D, PLAYER_ACTION_RIGHT);
-
-    // window_controls_add_key(&p->keys, GLFW_KEY_LEFT_SHIFT, PLAYER_ACTION_RUN);
-    // window_controls_add_key(&p->keys, GLFW_KEY_SPACE, PLAYER_ACTION_JUMP);
-    // window_controls_add_key(&p->keys, GLFW_KEY_E, PLAYER_ACTION_INTERACT);
-
-    // window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_LEFT, PLAYER_ACTION_PRIMARY_ACTION);
-    // window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
-    // window_controls_add_key(&p->keys, GLFW_KEY_R, PLAYER_ACTION_RELOAD);
-
-    // window_controls_add_key(&p->keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_EQUIP);
-    // window_controls_add_key(&p->keys, GLFW_KEY_1, PLAYER_ACTION_CYCLE_EQUIP_DOWN);
-    // window_controls_add_key(&p->keys, GLFW_KEY_2, PLAYER_ACTION_CYCLE_EQUIP_UP);
-
-    // window_controls_add_key(&p->keys, GLFW_KEY_F2, PLAYER_ACTION_TOGGLE_DEBUG);
-    // window_controls_add_key(&p->keys, GLFW_KEY_F3, PLAYER_ACTION_TOGGLE_EDITOR);
 }
 
 static void player_init(int index)
@@ -347,7 +327,18 @@ void players_init()
 
 }
 
-const char* player_state_str(PlayerAnimState anim_state)
+const char* player_state_str(PlayerState state)
+{
+    switch(state)
+    {
+        case PSTATE_NONE: return "none";
+        case PSTATE_ATTACKING: return "attacking";
+        case PSTATE_RELOADING: return "reloading";
+        default: return "unknown";
+    }
+}
+
+const char* player_anim_state_str(PlayerAnimState anim_state)
 {
     switch(anim_state)
     {
@@ -448,8 +439,6 @@ void player_get_maxwh(Player* p, float* w, float* h)
 
 void player_equip_gun(Player* p, GunIndex index)
 {
-    printf("equipping gun %d\n", index);
-
     Gun* gun = &guns[index];
     player_equip_item(p, ITEM_TYPE_GUN, (void*)gun, true, true);
 
@@ -458,8 +447,6 @@ void player_equip_gun(Player* p, GunIndex index)
 
 void player_equip_melee(Player* p, MeleeIndex index)
 {
-    printf("equipping melee %d\n", index);
-
     Melee* melee = &melees[index];
     player_equip_item(p, ITEM_TYPE_MELEE, (void*)melee, true, true);
 
@@ -468,8 +455,6 @@ void player_equip_melee(Player* p, MeleeIndex index)
 
 void player_equip_block(Player* p, BlockType index)
 {
-    printf("equipping block %d\n", index);
-
     BlockProp* block = &block_props[index];
     player_equip_item(p, ITEM_TYPE_BLOCK, (void*)block, true, true);
 
@@ -1263,6 +1248,19 @@ void player_draw(Player* p)
     gfx_draw_string(x, y, player_colors[p->index], name_size, 0.0, 0.8, true, true, p->name);
 }
 
+const char* player_item_type_str(PlayerItemType item_type)
+{
+    switch(item_type)
+    {
+        case ITEM_TYPE_NONE: return "none";
+        case ITEM_TYPE_MELEE: return "melee";
+        case ITEM_TYPE_GUN: return "gun";
+        case ITEM_TYPE_BLOCK: return "block";
+        case ITEM_TYPE_OBJECT: return "object";
+        default: return "UNKNOWN";
+    }
+}
+
 
 
 void weapons_init()
@@ -1349,7 +1347,7 @@ void weapons_init_images()
                 gun_image_sets[pm][ps][w] = -1;
 
                 char fname[100] = {0};
-                sprintf(fname, "img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_state_str(ps), gun_type_str(guns[w].type), guns[w].name);
+                sprintf(fname, "img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_anim_state_str(ps), gun_type_str(guns[w].type), guns[w].name);
                 gun_image_sets[pm][ps][w] = gfx_load_image(fname, false, false, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
             }
         }
@@ -1364,7 +1362,7 @@ void weapons_init_images()
             {
                 melee_image_sets[pm][ps][w] = -1;
                 char fname[100] = {0};
-                sprintf(fname, "img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_state_str(ps), melee_type_str(melees[w].type), melees[w].name);
+                sprintf(fname, "img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_anim_state_str(ps), melee_type_str(melees[w].type), melees[w].name);
                 melee_image_sets[pm][ps][w] = gfx_load_image(fname, false, false, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
             }
         }

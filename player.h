@@ -313,7 +313,8 @@ extern Melee melees[MELEE_MAX];
 void player_init_images();
 void player_init_controls(Player* p);
 void players_init();
-const char* player_state_str(PlayerAnimState anim_state);
+const char* player_state_str(PlayerState state);
+const char* player_anim_state_str(PlayerAnimState anim_state);
 int player_get_image_index(Player* p);
 int players_get_count();
 void player_get_maxwh(Player* p, float* w, float* h);
@@ -336,6 +337,9 @@ void player_update(Player* p, double delta_t);
 void player_update_other(Player* p, double delta_t);
 void player_handle_net_inputs(Player* p, double delta_t);
 void player_draw(Player* p);
+
+const char* player_item_type_str(PlayerItemType item_type);
+
 
 void weapons_init();
 void weapons_init_images();

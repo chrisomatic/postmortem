@@ -107,8 +107,8 @@ void gui_draw_text()
     {
         float factor = (window_height / (float)view_height);
 
-        int big = 22.0/factor;
-        int small = 14.0/factor;
+        int big = 23.0/factor;
+        int small = 15.0/factor;
 
         imgui_begin_panel("Debug",800,10);
             imgui_set_text_size(small);
@@ -120,22 +120,44 @@ void gui_draw_text()
             imgui_indent_end();
             imgui_text_sized(big,"Player");
             imgui_indent_begin(small);
-                imgui_text("Anim State: %s (%d)", player_state_str(player->anim_state), player->anim_state);
                 imgui_text("Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y);
                 imgui_text("Vel: %.2f, %.2f (%.2f)", pvx, pvy, pv);
-                imgui_text("Controls: %s", keys);
-                // imgui_text("Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action);
                 imgui_text("Angle: %.2f, %.2f deg", player->angle, DEG(player->angle));
+                imgui_text("State: %s (%d)", player_state_str(player->state), player->state);
+                imgui_text("Anim State: %s (%d)", player_anim_state_str(player->anim_state), player->anim_state);
+                imgui_text("Controls: %s", keys);
             imgui_indent_end();
 
-            // imgui_text_sized(big,"Weapon");
-            // imgui_indent_begin(small);
-            //     imgui_text("Equipped: %s", player->weapon_ready ? "true" :  "false");
-            //     imgui_text("Reloading: %s (%.2f)", player->reloading ? "true" :  "false", player->reload_timer);
-            //     imgui_text("Index: %d", player->weapon->index);
-            //     imgui_text("Type: %s (%d)", weapon_type_str(player->weapon->type), player->weapon->index);
-            //     imgui_text("Bullets: %d (max: %d)", player->weapon->gun.bullets, player->weapon->gun.bullets_max);
-            // imgui_indent_end();
+            imgui_text_sized(big,"Player Item");
+            imgui_indent_begin(small);
+                imgui_text("Equipped: %s", player->item_equipped ? "true" :  "false");
+                imgui_text("Type: %s", player_item_type_str(player->item.item_type));
+                imgui_text("Index: %d", player->item_index);
+
+                if(player->item.props != NULL)
+                {
+                    if(player->item.item_type == ITEM_TYPE_MELEE)
+                    {
+                        Melee* melee = (Melee*)player->item.props;
+                        imgui_text("  Melee: %s (%s)", melee->name, melee_type_str(melee->type));
+                        imgui_text("  Range: %.0f", melee->range);
+                        imgui_text("  Period: %.0f", melee->period);
+                    }
+                    else if(player->item.item_type == ITEM_TYPE_GUN)
+                    {
+                        Gun* gun = (Gun*)player->item.props;
+                        imgui_text("  Gun: %s (%s)", gun->name, gun_type_str(gun->type));
+                        imgui_text("  Range: %.0f", gun->fire_range);
+                        imgui_text("  Period: %.0f", gun->fire_period);
+                        imgui_text("  Bullets: %d (max: %d)", gun->bullets, gun->bullets_max);
+                        imgui_text("  Reload Timer: %.0f", player->reload_timer);
+                    }
+                    else if(player->item.item_type == ITEM_TYPE_BLOCK)
+                    {
+                        BlockProp* bp = (BlockProp*)player->item.props;
+                        imgui_text("  Type: %d", bp->type);
+                    }
+                }
 
             imgui_text_sized(big,"Mouse");
             imgui_indent_begin(small);
