@@ -99,7 +99,7 @@ void player_init_images()
                 player_image_sets_none[pm][t][ps] = -1;
 
                 char fname[100] = {0};
-                sprintf(fname, "img/characters/%s_%d-%s.png", player_models[pm].name, t, player_state_str(ps));
+                sprintf(fname, "img/characters/%s_%d-%s.png", player_models[pm].name, t, player_anim_state_str(ps));
                 if(access(fname, F_OK) == 0)
                 {
                     player_image_sets_none[pm][t][ps] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
@@ -122,7 +122,7 @@ void player_init_images()
                     player_image_sets_guns[pm][t][ps][wt] = -1;
 
                     char fname[100] = {0};
-                    sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_state_str(ps), gun_type_str(wt));
+                    sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_anim_state_str(ps), gun_type_str(wt));
                     if(access(fname, F_OK) == 0)
                     {
                         player_image_sets_guns[pm][t][ps][wt] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
@@ -145,7 +145,7 @@ void player_init_images()
                     player_image_sets_melees[pm][t][ps][wt] = -1;
 
                     char fname[100] = {0};
-                    sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_state_str(ps), melee_type_str(wt));
+                    sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_anim_state_str(ps), melee_type_str(wt));
                     if(access(fname, F_OK) == 0)
                     {
                         player_image_sets_melees[pm][t][ps][wt] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
@@ -166,25 +166,25 @@ void player_init_controls(Player* p)
     window_controls_clear_keys();
 
     // map keys
-    window_controls_add_key(&p->keys, GLFW_KEY_W, PLAYER_ACTION_UP);
-    window_controls_add_key(&p->keys, GLFW_KEY_S, PLAYER_ACTION_DOWN);
-    window_controls_add_key(&p->keys, GLFW_KEY_A, PLAYER_ACTION_LEFT);
-    window_controls_add_key(&p->keys, GLFW_KEY_D, PLAYER_ACTION_RIGHT);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_UP].state, GLFW_KEY_W);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_DOWN].state, GLFW_KEY_S);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_A);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_D);
 
-    window_controls_add_key(&p->keys, GLFW_KEY_LEFT_SHIFT, PLAYER_ACTION_RUN);
-    window_controls_add_key(&p->keys, GLFW_KEY_SPACE, PLAYER_ACTION_JUMP);
-    window_controls_add_key(&p->keys, GLFW_KEY_E, PLAYER_ACTION_INTERACT);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_RUN].state, GLFW_KEY_LEFT_SHIFT);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_JUMP].state, GLFW_KEY_SPACE);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_INTERACT].state, GLFW_KEY_E);
 
-    window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_LEFT, PLAYER_ACTION_PRIMARY_ACTION);
-    window_controls_add_mouse_button(&p->keys, GLFW_MOUSE_BUTTON_RIGHT, PLAYER_ACTION_SECONDARY_ACTION);
-    window_controls_add_key(&p->keys, GLFW_KEY_R, PLAYER_ACTION_RELOAD);
+    window_controls_add_mouse_button(&p->actions[PLAYER_ACTION_PRIMARY_ACTION].state, GLFW_MOUSE_BUTTON_LEFT);
+    window_controls_add_mouse_button(&p->actions[PLAYER_ACTION_SECONDARY_ACTION].state, GLFW_MOUSE_BUTTON_RIGHT);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_RELOAD].state, GLFW_KEY_R);
 
-    window_controls_add_key(&p->keys, GLFW_KEY_TAB, PLAYER_ACTION_TOGGLE_EQUIP);
-    window_controls_add_key(&p->keys, GLFW_KEY_1, PLAYER_ACTION_CYCLE_EQUIP_DOWN);
-    window_controls_add_key(&p->keys, GLFW_KEY_2, PLAYER_ACTION_CYCLE_EQUIP_UP);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_EQUIP].state, GLFW_KEY_TAB);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_CYCLE_EQUIP_DOWN].state, GLFW_KEY_1);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_CYCLE_EQUIP_UP].state, GLFW_KEY_2);
 
-    window_controls_add_key(&p->keys, GLFW_KEY_F2, PLAYER_ACTION_TOGGLE_DEBUG);
-    window_controls_add_key(&p->keys, GLFW_KEY_F3, PLAYER_ACTION_TOGGLE_EDITOR);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_EDITOR].state, GLFW_KEY_F3);
 }
 
 static void player_init(int index)
@@ -327,7 +327,18 @@ void players_init()
 
 }
 
-const char* player_state_str(PlayerAnimState anim_state)
+const char* player_state_str(PlayerState state)
+{
+    switch(state)
+    {
+        case PSTATE_NONE: return "none";
+        case PSTATE_ATTACKING: return "attacking";
+        case PSTATE_RELOADING: return "reloading";
+        default: return "unknown";
+    }
+}
+
+const char* player_anim_state_str(PlayerAnimState anim_state)
 {
     switch(anim_state)
     {
@@ -428,8 +439,6 @@ void player_get_maxwh(Player* p, float* w, float* h)
 
 void player_equip_gun(Player* p, GunIndex index)
 {
-    printf("equipping gun %d\n", index);
-
     Gun* gun = &guns[index];
     player_equip_item(p, ITEM_TYPE_GUN, (void*)gun, true, true);
 
@@ -438,8 +447,6 @@ void player_equip_gun(Player* p, GunIndex index)
 
 void player_equip_melee(Player* p, MeleeIndex index)
 {
-    printf("equipping melee %d\n", index);
-
     Melee* melee = &melees[index];
     player_equip_item(p, ITEM_TYPE_MELEE, (void*)melee, true, true);
 
@@ -448,8 +455,6 @@ void player_equip_melee(Player* p, MeleeIndex index)
 
 void player_equip_block(Player* p, BlockType index)
 {
-    printf("equipping block %d\n", index);
-
     BlockProp* block = &block_props[index];
     player_equip_item(p, ITEM_TYPE_BLOCK, (void*)block, true, true);
 
@@ -534,7 +539,7 @@ static void mouse_gun_cb(void* player, MouseTrigger trigger)
         return;
 
     Gun* gun = (Gun*)p->item.props;
-    gun_fire(p->mouse_x, p->mouse_y, gun, trigger == MOUSE_TRIGGER_HOLD);
+    gun_fire(p, gun, trigger == MOUSE_TRIGGER_HOLD);
 }
 
 static void mouse_melee_cb(void* player, MouseTrigger trigger)
@@ -785,40 +790,40 @@ void player_update_sprite_index(Player* p)
     {
         int sector = angle_sector(angle_deg, 16);
 
-        if(sector == 15 || sector == 0)  // p->actions.right
+        if(sector == 15 || sector == 0)  // p->actions[PLAYER_ACTION_RIGHT].state
             p->sprite_index_direction = 2;
-        else if(sector == 1 || sector == 2)  // p->actions.up-p->actions.right
+        else if(sector == 1 || sector == 2)  // p->actions[PLAYER_ACTION_UP].state-p->actions[PLAYER_ACTION_RIGHT].state
             p->sprite_index_direction = 3;
-        else if(sector == 3 || sector == 4)  // p->actions.up
+        else if(sector == 3 || sector == 4)  // p->actions[PLAYER_ACTION_UP].state
             p->sprite_index_direction = 4;
-        else if(sector == 5 || sector == 6)  // p->actions.up-p->actions.left
+        else if(sector == 5 || sector == 6)  // p->actions[PLAYER_ACTION_UP].state-p->actions[PLAYER_ACTION_LEFT].state
             p->sprite_index_direction = 5;
-        else if(sector == 7 || sector == 8)  // p->actions.left
+        else if(sector == 7 || sector == 8)  // p->actions[PLAYER_ACTION_LEFT].state
             p->sprite_index_direction = 6;
-        else if(sector == 9 || sector == 10)  // p->actions.down-p->actions.left
+        else if(sector == 9 || sector == 10)  // p->actions[PLAYER_ACTION_DOWN].state-p->actions[PLAYER_ACTION_LEFT].state
             p->sprite_index_direction = 7;
-        else if(sector == 11 || sector == 12)  // p->actions.down
+        else if(sector == 11 || sector == 12)  // p->actions[PLAYER_ACTION_DOWN].state
             p->sprite_index_direction = 0;
-        else if(sector == 13 || sector == 14)  // p->actions.down-p->actions.right
+        else if(sector == 13 || sector == 14)  // p->actions[PLAYER_ACTION_DOWN].state-p->actions[PLAYER_ACTION_RIGHT].state
             p->sprite_index_direction = 1;
     }
     else
     {
-        if(p->actions.up && p->actions.left)
+        if(p->actions[PLAYER_ACTION_UP].state && p->actions[PLAYER_ACTION_LEFT].state)
             p->sprite_index_direction = 5;
-        else if(p->actions.up && p->actions.right)
+        else if(p->actions[PLAYER_ACTION_UP].state && p->actions[PLAYER_ACTION_RIGHT].state)
             p->sprite_index_direction = 3;
-        else if(p->actions.down && p->actions.left)
+        else if(p->actions[PLAYER_ACTION_DOWN].state && p->actions[PLAYER_ACTION_LEFT].state)
             p->sprite_index_direction = 7;
-        else if(p->actions.down && p->actions.right)
+        else if(p->actions[PLAYER_ACTION_DOWN].state && p->actions[PLAYER_ACTION_RIGHT].state)
             p->sprite_index_direction = 1;
-        else if(p->actions.up)
+        else if(p->actions[PLAYER_ACTION_UP].state)
             p->sprite_index_direction = 4;
-        else if(p->actions.down)
+        else if(p->actions[PLAYER_ACTION_DOWN].state)
             p->sprite_index_direction = 0;
-        else if(p->actions.left)
+        else if(p->actions[PLAYER_ACTION_LEFT].state)
             p->sprite_index_direction = 6;
-        else if(p->actions.right)
+        else if(p->actions[PLAYER_ACTION_RIGHT].state)
             p->sprite_index_direction = 2;
     }
 
@@ -837,43 +842,57 @@ void player_update(Player* p, double delta_t)
     window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
     coords_to_map_grid(p->mouse_x, p->mouse_y, &p->mouse_r, &p->mouse_c);
 
-    //TODO: rework this
-    p->actions.up               = IS_BIT_SET(p->keys,PLAYER_ACTION_UP);
-    p->actions.down             = IS_BIT_SET(p->keys,PLAYER_ACTION_DOWN);
-    p->actions.left             = IS_BIT_SET(p->keys,PLAYER_ACTION_LEFT);
-    p->actions.right            = IS_BIT_SET(p->keys,PLAYER_ACTION_RIGHT);
-    p->actions.run              = IS_BIT_SET(p->keys,PLAYER_ACTION_RUN);
-    p->actions.jump             = IS_BIT_SET(p->keys,PLAYER_ACTION_JUMP);
-    p->actions.interact         = IS_BIT_SET(p->keys,PLAYER_ACTION_INTERACT);
+    for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
+    {
+        PlayerAction* pa = &p->actions[i];
+        if(pa->state && !pa->prior_state)
+        {
+            pa->toggled_on = true;
+        }
+        else
+        {
+            pa->toggled_on = false;
+        }
+        pa->prior_state = pa->state;
+    }
 
-    p->actions.primary_action   = IS_BIT_SET(p->keys,PLAYER_ACTION_PRIMARY_ACTION);
-    p->actions.secondary_action = IS_BIT_SET(p->keys,PLAYER_ACTION_SECONDARY_ACTION);
-    p->actions.reload           = IS_BIT_SET(p->keys,PLAYER_ACTION_RELOAD);
+    // //TODO: rework this
+    // p->actions[PLAYER_ACTION_UP].state               = IS_BIT_SET(p->keys,PLAYER_ACTION_UP);
+    // p->actions[PLAYER_ACTION_DOWN].state             = IS_BIT_SET(p->keys,PLAYER_ACTION_DOWN);
+    // p->actions[PLAYER_ACTION_LEFT].state             = IS_BIT_SET(p->keys,PLAYER_ACTION_LEFT);
+    // p->actions[PLAYER_ACTION_RIGHT].state            = IS_BIT_SET(p->keys,PLAYER_ACTION_RIGHT);
+    // p->actions.run              = IS_BIT_SET(p->keys,PLAYER_ACTION_RUN);
+    // p->actions.jump             = IS_BIT_SET(p->keys,PLAYER_ACTION_JUMP);
+    // p->actions.interact         = IS_BIT_SET(p->keys,PLAYER_ACTION_INTERACT);
 
-    p->actions.toggle_equip     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EQUIP);
-    p->actions.cycle_down       = IS_BIT_SET(p->keys,PLAYER_ACTION_CYCLE_EQUIP_DOWN);
-    p->actions.cycle_up         = IS_BIT_SET(p->keys,PLAYER_ACTION_CYCLE_EQUIP_UP);
+    // p->actions.primary_action   = IS_BIT_SET(p->keys,PLAYER_ACTION_PRIMARY_ACTION);
+    // p->actions.secondary_action = IS_BIT_SET(p->keys,PLAYER_ACTION_SECONDARY_ACTION);
+    // p->actions.reload           = IS_BIT_SET(p->keys,PLAYER_ACTION_RELOAD);
 
-    p->actions.toggle_debug     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_DEBUG);
-    p->actions.toggle_editor    = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EDITOR);
+    // p->actions.toggle_equip     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EQUIP);
+    // p->actions.cycle_down       = IS_BIT_SET(p->keys,PLAYER_ACTION_CYCLE_EQUIP_DOWN);
+    // p->actions.cycle_up         = IS_BIT_SET(p->keys,PLAYER_ACTION_CYCLE_EQUIP_UP);
 
-    bool run_toggled = p->actions.run && !p->actions_prior.run;
-    bool primary_action_toggled = p->actions.primary_action && !p->actions_prior.primary_action;
-    bool secondary_action_toggled = p->actions.secondary_action && !p->actions_prior.secondary_action;
+    // p->actions.toggle_debug     = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_DEBUG);
+    // p->actions.toggle_editor    = IS_BIT_SET(p->keys,PLAYER_ACTION_TOGGLE_EDITOR);
 
-    bool equip_toggled = p->actions.toggle_equip && !p->actions_prior.toggle_equip;
-    bool c_down_toggled = p->actions.cycle_down && !p->actions_prior.cycle_down;
-    bool c_up_toggled = p->actions.cycle_up && !p->actions_prior.cycle_up;
+    // bool run_toggled = p->actions.run && !p->actions_prior.run;
+    // bool primary_action_toggled = p->actions.primary_action && !p->actions_prior.primary_action;
+    // bool secondary_action_toggled = p->actions.secondary_action && !p->actions_prior.secondary_action;
 
-    bool debug_toggled = p->actions.toggle_debug && !p->actions_prior.toggle_debug;
-    bool editor_toggled = p->actions.toggle_editor && !p->actions_prior.toggle_editor;
+    // bool equip_toggled = p->actions.toggle_equip && !p->actions_prior.toggle_equip;
+    // bool c_down_toggled = p->actions.cycle_down && !p->actions_prior.cycle_down;
+    // bool c_up_toggled = p->actions.cycle_up && !p->actions_prior.cycle_up;
+
+    // bool debug_toggled = p->actions.toggle_debug && !p->actions_prior.toggle_debug;
+    // bool editor_toggled = p->actions.toggle_editor && !p->actions_prior.toggle_editor;
 
 
-    memcpy(&p->actions_prior, &p->actions, sizeof(PlayerActions));
+    // memcpy(&p->actions_prior, &p->actions, sizeof(PlayerActions));
 
     if(!p->busy)
     {
-        if(equip_toggled)
+        if(p->actions[PLAYER_ACTION_EQUIP].toggled_on)
         {
             p->item_equipped = !p->item_equipped;
             if(p->item_equipped)
@@ -888,17 +907,17 @@ void player_update(Player* p, double delta_t)
 
         if(p->item_equipped)
         {
-            if(c_up_toggled)
+            if(p->actions[PLAYER_ACTION_CYCLE_EQUIP_UP].toggled_on)
             {
                 player_set_equipped_item(p, p->item_index+1);
             }
-            if(c_down_toggled)
+            if(p->actions[PLAYER_ACTION_CYCLE_EQUIP_DOWN].toggled_on)
             {
                 player_set_equipped_item(p, p->item_index-1);
             }
         }
 
-        if(p->actions.reload)
+        if(p->actions[PLAYER_ACTION_RELOAD].toggled_on)
         {
             if(p->item.item_type == ITEM_TYPE_GUN)
             {
@@ -927,16 +946,16 @@ void player_update(Player* p, double delta_t)
     }
 
 
-    player_update_mouse_click(p, p->actions.primary_action, primary_action_toggled, &p->lmouse, delta_t);
-    player_update_mouse_click(p, p->actions.secondary_action, secondary_action_toggled, &p->rmouse, delta_t);
+    player_update_mouse_click(p, p->actions[PLAYER_ACTION_PRIMARY_ACTION].state, p->actions[PLAYER_ACTION_PRIMARY_ACTION].toggled_on, &p->lmouse, delta_t);
+    player_update_mouse_click(p, p->actions[PLAYER_ACTION_SECONDARY_ACTION].state, p->actions[PLAYER_ACTION_SECONDARY_ACTION].toggled_on, &p->rmouse, delta_t);
 
 
-    if(debug_toggled)
+    if(p->actions[PLAYER_ACTION_DEBUG].toggled_on)
     {
         debug_enabled = !debug_enabled;
     }
 
-    if(editor_toggled)
+    if(p->actions[PLAYER_ACTION_EDITOR].toggled_on)
     {
         editor_enabled = !editor_enabled;
         if(editor_enabled)
@@ -947,7 +966,7 @@ void player_update(Player* p, double delta_t)
 
     if(role != ROLE_SERVER)
     {
-        if(p->actions.primary_action)
+        if(p->actions[PLAYER_ACTION_PRIMARY_ACTION].toggled_on)
         {
             if(window_is_cursor_enabled() && !editor_enabled)
             {
@@ -959,12 +978,12 @@ void player_update(Player* p, double delta_t)
     Vector2f accel = {0};
     bool moving_player = MOVING_PLAYER(p);
 
-    if(p->actions.up)    { accel.y -= p->speed; }
-    if(p->actions.down)  { accel.y += p->speed; }
-    if(p->actions.left)  { accel.x -= p->speed; }
-    if(p->actions.right) { accel.x += p->speed; }
+    if(p->actions[PLAYER_ACTION_UP].state)    { accel.y -= p->speed; }
+    if(p->actions[PLAYER_ACTION_DOWN].state)  { accel.y += p->speed; }
+    if(p->actions[PLAYER_ACTION_LEFT].state)  { accel.x -= p->speed; }
+    if(p->actions[PLAYER_ACTION_RIGHT].state) { accel.x += p->speed; }
 
-    if((p->actions.up || p->actions.down) && (p->actions.left || p->actions.right))
+    if((p->actions[PLAYER_ACTION_UP].state || p->actions[PLAYER_ACTION_DOWN].state) && (p->actions[PLAYER_ACTION_LEFT].state || p->actions[PLAYER_ACTION_RIGHT].state))
     {
         // moving diagonally
         accel.x *= SQRT2OVER2;
@@ -972,7 +991,7 @@ void player_update(Player* p, double delta_t)
     }
 
 
-    if(run_toggled)
+    if(p->actions[PLAYER_ACTION_RUN].toggled_on)
     {
         p->running = !p->running;
     }
@@ -1059,7 +1078,15 @@ void player_handle_net_inputs(Player* p, double delta_t)
     memcpy(&p->input_prior, &p->input, sizeof(NetPlayerInput));
 
     p->input.delta_t = delta_t;
-    p->input.keys = p->keys;
+
+    p->input.keys = 0;
+    for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
+    {
+        if(p->actions[i].state)
+        {
+            p->input.keys |= (1<<i);
+        }
+    }
     p->input.mouse_x = p->mouse_x;
     p->input.mouse_y = p->mouse_y;
     
@@ -1221,6 +1248,19 @@ void player_draw(Player* p)
     gfx_draw_string(x, y, player_colors[p->index], name_size, 0.0, 0.8, true, true, p->name);
 }
 
+const char* player_item_type_str(PlayerItemType item_type)
+{
+    switch(item_type)
+    {
+        case ITEM_TYPE_NONE: return "none";
+        case ITEM_TYPE_MELEE: return "melee";
+        case ITEM_TYPE_GUN: return "gun";
+        case ITEM_TYPE_BLOCK: return "block";
+        case ITEM_TYPE_OBJECT: return "object";
+        default: return "UNKNOWN";
+    }
+}
+
 
 
 void weapons_init()
@@ -1256,8 +1296,8 @@ void weapons_init()
     guns[idx].fire_period = 100.0; // milliseconds
     guns[idx].fire_spread = 0.0;
     guns[idx].fire_count = 1;
-    guns[idx].bullets = 32;
-    guns[idx].bullets_max = 32;
+    guns[idx].bullets = 9999;
+    guns[idx].bullets_max = 9999;
     guns[idx].reload_time = 1000.0;
     guns[idx].projectile_type = PROJECTILE_TYPE_BULLET;
 
@@ -1307,7 +1347,7 @@ void weapons_init_images()
                 gun_image_sets[pm][ps][w] = -1;
 
                 char fname[100] = {0};
-                sprintf(fname, "img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_state_str(ps), gun_type_str(guns[w].type), guns[w].name);
+                sprintf(fname, "img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_anim_state_str(ps), gun_type_str(guns[w].type), guns[w].name);
                 gun_image_sets[pm][ps][w] = gfx_load_image(fname, false, false, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
             }
         }
@@ -1322,7 +1362,7 @@ void weapons_init_images()
             {
                 melee_image_sets[pm][ps][w] = -1;
                 char fname[100] = {0};
-                sprintf(fname, "img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_state_str(ps), melee_type_str(melees[w].type), melees[w].name);
+                sprintf(fname, "img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_anim_state_str(ps), melee_type_str(melees[w].type), melees[w].name);
                 melee_image_sets[pm][ps][w] = gfx_load_image(fname, false, false, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
             }
         }
@@ -1364,10 +1404,10 @@ const char* melee_type_str(MeleeType mtype)
 
 
 
-void gun_fire(int mx, int my, Gun* gun, bool held)
+void gun_fire(Player* p, Gun* gun, bool held)
 {
 
-    if(gun->bullets <= 0) return; 
+    if(gun->bullets <= 0) return;
 
     if(gun->fire_count > 1)
     {
@@ -1375,7 +1415,7 @@ void gun_fire(int mx, int my, Gun* gun, bool held)
         {
             int direction = rand()%2 == 0 ? -1 : 1;
             float angle_offset = rand_float_between(0.0, gun->fire_spread/2.0) * direction;
-            projectile_add(gun->projectile_type, gun, mx, my, angle_offset);
+            projectile_add(p, gun, angle_offset);
         }
     }
     else
@@ -1385,8 +1425,14 @@ void gun_fire(int mx, int my, Gun* gun, bool held)
         {
             int direction = rand()%2 == 0 ? -1 : 1;
             angle_offset = rand_float_between(0.0, gun->recoil_spread/2.0) * direction;
+
+            // recoil_camera_offset.x = 5.0*cosf(RAD(angle_offset));
+            // recoil_camera_offset.y = 5.0*sinf(RAD(angle_offset));
+            // float cam_pos_x = player->phys.pos.x + aim_camera_offset.x + recoil_camera_offset.x;
+            // float cam_pos_y = player->phys.pos.y + aim_camera_offset.y + recoil_camera_offset.y;
+            // camera_move(cam_pos_x, cam_pos_y, 0.00, true, &map.rect);
         }
-        projectile_add(gun->projectile_type, gun, mx, my, angle_offset);
+        projectile_add(p, gun, angle_offset);
     }
     gun->bullets--;
 }

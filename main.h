@@ -32,6 +32,7 @@ typedef enum
 extern Timer game_timer;
 extern GameRole role;
 extern Vector2f aim_camera_offset;
+extern Vector2f recoil_camera_offset;
 
 extern bool debug_enabled;
 extern bool editor_enabled;
