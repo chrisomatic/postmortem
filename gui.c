@@ -75,18 +75,11 @@ void gui_draw_text()
     float pvy = player->phys.vel.y;
     float pv = sqrt(SQ(pvx) + SQ(pvy));
 
-    //TODO
-    bool up               = IS_BIT_SET(player->keys,PLAYER_ACTION_UP);
-    bool down             = IS_BIT_SET(player->keys,PLAYER_ACTION_DOWN);
-    bool left             = IS_BIT_SET(player->keys,PLAYER_ACTION_LEFT);
-    bool right            = IS_BIT_SET(player->keys,PLAYER_ACTION_RIGHT);
-    bool run              = IS_BIT_SET(player->keys,PLAYER_ACTION_RUN);
-    bool jump             = IS_BIT_SET(player->keys,PLAYER_ACTION_JUMP);
-    bool interact         = IS_BIT_SET(player->keys,PLAYER_ACTION_INTERACT);
-    bool primary_action   = IS_BIT_SET(player->keys,PLAYER_ACTION_PRIMARY_ACTION);
-    bool secondary_action = IS_BIT_SET(player->keys,PLAYER_ACTION_SECONDARY_ACTION);
-    bool toggle_equip_weapon= IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_EQUIP);
-    bool toggle_debug     = IS_BIT_SET(player->keys,PLAYER_ACTION_TOGGLE_DEBUG);
+    char keys[16+1] = {0};
+    for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
+    {
+        keys[i] = player->actions[i].state ? '1' : '0';
+    }
 
     // mouse
     int wmx, wmy, vmx, vmy, mx, my, mr, mc, wr, wc;
@@ -130,9 +123,9 @@ void gui_draw_text()
                 imgui_text("Anim State: %s (%d)", player_state_str(player->anim_state), player->anim_state);
                 imgui_text("Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y);
                 imgui_text("Vel: %.2f, %.2f (%.2f)", pvx, pvy, pv);
-                imgui_text("Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action);
+                imgui_text("Controls: %s", keys);
+                // imgui_text("Controls: %d%d%d%d%d%d%d%d%d", up, down, left, right, run, jump, interact, primary_action, secondary_action);
                 imgui_text("Angle: %.2f, %.2f deg", player->angle, DEG(player->angle));
-                // imgui_text("Angle: %.2f, %.2f deg", 5.999, 360.999);
             imgui_indent_end();
 
             // imgui_text_sized(big,"Weapon");

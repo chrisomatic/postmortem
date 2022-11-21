@@ -42,9 +42,6 @@ static void char_callback(GLFWwindow* window, unsigned int code);
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods);
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 
-// static void windows_text_mode_buf_append(char c);
-// static void window_text_mode_buf_backspace();
-
 bool window_init(int _view_width, int _view_height)
 {
     printf("Initializing GLFW.\n");
@@ -218,11 +215,13 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
     window_coord_y = ypos;
 }
 
+
+
+
 typedef struct
 {
-    uint16_t* keys;
     int key;
-    int bit_num;
+    bool* state;
 } WindowKey;
 
 static WindowKey window_keys[32];
@@ -267,20 +266,18 @@ void window_controls_clear_keys()
     window_mouse_buttons_count = 0;
 }
 
-void window_controls_add_key(uint16_t* keys, int key, int bit_num)
+void window_controls_add_key(bool* state, int key)
 {
-    window_keys[window_keys_count].keys = keys;
+    window_keys[window_keys_count].state = state;
     window_keys[window_keys_count].key = key;
-    window_keys[window_keys_count].bit_num = bit_num;
 
     window_keys_count++;
 }
 
-void window_controls_add_mouse_button(uint16_t* keys, int key, int bit_num)
+void window_controls_add_mouse_button(bool* state, int key)
 {
-    window_mouse_buttons[window_mouse_buttons_count].keys = keys;
+    window_mouse_buttons[window_mouse_buttons_count].state = state;
     window_mouse_buttons[window_mouse_buttons_count].key = key;
-    window_mouse_buttons[window_mouse_buttons_count].bit_num = bit_num;
 
     window_mouse_buttons_count++;
 }
@@ -322,9 +319,9 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                 if(key == wk->key)
                 {
                     if(action == GLFW_PRESS)
-                        (*wk->keys) |= wk->bit_num;
+                        (*wk->state) = true;
                     else
-                        (*wk->keys) &= ~(wk->bit_num);
+                        (*wk->state) = false;
                 }
             }
         }
@@ -383,15 +380,14 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
             {
                 if(action == GLFW_PRESS)
                 {
-                    (*wk->keys) |= wk->bit_num;
-
+                    (*wk->state) = true;
                     // if(window_is_cursor_enabled())
                     // {
                     //     window_disable_cursor();
                     // }
                 }
                 else
-                    (*wk->keys) &= ~(wk->bit_num);
+                    (*wk->state) = false;
             }
         }
     }

@@ -469,7 +469,12 @@ static void server_update_players()
         for(int i = 0; i < cli->input_count; ++i)
         {
             // apply input to player
-            p->keys = cli->net_player_inputs[i].keys;
+            for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
+            {
+                bool key_state = (cli->net_player_inputs[i].keys & (1<<i)) != 0;
+                p->actions[i].state = key_state;
+            }
+
             p->mouse_x = cli->net_player_inputs[i].mouse_x;
             p->mouse_y = cli->net_player_inputs[i].mouse_y;
 
@@ -1066,7 +1071,13 @@ void net_client_update()
 
                                                     LOGN("Applying input from packet %d:%d",i, j);
 
-                                                    p->keys = input->keys;
+                                                    for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
+                                                    {
+                                                        bool key_state = (input->keys & (1<<i)) != 0;
+                                                        p->actions[i].state = key_state;
+                                                    }
+
+                                                    // p->keys = input->keys;
                                                     p->mouse_x = input->mouse_x;
                                                     p->mouse_y = input->mouse_y;
 
@@ -1080,7 +1091,13 @@ void net_client_update()
                                         {
                                             NetPlayerInput* input = &net_player_inputs[i];
 
-                                            p->keys = input->keys;
+                                            for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
+                                            {
+                                                bool key_state = (input->keys & (1<<i)) != 0;
+                                                p->actions[i].state = key_state;
+                                            }
+
+                                            // p->keys = input->keys;
                                             p->mouse_x = input->mouse_x;
                                             p->mouse_y = input->mouse_y;
 
