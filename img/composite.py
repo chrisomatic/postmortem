@@ -204,7 +204,7 @@ class Compositor():
 def main():
 
     PROCESS_ALL = False
-    PROCESS_ALL = True
+    #PROCESS_ALL = True
 
     sprite_w = 128
     sprite_h = 128
@@ -225,7 +225,7 @@ def main():
 
     else:
 
-        c = Compositor("human1","attack1_handgun_pistol1", sprite_w, sprite_h, True)
+        c = Compositor("zombie1_0","walk", sprite_w, sprite_h, True)
 
         # @TEST
         # # img = QImage(32, 32, QImage.Format_ARGB32)
