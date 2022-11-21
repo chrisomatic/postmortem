@@ -43,6 +43,8 @@ static Matrix proj_matrix;
 
 static GLint loc_sprite_image;
 static GLint loc_sprite_ambient_color;
+static GLint loc_sprite_tint_color;
+static GLint loc_sprite_is_particle;
 static GLint loc_sprite_opacity;
 static GLint loc_sprite_model;
 static GLint loc_sprite_view;
@@ -173,6 +175,8 @@ void gfx_init(int width, int height)
     // shader locations
     loc_sprite_image      = glGetUniformLocation(program_sprite, "image");
     loc_sprite_ambient_color = glGetUniformLocation(program_sprite, "ambient_color");
+    loc_sprite_tint_color = glGetUniformLocation(program_sprite, "tint_color");
+    loc_sprite_is_particle = glGetUniformLocation(program_sprite, "is_particle");
 
     char lookup_str[16+1] = {0};
     for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
@@ -473,7 +477,7 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     return -1;
 }
 
-bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world)
+static bool gfx_draw_image_internal(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool is_particle)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
@@ -563,8 +567,9 @@ bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t 
 
     float brightness = 1.0;
 
-    //glUniform3f(loc_sprite_tint_color,brightness*r/255.0,brightness*g/255.0,brightness*b/255.0);
+    glUniform3f(loc_sprite_tint_color,brightness*r/255.0,brightness*g/255.0,brightness*b/255.0);
     glUniform3f(loc_sprite_ambient_color,r/255.0,g/255.0,b/255.0);//0.4,0.4,0.4);
+    glUniform1i(loc_sprite_is_particle,(is_particle ? 1 : 0));
 
     for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
     {
@@ -613,6 +618,17 @@ bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t 
     glUseProgram(0);
 
     return true;
+}
+
+bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world)
+{
+    return gfx_draw_image_internal(img_index, sprite_index, x, y, color, scale, rotation, opacity, full_image, in_world, false);
+
+}
+
+bool gfx_draw_particle(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world)
+{
+    return gfx_draw_image_internal(img_index, sprite_index, x, y, color, scale, rotation, opacity, full_image, in_world, true);
 }
 
 GFXImage* gfx_get_image_data(int img_index)

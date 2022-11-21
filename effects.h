@@ -4,6 +4,20 @@
 
 #define MAX_PARTICLE_EFFECTS 16
 
+typedef enum
+{
+    EFFECT_GUN_SMOKE1,
+    EFFECT_SPARKS1,
+    EFFECT_BLOOD1,
+    EFFECT_MAX,
+} Effect;
+
+typedef struct
+{
+    int effect_index;
+    char* file_name;
+} EffectEntry;
+
 extern ParticleEffect particle_effects[MAX_PARTICLE_EFFECTS];
 
 void effects_load_all();

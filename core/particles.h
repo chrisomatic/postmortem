@@ -29,7 +29,8 @@ typedef struct
     uint32_t color2;
     uint32_t color3;
 
-    float spawn_radius;
+    float spawn_radius_min;
+    float spawn_radius_max;
     float rotation_init_min;
     float rotation_init_max;
     float spawn_time_max;

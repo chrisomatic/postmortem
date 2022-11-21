@@ -52,7 +52,8 @@ void gui_init()
         .color1 = 0x00FF00FF,
         .color2 = 0x00CC0000,
         .color3 = 0x00202020,
-        .spawn_radius = 0.0,
+        .spawn_radius_min = 0.0,
+        .spawn_radius_max = 1.0,
         .spawn_time_min = 0.2,
         .spawn_time_max = 0.5,
         .burst_count_min = 1,
@@ -243,7 +244,8 @@ static void editor_draw()
                     effect->angular_vel.init_max = RAND_FLOAT(-360.0, 360.0);
                     effect->angular_vel.rate     = RAND_FLOAT(-360.0, 360.0);
 
-                    effect->spawn_radius  = RAND_FLOAT(0.0, 32.0);
+                    effect->spawn_radius_min  = RAND_FLOAT(0.0, 64.0);
+                    effect->spawn_radius_max  = RAND_FLOAT(0.0, 64.0);
 
                     effect->spawn_time_min  = RAND_FLOAT(0.01, 2.0);
                     effect->spawn_time_max  = RAND_FLOAT(0.01, 2.0);
@@ -309,7 +311,11 @@ static void editor_draw()
                     imgui_slider_float("Rate##angular_vel", -360.0,360.0,&effect->angular_vel.rate);
                 imgui_horizontal_end();
                 imgui_text_sized(big,"Spawn Radius");
-                    imgui_slider_float("radius##spawn", 0.0,32.0,&effect->spawn_radius);
+                imgui_horizontal_begin();
+                    imgui_slider_float("Min##spawn_radius", 0.0,32.0,&effect->spawn_radius_min);
+                    imgui_slider_float("Max##spawn_radius", 0.0,32.0,&effect->spawn_radius_max);
+                    effect->spawn_radius_max = (effect->spawn_radius_min > effect->spawn_radius_max ? effect->spawn_radius_min : effect->spawn_radius_max);
+                imgui_horizontal_end();
                 imgui_text_sized(big,"Spawn Time");
                 imgui_horizontal_begin();
                     imgui_slider_float("Min##spawn_time", 0.01,2.0,&effect->spawn_time_min);

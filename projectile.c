@@ -113,8 +113,8 @@ void projectile_add(int sprite_index, Gun* gun, int mx, int my, float angle_offs
 
     list_add(plist, (void*)&proj);
 
-    particles_spawn_effect(proj.pos.x, proj.pos.y-5, &particle_effects[0], 0.5, true, false);
-    particles_spawn_effect(proj.pos.x, proj.pos.y-5, &particle_effects[1], 0.5, true, false); // sparks
+    particles_spawn_effect(proj.pos.x, proj.pos.y-5, &particle_effects[EFFECT_GUN_SMOKE1], 0.5, true, false);
+    particles_spawn_effect(proj.pos.x, proj.pos.y-5, &particle_effects[EFFECT_SPARKS1], 0.5, true, false); // sparks
 }
 
 
@@ -167,6 +167,8 @@ void projectile_update(float delta_t)
                 }
 
                 zombie_hurt(j,proj->damage);
+                particles_spawn_effect(proj->pos.x, proj->pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
+
             }
 #endif
         }

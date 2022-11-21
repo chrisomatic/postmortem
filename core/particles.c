@@ -28,8 +28,11 @@ static void emit_particle(ParticleSpawner* s)
     }
     Particle* p = &s->particles[s->particle_list->count++];
 
-    float x_offset = RAND_FLOAT(-s->effect.spawn_radius,s->effect.spawn_radius);
-    float y_offset = RAND_FLOAT(-s->effect.spawn_radius,s->effect.spawn_radius);
+    float angle = RAD((float)RAND_RANGE(0,360));
+    float mag = RAND_FLOAT(0.0,s->effect.spawn_radius_max) + s->effect.spawn_radius_min;
+
+    float x_offset = mag*cos(angle);
+    float y_offset = mag*sin(angle);
 
     p->pos.x = s->pos.x + x_offset;
     p->pos.y = s->pos.y + y_offset;
@@ -94,7 +97,7 @@ void print_particle_effect(ParticleEffect* e)
     printf("  color1: %08X\n", e->color1);
     printf("  color2: %08X\n", e->color2);
     printf("  color3: %08X\n", e->color3);
-    printf("  spawn_radius: %f\n", e->spawn_radius);
+    printf("  spawn_radius: %f %f\n", e->spawn_radius_min, e->spawn_radius_max);
     printf("  rotation: %f %f\n", e->rotation_init_min, e->rotation_init_max);
     printf("  spawn_time: %f %f\n", e->spawn_time_min, e->spawn_time_max);
     printf("  burst_count: %d %d\n", e->burst_count_min, e->burst_count_max);
@@ -270,7 +273,7 @@ void particles_draw_spawner(ParticleSpawner* spawner)
         Particle* p = &spawner->particles[j];
         if(spawner->effect.use_sprite)
         {
-            gfx_draw_image(particles_image, spawner->effect.sprite_index, p->pos.x,p->pos.y, p->color,p->scale,p->rotation,p->opacity,false, spawner->in_world);
+            gfx_draw_particle(particles_image, spawner->effect.sprite_index, p->pos.x,p->pos.y, p->color,p->scale,p->rotation,p->opacity,false, spawner->in_world);
         }
         else
         {

@@ -4,6 +4,24 @@
 
 ParticleEffect particle_effects[MAX_PARTICLE_EFFECTS];
 
+EffectEntry effect_map[] = {
+    {EFFECT_GUN_SMOKE1,"gun_smoke.effect"},
+    {EFFECT_SPARKS1,"sparks1.effect"},
+    {EFFECT_BLOOD1,"blood1.effect"},
+};
+
+static int get_effect_map_index(char* file_name)
+{
+    for(int i = 0; i < sizeof(effect_map); ++i)
+    {
+        if(strcmp(effect_map[i].file_name, file_name) == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 void effects_load_all()
 {
     char files[10][32] = {0};
@@ -15,8 +33,20 @@ void effects_load_all()
     {
         char full_path[64] = {0};
         snprintf(full_path,63,"effects/%s",files[i]);
-        effects_load(full_path,&particle_effects[i]);
-        printf("%d: %s\n",i, files[i]);
+        int index = get_effect_map_index(files[i]);
+        if(index == -1)
+        {
+            LOGW("Failed to map effect %s", files[i]);
+        }
+        else if(index >= MAX_PARTICLE_EFFECTS)
+        {
+            LOGW("Map effect is out of max particles range, %d",index);
+        }
+        else
+        {
+            effects_load(full_path,&particle_effects[index]);
+            printf("%d: %s\n",i, files[i]);
+        }
     }
 }
 
