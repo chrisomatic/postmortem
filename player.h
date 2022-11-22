@@ -4,6 +4,12 @@
 #include "physics.h"
 #include "net.h"
 
+// debug box colors
+#define COLOR_POS        COLOR_BLUE
+#define COLOR_HIT        COLOR_RED
+#define COLOR_COLLISON   COLOR_CYAN
+#define COLOR_MAXSIZE    COLOR_YELLOW
+
 #define PLAYER_TEXTURES_MAX     5
 #define MAX_CLIENT_PREDICTED_STATES 8
 #define PLAYER_NAME_MAX 32
@@ -242,8 +248,10 @@ typedef struct
     uint8_t sprite_index;
     uint8_t sprite_index_direction; // 0-7
 
-    Rect standard_size;
-    Rect max_size;
+    Rect standard_size; // only used for scaling
+    Rect max_size;      // used for player name mostly
+    Rect hit_box;
+    Rect collision_box;
     Rect pos;       // actual position of the player
     Physics phys;
     float angle;
@@ -351,5 +359,3 @@ const char* melee_type_str(MeleeType mtype);
 void gun_fire(Player* p, Gun* gun, bool held);
 void player_weapon_melee_check_collision(Player* p);
 
-void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret);
-void limit_pos(Rect* limit, Rect* pos, Rect* phys_pos);

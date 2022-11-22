@@ -371,7 +371,7 @@ void simulate(double delta_t)
     camera_update();
 
     world_update();
-    zombie_update(delta_t);
+    zombies_update(delta_t);
 
     // window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);   //MOVED to player_update
     player_update(player,delta_t);
@@ -388,7 +388,7 @@ void simulate_client(double delta_t)
     camera_update();
 
     world_update();
-    //zombie_update(delta_t);
+    //zombies_update(delta_t);
     // window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
     player_update(player,delta_t);
     player_handle_net_inputs(player, delta_t);
@@ -411,7 +411,7 @@ void draw()
     world_draw();
     gfx_draw_lines();
 
-    zombie_draw();
+    zombies_draw();
     projectile_draw();
 
     static bool activate_player = false;
@@ -618,4 +618,67 @@ void handle_backspace_timer()
             t0_backspace = timer_get_time();
         }
     }
+}
+
+
+
+// FULL image drawn at draw_x, draw_y
+// get the translated and scaled visible_rect of the image
+void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret)
+{
+    float img_center_x = img_w/2.0;
+    float img_center_y = img_h/2.0;
+    float offset_x = (visible_rect->x - img_center_x)*scale;
+    float offset_y = (visible_rect->y - img_center_y)*scale;
+
+    // actual position
+    ret->x = draw_x + offset_x;
+    ret->y = draw_y + offset_y;
+    ret->w = visible_rect->w*scale;
+    ret->h = visible_rect->h*scale;
+}
+
+void limit_pos(Rect* limit, Rect* pos, Rect* phys_pos)
+{
+    Rect pos0 = *pos;
+    physics_limit_pos(limit, &pos0);
+
+    if(!FEQ(pos0.x, pos->x) || !FEQ(pos0.y, pos->y))
+    {
+        phys_pos->x += (pos0.x - pos->x);
+        phys_pos->y += (pos0.y - pos->y);
+        pos->x = pos0.x;
+        pos->y = pos0.y;
+    }
+}
+
+
+// location:
+// 0 = top
+// 1 = middle
+// 2 = bottom
+Rect calc_box(Rect* pos, float wscale, float hscale, int location)
+{
+    Rect r = {0};
+    r.w = pos->w * wscale;
+    r.h = pos->h * hscale;
+    r.x = pos->x;
+
+    float ytop = pos->y - pos->h/2.0; 
+    float ybottom = pos->y + pos->h/2.0; 
+
+    if(location == 0) //top
+    {
+        r.y = ytop + r.h/2.0;
+    }
+    else if(location == 2) //bottom
+    {
+        r.y = ybottom - r.h/2.0;
+    }
+    else //middle
+    {
+        r.y = pos->y;
+    }
+
+    return r;
 }

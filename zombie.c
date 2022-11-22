@@ -11,45 +11,33 @@
 #include "world.h"
 #include "lighting.h"
 #include "log.h"
+#include "io.h"
 #include "main.h"
 
 #include "zombie.h"
 
-ZombieModel zombie_models[ZOMBIE_MODELS_MAX];
-
 #define IMG_ELEMENT_W 128
 #define IMG_ELEMENT_H 128
 
+bool zombies_idle = false;
+ZombieModel zombie_models[ZOMBIE_MODELS_MAX];
 int zombie_image_sets_none[ZOMBIE_MODELS_MAX][ZOMBIE_TEXTURES_MAX][ZANIM_MAX];
-
-
-#define ZOMBIES_IDLE 0
-
 Zombie zombies[MAX_ZOMBIES] = {0};
 glist* zlist = NULL;
 
-static int zombie_image;
+// max width and heights for zombie models
+static Vector2f maxwh[ZOMBIE_MODELS_MAX];
+static Rect standard_size[ZOMBIE_MODELS_MAX];
 
 static void zombie_remove(int index);
 static void sort_zombies(Zombie arr[], int n);
 static void wander(Zombie* zom, float delta_t);
 static void zombie_die(int index);
 
-const char* zombie_anim_state_str(ZombieAnimState anim_state)
-{
-    switch(anim_state)
-    {
-        case ZANIM_IDLE: return "idle";
-        case ZANIM_WALK: return "walk";
-        case ZANIM_ATTACK1: return "attack1";
-        case ZANIM_NONE: return "";
-        default: return "";
-    }
-}
-
 void zombie_init()
 {
 
+    //models
     int idx = ZOMBIE1;
     zombie_models[idx].index = idx;
     zombie_models[idx].name = "zombie1";
@@ -58,24 +46,55 @@ void zombie_init()
     //none
     for(int pm = 0; pm < ZOMBIE_MODELS_MAX; ++pm)
     {
+        float maxw=0.0, maxh=0.0;
         for(int t = 0; t < ZOMBIE_TEXTURES_MAX; ++t)
         {
             for(int ps = 0; ps < ZANIM_MAX; ++ps)
             {
-                zombie_image_sets_none[pm][t][ps] = -1;
-
+                int img = -1;
                 char fname[100] = {0};
                 sprintf(fname, "img/characters/%s_%d-%s.png", zombie_models[pm].name, t, zombie_anim_state_str(ps));
-                if(access(fname, F_OK) == 0)
+                // if(access(fname, F_OK) == 0)
+                if(io_file_exists(fname))
                 {
-                    zombie_image_sets_none[pm][t][ps] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
+                    img = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
                     // printf("%s -> %d\n", fname, player_image_sets[pm][t][ps][wt]);
+                }
+                zombie_image_sets_none[pm][t][ps] = img;
+
+                if(img == -1)
+                    continue;
+
+                for(int i = 0; i < gfx_images[img].element_count; ++i)
+                {
+                    Rect* vr = &gfx_images[img].visible_rects[i];
+                    if(IS_RECT_EMPTY(vr)) continue;
+                    maxw = MAX(maxw, vr->w);
+                    maxh = MAX(maxh, vr->h);
                 }
             }
         }
+
+        maxwh[pm].x = maxw;
+        maxwh[pm].y = maxh;
     }
 
-    zombie_image = gfx_load_image("img/zombie_f1.png", false, false, 0, 0, NULL);
+    // standard size
+    for(int pm = 0; pm < ZOMBIE_MODELS_MAX; ++pm)
+    {
+        int standard_img = zombie_image_sets_none[pm][0][ZANIM_IDLE];
+        if(standard_img != -1)
+        {
+            Rect* r = &gfx_images[standard_img].visible_rects[0];
+            standard_size[pm] = *r;
+        }
+        else
+        {
+            LOGE("Zombie standard_img is -1 (%d)", pm);
+        }
+    }
+
+
 
     zlist = list_create((void*)zombies, MAX_ZOMBIES, sizeof(Zombie));
     if(zlist == NULL)
@@ -131,7 +150,6 @@ void zombie_init()
 bool zombie_add(ZombieSpawn* spawn)
 {
     Zombie zombie = {0};
-    // zombie.dead = false;
     zombie.phys.pos.x = spawn->pos.x;
     zombie.phys.pos.y = spawn->pos.y;
     zombie.phys.accel.x = 0.0;
@@ -146,7 +164,6 @@ bool zombie_add(ZombieSpawn* spawn)
     zombie.action = spawn->action;
     zombie.action_timer_max = spawn->action_timer_max;
     zombie.speed = spawn->speed;
-    zombie.scale = spawn->scale;
 
     zombie.model_index = spawn->model_index;
     zombie.model_texture = spawn->model_texture;
@@ -154,6 +171,9 @@ bool zombie_add(ZombieSpawn* spawn)
     zombie.sprite_index = 0;
     zombie.sprite_index_direction = 0;
     zombie.image = zombie_image_sets_none[zombie.model_index][zombie.model_texture][zombie.anim_state];
+
+    // zombie.scale = (float)ZOMBIE_HEIGHT*spawn->scale/standard_size[zombie.model_index].h;
+    zombie.scale = (float)ZOMBIE_HEIGHT/standard_size[zombie.model_index].h;
 
     // animation
     zombie.anim.curr_frame = 0;
@@ -209,8 +229,10 @@ bool zombie_add_to_world_grid(ZombieSpawn* spawn, int world_row, int world_col)
     float x0 = r.x - r.w/2.0;
     float y0 = r.y - r.h/2.0;
 
-    float x = rand_float_between(0.0, r.w) + x0;
-    float y = rand_float_between(0.0, r.h) + y0;
+    // float x = rand_float_between(0.0, r.w) + x0;
+    // float y = rand_float_between(0.0, r.h) + y0;
+    float x = RAND_FLOAT(0.0, r.w) + x0;
+    float y = RAND_FLOAT(0.0, r.h) + y0;
 
     spawn->pos.x = x;
     spawn->pos.y = y;
@@ -218,6 +240,39 @@ bool zombie_add_to_world_grid(ZombieSpawn* spawn, int world_row, int world_col)
     // world_grid_to_coords
     return zombie_add(spawn);
 }
+
+void zombie_push(int index, Vector2f* force)
+{
+    if(index < 0 || index >= zlist->count)
+    {
+        LOGW("Zombie index %d is out of range",index);
+        return;
+    }
+
+    Zombie* zom = &zombies[index];
+
+    zom->push_vel.x = force->x;
+    zom->push_vel.y = force->y;
+}
+
+void zombie_hurt(int index, float val)
+{
+    if(index < 0 || index >= zlist->count)
+    {
+        LOGW("Zombie index %d is out of range",index);
+        return;
+    }
+
+    Zombie* zom = &zombies[index];
+
+    zom->hp -= val;
+    if(zom->hp <= 0.0)
+    {
+        zombie_die(index);
+    }
+}
+
+
 
 void zombie_update_image(Zombie* z)
 {
@@ -284,72 +339,37 @@ void zombie_update_sprite_index(Zombie* z)
     z->sprite_index = MIN(z->sprite_index, gfx_images[z->image].element_count);
 }
 
-void zombie_update_boxes(Zombie* zom)
+void zombie_update_boxes(Zombie* z)
 {
-    // const float shrink_factor = 0.80;
 
-    // make sure scale gets recalculated if needed
-    zom->phys.pos.w = gfx_images[zom->image].visible_rects[0].w*zom->scale;
-    zom->phys.pos.h = gfx_images[zom->image].visible_rects[0].h*zom->scale;
+    GFXImage* img = &gfx_images[z->image];
+    Rect* vr = &img->visible_rects[z->sprite_index];
 
-    // Rect* vr = &zom->visible_rect;
-    float w = zom->phys.pos.w;
-    float h = zom->phys.pos.h;
-    float x0 = zom->phys.pos.x;
-    float y0 = zom->phys.pos.y;
-    float ytop = y0-h/2.0;
-    float ybot = y0+h/2.0;
+    z->phys.pos.w = vr->w * z->scale;
+    z->phys.pos.h = vr->h * z->scale;
 
-    float collision_height = h*0.4;
-    zom->collision_box.x = x0;
-    zom->collision_box.y = ybot-collision_height/2.0;
-    zom->collision_box.w = w;
-    zom->collision_box.h = collision_height;
+    z->hit_box = calc_box(&z->phys.pos, 1.0, 0.5, 0);
+    z->collision_box = calc_box(&z->phys.pos, 1.0, 0.4, 2);
 
-    float hit_box_height = h*0.5;
-    zom->hit_box.x = x0;
-    zom->hit_box.y = ytop+hit_box_height/2.0;
-    zom->hit_box.w = w;
-    zom->hit_box.h = hit_box_height;
-
-    float x = zom->collision_box.x;
-    float y = zom->collision_box.y;
-    coords_to_map_grid(x, y, &zom->map_row, &zom->map_col);
-    coords_to_map_grid(x, y, &zom->world_row, &zom->world_col);
-
-
-    //TODO
-    // GFXImage* img = &gfx_images[p->image];
-    // Rect* vr = &img->visible_rects[p->sprite_index];
-
-    // get_actual_pos(p->phys.pos.x, p->phys.pos.y, p->scale, img->element_width, img->element_height, vr, &p->pos);
-    // limit_pos(&map.rect, &p->pos, &p->phys.pos);
-
-    // float px = p->pos.x;
-    // float py = p->pos.y;
-
-    // p->standard_size.x = px;
-    // p->standard_size.y = py;
-
-    // p->max_size.x = px;
-    // p->max_size.y = py;
-
+    // float x = z->collision_box.x;
+    // float y = z->collision_box.y;
+    // coords_to_map_grid(x, y, &z->map_row, &z->map_col);
+    // coords_to_map_grid(x, y, &z->world_row, &z->world_col);
 }
 
-void zombie_update(float delta_t)
+void zombie_update(Zombie* z, float delta_t)
 {
 
-    for(int i = zlist->count - 1; i >= 0 ; --i)
+    Vector2f accel = {0.0,0.0};
+
+
+    if(!zombies_idle)
     {
-        Zombie* zom = &zombies[i];
-        Vector2f accel = {0.0,0.0};
+        wander(z, delta_t);
 
-#if !ZOMBIES_IDLE
-        wander(zom, delta_t);
+        float amt = z->speed;
 
-        float amt = zom->speed;
-
-        switch(zom->action)
+        switch(z->action)
         {
             case ZOMBIE_ACTION_NONE:
                 break;
@@ -383,117 +403,115 @@ void zombie_update(float delta_t)
                 break;
         }
 
-        if(zom->push_vel.x > 0.0)
+        if(z->push_vel.x > 0.0)
         {
-            accel.x += zom->push_vel.x;
+            accel.x += z->push_vel.x;
         }
-        if(zom->push_vel.y > 0.0)
+        if(z->push_vel.y > 0.0)
         {
-            accel.y -= zom->push_vel.y;
+            accel.y -= z->push_vel.y;
         }
-#endif
-
-        physics_begin(&zom->phys);
-        physics_add_friction(&zom->phys, 16.0);
-        physics_add_force(&zom->phys, accel.x, accel.y);
-        physics_simulate(&zom->phys, delta_t);
-
-
-        zom->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
-
-        zombie_update_anim_state(zom);
-        // player_update_anim_timing(p);
-        zombie_update_image(zom);
-
-        gfx_anim_update(&zom->anim, delta_t);
-
-        zombie_update_sprite_index(zom);
-        zombie_update_boxes(zom);
-
-        //TODO
-        physics_limit_pos(&map.rect, &zom->phys.pos);
     }
 
-    sort_zombies(zombies,zlist->count);
+    physics_begin(&z->phys);
+    physics_add_friction(&z->phys, 16.0);
+    physics_add_force(&z->phys, accel.x, accel.y);
+    physics_simulate(&z->phys, delta_t);
+    physics_limit_pos(&map.rect, &z->phys.pos);
+
+    z->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
+
+    zombie_update_anim_state(z);
+    // player_update_anim_timing(p);
+    zombie_update_image(z);
+
+    gfx_anim_update(&z->anim, delta_t);
+
+    zombie_update_sprite_index(z);
+    zombie_update_boxes(z);
 }
 
-void zombie_draw()
+void zombie_draw(Zombie* z)
+{
+    if(is_in_camera_view(&z->phys.pos))
+    {
+        gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, ambient_light,z->scale,0.0,1.0,false,true);
+
+        if(debug_enabled)
+        {
+            float maxw = maxwh[z->model_index].x * z->scale;
+            float maxh = maxwh[z->model_index].y * z->scale;
+            Rect max_size = {0};
+            max_size.x = z->phys.pos.x;
+            max_size.y = z->phys.pos.y;
+            max_size.w = maxw;
+            max_size.h = maxh;
+
+            gfx_draw_rect(&z->phys.pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
+            gfx_draw_rect(&z->collision_box, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
+            gfx_draw_rect(&z->hit_box, COLOR_HIT, 0.0, 1.0,1.0, false, true);
+            gfx_draw_rect(&max_size, COLOR_MAXSIZE, 0.0, 1.0,1.0, false, true);
+
+            // health bars
+            float h = 4.0;
+            float y = z->phys.pos.y + maxh * 0.5 + h/2.0 + 2.0;
+            float w = maxw;
+            float x = z->phys.pos.x;
+
+            Rect r = {0};
+            r.x = x;
+            r.y = y;
+            r.w = w;
+            r.h = h;
+            gfx_draw_rect(&r, COLOR_WHITE, 0.0, 1.0,1.0, true, true);
+
+            float p = z->hp/z->hp_max;
+            r.h *= 0.8;
+            r.x = r.x-r.w/2.0;
+            r.w *= p;
+            r.x = r.x+r.w/2.0;
+            gfx_draw_rect(&r, COLOR_RED, 0.0, 1.0,1.0, true, true);
+
+        }
+    }
+}
+
+
+void zombies_update(float delta_t)
+{
+    for(int i = zlist->count - 1; i >= 0 ; --i)
+    {
+        Zombie* z = &zombies[i];
+        zombie_update(z, delta_t);
+    }
+
+    sort_zombies(zombies, zlist->count);
+}
+
+void zombies_draw()
 {
     for(int i = 0; i < zlist->count; ++i)
     {
-        Zombie* zom = &zombies[i];
-
-        if(is_in_camera_view(&zom->phys.pos))
-        {
-            // gfx_draw_image(zombie_image,(int)zom->phys.pos.x,(int)zom->phys.pos.y, ambient_light,zom->scale,0.0,1.0);
-            gfx_draw_image(zom->image, zom->sprite_index,(int)zom->phys.pos.x,(int)zom->phys.pos.y, ambient_light,zom->scale,0.0,1.0,true,true);
-
-            if(debug_enabled)
-            {
-                Rect* cbox  = &zom->collision_box;
-                Rect* hbox  = &zom->hit_box;
-                gfx_draw_rect(cbox, COLOR_GREEN, 0.0, 1.0,1.0, false, true);
-                gfx_draw_rect(hbox, COLOR_YELLOW, 0.0, 1.0,1.0, false, true);
-
-
-                // health bars
-                Rect r = {0};
-                float h = 4.0;
-                float y = zom->phys.pos.y+zom->phys.pos.h*0.55 + h/2.0;
-                float x = zom->phys.pos.x;
-                float w = zom->phys.pos.w;
-
-                r.x = x;
-                r.y = y;
-                r.w = w;
-                r.h = h;
-                gfx_draw_rect(&r, COLOR_WHITE, 0.0, 1.0,1.0, true, true);
-
-
-                float p = zom->hp/zom->hp_max;
-                r.h *= 0.8;
-                r.x = r.x-r.w/2.0;
-                r.w *= p;
-                r.x = r.x+r.w/2.0;
-                gfx_draw_rect(&r, COLOR_RED, 0.0, 1.0,1.0, true, true);
-
-            }
-        }
-
-
+        Zombie* z = &zombies[i];
+        zombie_draw(z);
     }
 }
 
-void zombie_push(int index, Vector2f* force)
+const char* zombie_anim_state_str(ZombieAnimState anim_state)
 {
-    if(index < 0 || index >= zlist->count)
+    switch(anim_state)
     {
-        LOGW("Zombie index %d is out of range",index);
-        return;
-    }
-
-    Zombie* zom = &zombies[index];
-
-    zom->push_vel.x = force->x;
-    zom->push_vel.y = force->y;
-}
-
-void zombie_hurt(int index, float val)
-{
-    if(index < 0 || index >= zlist->count)
-    {
-        LOGW("Zombie index %d is out of range",index);
-        return;
-    }
-
-    Zombie* zom = &zombies[index];
-
-    zom->hp -= val;
-    if(zom->hp <= 0.0)
-    {
-        zombie_die(index);
+        case ZANIM_IDLE: return "idle";
+        case ZANIM_WALK: return "walk";
+        case ZANIM_ATTACK1: return "attack1";
+        case ZANIM_NONE: return "";
+        default: return "";
     }
 }
+
+
+// static functions
+// ------------------------------------------------------------------------------------------
 
 static void zombie_remove(int index)
 {

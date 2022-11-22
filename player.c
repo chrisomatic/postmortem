@@ -13,6 +13,7 @@
 #include "lighting.h"
 #include "net.h"
 #include "zombie.h"
+#include "io.h"
 #include "main.h"
 
 
@@ -100,7 +101,8 @@ void player_init_images()
 
                 char fname[100] = {0};
                 sprintf(fname, "img/characters/%s_%d-%s.png", player_models[pm].name, t, player_anim_state_str(ps));
-                if(access(fname, F_OK) == 0)
+                // if(access(fname, F_OK) == 0)
+                if(io_file_exists(fname))
                 {
                     player_image_sets_none[pm][t][ps] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
                     // printf("%s -> %d\n", fname, player_image_sets[pm][t][ps][wt]);
@@ -123,7 +125,8 @@ void player_init_images()
 
                     char fname[100] = {0};
                     sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_anim_state_str(ps), gun_type_str(wt));
-                    if(access(fname, F_OK) == 0)
+                    // if(access(fname, F_OK) == 0)
+                    if(io_file_exists(fname))
                     {
                         player_image_sets_guns[pm][t][ps][wt] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
                         // printf("%s -> %d\n", fname, player_image_sets[pm][t][ps][wt]);
@@ -146,7 +149,8 @@ void player_init_images()
 
                     char fname[100] = {0};
                     sprintf(fname, "img/characters/%s_%d-%s_%s.png", player_models[pm].name, t, player_anim_state_str(ps), melee_type_str(wt));
-                    if(access(fname, F_OK) == 0)
+                    // if(access(fname, F_OK) == 0)
+                    if(io_file_exists(fname))
                     {
                         player_image_sets_melees[pm][t][ps][wt] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
                         // printf("%s -> %d\n", fname, player_image_sets[pm][t][ps][wt]);
@@ -778,7 +782,9 @@ void player_update_boxes(Player* p)
     Rect* vr = &img->visible_rects[p->sprite_index];
 
     get_actual_pos(p->phys.pos.x, p->phys.pos.y, p->scale, img->element_width, img->element_height, vr, &p->pos);
-    limit_pos(&map.rect, &p->pos, &p->phys.pos);
+
+    // limit_pos(&map.rect, &p->pos, &p->phys.pos);
+    limit_pos(&map.rect, &p->collision_box, &p->phys.pos);
 
     float px = p->pos.x;
     float py = p->pos.y;
@@ -789,6 +795,8 @@ void player_update_boxes(Player* p)
     p->max_size.x = px;
     p->max_size.y = py;
 
+    p->hit_box = calc_box(&p->pos, 1.0, 0.5, 0);
+    p->collision_box = calc_box(&p->pos, 1.0, 0.4, 2);
 }
 
 
@@ -802,40 +810,45 @@ void player_update_sprite_index(Player* p)
     {
         int sector = angle_sector(angle_deg, 16);
 
-        if(sector == 15 || sector == 0)  // p->actions[PLAYER_ACTION_RIGHT].state
+        if(sector == 15 || sector == 0)
             p->sprite_index_direction = 2;
-        else if(sector == 1 || sector == 2)  // p->actions[PLAYER_ACTION_UP].state-p->actions[PLAYER_ACTION_RIGHT].state
+        else if(sector == 1 || sector == 2)
             p->sprite_index_direction = 3;
-        else if(sector == 3 || sector == 4)  // p->actions[PLAYER_ACTION_UP].state
+        else if(sector == 3 || sector == 4)
             p->sprite_index_direction = 4;
-        else if(sector == 5 || sector == 6)  // p->actions[PLAYER_ACTION_UP].state-p->actions[PLAYER_ACTION_LEFT].state
+        else if(sector == 5 || sector == 6)
             p->sprite_index_direction = 5;
-        else if(sector == 7 || sector == 8)  // p->actions[PLAYER_ACTION_LEFT].state
+        else if(sector == 7 || sector == 8)
             p->sprite_index_direction = 6;
-        else if(sector == 9 || sector == 10)  // p->actions[PLAYER_ACTION_DOWN].state-p->actions[PLAYER_ACTION_LEFT].state
+        else if(sector == 9 || sector == 10)
             p->sprite_index_direction = 7;
-        else if(sector == 11 || sector == 12)  // p->actions[PLAYER_ACTION_DOWN].state
+        else if(sector == 11 || sector == 12)
             p->sprite_index_direction = 0;
-        else if(sector == 13 || sector == 14)  // p->actions[PLAYER_ACTION_DOWN].state-p->actions[PLAYER_ACTION_RIGHT].state
+        else if(sector == 13 || sector == 14) 
             p->sprite_index_direction = 1;
     }
     else
     {
-        if(p->actions[PLAYER_ACTION_UP].state && p->actions[PLAYER_ACTION_LEFT].state)
+        bool up = p->actions[PLAYER_ACTION_UP].state;
+        bool down = p->actions[PLAYER_ACTION_DOWN].state;
+        bool left = p->actions[PLAYER_ACTION_LEFT].state;
+        bool right = p->actions[PLAYER_ACTION_RIGHT].state;
+
+        if(up && left)
             p->sprite_index_direction = 5;
-        else if(p->actions[PLAYER_ACTION_UP].state && p->actions[PLAYER_ACTION_RIGHT].state)
+        else if(up && right)
             p->sprite_index_direction = 3;
-        else if(p->actions[PLAYER_ACTION_DOWN].state && p->actions[PLAYER_ACTION_LEFT].state)
+        else if(down && left)
             p->sprite_index_direction = 7;
-        else if(p->actions[PLAYER_ACTION_DOWN].state && p->actions[PLAYER_ACTION_RIGHT].state)
+        else if(down && right)
             p->sprite_index_direction = 1;
-        else if(p->actions[PLAYER_ACTION_UP].state)
+        else if(up)
             p->sprite_index_direction = 4;
-        else if(p->actions[PLAYER_ACTION_DOWN].state)
+        else if(down)
             p->sprite_index_direction = 0;
-        else if(p->actions[PLAYER_ACTION_LEFT].state)
+        else if(left)
             p->sprite_index_direction = 6;
-        else if(p->actions[PLAYER_ACTION_RIGHT].state)
+        else if(right)
             p->sprite_index_direction = 2;
     }
 
@@ -867,6 +880,7 @@ void player_update(Player* p, double delta_t)
         }
         pa->prior_state = pa->state;
     }
+
 
     if(!p->busy)
     {
@@ -956,12 +970,18 @@ void player_update(Player* p, double delta_t)
     Vector2f accel = {0};
     bool moving_player = MOVING_PLAYER(p);
 
-    if(p->actions[PLAYER_ACTION_UP].state)    { accel.y -= p->speed; }
-    if(p->actions[PLAYER_ACTION_DOWN].state)  { accel.y += p->speed; }
-    if(p->actions[PLAYER_ACTION_LEFT].state)  { accel.x -= p->speed; }
-    if(p->actions[PLAYER_ACTION_RIGHT].state) { accel.x += p->speed; }
 
-    if((p->actions[PLAYER_ACTION_UP].state || p->actions[PLAYER_ACTION_DOWN].state) && (p->actions[PLAYER_ACTION_LEFT].state || p->actions[PLAYER_ACTION_RIGHT].state))
+    bool up = p->actions[PLAYER_ACTION_UP].state;
+    bool down = p->actions[PLAYER_ACTION_DOWN].state;
+    bool left = p->actions[PLAYER_ACTION_LEFT].state;
+    bool right = p->actions[PLAYER_ACTION_RIGHT].state;
+
+    if(up)    { accel.y -= p->speed; }
+    if(down)  { accel.y += p->speed; }
+    if(left)  { accel.x -= p->speed; }
+    if(right) { accel.x += p->speed; }
+
+    if((up || down) && (left || right))
     {
         // moving diagonally
         accel.x *= SQRT2OVER2;
@@ -1117,7 +1137,7 @@ void player_update_other(Player* p, double delta_t)
 
 void player_draw(Player* p)
 {
-    if(!is_in_camera_view(&p->phys.pos))
+    if(!is_in_camera_view(&p->pos))
     {
         return;
     }
@@ -1188,10 +1208,14 @@ void player_draw(Player* p)
 
     if(debug_enabled)
     {
-        Rect r = {0};
+        gfx_draw_rect(&p->pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->collision_box, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->hit_box, COLOR_HIT, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->max_size, COLOR_MAXSIZE, 0.0, 1.0,1.0, false, true);
 
-        // position box
-        gfx_draw_rect(&p->pos, COLOR_RED, 0.0, 1.0,1.0, false, true);
+
+        //dots
+        Rect r = {0};
 
         // phys.pos
         r.x = p->phys.pos.x;
@@ -1204,15 +1228,6 @@ void player_draw(Player* p)
         r.x = p->pos.x;
         r.y = p->pos.y;
         gfx_draw_rect(&r, COLOR_ORANGE, 0.0, 1.0,1.0, true, true);
-
-
-        // max_size
-        r.x = p->pos.x;
-        r.y = p->pos.y;
-        r.w = p->max_size.w*p->scale;
-        r.h = p->max_size.h*p->scale;
-        // gfx_draw_rect(&r, COLOR_BLUE, 0.0, 1.0,1.0, false, true);
-        gfx_draw_rect(&p->max_size, COLOR_BLUE, 0.0, 1.0,1.0, false, true);
     }
 
     // crosshair
@@ -1222,7 +1237,7 @@ void player_draw(Player* p)
     const float name_size = 0.11;
     Vector2f size = gfx_string_get_size(name_size, p->name);
     float x = p->phys.pos.x - size.x/2.0;
-    float y = p->phys.pos.y + p->max_size.h*0.55;
+    float y = p->phys.pos.y + p->max_size.h*0.5 + 2.0;
     gfx_draw_string(x, y, player_colors[p->index], name_size, 0.0, 0.8, true, true, p->name);
 }
 
@@ -1381,7 +1396,6 @@ const char* melee_type_str(MeleeType mtype)
 }
 
 
-
 void gun_fire(Player* p, Gun* gun, bool held)
 {
 
@@ -1391,8 +1405,7 @@ void gun_fire(Player* p, Gun* gun, bool held)
     {
         for(int i = 0; i < gun->fire_count; ++i)
         {
-            int direction = rand()%2 == 0 ? -1 : 1;
-            float angle_offset = rand_float_between(0.0, gun->fire_spread/2.0) * direction;
+            float angle_offset = RAND_FLOAT(-gun->fire_spread/2.0, gun->fire_spread/2.0);
             projectile_add(p, gun, angle_offset);
         }
     }
@@ -1401,9 +1414,7 @@ void gun_fire(Player* p, Gun* gun, bool held)
         float angle_offset = 0.0;
         if(held && !FEQ(gun->recoil_spread,0.0))
         {
-            int direction = rand()%2 == 0 ? -1 : 1;
-            angle_offset = rand_float_between(0.0, gun->recoil_spread/2.0) * direction;
-
+            angle_offset = RAND_FLOAT(-gun->recoil_spread/2.0, gun->recoil_spread/2.0);
             // recoil_camera_offset.x = 5.0*cosf(RAD(angle_offset));
             // recoil_camera_offset.y = 5.0*sinf(RAD(angle_offset));
             // float cam_pos_x = player->phys.pos.x + aim_camera_offset.x + recoil_camera_offset.x;
@@ -1428,7 +1439,6 @@ void player_weapon_melee_check_collision(Player* p)
 
     if(p->item.props == NULL)
         return;
-
 
     float px = p->phys.pos.x;
     float py = p->phys.pos.y;
@@ -1472,36 +1482,5 @@ void player_weapon_melee_check_collision(Player* p)
 
         }
 
-    }
-}
-
-
-// FULL image drawn at draw_x, draw_y
-// get the translated and scaled visible_rect of the image
-void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret)
-{
-    float img_center_x = img_w/2.0;
-    float img_center_y = img_h/2.0;
-    float offset_x = (visible_rect->x - img_center_x)*scale;
-    float offset_y = (visible_rect->y - img_center_y)*scale;
-
-    // actual position
-    ret->x = draw_x + offset_x;
-    ret->y = draw_y + offset_y;
-    ret->w = visible_rect->w*scale;
-    ret->h = visible_rect->h*scale;
-}
-
-void limit_pos(Rect* limit, Rect* pos, Rect* phys_pos)
-{
-    Rect pos0 = *pos;
-    physics_limit_pos(limit, &pos0);
-
-    if(!FEQ(pos0.x, pos->x) || !FEQ(pos0.y, pos->y))
-    {
-        phys_pos->x += (pos0.x - pos->x);
-        phys_pos->y += (pos0.y - pos->y);
-        pos->x = pos0.x;
-        pos->y = pos0.y;
     }
 }

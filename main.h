@@ -43,3 +43,9 @@ char* string_split_index(char* str, const char* delim, int index, int* ret_len, 
 char* string_split_index_copy(char* str, const char* delim, int index, bool split_past_index);
 
 void handle_backspace_timer();
+
+// used for players
+void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret);
+void limit_pos(Rect* limit, Rect* pos, Rect* phys_pos);
+
+Rect calc_box(Rect* pos, float wscale, float hscale, int location);

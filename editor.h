@@ -137,18 +137,35 @@ void editor_draw()
                         ZombieSpawn spawn = {0};
                         spawn.model_index = ZOMBIE1;
                         spawn.model_texture = 0;
-                        spawn.pos.x = rand() % view_width;
-                        spawn.pos.y = rand() % view_height;
+
+                        // get spawn range
+                        Rect r = {0};
+                        get_camera_rect(&r);
+                        float x0 = r.x - r.w/2.0;
+                        float x1 = r.x + r.w/2.0;
+                        float y0 = r.y - r.h/2.0;
+                        float y1 = r.y + r.h/2.0;
+
                         for(int j = 0; j < num_zombies; ++j)
                         {
-                            // spawn.scale = rand_float_between(0.5, 1.2);
-                            spawn.scale = 0.5;
-                            // spawn.scale = 2.0;
-                            // printf("%d) %.0f %.0f\n", i, spawn.pos.x, spawn.pos.y);
+                            spawn.pos.x = RAND_FLOAT(x0, x1);
+                            spawn.pos.y = RAND_FLOAT(y0, y1);;
+                            spawn.scale = 1.0;
                             zombie_add(&spawn);
                         }
 
                     }
+
+                    char* zfreeze = "Freeze";
+                    if(zombies_idle)
+                    {
+                        zfreeze = "Unfreeze";
+                    }
+                    if(imgui_button(zfreeze))
+                    {
+                        zombies_idle = !zombies_idle;
+                    }
+
                     imgui_horizontal_end();
                     break;
                 case 1:

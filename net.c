@@ -670,7 +670,7 @@ int net_server_start()
         double delta_t = t1-t0;
 
         // server simulate
-        zombie_update(delta_t);
+        zombies_update(delta_t);
         projectile_update(delta_t);
 
         // send state packet to all clients
