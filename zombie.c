@@ -109,7 +109,7 @@ void zombie_init()
             for(int j = 0; j < 10; ++j)
             {
                 // spawn.scale = rand_float_between(0.5, 1.2);
-                spawn.scale = 1.0/(128.0/50.0);
+                spawn.scale = 0.5;
                 // spawn.scale = 2.0;
                 // printf("%d) %.0f %.0f\n", i, spawn.pos.x, spawn.pos.y);
                 zombie_add(&spawn);

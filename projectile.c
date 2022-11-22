@@ -163,7 +163,7 @@ void projectile_update(float delta_t)
                 }
 
                 zombie_hurt(j,proj->damage);
-                particles_spawn_effect(proj->pos.x, proj->pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
+                particles_spawn_effect(zombies[j].phys.pos.x, zombies[j].phys.pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
 
             }
 #endif

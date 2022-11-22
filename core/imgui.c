@@ -1108,7 +1108,7 @@ static void draw_checkbox(uint32_t hash, char* label, bool result)
 
     // draw check
     float x = ctx->curr.x + theme.checkbox_size/2.0;
-    float y = ctx->curr.y + theme.checkbox_size/2.0;
+    float y = ctx->curr.y + (theme.checkbox_size+4)/2.0;
 
     gfx_draw_rect_xywh(x,y, theme.checkbox_size, theme.checkbox_size, check_color, 0.0, 1.0, 1.0, false,false);
     gfx_draw_rect_xywh(x,y, theme.checkbox_size-4, theme.checkbox_size-4, check_color, 0.0, 1.0, 1.0, result,false);
@@ -1116,7 +1116,7 @@ static void draw_checkbox(uint32_t hash, char* label, bool result)
     gfx_draw_string(ctx->curr.x + theme.checkbox_size + theme.text_padding, ctx->curr.y + (theme.checkbox_size - text_size.y)/2.0, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, label);
 
     ctx->curr.w = theme.checkbox_size + 2.0*theme.text_padding + text_size.x;
-    ctx->curr.h = MAX(theme.checkbox_size, text_size.y)+theme.text_padding;
+    ctx->curr.h = MAX(theme.checkbox_size, text_size.y)+2.0*theme.text_padding;
 }
 
 static void draw_number_box(uint32_t hash, char* label, Rect* r, int val, int max)

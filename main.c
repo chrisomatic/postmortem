@@ -47,7 +47,7 @@ int console_text_hist_selection = 0;
 
 bool console_enabled = false;
 bool debug_enabled = true;
-bool editor_enabled = false;
+bool editor_enabled = true;
 
 bool backspace_held = false;
 double t0_backspace = 0.0;
