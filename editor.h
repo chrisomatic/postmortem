@@ -37,6 +37,7 @@ static void editor_init()
 static char particles_file_name[20] = {0};
 static int num_zombies = 10;
 static bool editor_collapsed = true;
+static float camera_z = 0.0;
 
 static void randomize_effect(ParticleEffect* effect)
 {
@@ -84,7 +85,7 @@ static void randomize_effect(ParticleEffect* effect)
 
 }
 
-void editor_draw()
+static void editor_draw()
 {
     imgui_begin_panel("Editor", 10,10);
 
@@ -127,7 +128,8 @@ void editor_draw()
                 case 0: // game
                     imgui_color_picker("Ambient Color", &ambient_light);
                     imgui_checkbox("Debug Enabled",&debug_enabled);
-                    imgui_slider_float("Camera Z", -1.0,1.0,camera_z);
+                    imgui_slider_float("Camera Z", -1.0,1.0,&camera_z);
+                    camera_zoom(camera_z, false);
 
                     imgui_text_sized(18,"Zombies");
                     imgui_horizontal_begin();
@@ -178,14 +180,22 @@ void editor_draw()
                     ParticleEffect* effect = &particle_spawner->effect;
 
                     int big = 12;
+                    imgui_set_text_size(10);
 
+                    imgui_horizontal_begin();
                     if(imgui_button("Randomize##particle_spawner"))
                     {
                         randomize_effect(effect);
                     }
+                    if(imgui_button("Reload Effects##particle_spawner"))
+                    {
+                        effects_load_all();
+                    }
+
+                    imgui_horizontal_end();
 
                     //imgui_set_slider_width(60);
-                    imgui_text_sized(10,"Particle Count: %d",particle_spawner->particle_list->count);
+                    imgui_text_sized(8,"Particle Count: %d",particle_spawner->particle_list->count);
                     imgui_text_sized(big,"Particle Life");
                     imgui_horizontal_begin();
                         imgui_slider_float("Min##life", 0.1,5.0,&effect->life.init_min);

@@ -162,8 +162,8 @@ void projectile_update(float delta_t)
                     printf("Zombie %d hurt for %d damage!\n",j,proj->damage);
                 }
 
-                zombie_hurt(j,proj->damage);
                 particles_spawn_effect(zombies[j].phys.pos.x, zombies[j].phys.pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
+                zombie_hurt(j,proj->damage);
 
             }
 #endif

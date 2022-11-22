@@ -71,7 +71,7 @@ void draw_debug_box()
         int big = 23.0/factor;
         int small = 15.0/factor;
 
-        imgui_begin_panel("Debug",800,10);
+        imgui_begin_panel("Debug",950,10);
             imgui_set_text_size(small);
             imgui_text_sized(big,"Window");
             imgui_indent_begin(small);

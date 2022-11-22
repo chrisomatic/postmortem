@@ -20,6 +20,9 @@ typedef enum
     ROLE_SERVER,
 } GameRole;
 
+#define VIEW_WIDTH   1200
+#define VIEW_HEIGHT  800
+
 // strings
 #define STR_EMPTY(x)      (x == 0 || strlen(x) == 0)
 #define STR_EQUAL(x,y)    (strncmp((x),(y),strlen((x))) == 0 && strlen(x) == strlen(y))

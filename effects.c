@@ -8,11 +8,13 @@ EffectEntry effect_map[] = {
     {EFFECT_GUN_SMOKE1,"gun_smoke.effect"},
     {EFFECT_SPARKS1,"sparks1.effect"},
     {EFFECT_BLOOD1,"blood1.effect"},
+    {EFFECT_MELEE1,"melee1.effect"},
 };
 
 static int get_effect_map_index(char* file_name)
 {
-    for(int i = 0; i < sizeof(effect_map); ++i)
+    int num_effects_in_map = sizeof(effect_map)/sizeof(EffectEntry);
+    for(int i = 0; i < num_effects_in_map; ++i)
     {
         if(strcmp(effect_map[i].file_name, file_name) == 0)
         {
@@ -27,7 +29,7 @@ void effects_load_all()
     char files[10][32] = {0};
     int num_effects = io_get_files_in_dir("effects",files);
 
-    printf("Num effects: %d\n",num_effects);
+    LOGI("Num effects: %d",num_effects);
 
     for(int i = 0; i < num_effects; ++i)
     {
@@ -45,7 +47,7 @@ void effects_load_all()
         else
         {
             effects_load(full_path,&particle_effects[index]);
-            printf("%d: %s\n",i, files[i]);
+            LOGI("%d: %s",i, files[i]);
         }
     }
 }

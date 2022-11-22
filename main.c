@@ -20,8 +20,6 @@
 #include "bitpack.h"
 
 // Settings
-#define VIEW_WIDTH   1024
-#define VIEW_HEIGHT  768
 // #define VIEW_WIDTH   1812
 // #define VIEW_HEIGHT  1359
 
@@ -313,7 +311,7 @@ void init()
     LOGI(" - GUI.");
     gui_init();
 
-    camera_move(player->phys.pos.x, player->phys.pos.y, 0.0, true, &map.rect);
+    camera_move(player->phys.pos.x, player->phys.pos.y, true, &map.rect);
 }
 
 void deinit()
@@ -330,13 +328,16 @@ void camera_set()
 
     if(player->item.mouse_aim)
     {
+        float _vw = view_width;
+        float _vh = view_height;
+
         float r = 0.2;  //should be <= 0.5 to make sense otherwise player will end up off of the screen
-        float ox = (mx - view_width/2.0);
-        float oy = (my - view_height/2.0);
-        float xr = view_width*r;
-        float yr = view_height*r;
-        ox = 2.0*xr*(ox/view_width);
-        oy = 2.0*yr*(oy/view_height);
+        float ox = (mx - _vw/2.0);
+        float oy = (my - _vh/2.0);
+        float xr = _vw*r;
+        float yr = _vh*r;
+        ox = 2.0*xr*(ox/_vw);
+        oy = 2.0*yr*(oy/_vh);
         ox = RANGE(ox, -1.0*xr, xr);
         oy = RANGE(oy, -1.0*yr, yr);
         aim_camera_offset.x = ox;
@@ -360,7 +361,8 @@ void camera_set()
 
     float cam_pos_x = player->phys.pos.x + aim_camera_offset.x;
     float cam_pos_y = player->phys.pos.y + aim_camera_offset.y;
-    camera_move(cam_pos_x, cam_pos_y, 0.00, false, &map.rect);
+
+    camera_move(cam_pos_x, cam_pos_y, false, &map.rect);
 }
 
 void simulate(double delta_t)
@@ -368,7 +370,7 @@ void simulate(double delta_t)
     gfx_clear_lines();
 
     camera_set();
-    camera_update();
+    camera_update(VIEW_WIDTH, VIEW_HEIGHT);
 
     world_update();
     zombies_update(delta_t);
@@ -385,7 +387,7 @@ void simulate_client(double delta_t)
     gfx_clear_lines();
 
     camera_set();
-    camera_update();
+    camera_update(VIEW_WIDTH, VIEW_HEIGHT);
 
     world_update();
     //zombies_update(delta_t);
@@ -451,7 +453,6 @@ void draw()
                     gfx_draw_rect(&prect, player_colors[p->index], 0.0, 1.0, 0.5, true,true);
                 }
             }
-
         }
     }
 
