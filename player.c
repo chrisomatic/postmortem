@@ -42,6 +42,7 @@ PlayerModel player_models[PLAYER_MODELS_MAX];
 Gun guns[GUN_MAX] = {0};
 Melee melees[MELEE_MAX] = {0};
 
+bool moving_zombie = false;
 
 // ------------------------------------------------------------
 
@@ -52,6 +53,7 @@ Melee melees[MELEE_MAX] = {0};
 static int gun_image_sets[PLAYER_MODELS_MAX][ANIM_MAX][GUN_MAX];
 static int melee_image_sets[PLAYER_MODELS_MAX][ANIM_MAX][MELEE_MAX];
 static int crosshair_image;
+
 
 
 //TEMP: blocks
@@ -66,7 +68,7 @@ static void mouse_gun_cb(void* player, MouseTrigger trigger);
 static void mouse_melee_cb(void* player, MouseTrigger trigger);
 static void mouse_block_cb(void* player, MouseTrigger trigger);
 static void mouse_block_remove_cb(void* player, MouseTrigger trigger);
-
+static void mouse_zombie_move_cb(void* player, MouseTrigger trigger);
 
 // ------------------------------------------------------------
 
@@ -277,12 +279,16 @@ static void player_init(int index)
     // light for player
     p->point_light = -1;
     if(p == player)
+    {
         p->point_light = lighting_point_light_add(p->phys.pos.x,p->phys.pos.y,1.0,1.0,1.0,1.0);
+        player_set_mouse(&p->rmouse, false, true, true, 0.0, mouse_zombie_move_cb);
+    }
 
     player_update_anim_state(p);
     player_update_image(p);
 
     player_update_sprite_index(p);
+
 }
 
 void players_init()
@@ -447,7 +453,7 @@ void player_equip_gun(Player* p, GunIndex index)
     player_equip_item(p, ITEM_TYPE_GUN, (void*)gun, true, true);
 
     player_set_mouse(&p->lmouse, true, true, false, gun->fire_period, mouse_gun_cb);
-    player_set_mouse_nothing(&p->rmouse);
+    // player_set_mouse_nothing(&p->rmouse);
 }
 
 void player_equip_melee(Player* p, MeleeIndex index)
@@ -456,7 +462,7 @@ void player_equip_melee(Player* p, MeleeIndex index)
     player_equip_item(p, ITEM_TYPE_MELEE, (void*)melee, true, true);
 
     player_set_mouse(&p->lmouse, true, true, false, melee->period, mouse_melee_cb);
-    player_set_mouse_nothing(&p->rmouse);
+    // player_set_mouse_nothing(&p->rmouse);
 }
 
 void player_equip_block(Player* p, BlockType index)
@@ -465,7 +471,7 @@ void player_equip_block(Player* p, BlockType index)
     player_equip_item(p, ITEM_TYPE_BLOCK, (void*)block, true, true);
 
     player_set_mouse(&p->lmouse, true, true, false, 20.0, mouse_block_cb);
-    player_set_mouse(&p->rmouse, true, true, false, 20.0, mouse_block_remove_cb);
+    // player_set_mouse(&p->rmouse, true, true, false, 20.0, mouse_block_remove_cb);
 }
 
 void player_set_equipped_item(Player* p, int idx) //TEMP
@@ -490,7 +496,7 @@ void player_set_equipped_item(Player* p, int idx) //TEMP
 
     if(idx == 1)
     {
-        player_equip_gun(p, GUN_PISTOL1);
+        player_equip_gun(p, GUN_SHOTGUN1);
     }
     else if(idx == 2)
     {
@@ -498,7 +504,7 @@ void player_set_equipped_item(Player* p, int idx) //TEMP
     }
     else if(idx == 3)
     {
-        player_equip_gun(p, GUN_SHOTGUN1);
+        player_equip_gun(p, GUN_PISTOL1);
     }
     else if(idx == 4)
     {
@@ -614,6 +620,25 @@ static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
     }
 }
 
+static void mouse_zombie_move_cb(void* player, MouseTrigger trigger)
+{
+    if(trigger == MOUSE_TRIGGER_PRESS)
+    {
+        Zombie* z = zombie_get_by_id(zombie_info_id);
+        if(z != NULL)
+        {
+            moving_zombie = true;
+        }
+    }
+
+    if(moving_zombie && trigger == MOUSE_TRIGGER_RELEASE)
+    {
+        moving_zombie = false;
+    }
+
+}
+
+
 void player_set_mouse_nothing(MouseData* mouse_data)
 {
     mouse_data->cooldown = 0.0;
@@ -642,7 +667,7 @@ void player_update_mouse_click(Player* p, bool active, bool toggled, MouseData* 
         mouse->cooldown -= (delta_t*1000);
     }
 
-    bool ready = mouse->cooldown <= 0.0;
+    bool ready = mouse->cooldown <= 0.0 || mouse->period <= 0.0;
 
     MouseTrigger trigger = MOUSE_TRIGGER_NONE;
 
@@ -867,6 +892,16 @@ void player_update(Player* p, double delta_t)
     window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
     coords_to_map_grid(p->mouse_x, p->mouse_y, &p->mouse_r, &p->mouse_c);
 
+    if(moving_zombie)
+    {
+        Zombie* z = zombie_get_by_id(zombie_info_id);
+        if(z != NULL)
+        {
+            z->phys.pos.x = p->mouse_x;
+            z->phys.pos.y = p->mouse_y;
+        }
+    }
+
     for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
     {
         PlayerAction* pa = &p->actions[i];
@@ -878,6 +913,16 @@ void player_update(Player* p, double delta_t)
         {
             pa->toggled_on = false;
         }
+
+        if(!pa->state && pa->prior_state)
+        {
+            pa->toggled_off = true;
+        }
+        else
+        {
+            pa->toggled_off = false;
+        }
+
         pa->prior_state = pa->state;
     }
 
@@ -937,9 +982,11 @@ void player_update(Player* p, double delta_t)
         }
     }
 
+    PlayerAction* pa = &p->actions[PLAYER_ACTION_PRIMARY_ACTION];
+    player_update_mouse_click(p, p->actions[PLAYER_ACTION_PRIMARY_ACTION].state, pa->toggled_on||pa->toggled_off, &p->lmouse, delta_t);
 
-    player_update_mouse_click(p, p->actions[PLAYER_ACTION_PRIMARY_ACTION].state, p->actions[PLAYER_ACTION_PRIMARY_ACTION].toggled_on, &p->lmouse, delta_t);
-    player_update_mouse_click(p, p->actions[PLAYER_ACTION_SECONDARY_ACTION].state, p->actions[PLAYER_ACTION_SECONDARY_ACTION].toggled_on, &p->rmouse, delta_t);
+    pa = &p->actions[PLAYER_ACTION_SECONDARY_ACTION];
+    player_update_mouse_click(p, p->actions[PLAYER_ACTION_SECONDARY_ACTION].state, pa->toggled_on||pa->toggled_off, &p->rmouse, delta_t);
 
 
     if(p->actions[PLAYER_ACTION_DEBUG].toggled_on)
@@ -1303,11 +1350,11 @@ void weapons_init()
     guns[idx].recoil_spread = 0.0;
     guns[idx].fire_range = 300.0;
     guns[idx].fire_speed = 4000.0;
-    guns[idx].fire_period = 400.0; // milliseconds
+    guns[idx].fire_period = 100.0; // milliseconds
     guns[idx].fire_spread = 30.0;
     guns[idx].fire_count = 5;
-    guns[idx].bullets = 12;
-    guns[idx].bullets_max = 12;
+    guns[idx].bullets = 9999;
+    guns[idx].bullets_max = 9999;
     guns[idx].reload_time = 1000.0;
     guns[idx].projectile_type = PROJECTILE_TYPE_BULLET;
 
@@ -1440,13 +1487,13 @@ void player_weapon_melee_check_collision(Player* p)
     if(p->item.props == NULL)
         return;
 
-    float px = p->phys.pos.x;
-    float py = p->phys.pos.y;
-
-    Melee* melee = (Melee*)p->item.props;
 
     if(p->state == PSTATE_ATTACKING)
     {
+        float px = p->phys.pos.x;
+        float py = p->phys.pos.y;
+
+        Melee* melee = (Melee*)p->item.props;
 
         for(int j = zlist->count - 1; j >= 0; --j)
         {

@@ -73,12 +73,14 @@ void draw_debug_box()
 
         imgui_begin_panel("Debug",950,10);
             imgui_set_text_size(small);
+
             imgui_text_sized(big,"Window");
             imgui_indent_begin(small);
                 imgui_text("FPS: %.2f", fps);
                 imgui_text("View: %d, %d", view_width, view_height);
                 imgui_text("Window: %d, %d", window_width, window_height);
             imgui_indent_end();
+
             imgui_text_sized(big,"Player");
             imgui_indent_begin(small);
                 imgui_text("Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y);
@@ -119,6 +121,7 @@ void draw_debug_box()
                         imgui_text("  Type: %d", bp->type);
                     }
                 }
+            imgui_indent_end();
 
             imgui_text_sized(big,"Mouse");
             imgui_indent_begin(small);
@@ -128,12 +131,27 @@ void draw_debug_box()
                 imgui_text("Map Grid:   %d, %d", mr, mc);
                 imgui_text("World Grid: %d, %d", wr, wc);
             imgui_indent_end();
+            
             imgui_text_sized(big,"Camera");
             imgui_indent_begin(small);
                 imgui_text("Pos: %.2f, %.2f", camera_rect.x, camera_rect.y);
                 imgui_text("w,h: %.2f, %.2f", camera_rect.w, camera_rect.h);
                 imgui_text("Offset: %.2f, %.2f", aim_camera_offset.x, aim_camera_offset.y);
             imgui_indent_end();
+
+            imgui_text_sized(big,"Zombies");
+            imgui_indent_begin(small);
+                imgui_text("Count: %d", zlist->count);
+                Zombie* z = zombie_get_by_id(zombie_info_id);
+                if(z != NULL)
+                {
+                    imgui_text("ID: %d", z->id);
+                    imgui_text("HP: %.2f", z->hp);
+                    imgui_text("Scale: %.2f", z->scale);
+                    imgui_text("Anim State: %s (%d)", zombie_anim_state_str(z->anim_state), z->anim_state);
+                }
+            imgui_indent_end();
+
             if(role == ROLE_CLIENT)
             {
                 imgui_text_sized(big,"Network");

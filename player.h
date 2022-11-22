@@ -190,7 +190,7 @@ typedef struct
     bool state;
     bool prior_state;
     bool toggled_on;
-    // bool toggled_off;    //not needed currently
+    bool toggled_off;
 } PlayerAction;
 
 typedef struct
@@ -315,6 +315,9 @@ extern PlayerModel player_models[PLAYER_MODELS_MAX];
 
 extern Gun guns[GUN_MAX];
 extern Melee melees[MELEE_MAX];
+
+extern bool moving_zombie;
+
 
 
 void player_init_images();

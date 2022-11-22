@@ -281,3 +281,10 @@ void world_get_grid_dimensions(int* num_rows, int* num_cols)
     *num_rows = map.rows/WORLD_GRID_HEIGHT;
     *num_cols = map.cols/WORLD_GRID_WIDTH;
 }
+
+bool is_in_world_grid(Rect* pos, int row, int col)
+{
+    Rect r = {0};
+    world_grid_to_rect(row, col, &r);
+    return rectangles_colliding(pos, &r);
+}

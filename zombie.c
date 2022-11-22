@@ -19,6 +19,8 @@
 #define IMG_ELEMENT_W 128
 #define IMG_ELEMENT_H 128
 
+uint32_t zombie_info_id = 0xFFFFFFFF;
+// int zombie_info_index = -1;
 bool zombies_idle = false;
 ZombieModel zombie_models[ZOMBIE_MODELS_MAX];
 int zombie_image_sets_none[ZOMBIE_MODELS_MAX][ZOMBIE_TEXTURES_MAX][ZANIM_MAX];
@@ -28,6 +30,8 @@ glist* zlist = NULL;
 // max width and heights for zombie models
 static Vector2f maxwh[ZOMBIE_MODELS_MAX];
 static Rect standard_size[ZOMBIE_MODELS_MAX];
+
+static uint32_t zid = 0;
 
 static void zombie_remove(int index);
 static void sort_zombies(Zombie arr[], int n);
@@ -150,6 +154,7 @@ void zombie_init()
 bool zombie_add(ZombieSpawn* spawn)
 {
     Zombie zombie = {0};
+    zombie.id = zid++;
     zombie.phys.pos.x = spawn->pos.x;
     zombie.phys.pos.y = spawn->pos.y;
     zombie.phys.accel.x = 0.0;
@@ -437,7 +442,14 @@ void zombie_draw(Zombie* z)
     {
         gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, ambient_light,z->scale,0.0,1.0,false,true);
 
-        if(debug_enabled)
+        bool draw_debug_stuff = debug_enabled;
+        if(!draw_debug_stuff)
+        {
+            // draw_debug_stuff = (z == &zombies[zombie_info_index]);
+            draw_debug_stuff = (z == zombie_get_by_id(zombie_info_id));
+        }
+
+        if(draw_debug_stuff)
         {
             float maxw = maxwh[z->model_index].x * z->scale;
             float maxh = maxwh[z->model_index].y * z->scale;
@@ -471,7 +483,6 @@ void zombie_draw(Zombie* z)
             r.w *= p;
             r.x = r.x+r.w/2.0;
             gfx_draw_rect(&r, COLOR_RED, 0.0, 1.0,1.0, true, true);
-
         }
     }
 }
@@ -486,6 +497,36 @@ void zombies_update(float delta_t)
     }
 
     sort_zombies(zombies, zlist->count);
+
+    if(role == ROLE_LOCAL || role == ROLE_CLIENT)
+    {
+        // int wrow,wcol;
+        // coords_to_world_grid(player->mouse_x, player->mouse_y, &wrow, &wcol);
+        Rect rm = {0};
+        rm.x = player->mouse_x;
+        rm.y = player->mouse_y;
+        rm.w = 10;
+        rm.h = rm.w;
+
+        if(!moving_zombie)
+        {
+            zombie_info_id = 0xFFFFFFFF;
+            for(int j = zlist->count - 1; j >= 0; --j)
+            {
+                Zombie* z = &zombies[j];
+                // if(!is_in_world_grid(&z->phys.pos, wrow, wcol))
+                //     continue;
+                if(rectangles_colliding(&rm, &z->phys.pos))
+                {
+                    zombie_info_id = z->id;
+                    break;
+                }
+            }
+        }
+    }
+
+
+
 }
 
 void zombies_draw()
@@ -495,6 +536,16 @@ void zombies_draw()
         Zombie* z = &zombies[i];
         zombie_draw(z);
     }
+}
+
+Zombie* zombie_get_by_id(uint32_t id)
+{
+    for(int i = 0; i < zlist->count; ++i)
+    {
+        Zombie* z = &zombies[i];
+        if(z->id == id) return z;
+    }
+    return NULL;
 }
 
 const char* zombie_anim_state_str(ZombieAnimState anim_state)

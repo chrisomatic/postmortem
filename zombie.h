@@ -49,6 +49,7 @@ typedef enum
 
 typedef struct
 {
+    uint32_t id;
     Physics phys;
     Vector2f push_vel;
     float speed;
@@ -92,10 +93,9 @@ typedef struct
 
     ZombieModelIndex model_index;
     int model_texture;
-
-
 } ZombieSpawn;
 
+extern uint32_t zombie_info_id;
 extern bool zombies_idle;
 extern ZombieModel zombie_models[ZOMBIE_MODELS_MAX];
 extern Zombie zombies[MAX_ZOMBIES];
@@ -116,5 +116,6 @@ void zombie_update(Zombie* z, float delta_t);
 void zombie_draw(Zombie* z);
 void zombies_update(float delta_t);
 void zombies_draw();
+Zombie* zombie_get_by_id(uint32_t id);
 
 const char* zombie_anim_state_str(ZombieAnimState anim_state);
