@@ -173,6 +173,7 @@ void start_local()
         timer_wait_for_frame(&game_timer);
         window_swap_buffers();
         t0 = t1;
+        window_mouse_update_actions();
 
     }
 
@@ -234,6 +235,7 @@ void start_client()
         timer_wait_for_frame(&game_timer);
         window_swap_buffers();
         t0 = t1;
+        window_mouse_update_actions();
     }
 
     net_client_disconnect();

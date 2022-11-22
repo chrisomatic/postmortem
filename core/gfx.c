@@ -65,7 +65,6 @@ static GLint loc_line_proj;
 
 static GLint loc_font_image;
 static GLint loc_font_fg_color;
-static GLint loc_font_bg_color;
 static GLint loc_font_tex;
 static GLint loc_font_px_range;
 static GLint loc_font_opacity;
@@ -206,7 +205,6 @@ void gfx_init(int width, int height)
 
     loc_font_image    = glGetUniformLocation(program_font, "image");
     loc_font_fg_color = glGetUniformLocation(program_font, "fg_color");
-    loc_font_bg_color = glGetUniformLocation(program_font, "bg_color");
     loc_font_px_range = glGetUniformLocation(program_font, "px_range");
     loc_font_tex      = glGetUniformLocation(program_font, "tex");
     loc_font_model    = glGetUniformLocation(program_font, "model");
@@ -791,14 +789,8 @@ void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, floa
     glUseProgram(0);
 }
 
-Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
+static Vector2f gfx_draw_string_internal(float x, float y, uint32_t color, uint32_t background_color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* str)
 {
-    va_list args;
-    va_start(args, fmt);
-    char str[256] = {0};
-    vsprintf(str,fmt, args);
-    va_end(args);
-
     glUseProgram(program_font);
 
     Matrix* view = get_camera_transform();
@@ -813,11 +805,14 @@ Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float ro
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
 
+    uint8_t br = background_color >> 16;
+    uint8_t bg = background_color >> 8;
+    uint8_t bb = background_color >> 0;
+
     uint8_t r = color >> 16;
     uint8_t g = color >> 8;
     uint8_t b = color >> 0;
 
-    glUniform4f(loc_font_bg_color,0.0,0.0,0.0,1.0);
     glUniform1f(loc_font_px_range,4.0);
 
     char* c = str;
@@ -901,6 +896,34 @@ Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float ro
 
     Vector2f ret = {x_pos - x, fontsize};
     return ret;
+}
+
+Vector2f gfx_draw_string_with_background(float x, float y, uint32_t color, uint32_t background_color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char str[256] = {0};
+    vsprintf(str,fmt, args);
+    va_end(args);
+
+    Vector2f size = gfx_string_get_size(scale, str);
+    if(size.x > 0.0 && size.y > 0.0)
+    {
+        gfx_draw_rect_xywh(x+size.x/2.0, y+size.y/2.0, size.x+4, size.y+4, background_color, rotation, 1.0, opacity, true, in_world);
+    }
+
+    return gfx_draw_string_internal(x,y,color,background_color, scale, rotation, opacity, in_world, drop_shadow, str);
+}
+
+Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char str[256] = {0};
+    vsprintf(str,fmt, args);
+    va_end(args);
+
+    return gfx_draw_string_internal(x,y,color,0x00000000, scale, rotation, opacity, in_world, drop_shadow, str);
 }
 
 // w,h

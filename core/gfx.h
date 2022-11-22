@@ -103,6 +103,7 @@ void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, floa
 
 // Strings
 Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...);
+Vector2f gfx_draw_string_with_background(float x, float y, uint32_t color, uint32_t background_color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...);
 Vector2f gfx_string_get_size(float scale, char* fmt, ...);
 
 // Animation

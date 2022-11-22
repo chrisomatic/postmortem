@@ -397,17 +397,21 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
     }
 }
 
+void window_mouse_update_actions()
+{
+    mouse_left.action_prior = mouse_left.action;
+    mouse_right.action_prior = mouse_right.action;
+}
+
 bool window_mouse_left_went_down()
 {
     bool went_down_this_frame = (mouse_left.action_prior == GLFW_RELEASE && mouse_left.action == GLFW_PRESS);
-    mouse_left.action_prior = mouse_left.action;
     return went_down_this_frame;
 }
 
 bool window_mouse_left_went_up()
 {
     bool went_up_this_frame = (mouse_left.action_prior == GLFW_PRESS && mouse_left.action == GLFW_RELEASE);
-    mouse_left.action_prior = mouse_left.action;
     return went_up_this_frame;
 }
 

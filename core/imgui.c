@@ -53,6 +53,9 @@ typedef struct
     int prior_mouse_x, prior_mouse_y;
     int mouse_x, mouse_y;
 
+    bool text_click_held;
+    Vector2i text_pt_0, text_pt_1;
+
     bool inputtext_highlighted;
     bool theme_initialized;
 
@@ -590,10 +593,26 @@ void imgui_inputtext(char* label, char* buf, int bufsize)
         if(window_mouse_left_went_down())
         {
             ctx->focused_text_id = hash;
+            ctx->text_pt_0.x = ctx->mouse_x;
+            ctx->text_pt_0.y = ctx->mouse_y;
+            printf("text pt 0: %d %d\n",ctx->text_pt_0.x, ctx->text_pt_0.y);
             window_controls_set_text_buf(buf,bufsize);
             window_controls_set_key_mode(KEY_MODE_TEXT);
+            ctx->text_click_held = true;
+        }
+
+        if(ctx->text_click_held)
+        {
+            ctx->text_pt_1.x = ctx->mouse_x;
+            ctx->text_pt_1.y = ctx->mouse_y;
         }
     }
+
+    if(ctx->text_click_held && window_mouse_left_went_up())
+    {
+        ctx->text_click_held = false;
+    }
+
 
     Vector2f text_size = gfx_string_get_size(theme.text_scale, new_label);
     Rect interactive = {ctx->curr.x, ctx->curr.y, 150, text_size.y + 2*theme.text_padding};
@@ -1156,7 +1175,22 @@ static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text)
 
     Vector2f label_size = gfx_string_get_size(theme.text_scale, label);
 
+    float sx = ctx->text_pt_0.x < ctx->text_pt_1.x ? ctx->text_pt_0.x : ctx->text_pt_1.x;
+    float sy = r->y+2; //ctx->text_pt_0.y < ctx->text_pt_1.y ? ctx->text_pt_0.y : ctx->text_pt_1.y;
+    float sw = ABS(ctx->text_pt_1.x - ctx->text_pt_0.x);
+    float sh = label_size.y+2;//r->h - 2;//ABS(ctx->text_pt_1.y - ctx->text_pt_0.y);
+
+    Vector2f text_size = gfx_string_get_size(theme.text_scale, text);
+
+    if(sx+sw > text_size.x)
+    {
+        sw = text_size.x;
+    }
+
     gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, box_color, 0.0, 1.0, theme.button_opacity, true,false);
+
+    gfx_draw_rect_xywh(sx + sw/2.0, sy + sh/2.0, sw, sh, 0x000000FF, 0.0, 1.0, theme.button_opacity, true,false);
+
     gfx_draw_string(r->x+theme.text_padding, r->y-(label_size.y-r->h)/2.0, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, text);
 
     if(ctx->focused_text_id == hash)

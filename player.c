@@ -14,8 +14,8 @@
 #include "net.h"
 #include "zombie.h"
 #include "io.h"
+#include "effects.h"
 #include "main.h"
-
 
 // global vars
 // ------------------------------------------------------------
@@ -1455,6 +1455,10 @@ void gun_fire(Player* p, Gun* gun, bool held)
             float angle_offset = RAND_FLOAT(-gun->fire_spread/2.0, gun->fire_spread/2.0);
             projectile_add(p, gun, angle_offset);
         }
+
+        particles_spawn_effect(gun->pos.x, gun->pos.y-5, &particle_effects[EFFECT_GUN_SMOKE1], 0.5, true, false);
+        particles_spawn_effect(gun->pos.x, gun->pos.y-5, &particle_effects[EFFECT_SPARKS1], 0.5, true, false); // sparks
+
     }
     else
     {

@@ -4,7 +4,7 @@
 #include "math2d.h"
 #include "glist.h"
 
-#define MAX_PARTICLE_SPAWNERS 50
+#define MAX_PARTICLE_SPAWNERS 200
 #define MAX_PARTICLES_PER_SPAWNER 500
 
 typedef struct

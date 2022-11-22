@@ -108,9 +108,6 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
     proj.ttl  = 1.0 / (vel / gun->fire_range);
 
     list_add(plist, (void*)&proj);
-
-    particles_spawn_effect(proj.pos.x, proj.pos.y-5, &particle_effects[EFFECT_GUN_SMOKE1], 0.5, true, false);
-    particles_spawn_effect(proj.pos.x, proj.pos.y-5, &particle_effects[EFFECT_SPARKS1], 0.5, true, false); // sparks
 }
 
 

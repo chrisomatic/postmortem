@@ -31,6 +31,11 @@ typedef struct
 
 typedef struct
 {
+    int x,y;
+} Vector2i;
+
+typedef struct
+{
     Vector2f a;
     Vector2f b;
 } LineSeg;
