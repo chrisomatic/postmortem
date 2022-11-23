@@ -58,11 +58,17 @@ void camera_zoom(float z, bool immediate)
     {
         camera.pos.z = z;
         camera_delta_target.pos.z = 0.0;
+        move_camera(camera.pos.x, camera.pos.y, camera.pos.z);
     }
     else
     {
         camera_delta_target.pos.z = z - camera.pos.z;
     }
+}
+
+float camera_get_zoom()
+{
+    return camera.pos.z;
 }
 
 void camera_get_pos(Vector3f* p)

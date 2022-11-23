@@ -44,7 +44,7 @@ void main() {
 
     if(is_particle == 1)
     {
-        color = vec4(mix(tex_color.rgb,tint_color,1.0),tex_color.a*opacity);
+        color = vec4(tex_color.rgb*tint_color,tex_color.a*opacity);
     }
     else
     {

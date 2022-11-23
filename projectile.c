@@ -137,12 +137,7 @@ void projectile_update(float delta_t)
 
             if(proj->dead)
                 break;
-#if 0
-            if(is_colliding(&proj->hurt_box, &zombies[j].hit_box))
-            {
-                projectile_remove(i);
-            }
-#else
+
             if(are_rects_colliding(&proj->hurt_box_prior, &proj->hurt_box, &zombies[j].hit_box))
             {
                 //printf("Bullet collided!\n");
@@ -160,10 +155,28 @@ void projectile_update(float delta_t)
                 }
 
                 particles_spawn_effect(zombies[j].phys.pos.x, zombies[j].phys.pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
-                zombie_hurt(j,proj->damage);
 
+                // correct projectile pos back to zombie hitbox
+                {
+                    Vector2f p0 = {proj->hurt_box.x, proj->hurt_box.y};
+                    Vector2f p1 = {proj->hurt_box_prior.x, proj->hurt_box_prior.y};
+                    Vector2f p2 = {zombies[j].hit_box.x, zombies[j].hit_box.y};
+
+                    float d = dist(p0.x,p0.y,p2.x,p2.y);
+
+                    Vector2f v = {p0.x - p1.x, p0.y - p1.y};
+                    normalize(&v);
+
+                    Vector2f correction = {-d*v.x, -d*v.y};
+
+                    proj->pos.x += correction.x;
+                    proj->pos.y += correction.y;
+
+                    update_hurt_box(proj);
+                }
+
+                zombie_hurt(j,proj->damage);
             }
-#endif
         }
 
         float x0 = proj->hurt_box.x;

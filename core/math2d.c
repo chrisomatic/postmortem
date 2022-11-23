@@ -159,6 +159,30 @@ float dist(float x0, float y0, float x1, float y1)
     return d;
 }
 
+static float Q_rsqrt(float number)
+{
+	union {
+		float    f;
+		uint32_t i;
+	} conv = { .f = number };
+	conv.i  = 0x5f3759df - (conv.i >> 1);
+	conv.f *= 1.5F - (number * 0.5F * conv.f * conv.f);
+	return conv.f;
+}
+
+float magn(Vector2f v)
+{
+    return sqrt(v.x * v.x + v.y*v.y);
+}
+
+void normalize(Vector2f* v)
+{
+    float magn_squared = v->x*v->x + v->y*v->y;
+    float r = Q_rsqrt(magn_squared);
+
+    v->x *= r;
+    v->y *= r;
+}
 void print_matrix(Matrix* mat)
 {
     printf("Matrix:\n");

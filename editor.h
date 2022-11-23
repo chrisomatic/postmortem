@@ -37,7 +37,7 @@ static void editor_init()
 static char particles_file_name[20] = {0};
 static int num_zombies = 10;
 static bool editor_collapsed = true;
-static float camera_z = 0.0;
+static float camera_z = 0.4;
 
 static void randomize_effect(ParticleEffect* effect)
 {
@@ -131,9 +131,16 @@ static void editor_draw()
                     imgui_slider_float("Camera Z", -1.0,1.0,&camera_z);
                     camera_zoom(camera_z, false);
 
+                    imgui_text_sized(18,"Point Lights");
+                    imgui_slider_float("Atten0", 0.1,1.5,&point_lights[player->point_light].attenuation.x);
+                    imgui_slider_float("Atten1", 0.01,0.03,&point_lights[player->point_light].attenuation.y);
+                    imgui_slider_float("Atten2", 0.0,0.0005,&point_lights[player->point_light].attenuation.z);
+
                     imgui_text_sized(18,"Zombies");
                     imgui_horizontal_begin();
                     imgui_number_box("##num_zombies", 1, 100, &num_zombies);
+
+
                     if(imgui_button("Spawn Zombies"))
                     {
                         ZombieSpawn spawn = {0};

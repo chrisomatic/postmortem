@@ -221,7 +221,7 @@ static void player_init(int index)
     p->sprite_index_direction = 0;
     p->angle = 0.0;
 
-    p->phys.pos.x = 400.0;
+    p->phys.pos.x = 1000.0;
     p->phys.pos.y = 1000.0;
     p->phys.vel.x = 0.0;
     p->phys.vel.y = 0.0;
@@ -1278,7 +1278,7 @@ void player_draw(Player* p)
     }
 
     // crosshair
-    gfx_draw_image(crosshair_image, 0, p->mouse_x, p->mouse_y, COLOR_PURPLE, 1.0,0.0,0.80, false,true);
+    gfx_draw_image(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 1.0,0.0,0.80, false,true);
 
     // name
     const float name_size = 0.11;
@@ -1455,10 +1455,6 @@ void gun_fire(Player* p, Gun* gun, bool held)
             float angle_offset = RAND_FLOAT(-gun->fire_spread/2.0, gun->fire_spread/2.0);
             projectile_add(p, gun, angle_offset);
         }
-
-        particles_spawn_effect(gun->pos.x, gun->pos.y-5, &particle_effects[EFFECT_GUN_SMOKE1], 0.5, true, false);
-        particles_spawn_effect(gun->pos.x, gun->pos.y-5, &particle_effects[EFFECT_SPARKS1], 0.5, true, false); // sparks
-
     }
     else
     {
@@ -1474,6 +1470,12 @@ void gun_fire(Player* p, Gun* gun, bool held)
         }
         projectile_add(p, gun, angle_offset);
     }
+
+
+    particles_spawn_effect(gun->pos.x, gun->pos.y-5, &particle_effects[EFFECT_GUN_SMOKE1], 0.5, true, false); // smoke
+    particles_spawn_effect(gun->pos.x, gun->pos.y-5, &particle_effects[EFFECT_SPARKS1], 0.5, true, false); // sparks
+    particles_spawn_effect(gun->pos.x, gun->pos.y, &particle_effects[EFFECT_BULLET_CASING], 1.4, true, false); // bullet casing
+
     gun->bullets--;
 }
 

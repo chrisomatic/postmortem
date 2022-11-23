@@ -286,7 +286,6 @@ typedef struct
     // keys/actions
     PlayerAction actions[PLAYER_ACTION_MAX];
 
-
     int point_light;
 
     // net stuff

@@ -119,8 +119,6 @@ void window_get_mouse_coords(int* x, int* y)
 void window_get_mouse_view_coords(int* x, int* y)
 {
     window_get_mouse_coords(x,y);
-    Rect cam_rect;
-    get_camera_rect(&cam_rect);
 
     *x *= (view_width/(float)window_width);
     *y *= (view_height/(float)window_height);
@@ -138,13 +136,16 @@ void window_get_mouse_world_coords(int* x, int* y)
     int mouse_x, mouse_y;
     window_get_mouse_view_coords(&mouse_x, &mouse_y);
 
-    Matrix* view = get_camera_transform();
+    Rect r;
+    get_camera_rect(&r);
 
-    float cam_x = view->m[0][3];
-    float cam_y = view->m[1][3];
+    float cam_z = camera_get_zoom();
+    float factor = 1.0 - cam_z;
 
-    *x = (int)(mouse_x - cam_x);
-    *y = (int)(mouse_y - cam_y);
+    Vector2i top_left = {r.x - r.w/2.0, r.y - r.h/2.0};
+
+    *x = top_left.x + (factor*mouse_x);
+    *y = top_left.y + (factor*mouse_y);
 }
 
 //TODO: change to float args to ints I think

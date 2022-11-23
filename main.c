@@ -15,7 +15,6 @@
 #include "gui.h"
 #include "net.h"
 #include "log.h"
-#include "lighting.h"
 #include "particles.h"
 #include "bitpack.h"
 
@@ -314,6 +313,7 @@ void init()
     gui_init();
 
     camera_move(player->phys.pos.x, player->phys.pos.y, true, &map.rect);
+    camera_zoom(0.4,true);
 }
 
 void deinit()

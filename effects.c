@@ -9,6 +9,7 @@ EffectEntry effect_map[] = {
     {EFFECT_SPARKS1,"sparks1.effect"},
     {EFFECT_BLOOD1,"blood1.effect"},
     {EFFECT_MELEE1,"melee1.effect"},
+    {EFFECT_BULLET_CASING,"bullet_casing.effect"},
 };
 
 static int get_effect_map_index(char* file_name)
