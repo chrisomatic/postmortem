@@ -23,6 +23,7 @@ gcc core/gfx.c \
     gui.c \
     net.c \
     projectile.c \
+    entity.c \
     -Icore \
     -lglfw -lGLU -lGLEW -lGL -lm \
     -o bin/postmortem

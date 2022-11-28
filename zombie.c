@@ -34,7 +34,6 @@ static Rect standard_size[ZOMBIE_MODELS_MAX];
 static uint32_t zid = 0;
 
 static void zombie_remove(int index);
-static void sort_zombies(Zombie arr[], int n);
 static void wander(Zombie* zom, float delta_t);
 static void zombie_die(int index);
 
@@ -438,16 +437,20 @@ void zombie_update(Zombie* z, float delta_t)
 
 void zombie_draw(Zombie* z)
 {
+    if(z == NULL) return;
+
     if(is_in_camera_view(&z->phys.pos))
     {
         gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, ambient_light,z->scale,0.0,1.0,false,true);
 
-        bool draw_debug_stuff = debug_enabled;
-        if(!draw_debug_stuff)
-        {
-            // draw_debug_stuff = (z == &zombies[zombie_info_index]);
-            draw_debug_stuff = (z == zombie_get_by_id(zombie_info_id));
-        }
+        // bool draw_debug_stuff = debug_enabled;
+        // if(!draw_debug_stuff)
+        // {
+        //     // draw_debug_stuff = (z == &zombies[zombie_info_index]);
+        //     draw_debug_stuff = (z == zombie_get_by_id(zombie_info_id));
+        // }
+
+        bool draw_debug_stuff = debug_enabled && (z == zombie_get_by_id(zombie_info_id));
 
         if(draw_debug_stuff)
         {
@@ -495,8 +498,6 @@ void zombies_update(float delta_t)
         Zombie* z = &zombies[i];
         zombie_update(z, delta_t);
     }
-
-    sort_zombies(zombies, zlist->count);
 
     if(role == ROLE_LOCAL || role == ROLE_CLIENT)
     {
@@ -567,25 +568,6 @@ const char* zombie_anim_state_str(ZombieAnimState anim_state)
 static void zombie_remove(int index)
 {
     list_remove(zlist, index);
-}
-
-static void sort_zombies(Zombie arr[], int n)
-{
-    // insertion sort
-    int i, j;
-    Zombie key;
-    for (i = 1; i < n; i++) 
-    {
-        memcpy(&key,&arr[i],sizeof(Zombie));
-        j = i - 1;
-
-        while (j >= 0 && arr[j].phys.pos.y >= arr[i].phys.pos.y)
-        {
-            memcpy(&arr[j+1],&arr[j], sizeof(Zombie));
-            j = j - 1;
-        }
-        memcpy(&arr[j+1],&key, sizeof(Zombie));
-    }
 }
 
 static void wander(Zombie* zom, float delta_t)

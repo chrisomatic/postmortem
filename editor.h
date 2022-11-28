@@ -1,5 +1,6 @@
 #pragma once
 
+// static ParticleSpawner* particle_spawner;
 static ParticleSpawner* particle_spawner;
 static void randomize_effect(ParticleEffect* effect);
 
@@ -87,6 +88,9 @@ static void randomize_effect(ParticleEffect* effect)
 
 static void editor_draw()
 {
+
+    particle_spawner->hidden = true;
+
     imgui_begin_panel("Editor", 10,10);
 
         imgui_store_theme();
@@ -185,6 +189,7 @@ static void editor_draw()
                     {
 
                     ParticleEffect* effect = &particle_spawner->effect;
+                    particle_spawner->hidden = false;
 
                     int big = 12;
                     imgui_set_text_size(10);
@@ -326,4 +331,10 @@ static void editor_draw()
 
     imgui_restore_theme();
     Vector2f size = imgui_end();
+}
+
+
+static ParticleSpawner* get_particle_spawner()
+{
+    return particle_spawner;
 }

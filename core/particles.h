@@ -71,6 +71,10 @@ typedef struct
     bool hidden;
 } ParticleSpawner;
 
+
+extern ParticleSpawner spawners[MAX_PARTICLE_SPAWNERS];
+extern glist* spawner_list;
+
 void particles_init();
 ParticleSpawner* particles_spawn_effect(float x, float y, ParticleEffect* effect, float lifetime, bool in_world, bool hidden);
 void particles_update(double delta_t);

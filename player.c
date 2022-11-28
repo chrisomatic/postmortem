@@ -281,14 +281,12 @@ static void player_init(int index)
     if(p == player)
     {
         p->point_light = lighting_point_light_add(p->phys.pos.x,p->phys.pos.y,1.0,1.0,1.0,1.0);
-        player_set_mouse(&p->rmouse, false, true, true, 0.0, mouse_zombie_move_cb);
     }
 
     player_update_anim_state(p);
     player_update_image(p);
-
     player_update_sprite_index(p);
-
+    player_update_boxes(p);
 }
 
 void players_init()
@@ -453,7 +451,9 @@ void player_equip_gun(Player* p, GunIndex index)
     player_equip_item(p, ITEM_TYPE_GUN, (void*)gun, true, true);
 
     player_set_mouse(&p->lmouse, true, true, false, gun->fire_period, mouse_gun_cb);
-    // player_set_mouse_nothing(&p->rmouse);
+    player_set_mouse_nothing(&p->rmouse);
+
+    // player_set_mouse(&p->rmouse, false, true, true, 0.0, mouse_zombie_move_cb);
 }
 
 void player_equip_melee(Player* p, MeleeIndex index)
@@ -462,16 +462,18 @@ void player_equip_melee(Player* p, MeleeIndex index)
     player_equip_item(p, ITEM_TYPE_MELEE, (void*)melee, true, true);
 
     player_set_mouse(&p->lmouse, true, true, false, melee->period, mouse_melee_cb);
-    // player_set_mouse_nothing(&p->rmouse);
+    player_set_mouse_nothing(&p->rmouse);
+
+    // player_set_mouse(&p->rmouse, false, true, true, 0.0, mouse_zombie_move_cb);
 }
 
 void player_equip_block(Player* p, BlockType index)
 {
     BlockProp* block = &block_props[index];
-    player_equip_item(p, ITEM_TYPE_BLOCK, (void*)block, true, true);
+    player_equip_item(p, ITEM_TYPE_BLOCK, (void*)block, true, false);
 
     player_set_mouse(&p->lmouse, true, true, false, 20.0, mouse_block_cb);
-    // player_set_mouse(&p->rmouse, true, true, false, 20.0, mouse_block_remove_cb);
+    player_set_mouse(&p->rmouse, true, true, false, 20.0, mouse_block_remove_cb);
 }
 
 void player_set_equipped_item(Player* p, int idx) //TEMP
@@ -479,6 +481,8 @@ void player_set_equipped_item(Player* p, int idx) //TEMP
     if(!p->item_equipped)
     {
         player_equip_item(p, ITEM_TYPE_NONE, NULL, false, false);
+        player_set_mouse_nothing(&p->lmouse);
+        player_set_mouse(&p->rmouse, false, true, true, 0.0, mouse_zombie_move_cb);
         return;
     }
 
@@ -892,13 +896,14 @@ void player_update(Player* p, double delta_t)
     window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
     coords_to_map_grid(p->mouse_x, p->mouse_y, &p->mouse_r, &p->mouse_c);
 
-    if(moving_zombie)
+    if(moving_zombie && player == p)
     {
         Zombie* z = zombie_get_by_id(zombie_info_id);
         if(z != NULL)
         {
             z->phys.pos.x = p->mouse_x;
             z->phys.pos.y = p->mouse_y;
+            zombie_update_boxes(z);
         }
     }
 
@@ -1184,6 +1189,8 @@ void player_update_other(Player* p, double delta_t)
 
 void player_draw(Player* p)
 {
+    if(p == NULL) return;
+
     if(!is_in_camera_view(&p->pos))
     {
         return;
@@ -1192,13 +1199,13 @@ void player_draw(Player* p)
     GFXImage* img = &gfx_images[p->image];
     Rect* vr = &img->visible_rects[p->sprite_index];
 
-    //TEMP: blocks
-    for(int i = 0; i < blist->count; ++i)
-    {
-        Rect r = {0};
-        map_grid_to_rect(blocks[i].row, blocks[i].col, &r);
-        gfx_draw_rect(&r, block_props[blocks[i].type].color, 0.0, 1.0, 0.50, true, true);
-    }
+    // //TEMP: blocks
+    // for(int i = 0; i < blist->count; ++i)
+    // {
+    //     Rect r = {0};
+    //     map_grid_to_rect(blocks[i].row, blocks[i].col, &r);
+    //     gfx_draw_rect(&r, block_props[blocks[i].type].color, 0.0, 1.0, 0.50, true, true);
+    // }
 
 
     // player
@@ -1277,15 +1284,71 @@ void player_draw(Player* p)
         gfx_draw_rect(&r, COLOR_ORANGE, 0.0, 1.0,1.0, true, true);
     }
 
-    // crosshair
-    gfx_draw_image(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 1.0,0.0,0.80, false,true);
-
     // name
     const float name_size = 0.11;
     Vector2f size = gfx_string_get_size(name_size, p->name);
     float x = p->phys.pos.x - size.x/2.0;
     float y = p->phys.pos.y + p->max_size.h*0.5 + 2.0;
     gfx_draw_string(x, y, player_colors[p->index], name_size, 0.0, 0.8, true, true, p->name);
+}
+
+void player_draw_offscreen()
+{
+    //@TEMP
+    static bool activate_player = false;
+    if(!activate_player)
+    {
+        players[2].active = true;
+        players[2].phys.pos.x = 1000;
+        players[2].phys.pos.y = 1000;
+        players[2].phys.pos.w = 25;
+        players[2].phys.pos.h = 60;
+        players[2].sprite_index = 1;
+        player_count++;
+        activate_player = true;
+    }
+
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        Player* p = &players[i];
+        if(p->active)
+        {
+            // Rect* pos = &p->pos;
+            Rect* pos = &p->phys.pos;
+            if(!is_in_camera_view(pos))
+            {
+                Rect camera_rect = {0};
+                get_camera_rect(&camera_rect);
+                // float angle = calc_angle_rad(player->phys.pos.x, player->phys.pos.y, p->phys.pos.x, p->phys.pos.y);
+                Rect prect = {0};
+                memcpy(&prect, pos, sizeof(Rect));
+                prect.w = 5.0;
+                prect.h = 5.0;
+                physics_limit_pos(&camera_rect, &prect);
+                gfx_draw_rect(&prect, player_colors[p->index], 0.0, 1.0, 0.5, true,true);
+            }
+        }
+    }
+}
+
+
+void player_draw_all()
+{
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        Player* p = &players[i];
+        if(p->active)
+        {
+            player_draw(p);
+        }
+    }
+}
+
+
+void player_draw_crosshair(Player* p)
+{
+    // crosshair
+    gfx_draw_image(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 1.0,0.0,0.80, false,true);
 }
 
 const char* player_item_type_str(PlayerItemType item_type)
@@ -1299,6 +1362,16 @@ const char* player_item_type_str(PlayerItemType item_type)
         case ITEM_TYPE_OBJECT: return "object";
         default: return "UNKNOWN";
     }
+}
+
+
+void draw_block(block_t* b)
+{
+    if(b == NULL) return;
+
+    Rect r = {0};
+    map_grid_to_rect(b->row, b->col, &r);
+    gfx_draw_rect(&r, block_props[b->type].color, 0.0, 1.0, 0.50, true, true);
 }
 
 

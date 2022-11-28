@@ -1,5 +1,6 @@
 #pragma once
 
+#include "particles.h"
 #include "main.h"
 
 #define CONSOLE_MSG_MAX  10
@@ -26,6 +27,8 @@ void console_message_add(uint32_t color, char* fmt, ...);
 void console_text_hist_add(char* text);
 int console_text_hist_get(int direction);
 void run_console_command(char* text);
+
+ParticleSpawner* editor_get_particle_spawner();
 
 void gui_init();
 void gui_draw();

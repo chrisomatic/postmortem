@@ -3,6 +3,7 @@
 #include "gfx.h"
 #include "physics.h"
 #include "net.h"
+#include "glist.h"
 
 // debug box colors
 #define COLOR_POS        COLOR_BLUE
@@ -39,6 +40,10 @@ typedef struct
     float hp;
     BlockType type;
 } block_t;
+
+extern block_t blocks[MAX_BLOCKS];
+extern glist* blist;
+extern BlockProp block_props[BLOCK_MAX];
 
 
 
@@ -347,8 +352,14 @@ void player_update(Player* p, double delta_t);
 void player_update_other(Player* p, double delta_t);
 void player_handle_net_inputs(Player* p, double delta_t);
 void player_draw(Player* p);
+void player_draw_all();
+void player_draw_offscreen();
+void player_draw_crosshair(Player* p);
 
 const char* player_item_type_str(PlayerItemType item_type);
+
+//TEMP: blocks
+void draw_block(block_t* b);
 
 
 void weapons_init();

@@ -274,6 +274,12 @@ void gui_draw()
     }
 }
 
+ParticleSpawner* editor_get_particle_spawner()
+{
+    get_particle_spawner();
+}
+
+
 void console_message_add(uint32_t color, char* fmt, ...)
 {
     // 0 is oldest
@@ -428,11 +434,12 @@ void run_console_command(char* text)
 
         if(STR_EQUAL(s_object,"zombie"))
         {
-            if(idx < zlist->count)
+            Zombie* z = zombie_get_by_id(idx);
+            if(z != NULL)
             {
                 // printf("goto zombie %d\n", idx);
-                player->phys.pos.x = zombies[idx].phys.pos.x;
-                player->phys.pos.y = zombies[idx].phys.pos.y;
+                player->phys.pos.x = z->phys.pos.x;
+                player->phys.pos.y = z->phys.pos.y;
             }
         }
         else if(STR_EQUAL(s_object,"player"))

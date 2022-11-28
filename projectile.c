@@ -110,7 +110,7 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
     list_add(plist, (void*)&proj);
 }
 
-
+#if 0
 void projectile_update(float delta_t)
 {
     for(int i = plist->count - 1; i >= 0; --i)
@@ -178,6 +178,116 @@ void projectile_update(float delta_t)
                 zombie_hurt(j,proj->damage);
             }
         }
+
+        float x0 = proj->hurt_box.x;
+        float y0 = proj->hurt_box.y;
+        float x1 = proj->hurt_box_prior.x;
+        float y1 = proj->hurt_box_prior.y;
+
+        //printf("p0 (%f %f) -> p1 (%f %f)\n",x0,y0,x1,y1);
+        gfx_add_line(x0,y0,x1,y1, 0x00FFFF00);
+        gfx_add_line(x0+1,y0+1,x1+1,y1+1, 0x00555555);
+    }
+
+    for(int i = plist->count - 1; i >= 0; --i)
+    {
+        if(projectiles[i].dead)
+        {
+            projectile_remove(i);
+        }
+    }
+
+}
+#endif
+
+void projectile_update(float delta_t)
+{
+    for(int i = plist->count - 1; i >= 0; --i)
+    {
+        Projectile* proj = &projectiles[i];
+
+        if(proj->dead)
+            continue;
+
+        proj->time += delta_t;
+        if(proj->time >= proj->ttl)
+        {
+            proj->dead = true;
+            continue;
+        }
+
+        proj->pos.x += delta_t*proj->vel.x;
+        proj->pos.y -= delta_t*proj->vel.y; // @minus
+
+        update_hurt_box(proj);
+
+
+        #define HITS_MAX 100
+        int hits[HITS_MAX] = {0};
+        int num_hits = 0;
+        for(int j = zlist->count - 1; j >= 0; --j)
+        {
+            if(num_hits >= HITS_MAX) break;
+            if(are_rects_colliding(&proj->hurt_box_prior, &proj->hurt_box, &zombies[j].hit_box))
+            {
+                hits[num_hits++] = j;
+            }
+        }
+
+        if(num_hits > 0)
+        {
+            int j_min = 0;
+            float min_d = INFINITY;
+            for(int _j = 0; _j < num_hits; ++_j)
+            {
+                int j = hits[_j];
+                float d = dist(proj->hurt_box_prior.x, proj->hurt_box_prior.y, zombies[j].hit_box.x, zombies[j].hit_box.y);
+                if(d < min_d)
+                {
+                    min_d = d;
+                    j_min = j;
+                }
+            }
+
+            proj->dead = true;
+
+            Vector2f force = {
+                100.0*cosf(RAD(proj->angle_deg)),
+                100.0*sinf(RAD(proj->angle_deg))
+            };
+            //zombie_push(j_min,&force);
+
+            if(role == ROLE_SERVER)
+            {
+                printf("Zombie %d hurt for %d damage!\n",j_min,proj->damage);
+            }
+
+            particles_spawn_effect(zombies[j_min].phys.pos.x, zombies[j_min].phys.pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
+
+            // correct projectile pos back to zombie hitbox
+            {
+                Vector2f p0 = {proj->hurt_box.x, proj->hurt_box.y};
+                Vector2f p1 = {proj->hurt_box_prior.x, proj->hurt_box_prior.y};
+                Vector2f p2 = {zombies[j_min].hit_box.x, zombies[j_min].hit_box.y};
+
+                float d = dist(p0.x,p0.y,p2.x,p2.y);
+
+                Vector2f v = {p0.x - p1.x, p0.y - p1.y};
+                normalize(&v);
+
+                Vector2f correction = {-d*v.x, -d*v.y};
+
+                proj->pos.x += correction.x;
+                proj->pos.y += correction.y;
+
+                update_hurt_box(proj);
+            }
+
+            zombie_hurt(j_min,proj->damage);
+
+        }
+
+
 
         float x0 = proj->hurt_box.x;
         float y0 = proj->hurt_box.y;

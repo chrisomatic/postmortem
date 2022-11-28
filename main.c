@@ -16,6 +16,7 @@
 #include "net.h"
 #include "log.h"
 #include "particles.h"
+#include "entity.h"
 #include "bitpack.h"
 
 // Settings
@@ -377,11 +378,12 @@ void simulate(double delta_t)
     world_update();
     zombies_update(delta_t);
 
-    // window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);   //MOVED to player_update
     player_update(player,delta_t);
     projectile_update(delta_t);
 
     particles_update(delta_t);
+
+    entities_update(); //sorts the entity list
 }
 
 void simulate_client(double delta_t)
@@ -392,8 +394,6 @@ void simulate_client(double delta_t)
     camera_update(VIEW_WIDTH, VIEW_HEIGHT);
 
     world_update();
-    //zombies_update(delta_t);
-    // window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
     player_update(player,delta_t);
     player_handle_net_inputs(player, delta_t);
 
@@ -406,6 +406,8 @@ void simulate_client(double delta_t)
     }
 
     projectile_update(delta_t);
+
+    entities_update(); //sorts the entity list
 }
 
 void draw()
@@ -415,51 +417,17 @@ void draw()
     world_draw();
     gfx_draw_lines();
 
-    zombies_draw();
+    // zombies_draw();
     projectile_draw();
+    // player_draw_all();
+    // particles_draw();
 
-    static bool activate_player = false;
-    if(!activate_player)
-    {
-        players[2].active = true;
-        players[2].phys.pos.x = 1000;
-        players[2].phys.pos.y = 1000;
-        players[2].phys.pos.w = 25;
-        players[2].phys.pos.h = 60;
-        players[2].sprite_index = 1;
-        player_count++;
-        activate_player = true;
-    }
+    entities_draw();
 
-    for(int i = 0; i < MAX_CLIENTS; ++i)
-    {
-        Player* p = &players[i];
-        if(p->active)
-        {
-            player_draw(p);
-            if(p != player)
-            {
-                // Rect* pos = &p->pos; //TODO
-                Rect* pos = &p->phys.pos;
-                bool in_view = is_in_camera_view(pos);
-                if(!in_view)
-                {
-                    Rect camera_rect = {0};
-                    get_camera_rect(&camera_rect);
-                    // float angle = calc_angle_rad(player->phys.pos.x, player->phys.pos.y, p->phys.pos.x, p->phys.pos.y);
-                    Rect prect = {0};
-                    memcpy(&prect, pos, sizeof(Rect));
-                    prect.w = 5.0;
-                    prect.h = 5.0;
-                    physics_limit_pos(&camera_rect, &prect);
-                    gfx_draw_rect(&prect, player_colors[p->index], 0.0, 1.0, 0.5, true,true);
-                }
-            }
-        }
-    }
-
-    particles_draw();
     gui_draw();
+
+    player_draw_offscreen();
+    player_draw_crosshair(player);
 }
 
 
@@ -667,8 +635,8 @@ Rect calc_box(Rect* pos, float wscale, float hscale, int location)
     r.h = pos->h * hscale;
     r.x = pos->x;
 
-    float ytop = pos->y - pos->h/2.0; 
-    float ybottom = pos->y + pos->h/2.0; 
+    float ytop = pos->y - pos->h/2.0;
+    float ybottom = pos->y + pos->h/2.0;
 
     if(location == 0) //top
     {

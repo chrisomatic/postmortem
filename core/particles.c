@@ -14,8 +14,9 @@
 
 #define PARTICLES_EFFECT_VERSION 1
 
-static ParticleSpawner spawners[MAX_PARTICLE_SPAWNERS] = {0};
-static glist* spawner_list;
+ParticleSpawner spawners[MAX_PARTICLE_SPAWNERS] = {0};
+glist* spawner_list;
+
 static int global_id_count = 0;
 static int particles_image;
 
@@ -268,6 +269,8 @@ void particles_update(double delta_t)
 
 void particles_draw_spawner(ParticleSpawner* spawner)
 {
+    if(spawner == NULL) return;
+
     for(int j = 0; j < spawner->particle_list->count; ++j)
     {
         Particle* p = &spawner->particles[j];
