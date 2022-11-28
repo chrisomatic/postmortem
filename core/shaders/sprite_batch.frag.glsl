@@ -1,16 +1,14 @@
 #version 330 core
 
 in vec2 tex_coord0;
+in vec3 color0;
+in float opacity;
 in vec2 to_light_vector[16];
 
 out vec4 color;
 
 uniform sampler2D image;
-
-uniform vec3 tint_color;
 uniform vec3 ambient_color;
-uniform float opacity;
-
 uniform vec3 light_color[16];
 uniform vec3 light_atten[16];
 uniform int  is_particle;
@@ -35,17 +33,9 @@ void main() {
 
     total_diffuse = max(total_diffuse, ambient_color);
 
-    /*
-    //For Debugging
-    if(atten_factor > 1.5)
-    {
-        total_diffuse = vec3(1.0,0.0,0.0);
-    }
-    */
-
     if(is_particle == 1)
     {
-        color = vec4(tex_color.rgb*tint_color,tex_color.a*opacity);
+        color = vec4(tex_color.rgb*color0,tex_color.a*opacity);
     }
     else
     {

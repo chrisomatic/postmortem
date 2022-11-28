@@ -38,6 +38,7 @@ static GLuint quad_vao, quad_vbo;
 static GLuint rect_vao, rect_vbo;
 static GLuint font_vao, font_vbo;
 static GLuint line_vao,line_vbo;
+static GLuint batch_vao, batch_quad_vbo, batch_instance_vbo;
 
 static Matrix proj_matrix;
 
@@ -78,6 +79,7 @@ static int num_line_points = 0;
 
 static FontChar font_chars[255];
 
+#define SPRITE_BATCH_MAX_SPRITES 1024
 
 static double vr_time = 0;
 static double img_time = 0;
@@ -473,6 +475,183 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     if(node_image.data != NULL) free(node_image.data);
 
     return -1;
+}
+
+typedef struct
+{
+    Matrix model_matrix;
+    Rect rect;
+    uint32_t color;
+    float opacity;
+} Sprite;
+
+typedef struct
+{
+    GFXImage* img;
+    bool in_world;
+    bool is_particle;
+    int num_sprites;
+    Sprite sprites[SPRITE_BATCH_MAX_SPRITES];
+} SpriteBatch;
+
+static SpriteBatch sprite_batch = {0};
+
+static void init_sprite_batch()
+{
+    // VAO
+    glGenVertexArrays(1, &batch_vao);
+    glBindVertexArray(batch_vao);
+
+    Vertex batch_quad[] =
+    {
+        {{-0.5, +0.5},{0.0,1.0}},
+        {{+0.5, -0.5},{1.0,0.0}},
+        {{-0.5, -0.5},{0.0,0.0}},
+        {{+0.5, +0.5},{1.0,1.0}},
+    };
+
+    // Quad VBO
+    glGenBuffers(1, &batch_quad_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, batch_quad_vbo);
+    glBufferData(GL_ARRAY_BUFFER, 4*sizeof(Vertex), batch_quad, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+    glVertexAttribDivisor(0, 0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)8);
+    glVertexAttribDivisor(1, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Instance VBO
+    glGenBuffers(1, &batch_instance_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, batch_instance_vbo);
+    glBufferData(GL_ARRAY_BUFFER, SPRITE_BATCH_MAX_SPRITES*sizeof(Sprite), NULL, GL_STREAM_DRAW);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(0*sizeof(float))); // model[0]
+    glVertexAttribDivisor(2, 1);
+    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(4*sizeof(float))); // model[1]
+    glVertexAttribDivisor(3, 1);
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(8*sizeof(float))); // model[2]
+    glVertexAttribDivisor(4, 1);
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(12*sizeof(float))); // model[3]
+    glVertexAttribDivisor(5, 1);
+    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(16*sizeof(float))); // sprite rect
+    glVertexAttribDivisor(6, 1);
+    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(20*sizeof(float))); // color
+    glVertexAttribDivisor(7, 1);
+    glVertexAttribPointer(8, 1, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(23*sizeof(float))); // opacity
+    glVertexAttribDivisor(8, 1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+bool gfx_sprite_batch_begin(int img_index, bool in_world, bool is_particle)
+{
+    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
+    {
+        LOGE("%s: Invalid image index!", __func__);
+        return false;
+    }
+
+    sprite_batch.img = &gfx_images[img_index];
+    sprite_batch.in_world = in_world;
+    sprite_batch.is_particle = is_particle; // @TODO: Maybe remove this concept later?
+    sprite_batch.num_sprites = 0;
+
+    return true;
+}
+
+bool gfx_sprite_batch_add(int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image) 
+{
+    if(sprite_batch.num_sprites >= SPRITE_BATCH_MAX_SPRITES)
+    {
+        LOGW("Too many sprites in batch. Can't add any more.");
+        return false;
+    }
+
+    if(!sprite_batch.img)
+    {
+        LOGW("No Image set for sprite batch!");
+        return false;
+    }
+
+    if(sprite_index >= sprite_batch.img->element_count)
+    {
+        LOGE("Invalid sprite index: %d >= %d)", sprite_index, sprite_batch.img->element_count);
+        return false;
+    }
+
+    Sprite* sprite = &sprite_batch.sprites[sprite_batch.num_sprites++];
+
+    sprite->color = color;
+    sprite->opacity = opacity;
+
+    // get model matrix
+    Vector3f pos = {x,y,0.0};
+    Vector3f rot = {0.0,0.0,360.0-rotation};
+    Vector3f sca = {1.0,1.0,1.0};
+
+    if(full_image)
+    {
+        // Vector3f sca = {scale*img->element_width,scale*img->element_height,1.0};
+        sca.x = scale*sprite_batch.img->element_width;
+        sca.y = scale*sprite_batch.img->element_height;
+    }
+    else
+    {
+        // Vector3f sca = {scale*vw,scale*vh,1.0};
+        float vw = sprite_batch.img->visible_rects[sprite_index].w;
+        float vh = sprite_batch.img->visible_rects[sprite_index].h;
+        sca.x = scale*vw;
+        sca.y = scale*vh;
+    }
+
+    get_model_transform(&pos,&rot,&sca,&sprite->model_matrix);
+
+    // sprite rect
+    Rect* sr = NULL;
+    if(full_image)
+        sr = &sprite_batch.img->sprite_rects[sprite_index];
+    else
+        sr = &sprite_batch.img->sprite_visible_rects[sprite_index];
+
+    sprite->rect.x = sr->x-sr->w/2.0;
+    sprite->rect.y = sr->y-sr->h/2.0;
+    sprite->rect.w = sr->w;
+    sprite->rect.h = sr->h;
+
+    return true;
+}
+
+void gfx_sprite_batch_draw()
+{
+    glUseProgram(program_sprite_batch);
+
+    glBindVertexArray(batch_vao);
+
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+    glEnableVertexAttribArray(3);
+    glEnableVertexAttribArray(4);
+    glEnableVertexAttribArray(5);
+    glEnableVertexAttribArray(6);
+    glEnableVertexAttribArray(7);
+    glEnableVertexAttribArray(8);
+
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,4,sprite_batch.num_sprites);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
+    glDisableVertexAttribArray(3);
+    glDisableVertexAttribArray(4);
+    glDisableVertexAttribArray(5);
+    glDisableVertexAttribArray(6);
+    glDisableVertexAttribArray(7);
+    glDisableVertexAttribArray(8);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+
 }
 
 static bool gfx_draw_image_internal(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool is_particle)

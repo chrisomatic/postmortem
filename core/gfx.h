@@ -92,6 +92,10 @@ bool gfx_draw_particle(int img_index, int sprite_index, float x, float y, uint32
 GFXImage* gfx_get_image_data(int img_index);
 bool gfx_get_image_node_point(int img_index, int sprite_index, uint32_t node_color, Vector2f* node);
 
+bool gfx_batch_images_clear(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
+bool gfx_batch_images_add(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
+bool gfx_batch_images_draw(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
+
 // Lines
 void gfx_clear_lines();
 void gfx_add_line(float x0, float y0, float x1, float y1, uint32_t color);

@@ -4,6 +4,7 @@
 #define INVALID_UNIFORM_LOCATION 0xFFFFFFFF
 
 extern GLuint program_sprite;
+extern GLuint program_sprite_batch;
 extern GLuint program_shape;
 extern GLuint program_line;
 extern GLuint program_font;
