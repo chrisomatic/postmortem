@@ -9,7 +9,7 @@ layout (location = 8) in float opacity;
 
 out vec2 tex_coord0;
 out vec3 color0;
-out float opacity;
+out float opacity0;
 
 out vec2 to_light_vector[16];
 
@@ -19,7 +19,11 @@ uniform mat4 projection;
 
 void main()
 {
-    tex_coord0 = tex_coord;
+    tex_coord0.x = sprite_rect.x + sprite_rect.z*tex_coord.x;
+    tex_coord0.y = sprite_rect.y + sprite_rect.w*tex_coord.y;
+
+    color0 = color;
+    opacity0 = opacity;
 
     vec4 world_pos = model * vec4(position.xy,0.0,1.0);
     for(int i = 0; i < 16; ++i)

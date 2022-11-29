@@ -138,8 +138,8 @@ static void editor_draw()
                     camera_zoom(camera_z, false);
 
                     imgui_text_sized(18,"Point Lights");
-                    imgui_slider_float("Atten0", 0.1,1.5,&point_lights[player->point_light].attenuation.x);
-                    imgui_slider_float("Atten1", 0.01,0.03,&point_lights[player->point_light].attenuation.y);
+                    imgui_slider_float("Atten0", 0.00,1.5,&point_lights[player->point_light].attenuation.x);
+                    imgui_slider_float("Atten1", 0.00,0.03,&point_lights[player->point_light].attenuation.y);
                     imgui_slider_float("Atten2", 0.0,0.0005,&point_lights[player->point_light].attenuation.z);
 
                     imgui_text_sized(18,"Zombies");

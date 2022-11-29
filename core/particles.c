@@ -273,15 +273,21 @@ void particles_draw_spawner(ParticleSpawner* spawner)
 {
     if(spawner == NULL) return;
 
-    for(int j = 0; j < spawner->particle_list->count; ++j)
+    if(spawner->effect.use_sprite)
     {
-        Particle* p = &spawner->particles[j];
-        if(spawner->effect.use_sprite)
+        gfx_sprite_batch_begin(particles_image, spawner->in_world, true, spawner->effect.blend_additive);
+        for(int j = 0; j < spawner->particle_list->count; ++j)
         {
-            gfx_draw_particle(particles_image, spawner->effect.sprite_index, p->pos.x,p->pos.y, p->color,p->scale,p->rotation,p->opacity,false, spawner->in_world, spawner->effect.blend_additive);
+            Particle* p = &spawner->particles[j];
+            gfx_sprite_batch_add(spawner->effect.sprite_index, p->pos.x, p->pos.y, p->color, p->scale, p->rotation, p->opacity, false);
         }
-        else
+        gfx_sprite_batch_draw();
+    }
+    else
+    {
+        for(int j = 0; j < spawner->particle_list->count; ++j)
         {
+            Particle* p = &spawner->particles[j];
             gfx_draw_rect_xywh(p->pos.x, p->pos.y, 32.0, 32.0, p->color, p->rotation, p->scale, p->opacity, true,spawner->in_world);
         }
     }

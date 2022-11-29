@@ -441,7 +441,7 @@ void zombie_draw(Zombie* z)
 
     if(is_in_camera_view(&z->phys.pos))
     {
-        gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, ambient_light,z->scale,0.0,1.0,false,true);
+        gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, COLOR_TINT_NONE,z->scale,0.0,1.0,false,true);
 
         // bool draw_debug_stuff = debug_enabled;
         // if(!draw_debug_stuff)

@@ -2,7 +2,7 @@
 
 in vec2 tex_coord0;
 in vec3 color0;
-in float opacity;
+in float opacity0;
 in vec2 to_light_vector[16];
 
 out vec4 color;
@@ -36,10 +36,10 @@ void main() {
 
     if(is_particle == 1)
     {
-        color = vec4(tex_color.rgb*color0,tex_color.a*opacity);
+        color = vec4(tex_color.rgb*color0,tex_color.a*opacity0);
     }
     else
     {
-        color = vec4(total_diffuse, opacity)*tex_color;
+        color = vec4(total_diffuse, opacity0)*tex_color;
     }
 }

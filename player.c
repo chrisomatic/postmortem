@@ -1212,7 +1212,7 @@ void player_draw(Player* p)
 
 
     // player
-    gfx_draw_image(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, ambient_light,p->scale,0.0,1.0,true,true);
+    gfx_draw_image(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE,p->scale,0.0,1.0,true,true);
 
     if(p->item.drawable && p->item.props != NULL)
     {
@@ -1248,7 +1248,7 @@ void player_draw(Player* p)
                 wpos->y = gy;
 
                 // weapon
-                gfx_draw_image(wimage, p->sprite_index, p->phys.pos.x, p->phys.pos.y, ambient_light, p->scale,0,1.0,true,true);
+                gfx_draw_image(wimage, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE, p->scale,0,1.0,true,true);
             }
 
         }

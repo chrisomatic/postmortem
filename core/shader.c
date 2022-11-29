@@ -7,7 +7,6 @@
 
 #include "shader.h"
 
-GLuint program_sprite;
 GLuint program_sprite_batch;
 GLuint program_shape;
 GLuint program_line;
@@ -17,11 +16,6 @@ static void shader_add(GLuint program, GLenum shader_type, const char* shader_fi
 
 void shader_load_all()
 {
-    shader_build_program(&program_sprite,
-        "core/shaders/sprite.vert.glsl",
-        "core/shaders/sprite.frag.glsl"
-    );
-
     shader_build_program(&program_sprite_batch,
         "core/shaders/sprite_batch.vert.glsl",
         "core/shaders/sprite_batch.frag.glsl"
@@ -45,7 +39,6 @@ void shader_load_all()
 
 void shader_deinit()
 {
-    glDeleteProgram(program_sprite);
     glDeleteProgram(program_sprite_batch);
     glDeleteProgram(program_shape);
     glDeleteProgram(program_line);

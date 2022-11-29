@@ -173,6 +173,8 @@ void world_draw()
     }
 #endif
 
+    gfx_sprite_batch_begin(ground_sheet,true,false,false);
+
     for(int r = (r1-1); r < (r2+1); ++r)
     {
         for(int c = (c1-1); c < (c2+1); ++c)
@@ -181,7 +183,8 @@ void world_draw()
             if(index == 0xFF) continue;
             float x,y;
             map_grid_to_coords(r, c, &x, &y);
-            gfx_draw_image(ground_sheet,index,x,y,ambient_light,1.0,0.0,1.0, true,true);
+            //gfx_draw_image(ground_sheet,index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0, true,true);
+            gfx_sprite_batch_add(index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0, true);
 
 #if 0
             if(debug_enabled)
@@ -192,6 +195,8 @@ void world_draw()
 #endif
         }
     }
+
+    gfx_sprite_batch_draw();
 }
 
 uint8_t map_get_tile_index(int row, int col)

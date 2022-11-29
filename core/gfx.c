@@ -15,6 +15,8 @@
 #include "log.h"
 #include "gfx.h"
 
+#define MAX_LINES 100
+#define SPRITE_BATCH_MAX_SPRITES 4096
 
 // types
 // --------------------------------------------------------
@@ -32,6 +34,28 @@ typedef struct
     float w,h;
 } FontChar;
 
+typedef struct
+{
+    Vector4f world1;
+    Vector4f world2;
+    Vector4f world3;
+    Vector4f world4;
+    Rect rect;
+    Vector3f color;
+    float opacity;
+} __attribute__((__packed__)) Sprite;
+
+typedef struct
+{
+    GFXImage* img;
+    bool in_world;
+    bool is_particle;
+    bool blend_additive;
+    int num_sprites;
+    Sprite sprites[SPRITE_BATCH_MAX_SPRITES];
+} SpriteBatch;
+
+
 // static vars
 // --------------------------------------------------------
 static GLuint quad_vao, quad_vbo;
@@ -42,17 +66,14 @@ static GLuint batch_vao, batch_quad_vbo, batch_instance_vbo;
 
 static Matrix proj_matrix;
 
-static GLint loc_sprite_image;
-static GLint loc_sprite_ambient_color;
-static GLint loc_sprite_tint_color;
-static GLint loc_sprite_is_particle;
-static GLint loc_sprite_opacity;
-static GLint loc_sprite_model;
-static GLint loc_sprite_view;
-static GLint loc_sprite_proj;
-static GLint loc_sprite_light_pos[MAX_POINT_LIGHTS];
-static GLint loc_sprite_light_color[MAX_POINT_LIGHTS];
-static GLint loc_sprite_light_atten[MAX_POINT_LIGHTS];
+static GLint loc_sprite_batch_image;
+static GLint loc_sprite_batch_ambient_color;
+static GLint loc_sprite_batch_is_particle;
+static GLint loc_sprite_batch_view;
+static GLint loc_sprite_batch_proj;
+static GLint loc_sprite_batch_light_pos[MAX_POINT_LIGHTS];
+static GLint loc_sprite_batch_light_color[MAX_POINT_LIGHTS];
+static GLint loc_sprite_batch_light_atten[MAX_POINT_LIGHTS];
 
 static GLint loc_shape_color;
 static GLint loc_shape_opacity;
@@ -73,36 +94,35 @@ static GLint loc_font_model;
 static GLint loc_font_view;
 static GLint loc_font_proj;
 
-#define MAX_LINES 100
 static LinePoint line_points[2*MAX_LINES];
 static int num_line_points = 0;
 
 static FontChar font_chars[255];
-
-#define SPRITE_BATCH_MAX_SPRITES 1024
 
 static double vr_time = 0;
 static double img_time = 0;
 static double other_time = 0;
 
 
+static SpriteBatch sprite_batch = {0};
+
 // global vars
 // --------------------------------------------------------
 GFXImage gfx_images[MAX_GFX_IMAGES] = {0};
 int font_image;
 
-
 // macros
 // --------------------------------------------------------
 // #define DEBUG_PRINT()   printf("%d %s %s()\n", __LINE__, __FILE__, __func__)
-
 
 // static function prototypes
 // --------------------------------------------------------
 static void load_font();
 static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int img_n, unsigned char* data);
 static void image_get_visible_rect(int img_w, int img_h, int img_n, unsigned char* img_data, Rect* ret);
-
+static void blend_mode_normal();
+static void blend_mode_additive();
+static void init_sprite_batch();
 
 // global functions
 // --------------------------------------------------------
@@ -117,12 +137,10 @@ void gfx_init(int width, int height)
     // quad
     Vertex quad[] =
     {
-        {{-0.5, +0.5},{0.0,1.0}},
-        {{+0.5, -0.5},{1.0,0.0}},
         {{-0.5, -0.5},{0.0,0.0}},
         {{-0.5, +0.5},{0.0,1.0}},
-        {{+0.5, +0.5},{1.0,1.0}},
         {{+0.5, -0.5},{1.0,0.0}},
+        {{+0.5, +0.5},{1.0,1.0}},
     };
 
     glGenBuffers(1, &quad_vbo);
@@ -174,26 +192,22 @@ void gfx_init(int width, int height)
     glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(LinePoint), (const GLvoid*)8);
 
     // shader locations
-    loc_sprite_image      = glGetUniformLocation(program_sprite, "image");
-    loc_sprite_ambient_color = glGetUniformLocation(program_sprite, "ambient_color");
-    loc_sprite_tint_color = glGetUniformLocation(program_sprite, "tint_color");
-    loc_sprite_is_particle = glGetUniformLocation(program_sprite, "is_particle");
-
     char lookup_str[16+1] = {0};
     for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
     {
         snprintf(lookup_str,16,"light_pos[%d]",i);
-        loc_sprite_light_pos[i]     = glGetUniformLocation(program_sprite, lookup_str);
+        loc_sprite_batch_light_pos[i]     = glGetUniformLocation(program_sprite_batch, lookup_str);
         snprintf(lookup_str,16,"light_color[%d]",i);
-        loc_sprite_light_color[i]   = glGetUniformLocation(program_sprite, lookup_str);
+        loc_sprite_batch_light_color[i]   = glGetUniformLocation(program_sprite_batch, lookup_str);
         snprintf(lookup_str,16,"light_atten[%d]",i);
-        loc_sprite_light_atten[i]   = glGetUniformLocation(program_sprite, lookup_str);
+        loc_sprite_batch_light_atten[i]   = glGetUniformLocation(program_sprite_batch, lookup_str);
     }
 
-    loc_sprite_opacity    = glGetUniformLocation(program_sprite, "opacity");
-    loc_sprite_model      = glGetUniformLocation(program_sprite, "model");
-    loc_sprite_view       = glGetUniformLocation(program_sprite, "view");
-    loc_sprite_proj       = glGetUniformLocation(program_sprite, "projection");
+    loc_sprite_batch_image         = glGetUniformLocation(program_sprite_batch, "image");
+    loc_sprite_batch_ambient_color = glGetUniformLocation(program_sprite_batch, "ambient_color");
+    loc_sprite_batch_is_particle   = glGetUniformLocation(program_sprite_batch, "is_particle");
+    loc_sprite_batch_view    = glGetUniformLocation(program_sprite_batch, "view");
+    loc_sprite_batch_proj    = glGetUniformLocation(program_sprite_batch, "projection");
 
     loc_shape_color      = glGetUniformLocation(program_shape, "color");
     loc_shape_opacity    = glGetUniformLocation(program_shape, "opacity");
@@ -226,6 +240,7 @@ void gfx_init(int width, int height)
     gfx_image_init();
 
     load_font();
+    init_sprite_batch();
 }
 
 void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b)
@@ -477,25 +492,6 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     return -1;
 }
 
-typedef struct
-{
-    Matrix model_matrix;
-    Rect rect;
-    uint32_t color;
-    float opacity;
-} Sprite;
-
-typedef struct
-{
-    GFXImage* img;
-    bool in_world;
-    bool is_particle;
-    int num_sprites;
-    Sprite sprites[SPRITE_BATCH_MAX_SPRITES];
-} SpriteBatch;
-
-static SpriteBatch sprite_batch = {0};
-
 static void init_sprite_batch()
 {
     // VAO
@@ -504,16 +500,16 @@ static void init_sprite_batch()
 
     Vertex batch_quad[] =
     {
+        {{-0.5, -0.5},{0.0,0.0}},
         {{-0.5, +0.5},{0.0,1.0}},
         {{+0.5, -0.5},{1.0,0.0}},
-        {{-0.5, -0.5},{0.0,0.0}},
         {{+0.5, +0.5},{1.0,1.0}},
     };
 
     // Quad VBO
     glGenBuffers(1, &batch_quad_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, batch_quad_vbo);
-    glBufferData(GL_ARRAY_BUFFER, 4*sizeof(Vertex), batch_quad, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(batch_quad), batch_quad, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
     glVertexAttribDivisor(0, 0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)8);
@@ -543,7 +539,24 @@ static void init_sprite_batch()
     glBindVertexArray(0);
 }
 
-bool gfx_sprite_batch_begin(int img_index, bool in_world, bool is_particle)
+static void print_sprite(Sprite* sprite)
+{
+    printf("============\n");
+    printf("Sprite:\n");
+    printf("  World:\n");
+    printf("  [ %f %f %f %f ]\n", sprite->world1.x,sprite->world1.y, sprite->world1.z, sprite->world1.w);
+    printf("  [ %f %f %f %f ]\n", sprite->world2.x,sprite->world2.y, sprite->world2.z, sprite->world2.w);
+    printf("  [ %f %f %f %f ]\n", sprite->world3.x,sprite->world3.y, sprite->world3.z, sprite->world3.w);
+    printf("  [ %f %f %f %f ]\n", sprite->world4.x,sprite->world4.y, sprite->world4.z, sprite->world4.w);
+    printf("  Rect:");
+    printf("  [ %f %f %f %f ]\n", sprite->rect.x,sprite->rect.y, sprite->rect.w, sprite->rect.h);
+    printf("  Color:");
+    printf("  [ %08X ]\n", sprite->color);
+    printf("  Opacity:");
+    printf("  [ %f ]\n", sprite->opacity);
+}
+
+bool gfx_sprite_batch_begin(int img_index, bool in_world, bool is_particle, bool blend_additive)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
@@ -554,6 +567,7 @@ bool gfx_sprite_batch_begin(int img_index, bool in_world, bool is_particle)
     sprite_batch.img = &gfx_images[img_index];
     sprite_batch.in_world = in_world;
     sprite_batch.is_particle = is_particle; // @TODO: Maybe remove this concept later?
+    sprite_batch.blend_additive = blend_additive;
     sprite_batch.num_sprites = 0;
 
     return true;
@@ -581,7 +595,11 @@ bool gfx_sprite_batch_add(int sprite_index, float x, float y, uint32_t color, fl
 
     Sprite* sprite = &sprite_batch.sprites[sprite_batch.num_sprites++];
 
-    sprite->color = color;
+    float r,g,b;
+    gfx_color2floats(color,&r, &g, &b);
+    sprite->color.x = r;
+    sprite->color.y = g;
+    sprite->color.z = b;
     sprite->opacity = opacity;
 
     // get model matrix
@@ -604,7 +622,13 @@ bool gfx_sprite_batch_add(int sprite_index, float x, float y, uint32_t color, fl
         sca.y = scale*vh;
     }
 
-    get_model_transform(&pos,&rot,&sca,&sprite->model_matrix);
+    Matrix m;
+    get_model_transform(&pos,&rot,&sca,&m);
+
+    sprite->world1.x = m.m[0][0]; sprite->world1.y = m.m[1][0]; sprite->world1.z = m.m[2][0]; sprite->world1.w = m.m[3][0];
+    sprite->world2.x = m.m[0][1]; sprite->world2.y = m.m[1][1]; sprite->world2.z = m.m[2][1]; sprite->world2.w = m.m[3][1];
+    sprite->world3.x = m.m[0][2]; sprite->world3.y = m.m[1][2]; sprite->world3.z = m.m[2][2]; sprite->world3.w = m.m[3][2];
+    sprite->world4.x = m.m[0][3]; sprite->world4.y = m.m[1][3]; sprite->world4.z = m.m[2][3]; sprite->world4.w = m.m[3][3];
 
     // sprite rect
     Rect* sr = NULL;
@@ -623,9 +647,56 @@ bool gfx_sprite_batch_add(int sprite_index, float x, float y, uint32_t color, fl
 
 void gfx_sprite_batch_draw()
 {
+    if(sprite_batch.num_sprites == 0)
+        return;
+
     glUseProgram(program_sprite_batch);
 
+    Matrix* view = get_camera_transform();
+
+    Vector3f color;
+    gfx_color2floats(ambient_light,&color.x,&color.y,&color.z);
+
+    glUniform3f(loc_sprite_batch_ambient_color,color.x,color.y,color.z);
+    glUniform1i(loc_sprite_batch_is_particle,(sprite_batch.is_particle ? 1 : 0));
+
+    for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
+    {
+        if(i < point_light_count)
+        {
+            PointLight* pl = &point_lights[i];
+            glUniform2f(loc_sprite_batch_light_pos[i],pl->pos.x,pl->pos.y);
+            glUniform3f(loc_sprite_batch_light_color[i],pl->color.x,pl->color.y,pl->color.z);
+            glUniform3f(loc_sprite_batch_light_atten[i],pl->attenuation.x,pl->attenuation.y,pl->attenuation.z);
+        }
+        else
+        {
+            glUniform2f(loc_sprite_batch_light_pos[i],0.0,0.0);
+            glUniform3f(loc_sprite_batch_light_color[i],0.0,0.0,0.0);
+            glUniform3f(loc_sprite_batch_light_atten[i],1.0,0.0,0.0);
+        }
+    }
+
+    if(sprite_batch.in_world)
+        glUniformMatrix4fv(loc_sprite_batch_view,1,GL_TRUE,&view->m[0][0]);
+    else
+        glUniformMatrix4fv(loc_sprite_batch_view,1,GL_TRUE,&IDENTITY_MATRIX.m[0][0]);
+
+    glUniformMatrix4fv(loc_sprite_batch_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, sprite_batch.img->texture);
+
+    glUniform1i(loc_sprite_batch_image, 0);
+
+    if(sprite_batch.blend_additive)
+        blend_mode_additive();
+
     glBindVertexArray(batch_vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, batch_instance_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sprite_batch.num_sprites*sizeof(Sprite), &sprite_batch.sprites, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -649,6 +720,8 @@ void gfx_sprite_batch_draw()
     glDisableVertexAttribArray(7);
     glDisableVertexAttribArray(8);
 
+    blend_mode_normal();
+
     glBindVertexArray(0);
     glUseProgram(0);
 
@@ -666,164 +739,20 @@ static void blend_mode_additive()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 }
 
-static bool gfx_draw_image_internal(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool is_particle, bool blend_additive)
-{
-    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
-    {
-        LOGE("%s: Invalid image index!", __func__);
-        return false;
-    }
-
-    GFXImage* img = &gfx_images[img_index];
-
-    if(sprite_index >= img->element_count)
-    {
-        LOGE("Invalid sprite index: %d (%d, %d)", sprite_index, img_index, img->element_count);
-        return false;
-    }
-
-    glUseProgram(program_sprite);
-
-
-    Rect* sr = NULL;
-    if(full_image)
-        sr = &img->sprite_rects[sprite_index];
-    else
-        sr = &img->sprite_visible_rects[sprite_index];
-
-    float sprite_x = sr->x-sr->w/2.0;
-    float sprite_y = sr->y-sr->h/2.0;
-    float sprite_w = sr->w;
-    float sprite_h = sr->h;
-
-    Vertex quad[] =
-    {
-        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
-        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
-        {{-0.5, -0.5},{sprite_x,sprite_y}},
-        {{-0.5, +0.5},{sprite_x,sprite_y+sprite_h}},
-        {{+0.5, +0.5},{sprite_x+sprite_w,sprite_y+sprite_h}},
-        {{+0.5, -0.5},{sprite_x+sprite_w,sprite_y}},
-    };
-
-    glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
-
-    Matrix model = {0};
-
-    Vector3f pos = {x,y,0.0};
-    Vector3f rot = {0.0,0.0,360.0-rotation};
-    Vector3f sca = {1.0,1.0,1.0};
-
-    if(full_image)
-    {
-        // Vector3f sca = {scale*img->element_width,scale*img->element_height,1.0};
-        sca.x = scale*img->element_width;
-        sca.y = scale*img->element_height;
-    }
-    else
-    {
-        // Vector3f sca = {scale*vw,scale*vh,1.0};
-        float vw = img->visible_rects[sprite_index].w;
-        float vh = img->visible_rects[sprite_index].h;
-        sca.x = scale*vw;
-        sca.y = scale*vh;
-    }
-
-    get_model_transform(&pos,&rot,&sca,&model);
-    Matrix* view = get_camera_transform();
-
-    /*
-    if(img_index == 3)
-    {
-        Matrix r;
-        dot_product_mat(*view, model, &r);
-        printf("===========\n");
-        printf("view-model\n");
-        print_matrix(&r);
-        printf("===========\n");
-        printf("view-model-proj\n");
-        Matrix vmp;
-        dot_product_mat(proj_matrix,r,&vmp);
-        print_matrix(&vmp);
-    }
-    */
-
-    uint8_t r = color >> 16;
-    uint8_t g = color >> 8;
-    uint8_t b = color >> 0;
-
-    //printf("num_in_row: %d, sprite_index: %d\n",num_in_row, sprite_index);
-
-    float brightness = 1.0;
-
-    glUniform3f(loc_sprite_tint_color,brightness*r/255.0,brightness*g/255.0,brightness*b/255.0);
-    glUniform3f(loc_sprite_ambient_color,r/255.0,g/255.0,b/255.0);//0.4,0.4,0.4);
-    glUniform1i(loc_sprite_is_particle,(is_particle ? 1 : 0));
-
-    for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
-    {
-        if(i < point_light_count)
-        {
-            PointLight* pl = &point_lights[i];
-            glUniform2f(loc_sprite_light_pos[i],pl->pos.x,pl->pos.y);
-            glUniform3f(loc_sprite_light_color[i],pl->color.x,pl->color.y,pl->color.z);
-            glUniform3f(loc_sprite_light_atten[i],pl->attenuation.x,pl->attenuation.y,pl->attenuation.z);
-        }
-        else
-        {
-            glUniform2f(loc_sprite_light_pos[i],0.0,0.0);
-            glUniform3f(loc_sprite_light_color[i],0.0,0.0,0.0);
-            glUniform3f(loc_sprite_light_atten[i],1.0,0.0,0.0);
-        }
-    }
-
-    glUniform1f(loc_sprite_opacity,opacity);
-
-    glUniformMatrix4fv(loc_sprite_model,1,GL_TRUE,&model.m[0][0]);
-
-    if(in_world)
-        glUniformMatrix4fv(loc_sprite_view,1,GL_TRUE,&view->m[0][0]);
-    else
-        glUniformMatrix4fv(loc_sprite_view,1,GL_TRUE,&IDENTITY_MATRIX.m[0][0]);
-
-    glUniformMatrix4fv(loc_sprite_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, img->texture);
-
-    glUniform1i(loc_sprite_image, 0);
-
-    if(blend_additive)
-        blend_mode_additive();
-
-    glBindVertexArray(quad_vao);
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-
-    glDrawArrays(GL_TRIANGLES,0,6);//,GL_UNSIGNED_INT,0);
-
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-
-    blend_mode_normal();
-
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D,0);
-    glUseProgram(0);
-
-    return true;
-}
-
 bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world)
 {
-    return gfx_draw_image_internal(img_index, sprite_index, x, y, color, scale, rotation, opacity, full_image, in_world, false, false);
-
+    gfx_sprite_batch_begin(img_index, in_world, false, false);
+    bool result = gfx_sprite_batch_add(sprite_index, x, y, color, scale, rotation, opacity, full_image);
+    gfx_sprite_batch_draw();
+    return result;
 }
 
 bool gfx_draw_particle(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool blend_additive)
 {
-    return gfx_draw_image_internal(img_index, sprite_index, x, y, color, scale, rotation, opacity, full_image, in_world, true, blend_additive);
+    gfx_sprite_batch_begin(img_index, in_world, true, blend_additive);
+    bool result = gfx_sprite_batch_add(sprite_index, x, y, color, scale, rotation, opacity, full_image);
+    gfx_sprite_batch_draw();
+    return result;
 }
 
 GFXImage* gfx_get_image_data(int img_index)
@@ -967,7 +896,7 @@ void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, floa
         //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glBindVertexArray(quad_vao);
         glEnableVertexAttribArray(0);
-        glDrawArrays(GL_TRIANGLES,0,6);
+        glDrawArrays(GL_TRIANGLE_STRIP,0,4);
         glDisableVertexAttribArray(0);
     }
     else
@@ -1041,12 +970,10 @@ static Vector2f gfx_draw_string_internal(float x, float y, uint32_t color, uint3
 
         Vertex fontchar[] =
         {
-            {{x0, y1},{fc->tex_coords.l,fc->tex_coords.b}},
-            {{x1, y0},{fc->tex_coords.r,fc->tex_coords.t}},
             {{x0, y0},{fc->tex_coords.l,fc->tex_coords.t}},
             {{x0, y1},{fc->tex_coords.l,fc->tex_coords.b}},
-            {{x1, y1},{fc->tex_coords.r,fc->tex_coords.b}},
             {{x1, y0},{fc->tex_coords.r,fc->tex_coords.t}},
+            {{x1, y1},{fc->tex_coords.r,fc->tex_coords.b}},
         };
         
         glBindBuffer(GL_ARRAY_BUFFER, font_vbo);
@@ -1074,12 +1001,12 @@ static Vector2f gfx_draw_string_internal(float x, float y, uint32_t color, uint3
 
             glUniformMatrix4fv(loc_font_model,1,GL_TRUE,&model_shadow.m[0][0]);
             glUniform4f(loc_font_fg_color,0.0,0.0,0.0,opacity);
-            glDrawArrays(GL_TRIANGLES,0,6);
+            glDrawArrays(GL_TRIANGLE_STRIP,0,4);
         }
 
         glUniformMatrix4fv(loc_font_model,1,GL_TRUE,&model.m[0][0]);
         glUniform4f(loc_font_fg_color,r/255.0,g/255.0,b/255.0,opacity);
-        glDrawArrays(GL_TRIANGLES,0,6);
+        glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 
         x_pos += (fontsize*fc->advance);
         c++;
@@ -1191,8 +1118,6 @@ void gfx_print_times()
     printf("Visible rect time: %.4f\n", vr_time);
     printf("Other time:        %.4f\n", other_time);
 }
-
-
 
 // static functions
 // --------------------------------------------------------
