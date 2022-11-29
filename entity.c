@@ -130,7 +130,7 @@ void entities_draw()
 
             case ENTITY_TYPE_BLOCK:
             {
-                draw_block((block_t*)e->data);
+                block_draw((block_t*)e->data);
             } break;
 
             case ENTITY_TYPE_PARTICLE:

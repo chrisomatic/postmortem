@@ -604,6 +604,11 @@ static void mouse_block_cb(void* player, MouseTrigger trigger)
         block_t b = {0};
         b.row = p->mouse_r;
         b.col = p->mouse_c;
+
+        Rect r = {0};
+        map_grid_to_rect(b.row, b.col, &r);
+        b.collision_box = calc_box(&r, 1.0, 0.6, 2);
+
         b.type = bp->type;
         b.hp = bp->hp;
         list_add(blist, (void*)&b);
@@ -829,6 +834,8 @@ void player_update_boxes(Player* p)
 
     p->hit_box = calc_box(&p->pos, 1.0, 0.5, 0);
     p->collision_box = calc_box(&p->pos, 1.0, 0.4, 2);
+    // p->collision_box.w = 28;
+    // p->collision_box.w = MIN(p->collision_box.w, 31);
 }
 
 
@@ -1074,6 +1081,9 @@ void player_update(Player* p, double delta_t)
     }
 #endif
 
+    Rect prior_pos = p->phys.pos;
+    Rect prior_collision_box = p->collision_box;
+
     physics_begin(&p->phys);
     physics_add_friction(&p->phys, 16.0);
     physics_add_force(&p->phys, accel.x, accel.y);
@@ -1098,6 +1108,8 @@ void player_update(Player* p, double delta_t)
 
     player_update_sprite_index(p);
     player_update_boxes(p);
+
+    player_check_block_collision(p, prior_pos, prior_collision_box);
 
     player_weapon_melee_check_collision(p);
 
@@ -1205,9 +1217,10 @@ void player_draw(Player* p)
     // //TEMP: blocks
     // for(int i = 0; i < blist->count; ++i)
     // {
-    //     Rect r = {0};
-    //     map_grid_to_rect(blocks[i].row, blocks[i].col, &r);
-    //     gfx_draw_rect(&r, block_props[blocks[i].type].color, 0.0, 1.0, 0.50, true, true);
+    //     block_draw(&blocks[i]);
+    //     // Rect r = {0};
+    //     // map_grid_to_rect(blocks[i].row, blocks[i].col, &r);
+    //     // gfx_draw_rect(&r, block_props[blocks[i].type].color, 0.0, 1.0, 0.50, true, true);
     // }
 
 
@@ -1368,13 +1381,18 @@ const char* player_item_type_str(PlayerItemType item_type)
 }
 
 
-void draw_block(block_t* b)
+void block_draw(block_t* b)
 {
     if(b == NULL) return;
 
     Rect r = {0};
     map_grid_to_rect(b->row, b->col, &r);
     gfx_draw_rect(&r, block_props[b->type].color, 0.0, 1.0, 0.50, true, true);
+
+    if(debug_enabled)
+    {
+        gfx_draw_rect(&b->collision_box, COLOR_COLLISON, 0.0, 1.0, 1.0, false, true);
+    }
 }
 
 
@@ -1612,4 +1630,36 @@ void player_weapon_melee_check_collision(Player* p)
         }
 
     }
+}
+
+bool player_check_block_collision(Player* p, Rect prior_pos, Rect prior_collision_box)
+{
+    bool collide = false;
+    for(int i = 0; i < blist->count; ++i)
+    {
+        block_t* b = &blocks[i];
+        Rect cb = p->collision_box;
+        float delta_x = p->phys.pos.x - prior_pos.x;
+        float delta_y = p->phys.pos.y - prior_pos.y;
+        collide = physics_rect_collision(&prior_collision_box, &cb, &b->collision_box, delta_x, delta_y);
+        if(collide)
+        {
+            // printf("block collision index: %d\n", i);
+            prior_pos.x = p->phys.pos.x;
+            prior_pos.y = p->phys.pos.y;
+            // // prior_collision_box = p->collision_box;
+            p->phys.pos.x += (cb.x - p->collision_box.x);
+            p->phys.pos.y += (cb.y - p->collision_box.y);
+            player_update_boxes(p);
+        }
+    }
+    // if(collide)
+    // {
+    //     player_colors[p->index] = COLOR_RED;
+    // }
+    // else
+    // {
+    //     player_colors[p->index] = COLOR_BLUE;
+    // }
+    return collide;
 }

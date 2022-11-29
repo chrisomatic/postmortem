@@ -37,6 +37,7 @@ typedef struct
 {
     int row;
     int col;
+    Rect collision_box;
     float hp;
     BlockType type;
 } block_t;
@@ -359,7 +360,7 @@ void player_draw_crosshair(Player* p);
 const char* player_item_type_str(PlayerItemType item_type);
 
 //TEMP: blocks
-void draw_block(block_t* b);
+void block_draw(block_t* b);
 
 
 void weapons_init();
@@ -370,5 +371,7 @@ int melee_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_sta
 const char* gun_type_str(GunType gtype);
 const char* melee_type_str(MeleeType mtype);
 void gun_fire(Player* p, Gun* gun, bool held);
+
 void player_weapon_melee_check_collision(Player* p);
+bool player_check_block_collision(Player* p, Rect prior_pos, Rect prior_collision_box);
 
