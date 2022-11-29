@@ -66,7 +66,7 @@ BlockProp block_props[BLOCK_MAX] = {0};
 
 static void mouse_gun_cb(void* player, MouseTrigger trigger);
 static void mouse_melee_cb(void* player, MouseTrigger trigger);
-static void mouse_block_cb(void* player, MouseTrigger trigger);
+static void mouse_block_add_cb(void* player, MouseTrigger trigger);
 static void mouse_block_remove_cb(void* player, MouseTrigger trigger);
 static void mouse_zombie_move_cb(void* player, MouseTrigger trigger);
 
@@ -247,8 +247,8 @@ static void player_init(int index)
 
     float maxw=0.0, maxh=0.0;
     player_get_maxwh(p, &maxw, &maxh);
-    p->max_size.w = maxw*p->scale;
-    p->max_size.h = maxh*p->scale;
+    p->max_size.w = maxw;
+    p->max_size.h = maxh;
 
     // animation
     p->anim.curr_frame = 0;
@@ -476,7 +476,7 @@ void player_equip_block(Player* p, BlockType index)
     BlockProp* block = &block_props[index];
     player_equip_item(p, ITEM_TYPE_BLOCK, (void*)block, true, false);
 
-    player_set_mouse(&p->lmouse, true, true, false, 20.0, mouse_block_cb);
+    player_set_mouse(&p->lmouse, true, true, false, 20.0, mouse_block_add_cb);
     player_set_mouse(&p->rmouse, true, true, false, 20.0, mouse_block_remove_cb);
 }
 
@@ -579,7 +579,7 @@ static void mouse_melee_cb(void* player, MouseTrigger trigger)
     p->busy = true;
 }
 
-static void mouse_block_cb(void* player, MouseTrigger trigger)
+static void mouse_block_add_cb(void* player, MouseTrigger trigger)
 {
     Player* p = (Player*)player;
 
@@ -588,6 +588,9 @@ static void mouse_block_cb(void* player, MouseTrigger trigger)
 
     if(p->item.props == NULL)
         return;
+
+    bool in_range = is_grid_within_radius(p->mouse_r, p->mouse_c, p->grid_pos.x, p->grid_pos.y, PLAYER_BLOCK_PLACEMENT_RADIUS);
+    if(!in_range) return;
 
     bool add_block = true;
     for(int i = 0; i < blist->count; ++i)
@@ -1274,7 +1277,13 @@ void player_draw(Player* p)
             BlockProp* bp = (BlockProp*)p->item.props;
             Rect r = {0};
             map_grid_to_rect(p->mouse_r, p->mouse_c, &r);
-            gfx_draw_rect(&r, bp->color, 0.0, 1.0, 0.15, true, true);
+
+            uint32_t color = bp->color;
+            bool in_range = is_grid_within_radius(p->mouse_r, p->mouse_c, p->grid_pos.x, p->grid_pos.y, PLAYER_BLOCK_PLACEMENT_RADIUS);
+            if(!in_range)
+                color = COLOR_BLACK;
+
+            gfx_draw_rect(&r, color, 0.0, 1.0, 0.15, true, true);
         }
 
     }
@@ -1284,7 +1293,7 @@ void player_draw(Player* p)
         gfx_draw_rect(&p->pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
         gfx_draw_rect(&p->collision_box, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
         gfx_draw_rect(&p->hit_box, COLOR_HIT, 0.0, 1.0,1.0, false, true);
-        gfx_draw_rect(&p->max_size, COLOR_MAXSIZE, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->max_size, COLOR_MAXSIZE, 0.0, p->scale,1.0, false, true);
 
 
         //dots
@@ -1307,7 +1316,7 @@ void player_draw(Player* p)
     const float name_size = 0.11;
     Vector2f size = gfx_string_get_size(name_size, p->name);
     float x = p->phys.pos.x - size.x/2.0;
-    float y = p->phys.pos.y + p->max_size.h*0.5 + 2.0;
+    float y = p->phys.pos.y + p->scale*p->max_size.h*0.5 + 2.0;
     gfx_draw_string(x, y, player_colors[p->index], name_size, 0.0, 0.8, true, true, p->name);
 }
 

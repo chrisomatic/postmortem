@@ -16,6 +16,8 @@
 #define PLAYER_NAME_MAX 32
 #define PLAYER_HEIGHT   50
 
+#define PLAYER_BLOCK_PLACEMENT_RADIUS   3
+
 //TEMP: blocks
 #define MAX_BLOCKS  1000
 typedef enum
@@ -45,7 +47,6 @@ typedef struct
 extern block_t blocks[MAX_BLOCKS];
 extern glist* blist;
 extern BlockProp block_props[BLOCK_MAX];
-
 
 
 typedef enum
