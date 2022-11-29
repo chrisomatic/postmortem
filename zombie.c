@@ -417,6 +417,9 @@ void zombie_update(Zombie* z, float delta_t)
         }
     }
 
+    Rect prior_pos = z->phys.pos;
+    Rect prior_collision_box = z->collision_box;
+
     physics_begin(&z->phys);
     physics_add_friction(&z->phys, 16.0);
     physics_add_force(&z->phys, accel.x, accel.y);
@@ -433,7 +436,37 @@ void zombie_update(Zombie* z, float delta_t)
 
     zombie_update_sprite_index(z);
     zombie_update_boxes(z);
+
+    // disabled for now
+    // zombie_check_block_collision(z, prior_pos, prior_collision_box);
+
 }
+
+bool zombie_check_block_collision(Zombie* z, Rect prior_pos, Rect prior_collision_box)
+{
+    bool collide = false;
+    for(int i = 0; i < blist->count; ++i)
+    {
+        block_t* b = &blocks[i];
+        Rect cb = z->collision_box;
+        float delta_x = z->phys.pos.x - prior_pos.x;
+        float delta_y = z->phys.pos.y - prior_pos.y;
+        collide = physics_rect_collision(&prior_collision_box, &cb, &b->collision_box, delta_x, delta_y);
+        if(collide)
+        {
+            // printf("block collision index: %d\n", i);
+            prior_pos.x = z->phys.pos.x;
+            prior_pos.y = z->phys.pos.y;
+            // prior_collision_box = p->collision_box;
+
+            z->phys.pos.x += (cb.x - z->collision_box.x);
+            z->phys.pos.y += (cb.y - z->collision_box.y);
+            zombie_update_boxes(z);
+
+        }
+    }
+}
+
 
 void zombie_draw(Zombie* z)
 {
@@ -526,8 +559,6 @@ void zombies_update(float delta_t)
         }
     }
 
-
-
 }
 
 void zombies_draw()
@@ -582,9 +613,6 @@ static void wander(Zombie* zom, float delta_t)
     }
 }
 
-static void update_zombie_boxes(Zombie* zom)
-{
-}
 
 static void zombie_die(int index)
 {

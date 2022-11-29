@@ -294,20 +294,28 @@ bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check)
     // prior_s is the rect for t-1
     // check rect is the thing we're checking to see if s is intersecting it
 
+    float px = prior_s->x;
+    float py = prior_s->y;
     float px0 = prior_s->x - prior_s->w/2.0;
     float px1 = prior_s->x + prior_s->w/2.0;
     float py0 = prior_s->y - prior_s->h/2.0;
     float py1 = prior_s->y + prior_s->h/2.0;
 
+    float cx = curr_s->x;
+    float cy = curr_s->y;
     float cx0 = curr_s->x - curr_s->w/2.0;
     float cx1 = curr_s->x + curr_s->w/2.0;
     float cy0 = curr_s->y - curr_s->h/2.0;
     float cy1 = curr_s->y + curr_s->h/2.0;
 
+    LineSeg sc =  {{px, py},{cx, cy}};
     LineSeg s00 = {{px0, py0},{cx0, cy0}};
     LineSeg s01 = {{px1, py0},{cx1, cy0}};
     LineSeg s10 = {{px0, py1},{cx0, cy1}};
     LineSeg s11 = {{px1, py1},{cx1, cy1}};
+
+    bool bc = is_line_seg_intersecting_rect(&sc, check);
+    if(bc) return true;
 
     bool b00 = is_line_seg_intersecting_rect(&s00, check);
     if(b00) return true;

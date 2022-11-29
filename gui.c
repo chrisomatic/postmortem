@@ -460,7 +460,7 @@ void run_console_command(char* text)
     }
     else if(STRN_EQUAL(cmd,"spawn",cmd_len))
     {
-        // spawn <object> <row> <col>
+        // spawn <object> <num> <row> <col>
         char* s_object = string_split_index_copy(text, " ", 1, true);
         if(s_object == NULL)
         {
@@ -471,8 +471,15 @@ void run_console_command(char* text)
         int row, col;
         coords_to_map_grid(player->phys.pos.x, player->phys.pos.y, &row, &col);
 
-        char* s_row = string_split_index_copy(text, " ", 2, true);
-        char* s_col = string_split_index_copy(text, " ", 3, true);
+        int num = 1;
+        char* s_num = string_split_index_copy(text, " ", 2, true);
+        if(s_num != NULL)
+        {
+            num = atoi(s_num);
+        }
+
+        char* s_row = string_split_index_copy(text, " ", 3, true);
+        char* s_col = string_split_index_copy(text, " ", 4, true);
         if(s_row != NULL && s_col != NULL)
         {
             row = atoi(s_row);
@@ -487,7 +494,8 @@ void run_console_command(char* text)
             ZombieSpawn spawn = {0};
             spawn.pos.x = x;
             spawn.pos.y = y;
-            zombie_add(&spawn);
+            for(int i = 0; i < num; ++i)
+                zombie_add(&spawn);
         }
         else if(STR_EQUAL(s_object,"player"))
         {
