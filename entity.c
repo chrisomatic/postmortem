@@ -54,7 +54,8 @@ void entities_update()
             if(is_in_camera_view(&p->pos))
             {
                 entities[num_entities].type = ENTITY_TYPE_PLAYER;
-                entities[num_entities].y = p->pos.y + p->pos.h/2.0;
+                // entities[num_entities].y = p->pos.y + p->pos.h/2.0;
+                entities[num_entities].y = p->phys.pos.y + p->standard_size.h/2.0;
                 entities[num_entities].data = (void*)p;
                 num_entities++;
             }

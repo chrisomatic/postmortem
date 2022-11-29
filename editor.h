@@ -134,6 +134,7 @@ static void editor_draw()
                 case 0: // game
                     imgui_color_picker("Ambient Color", &ambient_light);
                     imgui_checkbox("Debug Enabled",&debug_enabled);
+                    imgui_slider_float("Player Scale", 0.1,10.0,&player->scale);
                     imgui_slider_float("Camera Z", -1.0,1.0,&camera_z);
                     camera_zoom(camera_z, false);
 
