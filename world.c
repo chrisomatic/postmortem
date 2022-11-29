@@ -236,6 +236,12 @@ int map_grid_to_index(int row, int col)
     return row*map.cols+col;
 }
 
+bool is_grid_within_radius(int r1, int c1, int r2, int c2, int radius)
+{
+    return ((ABS(r1 - r2) <= radius) && (ABS(c1 - c2) <= radius));
+
+}
+
 void index_to_map_grid(int index, int* row, int* col)
 {
     *row = (index / map.cols);

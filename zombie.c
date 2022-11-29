@@ -164,6 +164,8 @@ bool zombie_add(ZombieSpawn* spawn)
     zombie.action_timer = 0;
     zombie.sprite_index = 0;
 
+    coords_to_map_grid(zombie.phys.pos.x, zombie.phys.pos.y, &zombie.grid_pos.x, &zombie.grid_pos.y);
+
     zombie.hp_max = spawn->hp_max;
     zombie.action = spawn->action;
     zombie.action_timer_max = spawn->action_timer_max;
@@ -426,6 +428,8 @@ void zombie_update(Zombie* z, float delta_t)
     physics_simulate(&z->phys, delta_t);
     physics_limit_pos(&map.rect, &z->phys.pos);
 
+    coords_to_map_grid(z->phys.pos.x, z->phys.pos.y, &z->grid_pos.x, &z->grid_pos.y);
+    
     z->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
 
     zombie_update_anim_state(z);

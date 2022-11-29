@@ -20,6 +20,8 @@ typedef struct
 {
     ProjectileType type;
     Vector2f pos;
+    Vector2i grid_pos;
+    Vector2i grid_pos_prior;
     Vector2f vel;
     float angle_deg;
     float power;
@@ -74,6 +76,9 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
     float _y = gun->pos.y;
     proj.pos.x = _x;
     proj.pos.y = _y;
+
+    coords_to_map_grid(proj.pos.x, proj.pos.y, &proj.grid_pos.x, &proj.grid_pos.y);
+    memcpy(&proj.grid_pos_prior, &proj.grid_pos, sizeof(Vector2i));
 
     Rect* vr = &gfx_images[projectile_image_set].visible_rects[proj.sprite_index];
     proj.hurt_box.w = vr->w;
@@ -219,8 +224,10 @@ void projectile_update(float delta_t)
         proj->pos.x += delta_t*proj->vel.x;
         proj->pos.y -= delta_t*proj->vel.y; // @minus
 
-        update_hurt_box(proj);
+        memcpy(&proj->grid_pos_prior, &proj->grid_pos, sizeof(Vector2i));
+        coords_to_map_grid(proj->pos.x, proj->pos.y, &proj->grid_pos.x, &proj->grid_pos.y);
 
+        update_hurt_box(proj);
 
         #define HITS_MAX 100
         int hits[HITS_MAX] = {0};
@@ -228,6 +235,26 @@ void projectile_update(float delta_t)
         for(int j = zlist->count - 1; j >= 0; --j)
         {
             if(num_hits >= HITS_MAX) break;
+
+            /*
+            int x0 = proj->grid_pos_prior.x;
+            int y0 = proj->grid_pos_prior.y;
+            int x1 = proj->grid_pos.x;
+            int y1 = proj->grid_pos.y;
+
+            int dx = x1 - x0;
+            int dy = y1 - y0;
+
+            int cx = x0 + dx/2.0;
+            int cy = y0 + dy/2.0;
+
+            int radius = (ABS(dx) + ABS(dy))/2.0;
+            printf("center %d %d, radius: %d\n",cx, cy, radius);
+
+            if(!is_grid_within_radius(cx,cy,zombies[j].grid_pos.x, zombies[j].grid_pos.y,radius))
+                continue;
+            */
+
             if(are_rects_colliding(&proj->hurt_box_prior, &proj->hurt_box, &zombies[j].hit_box))
             {
                 hits[num_hits++] = j;

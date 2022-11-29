@@ -229,6 +229,7 @@ static void player_init(int index)
     p->max_base_speed = 128.0;
     p->phys.max_linear_vel = p->max_base_speed;
 
+    coords_to_map_grid(p->pos.x, p->pos.y, &p->grid_pos.x, &p->grid_pos.y);
 
     int standard_img = player_image_sets_none[p->model_index][p->model_texture][ANIM_IDLE];
     if(standard_img != -1)
@@ -1088,6 +1089,8 @@ void player_update(Player* p, double delta_t)
     physics_add_friction(&p->phys, 16.0);
     physics_add_force(&p->phys, accel.x, accel.y);
     physics_simulate(&p->phys, delta_t);
+
+    coords_to_map_grid(p->pos.x, p->pos.y, &p->grid_pos.x, &p->grid_pos.y);
 
     p->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
 

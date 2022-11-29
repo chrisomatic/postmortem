@@ -260,6 +260,8 @@ typedef struct
     Rect collision_box;
     Rect pos;       // actual position of the player
     Physics phys;
+    Vector2i grid_pos;
+
     float angle;
     float scale;
     float speed;

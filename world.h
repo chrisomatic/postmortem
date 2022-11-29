@@ -42,6 +42,7 @@ void map_grid_to_rect(int row, int col, Rect* r);
 int map_grid_to_index(int row, int col);
 void index_to_map_grid(int index, int* row, int* col);
 void map_get_grid_dimensions(int* num_rows, int* num_cols);
+bool is_grid_within_radius(int r1, int c1, int r2, int c2, int radius);
 
 void coords_to_world_grid(float x, float y, int* row, int* col);
 void world_grid_to_coords(int row, int col, float* x, float* y);
@@ -50,5 +51,6 @@ void world_grid_to_rect(int row, int col, Rect* r);
 int world_grid_to_index(int row, int col);
 void index_to_world_grid(int index, int* row, int* col);
 void world_get_grid_dimensions(int* num_rows, int* num_cols);
+
 
 bool is_in_world_grid(Rect* pos, int row, int col);

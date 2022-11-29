@@ -51,6 +51,7 @@ typedef struct
 {
     uint32_t id;
     Physics phys;
+    Vector2i grid_pos;
     Vector2f push_vel;
     float speed;
     float scale;
