@@ -28,9 +28,9 @@ int lighting_point_light_add(float x, float y, float r, float g, float b, float 
     pl->color.y = g;
     pl->color.z = b;
 
-    pl->attenuation.x = 1.5;
-    pl->attenuation.y = 0.01 * radius;
-    pl->attenuation.z = 0.0001 * radius;
+    pl->attenuation.x = 0.85;
+    pl->attenuation.y = 0.01 / radius;
+    pl->attenuation.z = 0.0001 / radius;
 
     return point_light_count-1;
 }

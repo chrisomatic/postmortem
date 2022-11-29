@@ -39,6 +39,7 @@ typedef struct
     int burst_count_max;
     int sprite_index;
     bool use_sprite;
+    bool blend_additive;
 } ParticleEffect;
 
 typedef struct

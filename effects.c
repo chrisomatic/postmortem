@@ -10,6 +10,7 @@ EffectEntry effect_map[] = {
     {EFFECT_BLOOD1,"blood1.effect"},
     {EFFECT_MELEE1,"melee1.effect"},
     {EFFECT_BULLET_CASING,"bullet_casing.effect"},
+    {EFFECT_FIRE,"fire.effect"},
 };
 
 static int get_effect_map_index(char* file_name)

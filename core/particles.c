@@ -138,7 +138,6 @@ void particles_init()
 {
     spawner_list = list_create(spawners,MAX_PARTICLE_SPAWNERS,sizeof(ParticleSpawner));
     particles_image = gfx_load_image("img/particles.png", false, true, 32, 32, NULL);
-
 }
 
 ParticleSpawner* particles_spawn_effect(float x, float y, ParticleEffect* effect, float lifetime, bool in_world, bool hidden)
@@ -181,6 +180,9 @@ void particles_update(double delta_t)
     for(int i = spawner_list->count-1; i >= 0; --i)
     {
         ParticleSpawner* spawner = &spawners[i];
+
+        if(spawner->hidden)
+            continue;
 
         for(int j = spawner->particle_list->count-1; j >= 0; --j)
         {
@@ -276,7 +278,7 @@ void particles_draw_spawner(ParticleSpawner* spawner)
         Particle* p = &spawner->particles[j];
         if(spawner->effect.use_sprite)
         {
-            gfx_draw_particle(particles_image, spawner->effect.sprite_index, p->pos.x,p->pos.y, p->color,p->scale,p->rotation,p->opacity,false, spawner->in_world);
+            gfx_draw_particle(particles_image, spawner->effect.sprite_index, p->pos.x,p->pos.y, p->color,p->scale,p->rotation,p->opacity,false, spawner->in_world, spawner->effect.blend_additive);
         }
         else
         {

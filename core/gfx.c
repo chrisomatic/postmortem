@@ -654,7 +654,19 @@ void gfx_sprite_batch_draw()
 
 }
 
-static bool gfx_draw_image_internal(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool is_particle)
+static void blend_mode_normal()
+{
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+static void blend_mode_additive()
+{
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+}
+
+static bool gfx_draw_image_internal(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool is_particle, bool blend_additive)
 {
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
@@ -671,6 +683,7 @@ static bool gfx_draw_image_internal(int img_index, int sprite_index, float x, fl
     }
 
     glUseProgram(program_sprite);
+
 
     Rect* sr = NULL;
     if(full_image)
@@ -781,6 +794,9 @@ static bool gfx_draw_image_internal(int img_index, int sprite_index, float x, fl
 
     glUniform1i(loc_sprite_image, 0);
 
+    if(blend_additive)
+        blend_mode_additive();
+
     glBindVertexArray(quad_vao);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -789,6 +805,8 @@ static bool gfx_draw_image_internal(int img_index, int sprite_index, float x, fl
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
+
+    blend_mode_normal();
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D,0);
@@ -799,13 +817,13 @@ static bool gfx_draw_image_internal(int img_index, int sprite_index, float x, fl
 
 bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world)
 {
-    return gfx_draw_image_internal(img_index, sprite_index, x, y, color, scale, rotation, opacity, full_image, in_world, false);
+    return gfx_draw_image_internal(img_index, sprite_index, x, y, color, scale, rotation, opacity, full_image, in_world, false, false);
 
 }
 
-bool gfx_draw_particle(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world)
+bool gfx_draw_particle(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool blend_additive)
 {
-    return gfx_draw_image_internal(img_index, sprite_index, x, y, color, scale, rotation, opacity, full_image, in_world, true);
+    return gfx_draw_image_internal(img_index, sprite_index, x, y, color, scale, rotation, opacity, full_image, in_world, true, blend_additive);
 }
 
 GFXImage* gfx_get_image_data(int img_index)

@@ -33,6 +33,7 @@ void main() {
         total_diffuse = total_diffuse + (light_color[i] / atten_factor);
     }
 
+    total_diffuse = min(total_diffuse,vec3(1.0,1.0,1.0)); // cap the total diffuse
     total_diffuse = max(total_diffuse, ambient_color);
 
     /*

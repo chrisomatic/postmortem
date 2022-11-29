@@ -88,7 +88,7 @@ void gfx_image_init();
 bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip);
 int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int element_width, int element_height, GFXNodeDataInput* node_input);
 bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
-bool gfx_draw_particle(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
+bool gfx_draw_particle(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool blend_additive);
 GFXImage* gfx_get_image_data(int img_index);
 bool gfx_get_image_node_point(int img_index, int sprite_index, uint32_t node_color, Vector2f* node);
 

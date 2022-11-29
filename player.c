@@ -278,10 +278,13 @@ static void player_init(int index)
 
     // light for player
     p->point_light = -1;
+
+    /*
     if(p == player)
     {
-        p->point_light = lighting_point_light_add(p->phys.pos.x,p->phys.pos.y,1.0,1.0,1.0,1.0);
+        //p->point_light = lighting_point_light_add(p->phys.pos.x,p->phys.pos.y,1.0,1.0,1.0,0.2);
     }
+    */
 
     player_update_anim_state(p);
     player_update_image(p);
@@ -1098,7 +1101,7 @@ void player_update(Player* p, double delta_t)
 
     player_weapon_melee_check_collision(p);
 
-    lighting_point_light_move(p->point_light, p->pos.x, p->pos.y);
+    //lighting_point_light_move(p->point_light, p->pos.x, p->pos.y);
 
     if(debug_enabled)
     {

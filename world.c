@@ -10,6 +10,7 @@
 #include "camera.h"
 #include "player.h"
 #include "lighting.h"
+#include "effects.h"
 
 #include "world.h"
 
@@ -99,6 +100,9 @@ void world_init()
     lighting_point_light_add(100.0,100.0,1.0,0.0,0.0,0.5);
     lighting_point_light_add(200.0,200.0,0.0,1.0,0.0,0.5);
     lighting_point_light_add(300.0,300.0,0.0,0.0,1.0,0.5);
+
+    // test fire pit
+    lighting_point_light_add(300.0,500.0,1.0,0.7,0.6,2.0);
 }
 
 void world_update()

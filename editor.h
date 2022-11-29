@@ -27,6 +27,7 @@ static void editor_init()
         .burst_count_max = 3,
         .sprite_index = 57,
         .use_sprite = true,
+        .blend_additive = false,
     };
 
     randomize_effect(&effect);
@@ -84,6 +85,7 @@ static void randomize_effect(ParticleEffect* effect)
     effect->color2 = RAND_RANGE(0x0,0x00FFFFFF);
     effect->color3 = RAND_RANGE(0x0,0x00FFFFFF);
 
+    effect->blend_additive = RAND_RANGE(0,1) == 1 ? true : false;
 }
 
 static void editor_draw()
@@ -286,6 +288,7 @@ static void editor_draw()
                         imgui_color_picker("2##colors", &effect->color2);
                         imgui_color_picker("3##colors", &effect->color3);
                     imgui_horizontal_end();
+                    imgui_checkbox("Blend Addtive",&effect->blend_additive);
                     imgui_newline();
 
                     imgui_horizontal_begin();
