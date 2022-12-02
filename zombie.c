@@ -543,34 +543,44 @@ void zombies_update(float delta_t)
         zombie_update(z, delta_t);
     }
 
-    /*
-    if(role == ROLE_LOCAL || role == ROLE_CLIENT)
+    if((role == ROLE_LOCAL || role == ROLE_CLIENT))
     {
         // int wrow,wcol;
         // coords_to_world_grid(player->mouse_x, player->mouse_y, &wrow, &wcol);
-        Rect rm = {0};
-        rm.x = player->mouse_x;
-        rm.y = player->mouse_y;
-        rm.w = 10;
-        rm.h = rm.w;
 
-        if(!moving_zombie)
+        if(debug_enabled)
         {
-            zombie_info_id = 0xFFFFFFFF;
-            for(int j = zlist->count - 1; j >= 0; --j)
+            if(!moving_zombie)
             {
-                Zombie* z = &zombies[j];
-                // if(!is_in_world_grid(&z->phys.pos, wrow, wcol))
-                //     continue;
-                if(rectangles_colliding(&rm, &z->phys.pos))
+                zombie_info_id = 0xFFFFFFFF;
+
+                Rect rm = {0};
+                rm.x = player->mouse_x;
+                rm.y = player->mouse_y;
+                rm.w = 10;
+                rm.h = rm.w;
+
+                for(int j = zlist->count - 1; j >= 0; --j)
                 {
-                    zombie_info_id = z->id;
-                    break;
+                    Zombie* z = &zombies[j];
+                    // if(!is_in_world_grid(&z->phys.pos, wrow, wcol))
+                    //     continue;
+                    if(rectangles_colliding(&rm, &z->phys.pos))
+                    {
+                        zombie_info_id = z->id;
+                        break;
+                    }
                 }
             }
+
         }
+        else
+        {
+            moving_zombie = false;
+            zombie_info_id = 0xFFFFFFFF;
+        }
+
     }
-    */
 
 }
 
