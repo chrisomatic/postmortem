@@ -96,10 +96,13 @@ void entities_update()
         ParticleSpawner* s = &spawners[i];
         if(!s->hidden && s != editor_get_particle_spawner()) //particle_spawner is in editor.h
         {
-            entities[num_entities].type = ENTITY_TYPE_PARTICLE;
-            entities[num_entities].y = s->pos.y;
-            entities[num_entities].data = (void*)s;
-            num_entities++;
+            if(particles_is_spawner_in_camera_view(s))
+            {
+                entities[num_entities].type = ENTITY_TYPE_PARTICLE;
+                entities[num_entities].y = s->pos.y;
+                entities[num_entities].data = (void*)s;
+                num_entities++;
+            }
         }
     }
 
@@ -107,11 +110,10 @@ void entities_update()
     sort_entity_list();
 }
 
-
-
-void entities_draw()
+void entities_draw(bool batched)
 {
-    // entities_sort();
+    if(batched)
+        gfx_sprite_batch_begin(true);
 
     for(int i = 0; i < num_entities; ++i)
     {
@@ -121,24 +123,26 @@ void entities_draw()
         {
             case ENTITY_TYPE_PLAYER:
             {
-                player_draw((Player*)e->data);
+                player_draw((Player*)e->data, batched);
             } break;
 
             case ENTITY_TYPE_ZOMBIE:
             {
-                zombie_draw((Zombie*)e->data);
+                zombie_draw((Zombie*)e->data, batched);
             } break;
 
             case ENTITY_TYPE_BLOCK:
             {
-                block_draw((block_t*)e->data);
+                block_draw((block_t*)e->data, batched);
             } break;
 
             case ENTITY_TYPE_PARTICLE:
             {
-                particles_draw_spawner((ParticleSpawner*)e->data);
+                particles_draw_spawner((ParticleSpawner*)e->data, batched);
             } break;
-
         }
     }
+
+    if(batched)
+        gfx_sprite_batch_draw();
 }

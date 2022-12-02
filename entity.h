@@ -26,4 +26,4 @@ extern int num_entities;
 
 
 void entities_update();
-void entities_draw();
+void entities_draw(bool batched);

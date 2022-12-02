@@ -173,7 +173,7 @@ void world_draw()
     }
 #endif
 
-    gfx_sprite_batch_begin(ground_sheet,true,false,false);
+    gfx_sprite_batch_begin(true);
 
     for(int r = (r1-1); r < (r2+1); ++r)
     {
@@ -184,7 +184,7 @@ void world_draw()
             float x,y;
             map_grid_to_coords(r, c, &x, &y);
             //gfx_draw_image(ground_sheet,index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0, true,true);
-            gfx_sprite_batch_add(index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0, true);
+            gfx_sprite_batch_add(ground_sheet, index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0, true,false,false);
 
 #if 0
             if(debug_enabled)

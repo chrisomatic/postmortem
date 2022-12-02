@@ -93,8 +93,8 @@ GFXImage* gfx_get_image_data(int img_index);
 bool gfx_get_image_node_point(int img_index, int sprite_index, uint32_t node_color, Vector2f* node);
 
 // Image Batch Drawing
-bool gfx_sprite_batch_begin(int img_index, bool in_world, bool is_particle, bool blend_additive);
-bool gfx_sprite_batch_add(int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image);
+bool gfx_sprite_batch_begin(bool in_world);
+bool gfx_sprite_batch_add(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool is_particle, bool blend_additive);
 void gfx_sprite_batch_draw();
 
 // Lines

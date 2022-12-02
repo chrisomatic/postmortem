@@ -10,6 +10,7 @@
 #include "log.h"
 #include "glist.h"
 #include "lighting.h"
+#include "camera.h"
 #include "particles.h"
 
 #define PARTICLES_EFFECT_VERSION 1
@@ -269,19 +270,20 @@ void particles_update(double delta_t)
     }
 }
 
-void particles_draw_spawner(ParticleSpawner* spawner)
+void particles_draw_spawner(ParticleSpawner* spawner, bool add_to_existing_batch)
 {
     if(spawner == NULL) return;
 
     if(spawner->effect.use_sprite)
     {
-        gfx_sprite_batch_begin(particles_image, spawner->in_world, true, spawner->effect.blend_additive);
+        if(!add_to_existing_batch) gfx_sprite_batch_begin(spawner->in_world);
+            
         for(int j = 0; j < spawner->particle_list->count; ++j)
         {
             Particle* p = &spawner->particles[j];
-            gfx_sprite_batch_add(spawner->effect.sprite_index, p->pos.x, p->pos.y, p->color, p->scale, p->rotation, p->opacity, false);
+            gfx_sprite_batch_add(particles_image, spawner->effect.sprite_index, p->pos.x, p->pos.y, p->color, p->scale, p->rotation, p->opacity, false,true,spawner->effect.blend_additive);
         }
-        gfx_sprite_batch_draw();
+        if(!add_to_existing_batch) gfx_sprite_batch_draw();
     }
     else
     {
@@ -293,6 +295,20 @@ void particles_draw_spawner(ParticleSpawner* spawner)
     }
 }
 
+bool particles_is_spawner_in_camera_view(ParticleSpawner* s)
+{
+    for(int j = 0; j < s->particle_list->count; ++j)
+    {
+        Particle* p = &s->particles[j];
+        Rect r = {p->pos.x, p->pos.y, 32.0*p->scale,32.0*p->scale};
+        if(is_in_camera_view(&r))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void particles_draw()
 {
     for(int i = 0; i < spawner_list->count; ++i)
@@ -302,7 +318,7 @@ void particles_draw()
         if(spawner->hidden)
             continue;
 
-        particles_draw_spawner(spawner);
+        particles_draw_spawner(spawner, false);
 
     }
 }

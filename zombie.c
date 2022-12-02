@@ -472,13 +472,20 @@ bool zombie_check_block_collision(Zombie* z, Rect prior_pos, Rect prior_collisio
 }
 
 
-void zombie_draw(Zombie* z)
+void zombie_draw(Zombie* z, bool add_to_existing_batch)
 {
     if(z == NULL) return;
 
     if(is_in_camera_view(&z->phys.pos))
     {
-        gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, COLOR_TINT_NONE,z->scale,0.0,1.0,false,true);
+        if(add_to_existing_batch)
+        {
+            gfx_sprite_batch_add(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, COLOR_TINT_NONE,z->scale,0.0,1.0,false,false,false);
+        }
+        else
+        {
+            gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, COLOR_TINT_NONE,z->scale,0.0,1.0,false,true);
+        }
 
         // bool draw_debug_stuff = debug_enabled;
         // if(!draw_debug_stuff)
@@ -536,6 +543,7 @@ void zombies_update(float delta_t)
         zombie_update(z, delta_t);
     }
 
+    /*
     if(role == ROLE_LOCAL || role == ROLE_CLIENT)
     {
         // int wrow,wcol;
@@ -562,6 +570,7 @@ void zombies_update(float delta_t)
             }
         }
     }
+    */
 
 }
 
@@ -570,7 +579,7 @@ void zombies_draw()
     for(int i = 0; i < zlist->count; ++i)
     {
         Zombie* z = &zombies[i];
-        zombie_draw(z);
+        zombie_draw(z,false);
     }
 }
 

@@ -52,6 +52,7 @@ bool moving_zombie = false;
 
 static int gun_image_sets[PLAYER_MODELS_MAX][ANIM_MAX][GUN_MAX];
 static int melee_image_sets[PLAYER_MODELS_MAX][ANIM_MAX][MELEE_MAX];
+static int blocks_image;
 static int crosshair_image;
 
 
@@ -162,7 +163,7 @@ void player_init_images()
         }
     }
 
-
+    blocks_image = gfx_load_image("img/block_set.png", false, true, 32, 38, NULL);
     crosshair_image = gfx_load_image("img/crosshair2.png", false, false, 0, 0, NULL);
 }
 
@@ -296,16 +297,22 @@ static void player_init(int index)
 void players_init()
 {
 
+    player_init_models();
+    player_init_images();
+    
     //TEMP: blocks
     // blocks_init()
     int idx = BLOCK_0;
     block_props[idx].type = idx;
     block_props[idx].hp = 100.0;
     block_props[idx].color = COLOR_RED;
+    block_props[idx].image = blocks_image;
+
     idx = BLOCK_1;
     block_props[idx].type = idx;
     block_props[idx].hp = 100.0;
     block_props[idx].color = COLOR_BLUE;
+    block_props[idx].image = blocks_image;
 
     blist = list_create((void*)blocks, MAX_BLOCKS, sizeof(blocks[0]));
     if(blist == NULL)
@@ -314,8 +321,6 @@ void players_init()
     }
 
 
-    player_init_models();
-    player_init_images();
 
     weapons_init();
 
@@ -1208,7 +1213,7 @@ void player_update_other(Player* p, double delta_t)
 
 }
 
-void player_draw(Player* p)
+void player_draw(Player* p, bool add_to_existing_batch)
 {
     if(p == NULL) return;
 
@@ -1231,7 +1236,14 @@ void player_draw(Player* p)
 
 
     // player
-    gfx_draw_image(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE,p->scale,0.0,1.0,true,true);
+    if(add_to_existing_batch)
+    {
+        gfx_sprite_batch_add(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE,p->scale,0.0,1.0,true,false,false);
+    }
+    else
+    {
+        gfx_draw_image(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE,p->scale,0.0,1.0,true,true);
+    }
 
     if(p->item.drawable && p->item.props != NULL)
     {
@@ -1267,7 +1279,14 @@ void player_draw(Player* p)
                 wpos->y = gy;
 
                 // weapon
-                gfx_draw_image(wimage, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE, p->scale,0,1.0,true,true);
+                if(add_to_existing_batch)
+                {
+                    gfx_sprite_batch_add(wimage, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE, p->scale,0,1.0,true,false,false);
+                }
+                else
+                {
+                    gfx_draw_image(wimage, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE, p->scale,0,1.0,true,true);
+                }
             }
 
         }
@@ -1367,7 +1386,7 @@ void player_draw_all()
         Player* p = &players[i];
         if(p->active)
         {
-            player_draw(p);
+            player_draw(p, false);
         }
     }
 }
@@ -1393,13 +1412,22 @@ const char* player_item_type_str(PlayerItemType item_type)
 }
 
 
-void block_draw(block_t* b)
+void block_draw(block_t* b, bool add_to_existing_batch)
 {
     if(b == NULL) return;
 
     Rect r = {0};
     map_grid_to_rect(b->row, b->col, &r);
-    gfx_draw_rect(&r, block_props[b->type].color, 0.0, 1.0, 0.50, true, true);
+    //gfx_draw_rect(&r, block_props[b->type].color, 0.0, 1.0, 0.50, true, true);
+    if(add_to_existing_batch)
+    {
+        gfx_sprite_batch_add(block_props[b->type].image, block_props[b->type].sprite_index, r.x, r.y-3, block_props[b->type].color,1.0,0.0,1.0,true,false,false);
+    }
+    else
+    {
+        gfx_draw_image(block_props[b->type].image, block_props[b->type].sprite_index, r.x, r.y-3, block_props[b->type].color,1.0,0.0,1.0,true,true);
+
+    }
 
     if(debug_enabled)
     {

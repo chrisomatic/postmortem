@@ -425,12 +425,11 @@ void draw()
     gfx_draw_lines();
 
     // zombies_draw();
-    projectile_draw();
+    //projectile_draw();
     // player_draw_all();
     // particles_draw();
 
-    entities_draw();
-
+    entities_draw(true);
     gui_draw();
 
     player_draw_offscreen();

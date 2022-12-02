@@ -355,7 +355,7 @@ void player_update_sprite_index(Player* p);
 void player_update(Player* p, double delta_t);
 void player_update_other(Player* p, double delta_t);
 void player_handle_net_inputs(Player* p, double delta_t);
-void player_draw(Player* p);
+void player_draw(Player* p, bool add_to_existing_batch);
 void player_draw_all();
 void player_draw_offscreen();
 void player_draw_crosshair(Player* p);
@@ -363,7 +363,7 @@ void player_draw_crosshair(Player* p);
 const char* player_item_type_str(PlayerItemType item_type);
 
 //TEMP: blocks
-void block_draw(block_t* b);
+void block_draw(block_t* b, bool add_to_existing_batch);
 
 
 void weapons_init();
