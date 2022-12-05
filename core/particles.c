@@ -19,7 +19,7 @@ ParticleSpawner spawners[MAX_PARTICLE_SPAWNERS] = {0};
 glist* spawner_list;
 
 static int global_id_count = 0;
-static int particles_image;
+int particles_image;
 
 static void emit_particle(ParticleSpawner* s)
 {

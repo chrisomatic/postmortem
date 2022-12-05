@@ -67,7 +67,7 @@ typedef struct
     int spacing;
 
     // text
-    int text_size_px;
+    float text_size_px;
     uint32_t text_color;
     float text_scale;
     int text_padding;
@@ -177,7 +177,7 @@ void imgui_begin_panel(char* name, int x, int y)
     ctx->curr.x += theme.panel_spacing;
 }
 
-void imgui_set_text_size(int pxsize)
+void imgui_set_text_size(float pxsize)
 {
     theme.text_size_px = pxsize;
     theme.text_scale = theme.text_size_px / NOMINAL_FONT_SIZE;
@@ -224,7 +224,7 @@ void imgui_text(char* text, ...)
     imgui_text_colored(theme.text_color, str);
 }
 
-void imgui_text_sized(int pxsize, char* text, ...)
+void imgui_text_sized(float pxsize, char* text, ...)
 {
     va_list args;
     va_start(args, text);
@@ -688,7 +688,7 @@ static char _editor_text[20]= {0};
 
 void imgui_theme_editor()
 {
-    int prior_text_size = theme.text_size_px;
+    float prior_text_size = theme.text_size_px;
     int prior_spacing = theme.spacing;
     imgui_set_text_size(8);
     imgui_set_spacing(2);
@@ -701,7 +701,7 @@ void imgui_theme_editor()
 
     imgui_text_sized(header_size,"Text");
     imgui_indent_begin(10);
-    imgui_number_box("Text Size", 0, 100, &theme.text_size_px);
+    imgui_slider_float("Text Size", 0.0, 100.0, &theme.text_size_px);
     imgui_color_picker("Text Color", &theme.text_color);
     imgui_number_box("Text Padding", 0, 20, &theme.text_padding);
     imgui_indent_end();
@@ -847,7 +847,7 @@ static void set_default_theme()
     // set theme
     // text
     theme.spacing = 8;
-    theme.text_size_px = 20;
+    theme.text_size_px = 20.0;
     theme.text_scale = theme.text_size_px / NOMINAL_FONT_SIZE;
     theme.text_color = 0xFFFFFFFF;
     theme.text_padding = 4;

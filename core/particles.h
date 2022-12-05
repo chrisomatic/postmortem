@@ -73,6 +73,7 @@ typedef struct
 } ParticleSpawner;
 
 
+extern int particles_image;
 extern ParticleSpawner spawners[MAX_PARTICLE_SPAWNERS];
 extern glist* spawner_list;
 

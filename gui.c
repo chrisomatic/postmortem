@@ -20,9 +20,11 @@
 #include "gui.h"
 
 static void draw_debug_box();
+static int gun_profile_image;
 
 void gui_init()
 {
+    gun_profile_image = gfx_load_image("img/gun_profile_set.png", false, true, 64, 64, NULL);
     editor_init();
 }
 
@@ -122,6 +124,64 @@ void gui_draw()
             imgui_text("F10: Open Console");
         imgui_indent_end();
     imgui_end();
+
+    // player HUD
+    {
+        //float factor = (window_height / (float)view_height);
+        int num_boxes = 5;
+        float hotbar_padding = 3.0;
+        float hotbar_bottom_padding = 10.0;
+        float hotbar_box_size = 50.0;
+        float half_hotbar_box_size = hotbar_box_size/2.0;
+        float hotbar_size = (num_boxes*hotbar_box_size)+((num_boxes-1)*hotbar_padding);
+
+        float curr_x = (view_width - hotbar_size)/2.0;
+        float curr_y = view_height - hotbar_bottom_padding;
+
+        curr_x += half_hotbar_box_size;
+        curr_y -= half_hotbar_box_size;
+
+        int selected_index = -1;
+        if(player->item_equipped)
+        {
+            selected_index = player->item_index-1;
+        }
+
+        PlayerItem* item = &player->item;
+        if(item->item_type == ITEM_TYPE_GUN)
+        {
+            // show bullet count
+            Gun* g = (Gun*)item->props;
+            gfx_draw_particle(particles_image, 80, curr_x-half_hotbar_box_size+10,curr_y-half_hotbar_box_size-12, COLOR_TINT_NONE,0.7,45.0,1.0,true,false,false);
+            gfx_draw_string(curr_x-half_hotbar_box_size+20,curr_y-half_hotbar_box_size-22,COLOR_WHITE,0.24,0.0,1.0,false,true,"x%d",g->bullets);
+        }
+
+        for(int i = 0; i < num_boxes; ++i)
+        {
+            uint32_t color = 0x00333333;
+            if(i == selected_index)
+            {
+                color = 0x00448800;
+            }
+
+            // @TEMP
+            int sprite_index = 0;
+            switch(i)
+            {
+                case 0: sprite_index = 1; break;
+                case 1: sprite_index = 2; break;
+                case 2: sprite_index = 0; break;
+                default: break;
+            }
+
+            gfx_draw_rect_xywh(curr_x,curr_y,hotbar_box_size,hotbar_box_size,COLOR_WHITE,0.0,1.0,0.8,false,false);
+            gfx_draw_rect_xywh(curr_x,curr_y,hotbar_box_size-1,hotbar_box_size-1,color,0.0,1.0,0.5,true,false);
+            gfx_draw_particle(gun_profile_image, sprite_index, curr_x,curr_y, COLOR_TINT_NONE,0.7,0.0,1.0,true,false,false);
+            gfx_draw_string(curr_x-half_hotbar_box_size+1,curr_y-half_hotbar_box_size,COLOR_WHITE,0.2,0.0,1.0,false,true,"%d",i+1);
+
+            curr_x += (hotbar_box_size + hotbar_padding);
+        }
+    }
 
     if(editor_enabled)
     {
@@ -414,9 +474,8 @@ static void draw_debug_box()
 
     {
         float factor = (window_height / (float)view_height);
-
-        int big = 23.0/factor;
-        int small = 15.0/factor;
+        float big = 23.0/factor;
+        float small = 15.0/factor;
 
         imgui_begin_panel("Debug",950,10);
             imgui_set_text_size(small);

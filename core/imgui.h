@@ -9,7 +9,7 @@ Vector2f imgui_end(); // returns size of imgui area
 // widgets
 void imgui_text(char* text, ...);
 void imgui_text_colored(uint32_t color, char* text, ...);
-void imgui_text_sized(int pxsize, char* text, ...);
+void imgui_text_sized(float pxsize, char* text, ...);
 bool imgui_button(char* text, ...);
 void imgui_toggle_button(bool* toggle, char* text, ...);
 void imgui_checkbox(char* label, bool* result);
@@ -26,7 +26,7 @@ void imgui_store_theme();
 void imgui_restore_theme();
 
 // properties
-void imgui_set_text_size(int pxsize);
+void imgui_set_text_size(float pxsize);
 void imgui_set_text_color(uint32_t color);
 void imgui_set_text_padding(int padding);
 void imgui_set_spacing(int spacing);

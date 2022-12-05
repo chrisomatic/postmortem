@@ -1378,7 +1378,6 @@ void player_draw_offscreen()
     }
 }
 
-
 void player_draw_all()
 {
     for(int i = 0; i < MAX_CLIENTS; ++i)
@@ -1395,7 +1394,7 @@ void player_draw_all()
 void player_draw_crosshair(Player* p)
 {
     // crosshair
-    gfx_draw_image(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 1.0,0.0,0.80, false,true);
+    gfx_draw_particle(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 1.0,0.0,0.80, false,true,false);
 }
 
 const char* player_item_type_str(PlayerItemType item_type)
