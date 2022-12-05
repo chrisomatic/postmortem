@@ -19,153 +19,11 @@
 #include "editor.h"
 #include "gui.h"
 
-static float gui_start_x = 20.0, gui_start_y = 20.0;
+static void draw_debug_box();
 
 void gui_init()
 {
     editor_init();
-}
-
-void draw_debug_box()
-{
-    // window
-    float fps = timer_get_prior_frame_fps(&game_timer);
-
-    // player
-    float pvx = player->phys.vel.x;
-    float pvy = player->phys.vel.y;
-    float pv = sqrt(SQ(pvx) + SQ(pvy));
-
-    char keys[16+1] = {0};
-    for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
-    {
-        keys[i] = player->actions[i].state ? '1' : '0';
-    }
-
-    // mouse
-    int wmx, wmy, vmx, vmy, mx, my, mr, mc, wr, wc;
-    window_get_mouse_world_coords(&wmx, &wmy);
-    window_get_mouse_view_coords(&vmx, &vmy);
-    window_get_mouse_coords(&mx, &my);
-    coords_to_map_grid(wmx, wmy, &mr, &mc);
-    coords_to_world_grid(wmx, wmy, &wr, &wc);
-
-    // camera
-    Rect camera_rect = {0};
-    get_camera_rect(&camera_rect);
-
-    // network
-    char server_ip_str[32] = {0};
-    net_client_get_server_ip_str(server_ip_str);
-    int player_count = net_client_get_player_count();
-
-    Vector2f size = {0};
-    float maxw = 0.0;
-
-    float y = gui_start_y;
-    float x = gui_start_x;
-
-    {
-        float factor = (window_height / (float)view_height);
-
-        int big = 23.0/factor;
-        int small = 15.0/factor;
-
-        imgui_begin_panel("Debug",950,10);
-            imgui_set_text_size(small);
-
-            imgui_text_sized(big,"Window");
-            imgui_indent_begin(small);
-                imgui_text("FPS: %.2f", fps);
-                imgui_text("View: %d, %d", view_width, view_height);
-                imgui_text("Window: %d, %d", window_width, window_height);
-            imgui_indent_end();
-
-            imgui_text_sized(big,"Player");
-            imgui_indent_begin(small);
-                imgui_text("Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y);
-                imgui_text("Vel: %.2f, %.2f (%.2f)", pvx, pvy, pv);
-                imgui_text("Angle: %.2f, %.2f deg", player->angle, DEG(player->angle));
-                imgui_text("State: %s (%d)", player_state_str(player->state), player->state);
-                imgui_text("Anim State: %s (%d)", player_anim_state_str(player->anim_state), player->anim_state);
-                imgui_text("Controls: %s", keys);
-            imgui_indent_end();
-
-            imgui_text_sized(big,"Player Item");
-            imgui_indent_begin(small);
-                imgui_text("Equipped: %s", player->item_equipped ? "true" :  "false");
-                imgui_text("Type: %s", player_item_type_str(player->item.item_type));
-                imgui_text("Index: %d", player->item_index);
-
-                if(player->item.props != NULL)
-                {
-                    if(player->item.item_type == ITEM_TYPE_MELEE)
-                    {
-                        Melee* melee = (Melee*)player->item.props;
-                        imgui_text("  Melee: %s (%s)", melee->name, melee_type_str(melee->type));
-                        imgui_text("  Range: %.0f", melee->range);
-                        imgui_text("  Period: %.0f", melee->period);
-                    }
-                    else if(player->item.item_type == ITEM_TYPE_GUN)
-                    {
-                        Gun* gun = (Gun*)player->item.props;
-                        imgui_text("  Gun: %s (%s)", gun->name, gun_type_str(gun->type));
-                        imgui_text("  Range: %.0f", gun->fire_range);
-                        imgui_text("  Period: %.0f", gun->fire_period);
-                        imgui_text("  Bullets: %d (max: %d)", gun->bullets, gun->bullets_max);
-                        imgui_text("  Reload Timer: %.0f", player->reload_timer);
-                    }
-                    else if(player->item.item_type == ITEM_TYPE_BLOCK)
-                    {
-                        BlockProp* bp = (BlockProp*)player->item.props;
-                        imgui_text("  Type: %d", bp->type);
-                    }
-                }
-            imgui_indent_end();
-
-            imgui_text_sized(big,"Mouse");
-            imgui_indent_begin(small);
-                imgui_text("World:  %d, %d", wmx, wmy);
-                imgui_text("View:   %d, %d", vmx, vmy);
-                imgui_text("Window: %d, %d", mx, my);
-                imgui_text("Map Grid:   %d, %d", mr, mc);
-                imgui_text("World Grid: %d, %d", wr, wc);
-            imgui_indent_end();
-            
-            imgui_text_sized(big,"Camera");
-            imgui_indent_begin(small);
-                imgui_text("Pos: %.2f, %.2f", camera_rect.x, camera_rect.y);
-                imgui_text("w,h: %.2f, %.2f", camera_rect.w, camera_rect.h);
-                imgui_text("Offset: %.2f, %.2f", aim_camera_offset.x, aim_camera_offset.y);
-            imgui_indent_end();
-
-            imgui_text_sized(big,"Zombies");
-            imgui_indent_begin(small);
-                imgui_text("Count: %d", zlist->count);
-                Zombie* z = zombie_get_by_id(zombie_info_id);
-                if(z != NULL)
-                {
-                    imgui_text("ID: %d", z->id);
-                    imgui_text("HP: %.2f", z->hp);
-                    imgui_text("Scale: %.2f", z->scale);
-                    imgui_text("Anim State: %s (%d)", zombie_anim_state_str(z->anim_state), z->anim_state);
-                }
-            imgui_indent_end();
-
-            if(role == ROLE_CLIENT)
-            {
-                imgui_text_sized(big,"Network");
-                imgui_indent_begin(small);
-                    imgui_text("Server IP: %s",server_ip_str);
-                    imgui_text("Player count: %u",player_count);
-                    imgui_text("Ping: %.0f ms",net_client_get_rtt());
-                imgui_indent_end();
-            }
-        imgui_end();
-    }
-
-    return;
-
 }
 
 void gui_draw()
@@ -273,12 +131,6 @@ void gui_draw()
         //imgui_draw_demo(10,size.y+20);
     }
 }
-
-ParticleSpawner* editor_get_particle_spawner()
-{
-    get_particle_spawner();
-}
-
 
 void console_message_add(uint32_t color, char* fmt, ...)
 {
@@ -516,3 +368,150 @@ void run_console_command(char* text)
         FREE(s_col);
     }
 }
+
+
+ParticleSpawner* editor_get_particle_spawner()
+{
+    get_particle_spawner();
+}
+
+
+static void draw_debug_box()
+{
+    // window
+    float fps = timer_get_prior_frame_fps(&game_timer);
+
+    // player
+    float pvx = player->phys.vel.x;
+    float pvy = player->phys.vel.y;
+    float pv = sqrt(SQ(pvx) + SQ(pvy));
+
+    char keys[16+1] = {0};
+    for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
+    {
+        keys[i] = player->actions[i].state ? '1' : '0';
+    }
+
+    // mouse
+    int wmx, wmy, vmx, vmy, mx, my, mr, mc, wr, wc;
+    window_get_mouse_world_coords(&wmx, &wmy);
+    window_get_mouse_view_coords(&vmx, &vmy);
+    window_get_mouse_coords(&mx, &my);
+    coords_to_map_grid(wmx, wmy, &mr, &mc);
+    coords_to_world_grid(wmx, wmy, &wr, &wc);
+
+    // camera
+    Rect camera_rect = {0};
+    get_camera_rect(&camera_rect);
+
+    // network
+    char server_ip_str[32] = {0};
+    net_client_get_server_ip_str(server_ip_str);
+    int player_count = net_client_get_player_count();
+
+    Vector2f size = {0};
+    float maxw = 0.0;
+
+    {
+        float factor = (window_height / (float)view_height);
+
+        int big = 23.0/factor;
+        int small = 15.0/factor;
+
+        imgui_begin_panel("Debug",950,10);
+            imgui_set_text_size(small);
+
+            imgui_text_sized(big,"Window");
+            imgui_indent_begin(small);
+                imgui_text("FPS: %.2f", fps);
+                imgui_text("View: %d, %d", view_width, view_height);
+                imgui_text("Window: %d, %d", window_width, window_height);
+            imgui_indent_end();
+
+            imgui_text_sized(big,"Player");
+            imgui_indent_begin(small);
+                imgui_text("Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y);
+                imgui_text("Vel: %.2f, %.2f (%.2f)", pvx, pvy, pv);
+                imgui_text("Angle: %.2f, %.2f deg", player->angle, DEG(player->angle));
+                imgui_text("State: %s (%d)", player_state_str(player->state), player->state);
+                imgui_text("Anim State: %s (%d)", player_anim_state_str(player->anim_state), player->anim_state);
+                imgui_text("Controls: %s", keys);
+            imgui_indent_end();
+
+            imgui_text_sized(big,"Player Item");
+            imgui_indent_begin(small);
+                imgui_text("Equipped: %s", player->item_equipped ? "true" :  "false");
+                imgui_text("Type: %s", player_item_type_str(player->item.item_type));
+                imgui_text("Index: %d", player->item_index);
+
+                if(player->item.props != NULL)
+                {
+                    if(player->item.item_type == ITEM_TYPE_MELEE)
+                    {
+                        Melee* melee = (Melee*)player->item.props;
+                        imgui_text("  Melee: %s (%s)", melee->name, melee_type_str(melee->type));
+                        imgui_text("  Range: %.0f", melee->range);
+                        imgui_text("  Period: %.0f", melee->period);
+                    }
+                    else if(player->item.item_type == ITEM_TYPE_GUN)
+                    {
+                        Gun* gun = (Gun*)player->item.props;
+                        imgui_text("  Gun: %s (%s)", gun->name, gun_type_str(gun->type));
+                        imgui_text("  Range: %.0f", gun->fire_range);
+                        imgui_text("  Period: %.0f", gun->fire_period);
+                        imgui_text("  Bullets: %d (max: %d)", gun->bullets, gun->bullets_max);
+                        imgui_text("  Reload Timer: %.0f", player->reload_timer);
+                    }
+                    else if(player->item.item_type == ITEM_TYPE_BLOCK)
+                    {
+                        BlockProp* bp = (BlockProp*)player->item.props;
+                        imgui_text("  Type: %d", bp->type);
+                    }
+                }
+            imgui_indent_end();
+
+            imgui_text_sized(big,"Mouse");
+            imgui_indent_begin(small);
+                imgui_text("World:  %d, %d", wmx, wmy);
+                imgui_text("View:   %d, %d", vmx, vmy);
+                imgui_text("Window: %d, %d", mx, my);
+                imgui_text("Map Grid:   %d, %d", mr, mc);
+                imgui_text("World Grid: %d, %d", wr, wc);
+            imgui_indent_end();
+            
+            imgui_text_sized(big,"Camera");
+            imgui_indent_begin(small);
+                imgui_text("Pos: %.2f, %.2f", camera_rect.x, camera_rect.y);
+                imgui_text("w,h: %.2f, %.2f", camera_rect.w, camera_rect.h);
+                imgui_text("Offset: %.2f, %.2f", aim_camera_offset.x, aim_camera_offset.y);
+            imgui_indent_end();
+
+            imgui_text_sized(big,"Zombies");
+            imgui_indent_begin(small);
+                imgui_text("Count: %d", zlist->count);
+                Zombie* z = zombie_get_by_id(zombie_info_id);
+                if(z != NULL)
+                {
+                    imgui_text("ID: %d", z->id);
+                    imgui_text("HP: %.2f", z->hp);
+                    imgui_text("Scale: %.2f", z->scale);
+                    imgui_text("Anim State: %s (%d)", zombie_anim_state_str(z->anim_state), z->anim_state);
+                }
+            imgui_indent_end();
+
+            if(role == ROLE_CLIENT)
+            {
+                imgui_text_sized(big,"Network");
+                imgui_indent_begin(small);
+                    imgui_text("Server IP: %s",server_ip_str);
+                    imgui_text("Player count: %u",player_count);
+                    imgui_text("Ping: %.0f ms",net_client_get_rtt());
+                imgui_indent_end();
+            }
+        imgui_end();
+    }
+
+    return;
+
+}
+

@@ -163,7 +163,7 @@ void player_init_images()
         }
     }
 
-    blocks_image = gfx_load_image("img/block_set.png", false, true, 32, 38, NULL);
+    blocks_image = gfx_load_image("img/block_set.png", false, true, 32, 50, NULL);
     crosshair_image = gfx_load_image("img/crosshair2.png", false, false, 0, 0, NULL);
 }
 
@@ -307,20 +307,20 @@ void players_init()
     block_props[idx].hp = 100.0;
     block_props[idx].color = COLOR_RED;
     block_props[idx].image = blocks_image;
+    block_props[idx].sprite_index = idx;
 
     idx = BLOCK_1;
     block_props[idx].type = idx;
     block_props[idx].hp = 100.0;
     block_props[idx].color = COLOR_BLUE;
     block_props[idx].image = blocks_image;
+    block_props[idx].sprite_index = idx;
 
     blist = list_create((void*)blocks, MAX_BLOCKS, sizeof(blocks[0]));
     if(blist == NULL)
     {
         LOGE("block list failed to create");
     }
-
-
 
     weapons_init();
 
@@ -1421,11 +1421,11 @@ void block_draw(block_t* b, bool add_to_existing_batch)
     //gfx_draw_rect(&r, block_props[b->type].color, 0.0, 1.0, 0.50, true, true);
     if(add_to_existing_batch)
     {
-        gfx_sprite_batch_add(block_props[b->type].image, block_props[b->type].sprite_index, r.x, r.y-3, block_props[b->type].color,1.0,0.0,1.0,true,false,false);
+        gfx_sprite_batch_add(block_props[b->type].image, block_props[b->type].sprite_index, r.x, r.y-9, block_props[b->type].color,1.0,0.0,1.0,true,false,false);
     }
     else
     {
-        gfx_draw_image(block_props[b->type].image, block_props[b->type].sprite_index, r.x, r.y-3, block_props[b->type].color,1.0,0.0,1.0,true,true);
+        gfx_draw_image(block_props[b->type].image, block_props[b->type].sprite_index, r.x, r.y-9, block_props[b->type].color,1.0,0.0,1.0,true,true);
 
     }
 

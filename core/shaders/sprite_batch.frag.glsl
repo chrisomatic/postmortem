@@ -43,7 +43,7 @@ void main() {
     }
     else
     {
-        color = vec4(total_diffuse, opacity0)*tex_color;
+        color = vec4(total_diffuse*color0, opacity0)*tex_color;
     }
 
     color.rgb *= color.a;
