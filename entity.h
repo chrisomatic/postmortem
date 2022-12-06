@@ -2,7 +2,7 @@
 
 
 
-#define MAX_ONSCREEN_ENTITIES 10000
+#define MAX_ENTITIES 10000
 
 typedef enum
 {
@@ -21,7 +21,7 @@ typedef struct
 } SortEntity;
 
 
-extern SortEntity entities[MAX_ONSCREEN_ENTITIES];
+extern SortEntity entities[MAX_ENTITIES];
 extern int num_entities;
 
 
