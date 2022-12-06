@@ -65,13 +65,21 @@ typedef struct
     Rect hit_box;
     Rect collision_box;
 
+    //states
+
     bool moving;
     bool hurt;
+
+    bool pursuing;
+    Vector2f pursue_target;
+    Player* pursue_player;
+
     bool attacking;
 
     float attack_range;
     float attack_angle;
     uint8_t melee_hit_count;
+
 
     // physical/graphical properties of the player
     GFXAnimation anim;

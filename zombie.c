@@ -19,6 +19,8 @@
 #define IMG_ELEMENT_W 128
 #define IMG_ELEMENT_H 128
 
+#define NUM_ZOMBIES_INIT    10
+
 uint32_t zombie_info_id = 0xFFFFFFFF;
 // int zombie_info_index = -1;
 bool zombies_idle = false;
@@ -121,21 +123,15 @@ void zombie_init()
         }
         */
 
-        for(int i = 0; i < 1; ++i)
+        for(int i = 0; i < NUM_ZOMBIES_INIT; ++i)
         {
             ZombieSpawn spawn = {0};
             spawn.model_index = ZOMBIE1;
             spawn.model_texture = 0;
             spawn.pos.x = rand() % view_width;
             spawn.pos.y = rand() % view_height;
-            for(int j = 0; j < 10; ++j)
-            {
-                // spawn.scale = rand_float_between(0.5, 1.2);
-                spawn.scale = 0.5;
-                // spawn.scale = 2.0;
-                // printf("%d) %.0f %.0f\n", i, spawn.pos.x, spawn.pos.y);
-                zombie_add(&spawn);
-            }
+            spawn.scale = 0.1;
+            zombie_add_to_world_grid(&spawn, 0, 0);
         }
     //}
 
@@ -310,7 +306,7 @@ void zombie_update_anim_timing(Zombie* z)
             z->anim.max_frame_time *= scale;
         } break;
         case ZANIM_ATTACK1:
-            z->anim.max_frame_time = 0.025f;
+            z->anim.max_frame_time = 0.045f;
             break;
         default:
             z->anim.max_frame_time = 0.04f;
@@ -436,18 +432,113 @@ void zombie_update_boxes(Zombie* z)
 
 }
 
-void zombie_update(Zombie* z, float delta_t)
+void zombie_update_pursue(Zombie* z, float delta_t)
 {
 
+    if(z->anim_state == ZANIM_ATTACK1)
+        return;
+
+    if(z->anim_state == ZANIM_HURT)
+        return;
+
+    if(zombies_idle)
+        return;
+
+    if(z->pursuing)
+    {
+        bool has_target = z->pursue_player != NULL;
+
+        if(has_target)
+        {
+
+            // current target position
+            float px = z->pursue_player->phys.pos.x;
+            float py = z->pursue_player->phys.pos.y;
+
+            bool in_range = (dist(z->phys.pos.x, z->phys.pos.y, px, py) <= z->pursue_player->detect_radius*MAP_GRID_PXL_SIZE);
+
+            // only update target position if in range
+            if(in_range)
+            {
+                z->pursue_target.x = px;
+                z->pursue_target.y = py;
+            }
+            else
+            {
+                printf("(%d) zombie is NOT pursuing player '%s'\n", z->id, z->pursue_player->name);
+                z->pursue_player = NULL;
+                has_target = false;
+            }
+        }
+
+        if(!has_target)
+        {
+            float d = dist(z->phys.pos.x, z->phys.pos.y, z->pursue_target.x, z->pursue_target.y);
+            if(d <= 5.0)
+            {
+                printf("(%d) zombie has reached last known player location\n", z->id);
+                z->pursuing = false;
+            }
+        }
+
+    }
+    else
+    {
+
+        float min_range = INFINITY;
+        for(int i = 0; i < MAX_CLIENTS; ++i)
+        {
+            Player* p = &players[i];
+            if(!p->active) continue;
+
+            float d = dist(z->phys.pos.x, z->phys.pos.y, p->phys.pos.x, p->phys.pos.y);
+            bool in_range = (d <= (p->detect_radius*MAP_GRID_PXL_SIZE));
+            if(in_range && d < min_range)
+            {
+                min_range = d;
+                z->pursue_player = p;
+                z->pursue_target.x = p->phys.pos.x;
+                z->pursue_target.y = p->phys.pos.y;
+                z->pursuing = true;
+                printf("(%d) zombie is now pursuing player '%s'\n", z->id, p->name);
+            }
+
+        }
+
+    }
+}
+
+Vector2f zombie_update_movement(Zombie* z, float delta_t)
+{
     Vector2f accel = {0.0,0.0};
 
+    if(zombies_idle)
+        return accel;
 
-    if(!zombies_idle && !z->attacking)
+    if(z->anim_state == ZANIM_ATTACK1)
+        return accel;
+
+    if(z->anim_state == ZANIM_HURT)
+        return accel;
+
+    zombie_update_pursue(z, delta_t);
+
+    float amt = z->speed;
+
+    if(z->pursuing)
+    {
+        amt *= 1.5;
+        float tx = z->pursue_target.x;
+        float ty = z->pursue_target.y;
+        float angle = calc_angle_rad(z->phys.pos.x, z->phys.pos.y, tx, ty);
+
+        // set accel
+        accel.x += amt*cosf(angle);
+        accel.y += amt*sinf(2*PI-angle);
+    }
+    else
     {
         wander(z, delta_t);
-
-        float amt = z->speed;
-
         switch(z->action)
         {
             case ZOMBIE_ACTION_NONE:
@@ -481,16 +572,15 @@ void zombie_update(Zombie* z, float delta_t)
                 accel.y -= amt;
                 break;
         }
-
-        if(z->push_vel.x > 0.0)
-        {
-            accel.x += z->push_vel.x;
-        }
-        if(z->push_vel.y > 0.0)
-        {
-            accel.y -= z->push_vel.y;
-        }
     }
+
+    return accel;
+}
+
+void zombie_update(Zombie* z, float delta_t)
+{
+
+    Vector2f accel = zombie_update_movement(z, delta_t);
 
     Rect prior_pos = z->phys.pos;
     Rect prior_collision_box = z->collision_box;
@@ -533,6 +623,7 @@ void zombie_update(Zombie* z, float delta_t)
         z->anim_state = ZANIM_IDLE;
         z->hurt = false;
         zombie_update_anim_state(z);
+        zombie_update_anim_timing(z);
         zombie_update_image(z);
     }
 
@@ -541,6 +632,7 @@ void zombie_update(Zombie* z, float delta_t)
         z->anim_state = ZANIM_IDLE;
         z->attacking = false;
         zombie_update_anim_state(z);
+        zombie_update_anim_timing(z);
         zombie_update_image(z);
     }
 

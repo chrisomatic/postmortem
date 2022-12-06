@@ -282,7 +282,7 @@ typedef struct
     //TEMP
     int item_index;
 
-
+    float detect_radius;    // unit is 1 map grid space
 
     // mouse stuff
     MouseData lmouse;
@@ -346,6 +346,8 @@ void player_equip_item(Player* p, PlayerItemType itype, void* props, bool drawab
 void player_set_mouse_nothing(MouseData* mouse_data);
 void player_set_mouse(MouseData* mouse_data, bool held, bool press, bool release, float period, mouse_trigger_cb_t cb);
 void player_update_mouse_click(Player* p, bool active, bool toggled, MouseData* mouse, float delta_t);
+
+void player_add_detect_radius(Player* p, float add);
 
 void player_update_anim_timing(Player* p);
 void player_update_anim_state(Player* p);

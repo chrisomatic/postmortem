@@ -40,7 +40,7 @@ static void editor_init()
 static char particles_file_name[20] = {0};
 static int num_zombies = 10;
 static bool editor_collapsed = true;
-static float camera_z = 0.4;
+static float camera_z = -0.25;
 
 static void randomize_effect(ParticleEffect* effect)
 {

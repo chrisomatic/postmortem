@@ -281,6 +281,8 @@ static void player_init(int index)
     // light for player
     p->point_light = -1;
 
+    p->detect_radius = 10.0;
+
     /*
     if(p == player)
     {
@@ -581,6 +583,7 @@ static void mouse_melee_cb(void* player, MouseTrigger trigger)
     p->attacking_state = melee->anim_state;
     p->state = PSTATE_ATTACKING;
     p->busy = true;
+    player_add_detect_radius(p, 2.0);
 }
 
 static void mouse_block_add_cb(void* player, MouseTrigger trigger)
@@ -749,6 +752,10 @@ void player_update_mouse_click(Player* p, bool active, bool toggled, MouseData* 
     }
 }
 
+void player_add_detect_radius(Player* p, float add)
+{
+    p->detect_radius = RANGE(p->detect_radius + add, 6.0, 50.0);
+}
 
 void player_update_anim_timing(Player* p)
 {
@@ -917,6 +924,9 @@ void player_update_sprite_index(Player* p)
 
 void player_update(Player* p, double delta_t)
 {
+
+    player_add_detect_radius(p, delta_t * -0.8);
+
     window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
     coords_to_map_grid(p->mouse_x, p->mouse_y, &p->mouse_r, &p->mouse_c);
 
@@ -1334,6 +1344,13 @@ void player_draw(Player* p, bool add_to_existing_batch)
         r.x = p->pos.x;
         r.y = p->pos.y;
         gfx_draw_rect(&r, COLOR_ORANGE, 0.0, 1.0,1.0, true, true);
+
+        // detect
+        r.x = p->pos.x;
+        r.y = p->pos.y;
+        r.w = p->detect_radius*2.0*MAP_GRID_PXL_SIZE;
+        r.h = r.w;
+        gfx_draw_rect(&r, COLOR_PINK, 0.0, 1.0, 1.0, false, true);
     }
 
     // name
@@ -1350,12 +1367,14 @@ void player_draw_offscreen()
     static bool activate_player = false;
     if(!activate_player)
     {
-        players[2].active = true;
-        players[2].phys.pos.x = 1000;
-        players[2].phys.pos.y = 1000;
-        players[2].phys.pos.w = 25;
-        players[2].phys.pos.h = 60;
-        players[2].sprite_index = 1;
+        Player* p = &players[2];
+        p->phys.pos.x = 1000;
+        p->phys.pos.y = 3000;
+        player_update_anim_state(p);
+        player_update_image(p);
+        player_update_sprite_index(p);
+        player_update_boxes(p);
+        p->active = true;
         player_count++;
         activate_player = true;
     }
@@ -1609,6 +1628,7 @@ void gun_fire(Player* p, Gun* gun, bool held)
         projectile_add(p, gun, angle_offset);
     }
 
+    player_add_detect_radius(p, 10.0);
 
     particles_spawn_effect(gun->pos.x, gun->pos.y-5, &particle_effects[EFFECT_GUN_SMOKE1], 0.5, true, false); // smoke
     particles_spawn_effect(gun->pos.x, gun->pos.y-5, &particle_effects[EFFECT_SPARKS1], 0.5, true, false); // sparks

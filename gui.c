@@ -494,6 +494,7 @@ static void draw_debug_box()
                 imgui_text("Angle: %.2f, %.2f deg", player->angle, DEG(player->angle));
                 imgui_text("State: %s (%d)", player_state_str(player->state), player->state);
                 imgui_text("Anim State: %s (%d)", player_anim_state_str(player->anim_state), player->anim_state);
+                imgui_text("Detection Radius: %.2f", player->detect_radius);
                 imgui_text("Controls: %s", keys);
             imgui_indent_end();
 
