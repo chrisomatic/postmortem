@@ -62,6 +62,7 @@ typedef struct
 // static vars
 // --------------------------------------------------------
 static GLuint quad_vao, quad_vbo;
+static GLuint circle_vao, circle_vbo;
 static GLuint rect_vao, rect_vbo;
 static GLuint font_vao, font_vbo;
 static GLuint line_vao,line_vbo;
@@ -154,10 +155,6 @@ void gfx_init(int width, int height)
     glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vertex), (void*)0);
     glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(Vertex), (const GLvoid*)8);
 
-    // rect (used for drawing empty rectangles
-    glGenVertexArrays(1, &rect_vao);
-    glBindVertexArray(rect_vao);
-
     Vector2f rect[] =
     {
         {-0.5, -0.5},
@@ -167,9 +164,50 @@ void gfx_init(int width, int height)
         {-0.5, -0.5},
     };
 
+    // rect (used for drawing empty rectangles
+    glGenVertexArrays(1, &rect_vao);
+    glBindVertexArray(rect_vao);
+
     glGenBuffers(1, &rect_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, rect_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(rect), rect, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vector2f), (void*)0);
+    
+    glGenVertexArrays(1, &circle_vao);
+    glBindVertexArray(circle_vao);
+
+#define NUMBER_OF_VERTICES 16
+    float radius = 0.5;
+    for(double i = 0; i < 2 * M_PI; i += 2 * M_PI / NUMBER_OF_VERTICES)
+    {
+        printf("%f, %f\n", cos(i)*radius, sin(i)*radius);
+    }
+
+    Vector2f circle[] =
+    {
+        {0.500000, 0.000000},
+        {0.461940, 0.191342},
+        {0.353553, 0.353553},
+        {0.191342, 0.461940},
+        {0.000000, 0.500000},
+        {-0.191342, 0.461940},
+        {-0.353553, 0.353553},
+        {-0.461940, 0.191342},
+        {-0.500000, 0.000000},
+        {-0.461940, -0.191342},
+        {-0.353553, -0.353553},
+        {-0.191342, -0.461940},
+        {-0.000000, -0.500000},
+        {0.191342, -0.461940},
+        {0.353553, -0.353553},
+        {0.461940, -0.191342},
+        {0.500000, 0.000000},
+    };
+
+    glGenBuffers(1, &circle_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, circle_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(circle), circle, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vector2f), (void*)0);
 
@@ -972,6 +1010,59 @@ void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, floa
         glBindVertexArray(rect_vao);
         glEnableVertexAttribArray(0);
         glDrawArrays(GL_LINE_STRIP,0,5);
+        glDisableVertexAttribArray(0);
+    }
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D,0);
+    glUseProgram(0);
+}
+
+void gfx_draw_circle(float x, float y, float radius, uint32_t color, float opacity, bool filled, bool in_world)
+{
+    glUseProgram(program_shape);
+
+    Matrix model = {0};
+
+    Vector3f pos = {x,y,0.0};
+    Vector3f rot = {0.0,0.0,0.0};
+    Vector3f sca = {radius*2.0,-radius*2.0,1.0};
+
+    get_model_transform(&pos,&rot,&sca,&model);
+    Matrix* view = get_camera_transform();
+
+    uint8_t r = color >> 16;
+    uint8_t g = color >> 8;
+    uint8_t b = color >> 0;
+
+    glUniform3f(loc_shape_color,r/255.0,g/255.0,b/255.0);
+    glUniform1f(loc_shape_opacity,opacity);
+
+    glUniformMatrix4fv(loc_shape_model,1,GL_TRUE,&model.m[0][0]);
+
+    if(in_world)
+        glUniformMatrix4fv(loc_shape_view,1,GL_TRUE,&view->m[0][0]);
+    else
+        glUniformMatrix4fv(loc_shape_view,1,GL_TRUE,&IDENTITY_MATRIX.m[0][0]);
+
+    glUniformMatrix4fv(loc_shape_proj,1,GL_TRUE,&proj_matrix.m[0][0]);
+
+    if(filled)
+    {
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glBindVertexArray(circle_vao);
+        glEnableVertexAttribArray(0);
+        glDrawArrays(GL_TRIANGLE_FAN,0,16);
+        glDisableVertexAttribArray(0);
+    }
+    else
+    {
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glBindVertexArray(circle_vao);
+        glEnableVertexAttribArray(0);
+        glDrawArrays(GL_LINE_STRIP,0,17);
         glDisableVertexAttribArray(0);
     }
 

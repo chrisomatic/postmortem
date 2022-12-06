@@ -862,54 +862,37 @@ void player_update_boxes(Player* p)
 
 void player_update_sprite_index(Player* p)
 {
-    p->angle = calc_angle_rad(p->phys.pos.x, p->phys.pos.y, p->mouse_x, p->mouse_y);
-
     float angle_deg = DEG(p->angle);
+
+    bool up = p->actions[PLAYER_ACTION_UP].state;
+    bool down = p->actions[PLAYER_ACTION_DOWN].state;
+    bool left = p->actions[PLAYER_ACTION_LEFT].state;
+    bool right = p->actions[PLAYER_ACTION_RIGHT].state;
 
     if(p->item.mouse_aim)
     {
         int sector = angle_sector(angle_deg, 16);
 
-        if(sector == 15 || sector == 0)
-            p->sprite_index_direction = 2;
-        else if(sector == 1 || sector == 2)
-            p->sprite_index_direction = 3;
-        else if(sector == 3 || sector == 4)
-            p->sprite_index_direction = 4;
-        else if(sector == 5 || sector == 6)
-            p->sprite_index_direction = 5;
-        else if(sector == 7 || sector == 8)
-            p->sprite_index_direction = 6;
-        else if(sector == 9 || sector == 10)
-            p->sprite_index_direction = 7;
-        else if(sector == 11 || sector == 12)
-            p->sprite_index_direction = 0;
-        else if(sector == 13 || sector == 14) 
-            p->sprite_index_direction = 1;
+        if(sector == 15 || sector == 0)       p->sprite_index_direction = 2;
+        else if(sector == 1 || sector == 2)   p->sprite_index_direction = 3;
+        else if(sector == 3 || sector == 4)   p->sprite_index_direction = 4;
+        else if(sector == 5 || sector == 6)   p->sprite_index_direction = 5;
+        else if(sector == 7 || sector == 8)   p->sprite_index_direction = 6;
+        else if(sector == 9 || sector == 10)  p->sprite_index_direction = 7;
+        else if(sector == 11 || sector == 12) p->sprite_index_direction = 0;
+        else if(sector == 13 || sector == 14) p->sprite_index_direction = 1;
     }
     else
     {
-        bool up = p->actions[PLAYER_ACTION_UP].state;
-        bool down = p->actions[PLAYER_ACTION_DOWN].state;
-        bool left = p->actions[PLAYER_ACTION_LEFT].state;
-        bool right = p->actions[PLAYER_ACTION_RIGHT].state;
-
-        if(up && left)
-            p->sprite_index_direction = 5;
-        else if(up && right)
-            p->sprite_index_direction = 3;
-        else if(down && left)
-            p->sprite_index_direction = 7;
-        else if(down && right)
-            p->sprite_index_direction = 1;
-        else if(up)
-            p->sprite_index_direction = 4;
-        else if(down)
-            p->sprite_index_direction = 0;
-        else if(left)
-            p->sprite_index_direction = 6;
-        else if(right)
-            p->sprite_index_direction = 2;
+        if(up && left)         p->sprite_index_direction = 5;
+        else if(up && right)   p->sprite_index_direction = 3;
+        else if(down && left)  p->sprite_index_direction = 7;
+        else if(down && right) p->sprite_index_direction = 1;
+        else if(up)            p->sprite_index_direction = 4;
+        else if(down)          p->sprite_index_direction = 0;
+        else if(left)          p->sprite_index_direction = 6;
+        else if(right)         p->sprite_index_direction = 2;
+            
     }
 
     p->sprite_index = p->sprite_index_direction * 16;
@@ -1006,7 +989,6 @@ void player_update(Player* p, double delta_t)
                 }
             }
         }
-
     }
 
     if(p->state == PSTATE_RELOADING)
@@ -1056,7 +1038,6 @@ void player_update(Player* p, double delta_t)
     Vector2f accel = {0};
     bool moving_player = MOVING_PLAYER(p);
 
-
     bool up = p->actions[PLAYER_ACTION_UP].state;
     bool down = p->actions[PLAYER_ACTION_DOWN].state;
     bool left = p->actions[PLAYER_ACTION_LEFT].state;
@@ -1067,27 +1048,56 @@ void player_update(Player* p, double delta_t)
     if(left)  { accel.x -= p->speed; }
     if(right) { accel.x += p->speed; }
 
-    if((up || down) && (left || right))
-    {
-        // moving diagonally
-        accel.x *= SQRT2OVER2;
-        accel.y *= SQRT2OVER2;
-    }
-
-
     if(p->actions[PLAYER_ACTION_RUN].toggled_on)
     {
         p->running = !p->running;
     }
 
     p->phys.max_linear_vel = p->max_base_speed;
+    p->angle = calc_angle_rad(p->phys.pos.x, p->phys.pos.y, p->mouse_x, p->mouse_y);
+
+    float accel_factor = 1.0;
 
     if(p->running && moving_player && !p->busy)
     {
-        accel.x *= 10.0;
-        accel.y *= 10.0;
-        p->phys.max_linear_vel *= 10.0;
+        accel_factor *= 3.0;
     }
+
+    if((up || down) && (left || right))
+    {
+        // moving diagonally
+        accel_factor *= SQRT2OVER2;
+    }
+
+    /*
+    if(moving_player && p->item.mouse_aim)
+    {
+        float moving_angle = 0.0;
+
+        if(up && left)          moving_angle = 135.0;
+        else if(up && right)    moving_angle = 45.0;
+        else if(down && left)   moving_angle = 225.0;
+        else if(down && right)  moving_angle = 315.0;
+        else if(up)             moving_angle = 90.0;
+        else if(down)           moving_angle = 270.0;
+        else if(left)           moving_angle = 180.0;
+        else if(right)          moving_angle = 0.0;
+
+        float angle_diff = ABS(moving_angle - DEG(p->angle));
+        if(angle_diff >= 180.0)
+            angle_diff = 360.0 - angle_diff;
+
+        float flux = 1.0 - (angle_diff/360.0f);
+
+        accel_factor *= RANGE(flux,0.5,1.0);
+    }
+    */
+
+    //printf("accel_factor: %f\n",accel_factor);
+
+    accel.x *= accel_factor;
+    accel.y *= accel_factor;
+    p->phys.max_linear_vel *= accel_factor;
 
 #if 0
     if(role == ROLE_SERVER)
@@ -1138,6 +1148,7 @@ void player_update(Player* p, double delta_t)
     player_check_block_collision(p, prior_pos, prior_collision_box);
 
     player_weapon_melee_check_collision(p);
+
 
     //lighting_point_light_move(p->point_light, p->pos.x, p->pos.y);
 
@@ -1346,11 +1357,7 @@ void player_draw(Player* p, bool add_to_existing_batch)
         gfx_draw_rect(&r, COLOR_ORANGE, 0.0, 1.0,1.0, true, true);
 
         // detect
-        r.x = p->pos.x;
-        r.y = p->pos.y;
-        r.w = p->detect_radius*2.0*MAP_GRID_PXL_SIZE;
-        r.h = r.w;
-        gfx_draw_rect(&r, COLOR_PINK, 0.0, 1.0, 1.0, false, true);
+        gfx_draw_circle(p->pos.x,p->pos.y,p->detect_radius*MAP_GRID_PXL_SIZE,COLOR_PINK,1.0,false,true);
     }
 
     // name

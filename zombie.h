@@ -125,7 +125,7 @@ void zombie_update_sprite_index(Zombie* z);
 void zombie_update_boxes(Zombie* z);
 void zombie_update(Zombie* z, float delta_t);
 bool zombie_check_block_collision(Zombie* z, Rect prior_pos, Rect prior_collision_box);
-void zombie_draw(Zombie* z, bool batch);
+bool zombie_draw(Zombie* z, bool batch);
 void zombies_update(float delta_t);
 void zombies_draw();
 Zombie* zombie_get_by_id(uint32_t id);

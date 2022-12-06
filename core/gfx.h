@@ -103,9 +103,10 @@ void gfx_clear_lines();
 void gfx_add_line(float x0, float y0, float x1, float y1, uint32_t color);
 void gfx_draw_lines();
 
-// Rects
+// Shapes
 void gfx_draw_rect(Rect* r, uint32_t color, float rotation, float scale, float opacity, bool filled, bool in_world);
 void gfx_draw_rect_xywh(float x, float y, float w, float h, uint32_t color, float rotation, float scale, float opacity, bool filled, bool in_world);
+void gfx_draw_circle(float x, float y, float radius, uint32_t color, float opacity, bool filled, bool in_world);
 
 // Strings
 Vector2f gfx_draw_string(float x, float y, uint32_t color, float scale, float rotation, float opacity, bool in_world, bool drop_shadow, char* fmt, ...);

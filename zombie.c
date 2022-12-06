@@ -674,9 +674,9 @@ bool zombie_check_block_collision(Zombie* z, Rect prior_pos, Rect prior_collisio
 }
 
 
-void zombie_draw(Zombie* z, bool add_to_existing_batch)
+bool zombie_draw(Zombie* z, bool add_to_existing_batch)
 {
-    if(z == NULL) return;
+    if(z == NULL) return false;
 
     if(is_in_camera_view(&z->phys.pos))
     {
@@ -733,7 +733,10 @@ void zombie_draw(Zombie* z, bool add_to_existing_batch)
             r.x = r.x+r.w/2.0;
             gfx_draw_rect(&r, COLOR_RED, 0.0, 1.0,1.0, true, true);
         }
+        return true;
     }
+
+    return false;
 }
 
 
