@@ -52,7 +52,8 @@ typedef struct
 {
     uint32_t id;
     Physics phys;
-    Vector2i grid_pos;
+    Vector2i world_grid_pos;
+    Vector2i map_grid_pos;
     Vector2f push_vel;
     float speed;
     float scale;
@@ -61,7 +62,6 @@ typedef struct
     ZombieAction action;
     float action_timer;
     float action_timer_max;
-    float attack_angle;
     Rect hit_box;
     Rect collision_box;
 
@@ -69,11 +69,9 @@ typedef struct
     bool hurt;
     bool attacking;
 
-    // // based on collision_box
-    // int map_row;
-    // int map_col;
-    // int world_row;
-    // int world_col;
+    float attack_range;
+    float attack_angle;
+    uint8_t melee_hit_count;
 
     // physical/graphical properties of the player
     GFXAnimation anim;
@@ -125,3 +123,4 @@ void zombies_draw();
 Zombie* zombie_get_by_id(uint32_t id);
 
 const char* zombie_anim_state_str(ZombieAnimState anim_state);
+void zombie_melee_check_collision(Zombie* z);

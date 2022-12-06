@@ -11,7 +11,7 @@
 
 #include "entity.h"
 
-SortEntity entities[MAX_ONSCREEN_ENTITIES];
+SortEntity entities[MAX_ENTITIES];
 int num_entities = 0;
 
 static void sort_entity_list()

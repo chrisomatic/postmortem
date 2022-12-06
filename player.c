@@ -1678,14 +1678,17 @@ void player_weapon_melee_check_collision(Player* p)
 
 bool player_check_block_collision(Player* p, Rect prior_pos, Rect prior_collision_box)
 {
-    bool collide = false;
+    rect_collision_data_t data = {0};
+    data.collide = false;
+
+    // bool collide = false;
     for(int i = 0; i < blist->count; ++i)
     {
         block_t* b = &blocks[i];
         Rect cb = p->collision_box;
         float delta_x = p->phys.pos.x - prior_pos.x;
         float delta_y = p->phys.pos.y - prior_pos.y;
-        collide = physics_rect_collision(&prior_collision_box, &cb, &b->collision_box, delta_x, delta_y);
+        bool collide = physics_rect_collision(&prior_collision_box, &cb, &b->collision_box, delta_x, delta_y, &data);
         if(collide)
         {
             // printf("block collision index: %d\n", i);
@@ -1705,5 +1708,5 @@ bool player_check_block_collision(Player* p, Rect prior_pos, Rect prior_collisio
     // {
     //     player_colors[p->index] = COLOR_BLUE;
     // }
-    return collide;
+    return data.collide;
 }

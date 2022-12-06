@@ -8,8 +8,10 @@
 // in other words, each world grid space is WORLD_GRID_WIDTH tiles wide and WORLD_GRID_HEIGHT tiles high
 // num world grid rows = map.rows / WORLD_GRID_HEIGHT
 // num world grid cols = map.cols / WORLD_GRID_WIDTH
-#define WORLD_GRID_WIDTH    25
-#define WORLD_GRID_HEIGHT   25
+// #define WORLD_GRID_WIDTH    25
+// #define WORLD_GRID_HEIGHT   25
+#define WORLD_GRID_WIDTH    20
+#define WORLD_GRID_HEIGHT   20
 
 
 typedef struct
