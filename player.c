@@ -296,7 +296,6 @@ static void player_init(int index)
 
 void players_init()
 {
-
     player_init_models();
     player_init_images();
     
@@ -305,14 +304,14 @@ void players_init()
     int idx = BLOCK_0;
     block_props[idx].type = idx;
     block_props[idx].hp = 100.0;
-    block_props[idx].color = COLOR_RED;
+    block_props[idx].color = COLOR_TINT_NONE;
     block_props[idx].image = blocks_image;
     block_props[idx].sprite_index = idx;
 
     idx = BLOCK_1;
     block_props[idx].type = idx;
     block_props[idx].hp = 100.0;
-    block_props[idx].color = COLOR_BLUE;
+    block_props[idx].color = COLOR_TINT_NONE;
     block_props[idx].image = blocks_image;
     block_props[idx].sprite_index = idx;
 

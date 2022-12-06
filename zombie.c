@@ -189,23 +189,25 @@ bool zombie_add(ZombieSpawn* spawn)
     zombie.anim.finite = false;
     zombie.anim.curr_loop = 0;
     zombie.anim.max_loops = 0;
-    zombie.anim.frame_sequence[0] = 12;
-    zombie.anim.frame_sequence[1] = 13;
-    zombie.anim.frame_sequence[2] = 14;
-    zombie.anim.frame_sequence[3] = 15;
-    zombie.anim.frame_sequence[4] = 0;
-    zombie.anim.frame_sequence[5] = 1;
-    zombie.anim.frame_sequence[6] = 2;
-    zombie.anim.frame_sequence[7] = 3;
-    zombie.anim.frame_sequence[8] = 4;
-    zombie.anim.frame_sequence[9] = 5;
-    zombie.anim.frame_sequence[10] = 6;
-    zombie.anim.frame_sequence[11] = 7;
-    zombie.anim.frame_sequence[12] = 8;
-    zombie.anim.frame_sequence[13] = 9;
-    zombie.anim.frame_sequence[14] = 10;
-    zombie.anim.frame_sequence[15] = 11;
+    zombie.anim.frame_sequence[0] = 0;
+    zombie.anim.frame_sequence[1] = 1;
+    zombie.anim.frame_sequence[2] = 2;
+    zombie.anim.frame_sequence[3] = 3;
+    zombie.anim.frame_sequence[4] = 4;
+    zombie.anim.frame_sequence[5] = 5;
+    zombie.anim.frame_sequence[6] = 6;
+    zombie.anim.frame_sequence[7] = 7;
+    zombie.anim.frame_sequence[8] = 8;
+    zombie.anim.frame_sequence[9] = 9;
+    zombie.anim.frame_sequence[10] = 10;
+    zombie.anim.frame_sequence[11] = 11;
+    zombie.anim.frame_sequence[12] = 12;
+    zombie.anim.frame_sequence[13] = 13;
+    zombie.anim.frame_sequence[14] = 14;
+    zombie.anim.frame_sequence[15] = 15;
 
+    zombie.hurt = false;
+    zombie.attacking = false;
 
     // set default values if not set by spawn
     if(FEQ(zombie.phys.max_linear_vel, 0.0))
@@ -276,6 +278,8 @@ void zombie_hurt(int index, float val)
     {
         zombie_die(index);
     }
+
+    zom->hurt = true;
 }
 
 
@@ -285,12 +289,44 @@ void zombie_update_image(Zombie* z)
     z->image = zombie_image_sets_none[z->model_index][z->model_texture][z->anim_state];
 }
 
+void zombie_update_anim_timing(Zombie* z)
+{
+    switch(z->anim_state)
+    {
+        case ZANIM_IDLE:
+            z->anim.max_frame_time = 0.15f;
+            break;
+        case ZANIM_WALK:
+        {
+            z->anim.max_frame_time = 0.055f;
+            float pvx = z->phys.vel.x;
+            float pvy = z->phys.vel.y;
+            float pv = sqrt(SQ(pvx) + SQ(pvy));
+            float scale = 128.0/pv;
+            z->anim.max_frame_time *= scale;
+        } break;
+        case ZANIM_ATTACK1:
+            z->anim.max_frame_time = 0.025f;
+            break;
+        default:
+            z->anim.max_frame_time = 0.04f;
+            break;
+    }
+}
 
 void zombie_update_anim_state(Zombie* z)
 {
     ZombieAnimState prior = z->anim_state;
 
-    if(z->moving)
+    if(z->attacking)
+    {
+        z->anim_state = ZANIM_ATTACK1;
+    }
+    else if(z->hurt)
+    {
+        z->anim_state = ZANIM_HURT;
+    }
+    else if(z->moving)
     {
         z->anim_state = ZANIM_WALK;
     }
@@ -313,28 +349,53 @@ void zombie_update_anim_state(Zombie* z)
 
 void zombie_update_sprite_index(Zombie* z)
 {
-    bool up = z->phys.accel.y < 0;
-    bool down = z->phys.accel.y > 0;
-    bool left = z->phys.accel.x < 0;
-    bool right = z->phys.accel.x > 0;
+    if(z->attacking)
+    {
+        float angle_deg = DEG(z->attack_angle);
+        int sector = angle_sector(angle_deg, 16);
 
+        if(sector == 15 || sector == 0)
+            z->sprite_index_direction = 2;
+        else if(sector == 1 || sector == 2)
+            z->sprite_index_direction = 3;
+        else if(sector == 3 || sector == 4)
+            z->sprite_index_direction = 4;
+        else if(sector == 5 || sector == 6)
+            z->sprite_index_direction = 5;
+        else if(sector == 7 || sector == 8)
+            z->sprite_index_direction = 6;
+        else if(sector == 9 || sector == 10)
+            z->sprite_index_direction = 7;
+        else if(sector == 11 || sector == 12)
+            z->sprite_index_direction = 0;
+        else if(sector == 13 || sector == 14) 
+            z->sprite_index_direction = 1;
+    }
+    else
+    {
+        bool up = z->phys.accel.y < 0;
+        bool down = z->phys.accel.y > 0;
+        bool left = z->phys.accel.x < 0;
+        bool right = z->phys.accel.x > 0;
 
-    if(up && left)
-        z->sprite_index_direction = 5;
-    else if(up && right)
-        z->sprite_index_direction = 3;
-    else if(down && left)
-        z->sprite_index_direction = 7;
-    else if(down && right)
-        z->sprite_index_direction = 1;
-    else if(up)
-        z->sprite_index_direction = 4;
-    else if(down)
-        z->sprite_index_direction = 0;
-    else if(left)
-        z->sprite_index_direction = 6;
-    else if(right)
-        z->sprite_index_direction = 2;
+        if(up && left)
+            z->sprite_index_direction = 5;
+        else if(up && right)
+            z->sprite_index_direction = 3;
+        else if(down && left)
+            z->sprite_index_direction = 7;
+        else if(down && right)
+            z->sprite_index_direction = 1;
+        else if(up)
+            z->sprite_index_direction = 4;
+        else if(down)
+            z->sprite_index_direction = 0;
+        else if(left)
+            z->sprite_index_direction = 6;
+        else if(right)
+            z->sprite_index_direction = 2;
+
+    }
 
     z->sprite_index = z->sprite_index_direction * 16;
 
@@ -369,7 +430,7 @@ void zombie_update(Zombie* z, float delta_t)
     Vector2f accel = {0.0,0.0};
 
 
-    if(!zombies_idle)
+    if(!zombies_idle && !z->attacking)
     {
         wander(z, delta_t);
 
@@ -431,12 +492,26 @@ void zombie_update(Zombie* z, float delta_t)
     coords_to_map_grid(z->phys.pos.x, z->phys.pos.y, &z->grid_pos.x, &z->grid_pos.y);
     
     z->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
+    z->attacking = (dist(z->phys.pos.x, z->phys.pos.y, player->phys.pos.x, player->phys.pos.y) <= 32.0);
+    if(z->attacking)
+    {
+        // set angle to face player
+        z->attack_angle = calc_angle_rad(z->phys.pos.x, z->phys.pos.y, player->phys.pos.x, player->phys.pos.y);
+    }
 
     zombie_update_anim_state(z);
-    // player_update_anim_timing(p);
+    zombie_update_anim_timing(z);
     zombie_update_image(z);
 
     gfx_anim_update(&z->anim, delta_t);
+
+    if(z->anim_state == ZANIM_HURT && z->anim.curr_loop > 0)
+    {
+        z->anim_state = ZANIM_IDLE;
+        z->hurt = false;
+        zombie_update_anim_state(z);
+        zombie_update_image(z);
+    }
 
     zombie_update_sprite_index(z);
     zombie_update_boxes(z);
@@ -609,6 +684,7 @@ const char* zombie_anim_state_str(ZombieAnimState anim_state)
     {
         case ZANIM_IDLE: return "idle";
         case ZANIM_WALK: return "walk";
+        case ZANIM_HURT: return "hurt";
         case ZANIM_ATTACK1: return "attack1";
         case ZANIM_NONE: return "";
         default: return "";

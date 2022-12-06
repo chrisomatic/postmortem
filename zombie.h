@@ -10,6 +10,7 @@ typedef enum
 {
     ZANIM_IDLE,
     ZANIM_WALK,
+    ZANIM_HURT,
     ZANIM_ATTACK1, // swing
 
     ZANIM_MAX,
@@ -60,10 +61,13 @@ typedef struct
     ZombieAction action;
     float action_timer;
     float action_timer_max;
+    float attack_angle;
     Rect hit_box;
     Rect collision_box;
 
     bool moving;
+    bool hurt;
+    bool attacking;
 
     // // based on collision_box
     // int map_row;

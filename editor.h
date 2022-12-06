@@ -26,6 +26,7 @@ static void editor_init()
         .burst_count_min = 1,
         .burst_count_max = 3,
         .sprite_index = 57,
+        .img_index = particles_image,
         .use_sprite = true,
         .blend_additive = false,
     };
@@ -79,6 +80,7 @@ static void randomize_effect(ParticleEffect* effect)
     effect->burst_count_min  = RAND_FLOAT(1, 20);
     effect->burst_count_max  = RAND_FLOAT(1, 20);
 
+    effect->img_index = particles_image;
     effect->sprite_index = RAND_RANGE(0,79);
 
     effect->color1 = RAND_RANGE(0x0,0x00FFFFFF);
@@ -280,8 +282,10 @@ static void editor_draw()
                     imgui_checkbox("Use Sprite",&effect->use_sprite);
                     if(effect->use_sprite)
                     {
-                        imgui_text_sized(big,"Sprite Index");
-                        imgui_number_box("Index##sprite_index", 0, MAX_GFX_IMAGES-1, &effect->sprite_index);
+                        imgui_horizontal_begin();
+                        imgui_number_box("Img Index##img_index", 0, MAX_GFX_IMAGES-1, &effect->img_index);
+                        imgui_number_box("Sprite Index##sprite_index", 0, MAX_GFX_IMAGES-1, &effect->sprite_index);
+                        imgui_horizontal_end();
                     }
                     imgui_text_sized(big,"Colors");
                     imgui_horizontal_begin();
