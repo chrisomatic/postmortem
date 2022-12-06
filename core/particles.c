@@ -270,7 +270,7 @@ void particles_update(double delta_t)
     }
 }
 
-void particles_draw_spawner(ParticleSpawner* spawner, bool add_to_existing_batch)
+void particles_draw_spawner(ParticleSpawner* spawner, bool ignore_light, bool add_to_existing_batch)
 {
     if(spawner == NULL) return;
 
@@ -281,7 +281,7 @@ void particles_draw_spawner(ParticleSpawner* spawner, bool add_to_existing_batch
         for(int j = 0; j < spawner->particle_list->count; ++j)
         {
             Particle* p = &spawner->particles[j];
-            gfx_sprite_batch_add(spawner->effect.img_index, spawner->effect.sprite_index, p->pos.x, p->pos.y, p->color, p->scale, p->rotation, p->opacity, false,true,spawner->effect.blend_additive);
+            gfx_sprite_batch_add(spawner->effect.img_index, spawner->effect.sprite_index, p->pos.x, p->pos.y, p->color, p->scale, p->rotation, p->opacity, false,ignore_light,spawner->effect.blend_additive);
         }
         if(!add_to_existing_batch) gfx_sprite_batch_draw();
     }
@@ -318,7 +318,7 @@ void particles_draw()
         if(spawner->hidden)
             continue;
 
-        particles_draw_spawner(spawner, false);
+        particles_draw_spawner(spawner, false, false);
 
     }
 }

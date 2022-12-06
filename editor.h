@@ -325,7 +325,7 @@ static void editor_draw()
                     }
 
                     // show preview
-                    particles_draw_spawner(particle_spawner, false);
+                    particles_draw_spawner(particle_spawner, true, false);
 
                     } break;
                 case 3:

@@ -4,7 +4,7 @@ in vec2 tex_coord0;
 in vec3 color0;
 in float opacity0;
 flat in uint image_index0;
-flat in uint is_particle0;
+flat in uint ignore_light0;
 flat in uint blending_mode0;
 in vec2 to_light_vector[16];
 
@@ -37,7 +37,7 @@ void main() {
     total_diffuse = max(total_diffuse, ambient_color);
 
     //color = vec4(color0,1.0);
-    if(is_particle0 == 1)
+    if(ignore_light0 == 1)
     {
         color = vec4(tex_color.rgb*color0,tex_color.a*opacity0);
     }

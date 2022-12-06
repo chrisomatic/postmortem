@@ -12,6 +12,7 @@ typedef enum
     EFFECT_MELEE1,
     EFFECT_BULLET_CASING,
     EFFECT_FIRE,
+    EFFECT_BLOCK_DESTROY,
     EFFECT_MAX,
 } Effect;
 

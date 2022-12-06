@@ -634,7 +634,13 @@ static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
     {
         if(p->mouse_r == blocks[i].row && p->mouse_c == blocks[i].col)
         {
+            ParticleEffect pe ={0};
+            memcpy(&pe, &particle_effects[EFFECT_BLOCK_DESTROY],sizeof(ParticleEffect));
+            pe.sprite_index = blocks[i].type;
+            particles_spawn_effect(blocks[i].collision_box.x, blocks[i].collision_box.y, &pe, 1.0, true, false);
+
             list_remove(blist, i);
+
             break;
         }
     }
@@ -1393,7 +1399,7 @@ void player_draw_all()
 void player_draw_crosshair(Player* p)
 {
     // crosshair
-    gfx_draw_particle(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 1.0,0.0,0.80, false,true,false);
+    gfx_draw_image_ignore_light(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 1.0,0.0,0.80, false,true);
 }
 
 const char* player_item_type_str(PlayerItemType item_type)

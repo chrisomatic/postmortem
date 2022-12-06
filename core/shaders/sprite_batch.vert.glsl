@@ -7,14 +7,14 @@ layout (location = 6) in vec4 sprite_rect;
 layout (location = 7) in vec3 color;
 layout (location = 8) in float opacity;
 layout (location = 9) in uint tex_unit;
-layout (location = 10) in uint is_particle;
+layout (location = 10) in uint ignore_light;
 layout (location = 11) in uint blending_mode;
 
 out vec2 tex_coord0;
 out vec3 color0;
 out float opacity0;
 flat out uint image_index0;
-flat out uint is_particle0;
+flat out uint ignore_light0;
 flat out uint blending_mode0;
 
 out vec2 to_light_vector[16];
@@ -31,7 +31,7 @@ void main()
     color0 = color;
     opacity0 = opacity;
     image_index0 = tex_unit;
-    is_particle0 = is_particle;
+    ignore_light0 = ignore_light;
     blending_mode0 = blending_mode;
 
     //if(tex_unit == 0)

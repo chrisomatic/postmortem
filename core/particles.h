@@ -83,7 +83,7 @@ ParticleSpawner* particles_spawn_effect(float x, float y, ParticleEffect* effect
 void particles_update(double delta_t);
 void particles_show_spawner(int id, bool show);
 void particles_draw();
-void particles_draw_spawner(ParticleSpawner* spawner, bool add_to_existing_batch);
+void particles_draw_spawner(ParticleSpawner* spawner, bool ignore_light, bool add_to_existing_batch);
 ParticleSpawner* particles_get_spawner(int id);
 bool particles_is_spawner_in_camera_view(ParticleSpawner* s);
 

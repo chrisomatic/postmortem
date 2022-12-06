@@ -152,7 +152,7 @@ void gui_draw()
         {
             // show bullet count
             Gun* g = (Gun*)item->props;
-            gfx_draw_particle(particles_image, 80, curr_x-half_hotbar_box_size+10,curr_y-half_hotbar_box_size-12, COLOR_TINT_NONE,0.7,45.0,1.0,true,false,false);
+            gfx_draw_image_ignore_light(particles_image, 80, curr_x-half_hotbar_box_size+10,curr_y-half_hotbar_box_size-12, COLOR_TINT_NONE,0.7,45.0,1.0,true,false);
             gfx_draw_string(curr_x-half_hotbar_box_size+20,curr_y-half_hotbar_box_size-22,COLOR_WHITE,0.24,0.0,1.0,false,true,"x%d",g->bullets);
         }
 
@@ -176,7 +176,7 @@ void gui_draw()
 
             gfx_draw_rect_xywh(curr_x,curr_y,hotbar_box_size,hotbar_box_size,COLOR_WHITE,0.0,1.0,0.8,false,false);
             gfx_draw_rect_xywh(curr_x,curr_y,hotbar_box_size-1,hotbar_box_size-1,color,0.0,1.0,0.5,true,false);
-            gfx_draw_particle(gun_profile_image, sprite_index, curr_x,curr_y, COLOR_TINT_NONE,0.7,0.0,1.0,true,false,false);
+            gfx_draw_image_ignore_light(gun_profile_image, sprite_index, curr_x,curr_y, COLOR_TINT_NONE,0.7,0.0,1.0,true,false);
             gfx_draw_string(curr_x-half_hotbar_box_size+1,curr_y-half_hotbar_box_size,COLOR_WHITE,0.2,0.0,1.0,false,true,"%d",i+1);
 
             curr_x += (hotbar_box_size + hotbar_padding);

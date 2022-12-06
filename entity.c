@@ -138,7 +138,7 @@ void entities_draw(bool batched)
 
             case ENTITY_TYPE_PARTICLE:
             {
-                particles_draw_spawner((ParticleSpawner*)e->data, batched);
+                particles_draw_spawner((ParticleSpawner*)e->data, false, batched);
             } break;
         }
     }
