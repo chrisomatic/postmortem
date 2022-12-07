@@ -1,4 +1,5 @@
 #include "particles.h"
+#include "projectile.h"
 #include "player.h"
 #include "zombie.h"
 #include "effects.h"
@@ -11,39 +12,98 @@
 
 #include "entity.h"
 
-SortEntity entities[MAX_ENTITIES];
-int num_entities = 0;
+// glist* entity_list = NULL;
+// Entity entities[MAX_ENTITIES];
 
-static void sort_entity_list()
+
+glist* entity_draw_list = NULL;
+Entity draw_entities[MAX_DRAW_ENTITIES];
+
+
+
+GridBox grid_boxes[WORLD_GRID_ROWS_MAX][WORLD_GRID_COLS_MAX];
+// int num_entities = 0;
+
+void entities_init()
 {
-    // insertion sort
-    int i, j;
-    SortEntity key;
-    for (i = 1; i < num_entities; i++) 
-    {
-        memcpy(&key, &entities[i], sizeof(SortEntity));
-        j = i - 1;
+    // entity_list = list_create((void*)entities, MAX_ENTITIES, sizeof(Entity));
+    // if(entity_list == NULL)
+    // {
+    //     LOGE("entity list failed to create");
+    // }
 
-        while (j >= 0 && entities[j].y > key.y)
-        {
-            memcpy(&entities[j+1], &entities[j], sizeof(SortEntity));
-            j = j - 1;
-        }
-        memcpy(&entities[j+1], &key, sizeof(SortEntity));
+    entity_draw_list = list_create((void*)draw_entities, MAX_DRAW_ENTITIES, sizeof(Entity));
+    if(entity_draw_list == NULL)
+    {
+        LOGE("entity draw list failed to create");
+    
     }
 
-    // printf("==============================\n");
-    // for(int i = 0; i < num_entities; ++i)
-    // {
-    //     SortEntity* e = &entities[i];
-    //     printf("%d) type: %d, y: %d\n", i, e->type, e->y);
-    // }
+    printf("WORLD_GRID_ROWS_MAX: %d\n", WORLD_GRID_ROWS_MAX);
+    printf("WORLD_GRID_COLS_MAX: %d\n", WORLD_GRID_COLS_MAX);
+
+    for(int r = 0; r < WORLD_GRID_ROWS_MAX; ++r)
+    {
+        for(int c = 0; c < WORLD_GRID_COLS_MAX; ++c)
+        {
+            grid_boxes[r][c].num = 0;
+        }
+    }
+}
+
+// bool entity_add(Entity* entity)
+// {
+//     return list_add(entity_list, (void*)entity);
+// }
+
+
+// bool entity_remove(int index)
+// {
+//     return list_remove(entity_list, index);
+// }
+
+// int entity_get_index(uint32_t id)
+// {
+//     for(int i = 0; i < entity_list->count; ++i)
+//     {
+//         if(entities[i] == id)
+//             return i;
+//     }
+// }
+
+
+
+
+
+static void sort_entity_list(glist* list)
+{
+    Entity* lst = (Entity*)list->buf;
+    int count = list->count;
+
+    // insertion sort
+    int i, j;
+    Entity key;
+    for (i = 1; i < count; i++) 
+    {
+        memcpy(&key, &lst[i], sizeof(Entity));
+        j = i - 1;
+
+        while (j >= 0 && lst[j].sort_val > key.sort_val)
+        {
+            memcpy(&lst[j+1], &lst[j], sizeof(Entity));
+            j = j - 1;
+        }
+        memcpy(&lst[j+1], &key, sizeof(Entity));
+    }
+
 }
 
 
-void entities_update()
+
+
+void entities_update_draw_list()
 {
-    num_entities = 0;
+    list_clear(entity_draw_list);
 
     // players
     for(int i = 0; i < MAX_CLIENTS;++i)
@@ -53,14 +113,30 @@ void entities_update()
         {
             if(is_in_camera_view(&p->pos))
             {
-                entities[num_entities].type = ENTITY_TYPE_PLAYER;
-                // entities[num_entities].y = p->pos.y + p->pos.h/2.0;
-                entities[num_entities].y = p->phys.pos.y + p->standard_size.h/2.0;
-                entities[num_entities].data = (void*)p;
-                num_entities++;
+                Entity entity = {0};
+                entity.type = ENTITY_TYPE_PLAYER;
+                // entity.sort_val = p->pos.y + p->pos.h/2.0;
+                entity.sort_val = p->phys.pos.y + p->standard_size.h/2.0;
+                entity.data = (void*)p;
+                list_add(entity_draw_list, (void*)&entity);
             }
         }
     }
+
+    // not drawing projectiles
+    // // projectiles
+    // for(int i = plist->count - 1; i >= 0 ; --i)
+    // {
+    //     Projectile* p = &projectiles[i];
+    //     if(is_in_camera_view(&p->hurt_box))
+    //     {
+    //         Entity entity = {0};
+    //         entity.type = ENTITY_TYPE_PROJECTILE;
+    //         entity.sort_val = p->pos.y + p->hurt_box.h/2.0;
+    //         entity.data = (void*)p;
+    //         list_add(entity_draw_list, (void*)&entity);
+    //     }
+    // }
 
     // zombies
     for(int i = zlist->count - 1; i >= 0 ; --i)
@@ -68,10 +144,11 @@ void entities_update()
         Zombie* z = &zombies[i];
         if(is_in_camera_view(&z->phys.pos))
         {
-            entities[num_entities].type = ENTITY_TYPE_ZOMBIE;
-            entities[num_entities].y = z->phys.pos.y + z->phys.pos.h/2.0;
-            entities[num_entities].data = (void*)z;
-            num_entities++;
+            Entity entity = {0};
+            entity.type = ENTITY_TYPE_ZOMBIE;
+            entity.sort_val = z->phys.pos.y + z->phys.pos.h/2.0;
+            entity.data = (void*)z;
+            list_add(entity_draw_list, (void*)&entity);
         }
     }
 
@@ -83,10 +160,11 @@ void entities_update()
         map_grid_to_rect(b->row, b->col, &r);
         if(is_in_camera_view(&r))
         {
-            entities[num_entities].type = ENTITY_TYPE_BLOCK;
-            entities[num_entities].y = r.y + r.h/2.0;
-            entities[num_entities].data = (void*)b;
-            num_entities++;
+            Entity entity = {0};
+            entity.type = ENTITY_TYPE_BLOCK;
+            entity.sort_val = r.y + r.h/2.0;
+            entity.data = (void*)b;
+            list_add(entity_draw_list, (void*)&entity);
         }
     }
 
@@ -98,16 +176,18 @@ void entities_update()
         {
             if(particles_is_spawner_in_camera_view(s))
             {
-                entities[num_entities].type = ENTITY_TYPE_PARTICLE;
-                entities[num_entities].y = s->pos.y;
-                entities[num_entities].data = (void*)s;
-                num_entities++;
+                Entity entity = {0};
+                entity.type = ENTITY_TYPE_PARTICLE;
+                entity.sort_val = s->pos.y;
+                entity.data = (void*)s;
+                
+                list_add(entity_draw_list, (void*)&entity);
             }
         }
     }
 
-    // sort entities
-    sort_entity_list();
+    // sort draw_entities
+    sort_entity_list(entity_draw_list);
 }
 
 void entities_draw(bool batched)
@@ -115,15 +195,21 @@ void entities_draw(bool batched)
     if(batched)
         gfx_sprite_batch_begin(true);
 
-    for(int i = 0; i < num_entities; ++i)
+    for(int i = 0; i < entity_draw_list->count; ++i)
     {
-        SortEntity* e = &entities[i];
+        Entity* e = &draw_entities[i];
 
         switch(e->type)
         {
             case ENTITY_TYPE_PLAYER:
             {
                 player_draw((Player*)e->data, batched);
+            } break;
+
+            case ENTITY_TYPE_PROJECTILE:
+            {
+                // not drawing projectiles
+                // (Projectile*)e->data
             } break;
 
             case ENTITY_TYPE_ZOMBIE:
@@ -145,4 +231,221 @@ void entities_draw(bool batched)
 
     if(batched)
         gfx_sprite_batch_draw();
+}
+
+// @NOTE: assumes that r is smaller than a grid space
+static int get_grid_boxes(Rect* rect, int rows[4], int cols[4])
+{
+    int row = 0, col = 0;
+    coords_to_world_grid(rect->x, rect->y, &row, &col);
+
+    int count = 0;
+    rows[count] = row;
+    cols[count] = col;
+    count++;
+
+    Rect g = {0};
+    world_grid_to_rect(row, col, &g);
+
+    for(int r = -1; r < 1; ++r)
+    {
+        for(int c = -1; c < 1; ++c)
+        {
+            if(r == 0 && c == 0) continue;
+            int _row = r+row;
+            int _col = c+col;
+            if(_row < 0 || _col < 0) continue;
+
+            Rect check = {0};
+            world_grid_to_rect(_row, _col, &check);
+            if(rectangles_colliding(rect, &check))
+            {
+                rows[count] = _row;
+                cols[count] = _col;
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int cols[4])
+{
+    if(type == ENTITY_TYPE_PARTICLE)
+        return 0;
+
+    Rect rect = {0};
+    switch(type)
+    {
+        case ENTITY_TYPE_PLAYER:
+        {
+            Player* p = (Player*)data;
+            rect = p->pos;
+        } break;
+
+        case ENTITY_TYPE_PROJECTILE:
+        {
+            Projectile* p = (Projectile*)data;
+            rect = p->hurt_box;
+        } break;
+
+        case ENTITY_TYPE_ZOMBIE:
+        {
+            Zombie* z = (Zombie*)data;
+            rect = z->phys.pos;
+        } break;
+
+        case ENTITY_TYPE_BLOCK:
+        {
+            block_t* b = (block_t*)data;
+            map_grid_to_rect(b->row, b->col, &rect);
+        } break;
+    }
+
+    int count = get_grid_boxes(&rect, rows, cols);
+    return count;
+}
+
+
+void add_to_grid_boxes(EntityType type, void* data)
+{
+
+    int rows[4] = {0};
+    int cols[4] = {0};
+
+    int count = entity_get_grid_boxes(type, data, rows, cols);
+
+    for(int i = 0; i < count; ++i)
+    {
+        int r = rows[i];
+        int c = cols[i];
+        if(r > WORLD_GRID_ROWS_MAX || c > WORLD_GRID_COLS_MAX)
+            continue;
+        GridBox* g = &grid_boxes[r][c];
+
+        if(g->num >= MAX_GRIDBOX_ENTITIES)
+            continue;
+
+        g->entities[g->num].type = type;
+        g->entities[g->num].data = data;
+        g->num++;
+    }
+
+}
+
+
+void entity_remove_from_grid_boxes(EntityType type, void* data)
+{
+
+    int rows[4] = {0};
+    int cols[4] = {0};
+    // int count = get_grid_boxes(&rect, rows, cols);
+
+    int count = entity_get_grid_boxes(type, data, rows, cols);
+
+    for(int i = 0; i < count; ++i)
+    {
+        int r = rows[i];
+        int c = cols[i];
+        if(r > WORLD_GRID_ROWS_MAX || c > WORLD_GRID_COLS_MAX)
+            continue;
+        GridBox* g = &grid_boxes[r][c];
+        
+
+        int idx = 0;
+        for(;;)
+        {
+            if(idx >= g->num)
+                break;
+
+            if(g->entities[idx].type = type)
+            {
+                if(g->entities[idx].data = data)
+                {
+                    memcpy(&g->entities[idx], &g->entities[g->num], sizeof(Entity));
+                    g->num--;
+                    continue;
+                }
+            }
+            idx++;
+        }
+
+    }
+
+
+    // // could make this more efficient probably
+    // for(int r = 0; r < WORLD_GRID_ROWS_MAX; ++r)
+    // {
+    //     for(int c = 0; c < WORLD_GRID_COLS_MAX; ++c)
+    //     {
+    //         GridBox* g = &grid_boxes[r][c];
+    //         int num = g->num;
+    //         for(int i = 0; i < num; ++i)
+    //         {
+    //             if(g->entities[i].type = type)
+    //             {
+    //                 if(g->entities[i].data = data)
+    //                 {
+    //                     memcpy(&g->entities[i], &g->entities[g->num], sizeof(Entity));
+    //                     g->num--;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+}
+
+
+void entities_update_grid_boxes()
+{
+
+    for(int r = 0; r < WORLD_GRID_ROWS_MAX; ++r)
+    {
+        for(int c = 0; c < WORLD_GRID_COLS_MAX; ++c)
+        {
+            grid_boxes[r][c].num = 0;
+        }
+    }
+
+    // players
+    for(int i = 0; i < MAX_CLIENTS;++i)
+    {
+        Player* p = &players[i];
+        if(p->active)
+        {
+            add_to_grid_boxes(ENTITY_TYPE_PLAYER, (void*)p);
+        }
+    }
+
+    // projectiles
+    for(int i = plist->count - 1; i >= 0 ; --i)
+    {
+        Projectile* p = &projectiles[i];
+        add_to_grid_boxes(ENTITY_TYPE_PROJECTILE, (void*)p);
+
+    }
+
+    // zombies
+    for(int i = zlist->count - 1; i >= 0 ; --i)
+    {
+        Zombie* z = &zombies[i];
+        add_to_grid_boxes(ENTITY_TYPE_ZOMBIE, (void*)z);
+    }
+
+    // blocks
+    for(int i = 0; i < blist->count; ++i)
+    {
+        block_t* b = &blocks[i];
+        add_to_grid_boxes(ENTITY_TYPE_BLOCK, (void*)b);
+    }
+
+    // // particle spawners
+    // for(int i = 0; i < spawner_list->count; ++i)
+    // {
+    //     ParticleSpawner* s = &spawners[i];
+    //     if(!s->hidden && s != editor_get_particle_spawner()) //particle_spawner is in editor.h
+    //     {
+    //     }
+    // }
+
 }

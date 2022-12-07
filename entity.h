@@ -1,29 +1,49 @@
 #pragma once
-
+#include "glist.h"
+#include "world.h"
 
 
 #define MAX_ENTITIES 10000
+#define MAX_DRAW_ENTITIES 1000
+#define MAX_GRIDBOX_ENTITIES 32
+
 
 typedef enum
 {
     ENTITY_TYPE_PLAYER,
     ENTITY_TYPE_ZOMBIE,
     ENTITY_TYPE_BLOCK,
-    ENTITY_TYPE_PARTICLE    //spawner
-    // ENTITY_TYPE_PROJECTILE,
+    ENTITY_TYPE_PARTICLE,    //spawner
+    ENTITY_TYPE_PROJECTILE,
 } EntityType;
 
 typedef struct
 {
     EntityType type;
-    int y;
     void* data;
-} SortEntity;
+    int sort_val;
+} Entity;
+
+// typedef struct
+// {
+//     EntityType type;
+//     int y;
+//     void* data;
+// } SortEntity;
+
+typedef struct
+{
+    Entity entities[MAX_GRIDBOX_ENTITIES];
+    int num;
+} GridBox;
 
 
-extern SortEntity entities[MAX_ENTITIES];
-extern int num_entities;
+extern GridBox grid_boxes[WORLD_GRID_ROWS_MAX][WORLD_GRID_COLS_MAX];
+extern Entity draw_entities[MAX_DRAW_ENTITIES];
 
+void entities_init();
 
-void entities_update();
+void entities_update_draw_list();
 void entities_draw(bool batched);
+
+void entities_update_grid_boxes();

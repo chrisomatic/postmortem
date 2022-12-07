@@ -1166,7 +1166,7 @@ void player_update(Player* p, double delta_t)
         float py = p->phys.pos.y;
         // gfx_add_line(px,py,p->mouse_x,p->mouse_y,0x00FF0000);
 
-        if(p->state == PSTATE_ATTACKING)
+        if(p->state == PSTATE_ATTACKING && p->item.props != NULL)
         {
             Melee* melee = (Melee*)p->item.props;
             float d = melee->range;

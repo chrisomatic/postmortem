@@ -24,6 +24,7 @@
 
 uint32_t zombie_info_id = 0xFFFFFFFF;
 // int zombie_info_index = -1;
+bool zombies_pursue = true;
 bool zombies_idle = false;
 ZombieModel zombie_models[ZOMBIE_MODELS_MAX];
 int zombie_image_sets_none[ZOMBIE_MODELS_MAX][ZOMBIE_TEXTURES_MAX][ZANIM_MAX];
@@ -37,7 +38,7 @@ static Rect standard_size[ZOMBIE_MODELS_MAX];
 static uint32_t zid = 0;
 
 static void zombie_remove(Zombie* zom);
-static void wander(Zombie* zom, float delta_t);
+static void wander(Zombie* z, float delta_t);
 static void zombie_die(int index);
 
 void zombie_init()
@@ -158,15 +159,15 @@ bool zombie_add(ZombieSpawn* spawn)
     zombie.phys.max_linear_vel = spawn->max_linear_vel;
     zombie.push_vel.x = 0.0;
     zombie.push_vel.y = 0.0;
-    zombie.action_timer = 0;
     zombie.sprite_index = 0;
 
     coords_to_map_grid(zombie.phys.pos.x, zombie.phys.pos.y, &zombie.map_grid_pos.x, &zombie.map_grid_pos.y);
     coords_to_world_grid(zombie.phys.pos.x, zombie.phys.pos.y, &zombie.world_grid_pos.x, &zombie.world_grid_pos.y);
 
     zombie.hp_max = spawn->hp_max;
-    zombie.action = spawn->action;
-    zombie.action_timer_max = spawn->action_timer_max;
+    zombie.angle = 0.0f;
+    zombie.action_timer_max = 2.0;
+    zombie.action_timer = zombie.action_timer_max;
     zombie.speed = spawn->speed;
 
     zombie.model_index = spawn->model_index;
@@ -265,10 +266,10 @@ void zombie_push(int index, Vector2f* force)
         return;
     }
 
-    Zombie* zom = &zombies[index];
+    Zombie* z = &zombies[index];
 
-    zom->push_vel.x = force->x;
-    zom->push_vel.y = force->y;
+    z->push_vel.x = force->x;
+    z->push_vel.y = force->y;
 }
 
 void zombie_hurt(int index, float val)
@@ -279,17 +280,17 @@ void zombie_hurt(int index, float val)
         return;
     }
 
-    Zombie* zom = &zombies[index];
+    Zombie* z = &zombies[index];
+    z->hurt = true;
 
-    zom->hp -= val;
-    particles_spawn_effect(zom->phys.pos.x, zom->phys.pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
+    z->hp -= val;
+    particles_spawn_effect(z->phys.pos.x, z->phys.pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
 
-    if(zom->hp <= 0.0)
+    if(z->hp <= 0.0)
     {
         zombie_die(index);
     }
 
-    zom->hurt = true;
 }
 
 
@@ -308,7 +309,7 @@ void zombie_update_anim_timing(Zombie* z)
             break;
         case ZANIM_WALK:
         {
-            z->anim.max_frame_time = 0.055f;
+            z->anim.max_frame_time = 0.03f;
             float pvx = z->phys.vel.x;
             float pvy = z->phys.vel.y;
             float pv = sqrt(SQ(pvx) + SQ(pvy));
@@ -318,7 +319,7 @@ void zombie_update_anim_timing(Zombie* z)
         case ZANIM_ATTACK1:
             z->anim.max_frame_time = 0.045f;
             break;
-        default:
+        default: 
             z->anim.max_frame_time = 0.04f;
             break;
     }
@@ -363,53 +364,18 @@ void zombie_update_anim_state(Zombie* z)
 
 void zombie_update_sprite_index(Zombie* z)
 {
-    if(z->attacking)
-    {
-        float angle_deg = DEG(z->attack_angle);
-        int sector = angle_sector(angle_deg, 16);
+    float angle_deg = DEG(z->angle);
+    if(z->attacking) angle_deg = DEG(z->attack_angle);
+    int sector = angle_sector(angle_deg, 16);
 
-        if(sector == 15 || sector == 0)
-            z->sprite_index_direction = 2;
-        else if(sector == 1 || sector == 2)
-            z->sprite_index_direction = 3;
-        else if(sector == 3 || sector == 4)
-            z->sprite_index_direction = 4;
-        else if(sector == 5 || sector == 6)
-            z->sprite_index_direction = 5;
-        else if(sector == 7 || sector == 8)
-            z->sprite_index_direction = 6;
-        else if(sector == 9 || sector == 10)
-            z->sprite_index_direction = 7;
-        else if(sector == 11 || sector == 12)
-            z->sprite_index_direction = 0;
-        else if(sector == 13 || sector == 14) 
-            z->sprite_index_direction = 1;
-    }
-    else
-    {
-        bool up = z->phys.accel.y < 0;
-        bool down = z->phys.accel.y > 0;
-        bool left = z->phys.accel.x < 0;
-        bool right = z->phys.accel.x > 0;
-
-        if(up && left)
-            z->sprite_index_direction = 5;
-        else if(up && right)
-            z->sprite_index_direction = 3;
-        else if(down && left)
-            z->sprite_index_direction = 7;
-        else if(down && right)
-            z->sprite_index_direction = 1;
-        else if(up)
-            z->sprite_index_direction = 4;
-        else if(down)
-            z->sprite_index_direction = 0;
-        else if(left)
-            z->sprite_index_direction = 6;
-        else if(right)
-            z->sprite_index_direction = 2;
-
-    }
+    if(sector == 15 || sector == 0)       z->sprite_index_direction = 2;
+    else if(sector == 1 || sector == 2)   z->sprite_index_direction = 3;
+    else if(sector == 3 || sector == 4)   z->sprite_index_direction = 4;
+    else if(sector == 5 || sector == 6)   z->sprite_index_direction = 5;
+    else if(sector == 7 || sector == 8)   z->sprite_index_direction = 6;
+    else if(sector == 9 || sector == 10)  z->sprite_index_direction = 7;
+    else if(sector == 11 || sector == 12) z->sprite_index_direction = 0;
+    else if(sector == 13 || sector == 14) z->sprite_index_direction = 1;
 
     z->sprite_index = z->sprite_index_direction * 16;
 
@@ -457,6 +423,13 @@ void zombie_update_pursue(Zombie* z, float delta_t)
 
     if(zombies_idle)
         return;
+
+    if(!zombies_pursue)
+    {
+        z->pursuing = false;
+        z->pursue_player = NULL;
+        return;
+    }
 
     if(z->pursuing)
     {
@@ -547,48 +520,54 @@ Vector2f zombie_update_movement(Zombie* z, float delta_t)
         amt *= 1.5;
         float tx = z->pursue_target.x;
         float ty = z->pursue_target.y;
-        float angle = calc_angle_rad(z->phys.pos.x, z->phys.pos.y, tx, ty);
+        z->angle = calc_angle_rad(z->phys.pos.x, z->phys.pos.y, tx, ty);
 
         // set accel
-        accel.x += amt*cosf(angle);
-        accel.y += amt*sinf(2*PI-angle);
+        accel.x += amt*cosf(z->angle);
+        accel.y += amt*sinf(2*PI-z->angle);
     }
     else
     {
         wander(z, delta_t);
-        switch(z->action)
+        if(!z->action_none)
         {
-            case ZOMBIE_ACTION_NONE:
-                break;
-            case ZOMBIE_ACTION_MOVE_UP:
-                accel.y -= amt;
-                break;
-            case ZOMBIE_ACTION_MOVE_UP_RIGHT:
-                accel.x += amt;
-                accel.y -= amt;
-                break;
-            case ZOMBIE_ACTION_MOVE_RIGHT:
-                accel.x += amt;
-                break;
-            case ZOMBIE_ACTION_MOVE_DOWN_RIGHT:
-                accel.x += amt;
-                accel.y += amt;
-                break;
-            case ZOMBIE_ACTION_MOVE_DOWN:
-                accel.y += amt;
-                break;
-            case ZOMBIE_ACTION_MOVE_DOWN_LEFT:
-                accel.x -= amt;
-                accel.y += amt;
-                break;
-            case ZOMBIE_ACTION_MOVE_LEFT:
-                accel.x -= amt;
-                break;
-            case ZOMBIE_ACTION_MOVE_UP_LEFT:
-                accel.x -= amt;
-                accel.y -= amt;
-                break;
+            accel.y += amt*sinf(2*PI-z->angle);
+            accel.x += amt*cosf(z->angle);
         }
+
+        // switch(z->action)
+        // {
+        //     case ZOMBIE_ACTION_NONE:
+        //         break;
+        //     case ZOMBIE_ACTION_MOVE_UP:
+        //         accel.y -= amt;
+        //         break;
+        //     case ZOMBIE_ACTION_MOVE_UP_RIGHT:
+        //         accel.x += amt;
+        //         accel.y -= amt;
+        //         break;
+        //     case ZOMBIE_ACTION_MOVE_RIGHT:
+        //         accel.x += amt;
+        //         break;
+        //     case ZOMBIE_ACTION_MOVE_DOWN_RIGHT:
+        //         accel.x += amt;
+        //         accel.y += amt;
+        //         break;
+        //     case ZOMBIE_ACTION_MOVE_DOWN:
+        //         accel.y += amt;
+        //         break;
+        //     case ZOMBIE_ACTION_MOVE_DOWN_LEFT:
+        //         accel.x -= amt;
+        //         accel.y += amt;
+        //         break;
+        //     case ZOMBIE_ACTION_MOVE_LEFT:
+        //         accel.x -= amt;
+        //         break;
+        //     case ZOMBIE_ACTION_MOVE_UP_LEFT:
+        //         accel.x -= amt;
+        //         accel.y -= amt;
+        //         break;
+        // }
     }
 
     return accel;
@@ -620,7 +599,7 @@ void zombie_update(Zombie* z, float delta_t)
 
     z->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
 
-    if(!z->dead && !z->attacking)
+    if(!z->attacking && !zombies_idle && !z->dead)
     {
         for(int i = 0; i < MAX_CLIENTS; ++i)
         {
@@ -714,16 +693,9 @@ bool zombie_draw(Zombie* z, bool add_to_existing_batch)
             gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, z->color,z->scale,0.0,1.0,false,true);
         }
 
-        // bool draw_debug_stuff = debug_enabled;
-        // if(!draw_debug_stuff)
-        // {
-        //     // draw_debug_stuff = (z == &zombies[zombie_info_index]);
-        //     draw_debug_stuff = (z == zombie_get_by_id(zombie_info_id));
-        // }
 
-        bool draw_debug_stuff = debug_enabled && (z == zombie_get_by_id(zombie_info_id));
 
-        if(draw_debug_stuff)
+        if(debug_enabled)
         {
             float maxw = maxwh[z->model_index].x * z->scale;
             float maxh = maxwh[z->model_index].y * z->scale;
@@ -732,32 +704,45 @@ bool zombie_draw(Zombie* z, bool add_to_existing_batch)
             max_size.y = z->phys.pos.y;
             max_size.w = maxw;
             max_size.h = maxh;
+    
+            bool draw_debug_stuff = (z == zombie_get_by_id(zombie_info_id));
+            if(draw_debug_stuff)
+            {
+                gfx_draw_rect(&z->phys.pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
+                gfx_draw_rect(&z->collision_box, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
+                gfx_draw_rect(&z->hit_box, COLOR_HIT, 0.0, 1.0,1.0, false, true);
+                gfx_draw_rect(&max_size, COLOR_MAXSIZE, 0.0, 1.0,1.0, false, true);
 
-            gfx_draw_rect(&z->phys.pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
-            gfx_draw_rect(&z->collision_box, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
-            gfx_draw_rect(&z->hit_box, COLOR_HIT, 0.0, 1.0,1.0, false, true);
-            gfx_draw_rect(&max_size, COLOR_MAXSIZE, 0.0, 1.0,1.0, false, true);
+                // health bars
+                float h = 4.0;
+                float y = z->phys.pos.y + maxh * 0.5 + h/2.0 + 2.0;
+                float w = maxw;
+                float x = z->phys.pos.x;
 
-            // health bars
-            float h = 4.0;
-            float y = z->phys.pos.y + maxh * 0.5 + h/2.0 + 2.0;
-            float w = maxw;
-            float x = z->phys.pos.x;
+                Rect r = {0};
+                r.x = x;
+                r.y = y;
+                r.w = w;
+                r.h = h;
+                gfx_draw_rect(&r, COLOR_WHITE, 0.0, 1.0,1.0, true, true);
 
-            Rect r = {0};
-            r.x = x;
-            r.y = y;
-            r.w = w;
-            r.h = h;
-            gfx_draw_rect(&r, COLOR_WHITE, 0.0, 1.0,1.0, true, true);
+                float p = z->hp/z->hp_max;
+                r.h *= 0.8;
+                r.x = r.x-r.w/2.0;
+                r.w *= p;
+                r.x = r.x+r.w/2.0;
+                gfx_draw_rect(&r, COLOR_RED, 0.0, 1.0,1.0, true, true);
+            }
 
-            float p = z->hp/z->hp_max;
-            r.h *= 0.8;
-            r.x = r.x-r.w/2.0;
-            r.w *= p;
-            r.x = r.x+r.w/2.0;
-            gfx_draw_rect(&r, COLOR_RED, 0.0, 1.0,1.0, true, true);
+            // anim state
+            // const float name_size = 0.11;
+            // char* str = (char*)zombie_anim_state_str(z->anim_state);
+            // Vector2f size = gfx_string_get_size(name_size, str);
+            // float _x = z->phys.pos.x - size.x/2.0;
+            // float _y = z->phys.pos.y + max_size.h*0.5 + 2.0;
+            // gfx_draw_string(_x, _y, COLOR_WHITE, name_size, 0.0, 0.8, true, true, str);
         }
+
         return true;
     }
 
@@ -886,7 +871,7 @@ void zombie_melee_check_collision(Zombie* z)
             if(collision)
             {
                 z->melee_hit_count++;
-                printf("zombie hit collision with '%s'\n", p->name);
+                printf("(%d) zombie hit '%s'\n", z->id, p->name);
                 float damage = RAND_FLOAT(z->damage_min, z->damage_max);
                 player_hurt(p,damage);
             }
@@ -903,18 +888,18 @@ static void zombie_remove(Zombie* z)
     list_remove_by_item(zlist, z);
 }
 
-static void wander(Zombie* zom, float delta_t)
+static void wander(Zombie* z, float delta_t)
 {
-    zom->action_timer+=delta_t;
+    z->action_timer += delta_t;
 
-    if(zom->action_timer >= zom->action_timer_max)
+    if(z->action_timer >= z->action_timer_max)
     {
-        zom->action_timer = 0.0;//zom->action_timer_max;
-        zom->action = rand() % ZOMBIE_ACTION_MAX;
-        zom->action_timer_max = (rand() % 100)/50.0 + 0.5; // 0.5 to 2.0 seconds
+        z->action_none = RAND_RANGE(1, 10) <= 2;
+        z->action_timer = 0.0;
+        z->angle = RAND_FLOAT(0.0,PI*2);
+        z->action_timer_max = (rand() % 100)/50.0 + 0.5; // 0.5 to 2.0 seconds
     }
 }
-
 
 static void zombie_die(int index)
 {

@@ -10,9 +10,18 @@
 // num world grid cols = map.cols / WORLD_GRID_WIDTH
 // #define WORLD_GRID_WIDTH    25
 // #define WORLD_GRID_HEIGHT   25
-#define WORLD_GRID_WIDTH    20
-#define WORLD_GRID_HEIGHT   20
+#define WORLD_GRID_WIDTH    4
+#define WORLD_GRID_HEIGHT   4
 
+
+#define MAP_GRID_ROWS_MAX   1000
+#define MAP_GRID_COLS_MAX   1000
+
+#define WORLD_GRID_ROWS_MAX (MAP_GRID_ROWS_MAX / WORLD_GRID_HEIGHT)
+#define WORLD_GRID_COLS_MAX (MAP_GRID_COLS_MAX / WORLD_GRID_WIDTH)
+
+#define WORLD_GRID_ROWS (map.rows / WORLD_GRID_HEIGHT)
+#define WORLD_GRID_COLS (map.cols / WORLD_GRID_WIDTH)
 
 typedef struct
 {
@@ -26,6 +35,7 @@ typedef struct
     uint8_t* data;
     Rect rect;  //pixels
 } WorldMap;
+
 
 extern WorldMap map;
 

@@ -296,6 +296,9 @@ void init()
     LOGI(" - World.");
     world_init();
 
+    LOGI(" - Entities");
+    entities_init();
+
     LOGI(" - Particles.");
     particles_init();
 
@@ -391,7 +394,7 @@ void simulate(double delta_t)
 
     particles_update(delta_t);
 
-    entities_update(); //sorts the entity list
+    entities_update_draw_list(); //sorts the entity list
 }
 
 void simulate_client(double delta_t)
@@ -415,7 +418,7 @@ void simulate_client(double delta_t)
 
     projectile_update(delta_t);
 
-    entities_update(); //sorts the entity list
+    entities_update_draw_list(); //sorts the entity list
 }
 
 void draw()

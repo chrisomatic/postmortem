@@ -16,27 +16,10 @@
 #include "particles.h"
 #include "projectile.h"
 
-typedef struct
-{
-    ProjectileType type;
-    Vector2f pos;
-    Vector2i grid_pos;
-    Vector2i grid_pos_prior;
-    Vector2f vel;
-    float angle_deg;
-    float power;
-    int damage;
-    int sprite_index;
-    Rect hurt_box;
-    Rect hurt_box_prior;
-    float time;
-    float ttl;
-    bool dead;
-} Projectile;
 
 
-#define MAX_PROJECTILES 1024
-static Projectile projectiles[MAX_PROJECTILES];
+
+Projectile projectiles[MAX_PROJECTILES];
 glist* plist = NULL;
 
 static int projectile_image_set;

@@ -35,19 +35,19 @@ typedef struct
 } ZombieModel;
 
 
-typedef enum
-{
-    ZOMBIE_ACTION_NONE = 0,
-    ZOMBIE_ACTION_MOVE_UP,
-    ZOMBIE_ACTION_MOVE_UP_RIGHT,
-    ZOMBIE_ACTION_MOVE_RIGHT,
-    ZOMBIE_ACTION_MOVE_DOWN_RIGHT,
-    ZOMBIE_ACTION_MOVE_DOWN,
-    ZOMBIE_ACTION_MOVE_DOWN_LEFT,
-    ZOMBIE_ACTION_MOVE_LEFT,
-    ZOMBIE_ACTION_MOVE_UP_LEFT,
-    ZOMBIE_ACTION_MAX,
-} ZombieAction;
+// typedef enum
+// {
+//     ZOMBIE_ACTION_NONE = 0,
+//     ZOMBIE_ACTION_MOVE_UP,
+//     ZOMBIE_ACTION_MOVE_UP_RIGHT,
+//     ZOMBIE_ACTION_MOVE_RIGHT,
+//     ZOMBIE_ACTION_MOVE_DOWN_RIGHT,
+//     ZOMBIE_ACTION_MOVE_DOWN,
+//     ZOMBIE_ACTION_MOVE_DOWN_LEFT,
+//     ZOMBIE_ACTION_MOVE_LEFT,
+//     ZOMBIE_ACTION_MOVE_UP_LEFT,
+//     ZOMBIE_ACTION_MAX,
+// } ZombieAction;
 
 typedef struct
 {
@@ -60,9 +60,6 @@ typedef struct
     float scale;
     float hp;
     float hp_max;
-    ZombieAction action;
-    float action_timer;
-    float action_timer_max;
     Rect hit_box;
     Rect collision_box;
 
@@ -70,6 +67,10 @@ typedef struct
 
     float damage_min;
     float damage_max;
+    float angle;
+    bool action_none;
+    float action_timer;
+    float action_timer_max;
 
     //states
 
@@ -83,7 +84,7 @@ typedef struct
     bool attacking;
 
     float attack_range;
-    float attack_angle;
+    float attack_angle; // separate from angle
     uint8_t melee_hit_count;
 
     bool dead;
@@ -107,14 +108,13 @@ typedef struct
     float max_linear_vel;
     float scale;
     float hp_max;
-    ZombieAction action;
-    float action_timer_max;
 
     ZombieModelIndex model_index;
     int model_texture;
 } ZombieSpawn;
 
 extern uint32_t zombie_info_id;
+extern bool zombies_pursue;
 extern bool zombies_idle;
 extern ZombieModel zombie_models[ZOMBIE_MODELS_MAX];
 extern Zombie zombies[MAX_ZOMBIES];

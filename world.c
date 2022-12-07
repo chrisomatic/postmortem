@@ -72,6 +72,19 @@ static void load_map_file(const char* file_path)
     map.data = malloc(map.rows*map.cols*sizeof(uint8_t));
     memcpy(map.data, &bytes[idx], byte_count*sizeof(uint8_t));
 
+    if(map.rows > MAP_GRID_ROWS_MAX)
+    {
+        LOGW("map.rows (%u) exceeds max (%d)", map.rows, MAP_GRID_ROWS_MAX);
+        map.rows = MAP_GRID_ROWS_MAX;
+    }
+
+    if(map.cols > MAP_GRID_COLS_MAX)
+    {
+        LOGW("map.cols (%u) exceeds max (%d)", map.cols, MAP_GRID_COLS_MAX);
+        map.cols = MAP_GRID_COLS_MAX;
+    }
+
+
     // print map
     LOGI("Map Loaded (%s):", file_path);
     LOGI("  ID: %u",map.id);

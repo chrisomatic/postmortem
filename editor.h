@@ -40,7 +40,8 @@ static void editor_init()
 static char particles_file_name[20] = {0};
 static int num_zombies = 10;
 static bool editor_collapsed = true;
-static float camera_z = -0.25;
+// static float camera_z = -0.25;
+static float camera_z = 0.4;
 
 static void randomize_effect(ParticleEffect* effect)
 {
@@ -127,10 +128,11 @@ static void editor_draw()
             imgui_text_sized(20,buttons[selection]);
             imgui_newline();
 
-            float v1,v2;
+            // temp
+            static float v1=0,v2=0;
 
             Matrix* view = get_camera_transform();
-            
+
             switch(selection)
             {
                 case 0: // game
@@ -167,22 +169,33 @@ static void editor_draw()
                         for(int j = 0; j < num_zombies; ++j)
                         {
                             spawn.pos.x = RAND_FLOAT(x0, x1);
-                            spawn.pos.y = RAND_FLOAT(y0, y1);;
+                            spawn.pos.y = RAND_FLOAT(y0, y1);
                             spawn.scale = 1.0;
                             zombie_add(&spawn);
                         }
 
                     }
 
-                    char* zfreeze = "Freeze";
+                    char* zfreeze_str = "Freeze";
                     if(zombies_idle)
                     {
-                        zfreeze = "Unfreeze";
+                        zfreeze_str = "Unfreeze";
                     }
-                    if(imgui_button(zfreeze))
+                    if(imgui_button(zfreeze_str))
                     {
                         zombies_idle = !zombies_idle;
                     }
+
+                    char* zpursue_str = "Pursue";
+                    if(zombies_pursue)
+                    {
+                        zpursue_str = "Don't Pursue";
+                    }
+                    if(imgui_button(zpursue_str))
+                    {
+                        zombies_pursue = !zombies_pursue;
+                    }
+
 
                     imgui_horizontal_end();
                     break;

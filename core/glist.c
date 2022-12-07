@@ -74,6 +74,13 @@ bool list_remove_by_item(glist* list, void* item)
     list->count--;
 }
 
+bool list_clear(glist* list)
+{
+    if(list == NULL)
+        return false;
+    list->count = 0;
+}
+
 bool list_is_full(glist* list)
 {
     return (list->count >= list->max_count);
