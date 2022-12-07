@@ -13,6 +13,7 @@
 #include "log.h"
 #include "io.h"
 #include "main.h"
+#include "effects.h"
 
 #include "zombie.h"
 
@@ -35,7 +36,7 @@ static Rect standard_size[ZOMBIE_MODELS_MAX];
 
 static uint32_t zid = 0;
 
-static void zombie_remove(int index);
+static void zombie_remove(Zombie* zom);
 static void wander(Zombie* zom, float delta_t);
 static void zombie_die(int index);
 
@@ -178,6 +179,8 @@ bool zombie_add(ZombieSpawn* spawn)
     // zombie.scale = (float)ZOMBIE_HEIGHT*spawn->scale/standard_size[zombie.model_index].h;
     zombie.scale = (float)ZOMBIE_HEIGHT/standard_size[zombie.model_index].h;
 
+    zombie.color = COLOR_TINT_NONE;
+
     // animation
     zombie.anim.curr_frame = 0;
     zombie.anim.max_frames = 16;
@@ -205,9 +208,14 @@ bool zombie_add(ZombieSpawn* spawn)
 
     zombie.hurt = false;
     zombie.attacking = false;
+    zombie.dead = false;
     zombie.attack_range = 40.0;
     zombie.attack_angle = 0.0;
     zombie.melee_hit_count = 0;
+
+    zombie.damage_min = 1.0;
+    zombie.damage_max = 2.0;
+
 
     // set default values if not set by spawn
     if(FEQ(zombie.phys.max_linear_vel, 0.0))
@@ -274,6 +282,8 @@ void zombie_hurt(int index, float val)
     Zombie* zom = &zombies[index];
 
     zom->hp -= val;
+    particles_spawn_effect(zom->phys.pos.x, zom->phys.pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
+
     if(zom->hp <= 0.0)
     {
         zombie_die(index);
@@ -318,7 +328,11 @@ void zombie_update_anim_state(Zombie* z)
 {
     ZombieAnimState prior = z->anim_state;
 
-    if(z->attacking)
+    if(z->dead)
+    {
+        z->anim_state = ZANIM_DEAD;
+    }
+    else if(z->attacking)
     {
         z->anim_state = ZANIM_ATTACK1;
     }
@@ -515,6 +529,9 @@ Vector2f zombie_update_movement(Zombie* z, float delta_t)
     if(zombies_idle)
         return accel;
 
+    if(z->anim_state == ZANIM_DEAD)
+        return accel;
+
     if(z->anim_state == ZANIM_ATTACK1)
         return accel;
 
@@ -579,6 +596,16 @@ Vector2f zombie_update_movement(Zombie* z, float delta_t)
 
 void zombie_update(Zombie* z, float delta_t)
 {
+    if(z->dead)
+    {
+        z->dead_time += delta_t;
+
+        if(z->dead_time >= ZOMBIE_DEAD_MAX_TIME)
+        {
+            zombie_remove(z);
+            return;
+        }
+    }
 
     Vector2f accel = zombie_update_movement(z, delta_t);
 
@@ -591,10 +618,9 @@ void zombie_update(Zombie* z, float delta_t)
     physics_simulate(&z->phys, delta_t);
     physics_limit_pos(&map.rect, &z->phys.pos);
 
-
     z->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
 
-    if(!z->attacking)
+    if(!z->dead && !z->attacking)
     {
         for(int i = 0; i < MAX_CLIENTS; ++i)
         {
@@ -610,7 +636,6 @@ void zombie_update(Zombie* z, float delta_t)
             }
         }
     }
-
 
     zombie_update_anim_state(z);
     zombie_update_anim_timing(z);
@@ -682,11 +707,11 @@ bool zombie_draw(Zombie* z, bool add_to_existing_batch)
     {
         if(add_to_existing_batch)
         {
-            gfx_sprite_batch_add(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, COLOR_TINT_NONE,z->scale,0.0,1.0,false,false,false);
+            gfx_sprite_batch_add(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, z->color,z->scale,0.0,1.0,false,false,false);
         }
         else
         {
-            gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, COLOR_TINT_NONE,z->scale,0.0,1.0,false,true);
+            gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, z->color,z->scale,0.0,1.0,false,true);
         }
 
         // bool draw_debug_stuff = debug_enabled;
@@ -768,6 +793,8 @@ void zombies_update(float delta_t)
                 for(int j = zlist->count - 1; j >= 0; --j)
                 {
                     Zombie* z = &zombies[j];
+                    if(z->dead)
+                        continue;
                     // if(!is_in_world_grid(&z->phys.pos, wrow, wcol))
                     //     continue;
                     if(rectangles_colliding(&rm, &z->phys.pos))
@@ -816,6 +843,7 @@ const char* zombie_anim_state_str(ZombieAnimState anim_state)
         case ZANIM_WALK: return "walk";
         case ZANIM_HURT: return "hurt";
         case ZANIM_ATTACK1: return "attack1";
+        case ZANIM_DEAD: return "die";
         case ZANIM_NONE: return "";
         default: return "";
     }
@@ -859,6 +887,8 @@ void zombie_melee_check_collision(Zombie* z)
             {
                 z->melee_hit_count++;
                 printf("zombie hit collision with '%s'\n", p->name);
+                float damage = RAND_FLOAT(z->damage_min, z->damage_max);
+                player_hurt(p,damage);
             }
 
         }
@@ -868,9 +898,9 @@ void zombie_melee_check_collision(Zombie* z)
 // static functions
 // ------------------------------------------------------------------------------------------
 
-static void zombie_remove(int index)
+static void zombie_remove(Zombie* z)
 {
-    list_remove(zlist, index);
+    list_remove_by_item(zlist, z);
 }
 
 static void wander(Zombie* zom, float delta_t)
@@ -888,6 +918,9 @@ static void wander(Zombie* zom, float delta_t)
 
 static void zombie_die(int index)
 {
-    zombie_remove(index);
+    zombies[index].dead = true;
+    zombies[index].anim.max_loops = 1;
+    zombies[index].anim.finite = true;
+    zombies[index].color = 0x00AAAAAA;
 }
 

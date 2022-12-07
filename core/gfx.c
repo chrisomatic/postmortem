@@ -1240,7 +1240,9 @@ Vector2f gfx_string_get_size(float scale, char* fmt, ...)
 void gfx_anim_update(GFXAnimation* anim, double delta_t)
 {
     if(anim->finite && anim->curr_loop >= anim->max_loops)
+    {
         return;
+    }
 
     anim->curr_frame_time += delta_t;
     anim->max_frame_time = RANGE(anim->max_frame_time, 0.001, 10);
@@ -1248,15 +1250,14 @@ void gfx_anim_update(GFXAnimation* anim, double delta_t)
     while(anim->curr_frame_time >= anim->max_frame_time)
     {
         anim->curr_frame_time -= anim->max_frame_time;
-        // anim->curr_frame_time = 0;
         anim->curr_frame++;
 
         if(anim->curr_frame >= anim->max_frames)
         {
-            anim->curr_frame = 0;
-
-            // if(anim->finite)
             anim->curr_loop++;
+            anim->curr_frame = 0;
+            if(anim->finite && anim->curr_loop >= anim->max_loops)
+                anim->curr_frame = anim->max_frames-1;
         }
     }
 }

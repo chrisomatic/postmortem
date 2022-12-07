@@ -236,6 +236,9 @@ void projectile_update(float delta_t)
         {
             if(num_hits >= HITS_MAX) break;
 
+            if(zombies[j].dead)
+                continue;
+
             /*
             int x0 = proj->grid_pos_prior.x;
             int y0 = proj->grid_pos_prior.y;
@@ -289,8 +292,6 @@ void projectile_update(float delta_t)
                 printf("Zombie %d hurt for %d damage!\n",j_min,proj->damage);
             }
 
-            particles_spawn_effect(zombies[j_min].phys.pos.x, zombies[j_min].phys.pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
-
             // correct projectile pos back to zombie hitbox
             {
                 Vector2f p0 = {proj->hurt_box.x, proj->hurt_box.y};
@@ -310,11 +311,23 @@ void projectile_update(float delta_t)
                 update_hurt_box(proj);
             }
 
+            ParticleEffect pe;
+            memcpy(&pe,&particle_effects[EFFECT_BLOOD1],sizeof(ParticleEffect));
+
+            pe.scale.init_min *= 0.5;
+            pe.scale.init_max *= 0.5;
+            pe.velocity_x.init_min = (proj->vel.x*0.03);
+            pe.velocity_x.init_max = (proj->vel.x*0.03);
+            pe.velocity_x.rate = -0.02;
+            pe.velocity_y.init_min = -(proj->vel.y*0.03);
+            pe.velocity_y.init_max = 0.0;
+            pe.velocity_y.rate = -0.02;
+
+            particles_spawn_effect(zombies[j_min].phys.pos.x, zombies[j_min].phys.pos.y, &pe, 0.6, true, false);
+
+
             zombie_hurt(j_min,proj->damage);
-
         }
-
-
 
         float x0 = proj->hurt_box.x;
         float y0 = proj->hurt_box.y;

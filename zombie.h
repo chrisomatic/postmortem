@@ -5,6 +5,7 @@
 #define ZOMBIE_HEIGHT   50
 #define MAX_ZOMBIES 2000
 #define ZOMBIE_TEXTURES_MAX     5
+#define ZOMBIE_DEAD_MAX_TIME 5.0
 
 typedef enum
 {
@@ -12,11 +13,11 @@ typedef enum
     ZANIM_WALK,
     ZANIM_HURT,
     ZANIM_ATTACK1, // swing
+    ZANIM_DEAD,
 
     ZANIM_MAX,
     ZANIM_NONE    // keep this after MAX (affects image loading/lookup)
 } ZombieAnimState;
-
 
 typedef enum
 {
@@ -65,6 +66,11 @@ typedef struct
     Rect hit_box;
     Rect collision_box;
 
+    uint32_t color;
+
+    float damage_min;
+    float damage_max;
+
     //states
 
     bool moving;
@@ -80,6 +86,8 @@ typedef struct
     float attack_angle;
     uint8_t melee_hit_count;
 
+    bool dead;
+    float dead_time;
 
     // physical/graphical properties of the player
     GFXAnimation anim;

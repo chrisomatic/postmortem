@@ -62,6 +62,18 @@ bool list_remove(glist* list, int index)
     list->count--;
 }
 
+bool list_remove_by_item(glist* list, void* item)
+{
+    if(list == NULL)
+        return false;
+
+    if(item == NULL)
+        return false;
+
+    memcpy(item, list->buf+(list->count-1)*list->item_size, list->item_size);
+    list->count--;
+}
+
 bool list_is_full(glist* list)
 {
     return (list->count >= list->max_count);

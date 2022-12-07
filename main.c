@@ -46,6 +46,7 @@ int console_text_hist_selection = 0;
 bool console_enabled = false;
 bool debug_enabled = true;
 bool editor_enabled = true;
+bool show_menu = false;
 
 bool backspace_held = false;
 double t0_backspace = 0.0;
@@ -447,11 +448,7 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
     {
         if(action == GLFW_PRESS)
         {
-            if(key == GLFW_KEY_Q)
-            {
-                window_set_close(1);
-            }
-            else if(key == GLFW_KEY_F10)
+            if(key == GLFW_KEY_F10)
             {
                 window_controls_set_key_mode(KEY_MODE_TEXT);
                 window_controls_set_text_buf(console_text, CONSOLE_TEXT_MAX);

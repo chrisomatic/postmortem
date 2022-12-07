@@ -92,7 +92,6 @@ void player_init_models()
 
 void player_init_images()
 {
-
     //none
     for(int pm = 0; pm < PLAYER_MODELS_MAX; ++pm)
     {
@@ -192,6 +191,7 @@ void player_init_controls(Player* p)
 
     window_controls_add_key(&p->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
     window_controls_add_key(&p->actions[PLAYER_ACTION_EDITOR].state, GLFW_KEY_F3);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_MENU].state, GLFW_KEY_ESCAPE);
 }
 
 static void player_init(int index)
@@ -229,6 +229,9 @@ static void player_init(int index)
     p->speed = 32.0;
     p->max_base_speed = 128.0;
     p->phys.max_linear_vel = p->max_base_speed;
+
+    p->hp_max = 100.0;
+    p->hp = p->hp_max;
 
     coords_to_map_grid(p->pos.x, p->pos.y, &p->grid_pos.x, &p->grid_pos.y);
 
@@ -1024,6 +1027,11 @@ void player_update(Player* p, double delta_t)
             window_disable_cursor();
     }
 
+    if(p->actions[PLAYER_ACTION_MENU].toggled_on)
+    {
+        show_menu = !show_menu;
+    }
+
     if(role != ROLE_SERVER)
     {
         if(p->actions[PLAYER_ACTION_PRIMARY_ACTION].toggled_on)
@@ -1668,6 +1676,8 @@ void player_weapon_melee_check_collision(Player* p)
 
         for(int j = zlist->count - 1; j >= 0; --j)
         {
+            if(zombies[j].dead)
+                continue;
 
             bool collision = rectangles_colliding(&p->pos, &zombies[j].hit_box);
             // collision = false;
@@ -1700,6 +1710,21 @@ void player_weapon_melee_check_collision(Player* p)
 
         }
 
+    }
+}
+
+void player_hurt(Player* p, float damage)
+{
+    if(!p)
+        return;
+
+    p->hp -= damage;
+    particles_spawn_effect(p->phys.pos.x, p->phys.pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
+
+    if(p->hp <= 0.0)
+    {
+        p->hp = 0.0;
+        //player_die(p);
     }
 }
 

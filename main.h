@@ -39,6 +39,7 @@ extern Vector2f recoil_camera_offset;
 
 extern bool debug_enabled;
 extern bool editor_enabled;
+extern bool show_menu;
 
 const char* game_role_to_str(GameRole _role);
 

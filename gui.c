@@ -127,8 +127,10 @@ void gui_draw()
 
     // player HUD
     {
+
+
         //float factor = (window_height / (float)view_height);
-        int num_boxes = 5;
+        int num_boxes = 7;
         float hotbar_padding = 3.0;
         float hotbar_bottom_padding = 10.0;
         float hotbar_box_size = 50.0;
@@ -156,6 +158,19 @@ void gui_draw()
             gfx_draw_string(curr_x-half_hotbar_box_size+20,curr_y-half_hotbar_box_size-22,COLOR_WHITE,0.24,0.0,1.0,false,true,"x%d",g->bullets);
         }
 
+        // draw health
+        float health_bar_width  = 200.0;
+        float red_width = health_bar_width*(player->hp/player->hp_max);
+        float health_bar_height = 12.0;
+        float health_bar_padding = 4.0;
+
+        float health_bar_x = curr_x + health_bar_width/2.0;
+        float health_bar_y = curr_y - (hotbar_box_size + health_bar_height)/2.0 - health_bar_padding;
+
+        gfx_draw_rect_xywh(health_bar_x,health_bar_y,health_bar_width,health_bar_height,COLOR_BLACK,0.0,1.0,0.7,true,false);
+        gfx_draw_rect_xywh(curr_x + red_width/2.0,health_bar_y,red_width,health_bar_height,0x00CC0000,0.0,1.0,0.4,true,false);
+        
+        // draw hotbar
         for(int i = 0; i < num_boxes; ++i)
         {
             uint32_t color = 0x00333333;
@@ -165,13 +180,13 @@ void gui_draw()
             }
 
             // @TEMP
-            int sprite_index = 0;
+            int sprite_index;
             switch(i)
             {
                 case 0: sprite_index = 1; break;
                 case 1: sprite_index = 2; break;
                 case 2: sprite_index = 0; break;
-                default: break;
+                default: sprite_index = -1; break; // no sprite
             }
 
             gfx_draw_rect_xywh(curr_x,curr_y,hotbar_box_size,hotbar_box_size,COLOR_WHITE,0.0,1.0,0.8,false,false);

@@ -186,6 +186,7 @@ enum PlayerActions
     PLAYER_ACTION_EQUIP,
     PLAYER_ACTION_DEBUG,
     PLAYER_ACTION_EDITOR,
+    PLAYER_ACTION_MENU,
     PLAYER_ACTION_CYCLE_EQUIP_DOWN, //TEMP
     PLAYER_ACTION_CYCLE_EQUIP_UP,   //TEMP
 
@@ -267,6 +268,9 @@ typedef struct
     float scale;
     float speed;
     float max_base_speed;
+
+    float hp;
+    float hp_max;
 
     PlayerState state;
     bool busy;
@@ -361,6 +365,8 @@ void player_draw(Player* p, bool add_to_existing_batch);
 void player_draw_all();
 void player_draw_offscreen();
 void player_draw_crosshair(Player* p);
+
+void player_hurt(Player* p, float damage);
 
 const char* player_item_type_str(PlayerItemType item_type);
 
