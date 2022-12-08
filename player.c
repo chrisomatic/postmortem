@@ -249,8 +249,6 @@ static void player_init(int index)
     p->anim_state = ANIM_IDLE;
     player_update_image(p);
 
-
-
     // boxes and phys
     // --------------------------------------------------------
     p->sprite_index_direction = 0;
@@ -860,31 +858,6 @@ void player_update_image(Player* p)
     p->image = player_get_image_index(p);
 }
 
-void player_update_boxes2(Player* p)
-{
-    GFXImage* img = &gfx_images[p->image];
-    Rect* vr = &img->visible_rects[p->sprite_index];
-
-    get_actual_pos(p->phys.pos.x, p->phys.pos.y, p->scale, img->element_width, img->element_height, vr, &p->phys.actual_pos);
-
-    // limit_pos(&map.rect, &p->phys.actual_pos, &p->phys.pos);
-    limit_pos(&map.rect, &p->phys.collision, &p->phys.pos);
-
-    float px = p->phys.actual_pos.x;
-    float py = p->phys.actual_pos.y;
-
-    p->standard_size.x = px;
-    p->standard_size.y = py;
-
-    p->max_size.x = px;
-    p->max_size.y = py;
-
-    p->phys.hit = calc_box(&p->phys.actual_pos, 1.0, 0.5, 0);
-    p->phys.collision = calc_box(&p->phys.actual_pos, 1.0, 0.4, 2);
-    // p->phys.collision.w = 28;
-    // p->phys.collision.w = MIN(p->phys.collision.w, 31);
-}
-
 void player_update_pos_offset(Player* p)
 {
     GFXImage* img = &gfx_images[p->image];
@@ -909,7 +882,7 @@ void player_update_boxes(Player* p)
     p->phys.pos.h = p->phys.actual_pos.h;
 
     p->phys.hit = calc_box(&p->phys.actual_pos, 1.0, 0.5, 0);
-    p->phys.collision = calc_box(&p->phys.actual_pos, 1.0, 0.4, 2);
+    p->phys.collision = calc_box(&p->standard_size, 1.0, 0.4, 2);
 
     // Rect hit = calc_box(&p->phys.actual_pos, 1.0, 0.5, 0);
     // p->phys.hit.w = hit.w;
@@ -1409,7 +1382,6 @@ void player_draw(Player* p, bool add_to_existing_batch)
 
             gfx_draw_rect(&r, color, 0.0, 1.0, 0.15, true, true);
         }
-
     }
 
     if(debug_enabled)

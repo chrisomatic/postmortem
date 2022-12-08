@@ -24,6 +24,9 @@ Entity draw_entities[MAX_DRAW_ENTITIES];
 GridBox grid_boxes[WORLD_GRID_ROWS_MAX][WORLD_GRID_COLS_MAX];
 // int num_entities = 0;
 
+static Physics* entity_get_physics(EntityType type, void* data);
+static void handle_collisions(EntityType type, void* data, double delta_t);
+
 void entities_init()
 {
     // entity_list = list_create((void*)entities, MAX_ENTITIES, sizeof(Entity));
@@ -332,8 +335,7 @@ void add_to_grid_boxes(EntityType type, void* data)
     {
         int r = rows[i];
         int c = cols[i];
-        if(r > WORLD_GRID_ROWS_MAX || c > WORLD_GRID_COLS_MAX)
-            continue;
+
         GridBox* g = &grid_boxes[r][c];
 
         if(g->num >= MAX_GRIDBOX_ENTITIES)
@@ -343,9 +345,7 @@ void add_to_grid_boxes(EntityType type, void* data)
         g->entities[g->num].data = data;
         g->num++;
     }
-
 }
-
 
 void entity_remove_from_grid_boxes(EntityType type, void* data)
 {
@@ -360,8 +360,7 @@ void entity_remove_from_grid_boxes(EntityType type, void* data)
     {
         int r = rows[i];
         int c = cols[i];
-        if(r > WORLD_GRID_ROWS_MAX || c > WORLD_GRID_COLS_MAX)
-            continue;
+
         GridBox* g = &grid_boxes[r][c];
 
         int idx = 0;
@@ -463,3 +462,96 @@ void entities_update_grid_boxes()
     // }
 
 }
+
+void entities_handle_collisions(double delta_t)
+{
+    // players
+    for(int i = 0; i < MAX_CLIENTS;++i)
+    {
+        Player* p = &players[i];
+        if(p->active)
+        {
+            handle_collisions(ENTITY_TYPE_PLAYER, p, delta_t);
+        }
+    }
+
+    // zombies
+    for(int i = zlist->count - 1; i >= 0 ; --i)
+    {
+        Zombie* z = &zombies[i];
+        if(z->dead)
+            continue;
+
+        handle_collisions(ENTITY_TYPE_ZOMBIE, z, delta_t);
+    }
+
+#if 0
+    // projectiles
+    for(int i = plist->count - 1; i >= 0 ; --i)
+    {
+        //
+    }
+
+    // blocks
+    for(int i = 0; i < blist->count; ++i)
+    {
+        block_t* b = &blocks[i];
+    }
+#endif
+
+}
+
+static Physics* entity_get_physics(EntityType type, void* data)
+{
+    switch(type)
+    {
+        case ENTITY_TYPE_PLAYER:
+            return &((Player*)data)->phys;
+        case ENTITY_TYPE_ZOMBIE:
+        {
+            Zombie* z = (Zombie*)data;
+            if(z->dead)
+                return NULL;
+            return &z->phys;
+        }
+        default:
+            return NULL;
+    }
+}
+
+static void handle_collisions(EntityType type, void* data, double delta_t)
+{
+    int rows[4] = {0};
+    int cols[4] = {0};
+
+    int count = entity_get_grid_boxes(type, data, rows, cols);
+
+    Physics* phys1 = entity_get_physics(type,data);
+    if(!phys1)
+        return;
+
+    for(int i = 0; i < count; ++i)
+    {
+        int r = rows[i];
+        int c = cols[i];
+        if(r > WORLD_GRID_ROWS_MAX || c > WORLD_GRID_COLS_MAX)
+            continue;
+
+        GridBox* g = &grid_boxes[r][c];
+
+        for(int i = 0; i < g->num; ++i)
+        {
+            Entity* e = &g->entities[i];
+
+            if(e->data == data) // don't check self
+                continue;
+
+            Physics* phys2 = entity_get_physics(e->type,e->data);
+            if(!phys2)
+                continue;
+
+            physics_handle_collision(phys1, phys2, delta_t);
+        }
+    }
+}
+

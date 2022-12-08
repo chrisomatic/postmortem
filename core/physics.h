@@ -14,6 +14,7 @@ typedef struct
 
     Vector2f vel;
     Vector2f accel;
+    float mass;
     float max_linear_vel;
 } Physics;
 
@@ -35,8 +36,8 @@ void physic_apply_pos_offset(Physics* phys, float offset_x, float offset_y);
 void physic_set_pos_offset(Physics* phys, float offset_x, float offset_y);
 void physics_simulate(Physics* phys, Rect* limit, float delta_t);
 
-// void physics_simulate(Physics* phys, float delta_t);
 void physics_limit_pos(Rect* limit, Rect* pos);
 
+void physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t);
 
 bool physics_rect_collision(Rect* prior_box, Rect* curr_box, Rect* check, float delta_x_pos, float delta_y_pos, rect_collision_data_t* data);

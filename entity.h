@@ -41,3 +41,4 @@ void entities_draw(bool batched);
 
 void entity_remove_from_grid_boxes(EntityType type, void* data);
 void entities_update_grid_boxes();
+void entities_handle_collisions(double delta_t);

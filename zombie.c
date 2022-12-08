@@ -21,7 +21,7 @@
 #define IMG_ELEMENT_W 128
 #define IMG_ELEMENT_H 128
 
-#define NUM_ZOMBIES_INIT    10
+#define NUM_ZOMBIES_INIT    1
 
 uint32_t zombie_info_id = 0xFFFFFFFF;
 // int zombie_info_index = -1;
@@ -417,7 +417,17 @@ void zombie_update_boxes(Zombie* z)
     z->phys.pos.h = z->phys.actual_pos.h;
 
     z->phys.hit = calc_box(&z->phys.actual_pos, 1.0, 0.5, 0);
-    z->phys.collision = calc_box(&z->phys.actual_pos, 1.0, 0.4, 2);
+    //z->phys.collision = calc_box(&z->phys.actual_pos, 1.0, 0.4, 2);
+
+    float sw = standard_size[z->model_index].w * z->scale;
+    float sh = standard_size[z->model_index].h * z->scale;
+
+    Rect standard = {0};
+    standard.x = z->phys.actual_pos.x;
+    standard.y = z->phys.actual_pos.y;
+    standard.w = sw;
+    standard.h = sh;
+    z->phys.collision = calc_box(&standard, 1.0, 0.4, 2);
 }
 
 void zombie_update_pursue(Zombie* z, float delta_t)
@@ -747,8 +757,6 @@ bool zombie_draw(Zombie* z, bool add_to_existing_batch)
             gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, z->color,z->scale,0.0,z->opacity,false,true);
         }
 
-
-
         if(debug_enabled)
         {
             float maxw = maxwh[z->model_index].x * z->scale;
@@ -760,7 +768,7 @@ bool zombie_draw(Zombie* z, bool add_to_existing_batch)
             max_size.h = maxh;
     
             bool draw_debug_stuff = (z == zombie_get_by_id(zombie_info_id));
-            if(draw_debug_stuff)
+            if(true)//draw_debug_stuff)
             {
                 gfx_draw_rect(&z->phys.actual_pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
                 gfx_draw_rect(&z->phys.collision, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
