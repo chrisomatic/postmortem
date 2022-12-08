@@ -512,6 +512,7 @@ static void draw_debug_box()
             imgui_text_sized(big,"Player");
             imgui_indent_begin(small);
                 imgui_text("Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y);
+                imgui_text("Actual Pos: %d, %d", (int)player->phys.actual_pos.x, (int)player->phys.actual_pos.y);
                 imgui_text("Vel: %.2f, %.2f (%.2f)", pvx, pvy, pv);
                 imgui_text("Angle: %.2f, %.2f deg", player->angle, DEG(player->angle));
                 imgui_text("State: %s (%d)", player_state_str(player->state), player->state);

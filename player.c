@@ -204,57 +204,9 @@ static void player_init(int index)
         sprintf(p->name, "Player %d", p->index);
     }
 
-    p->model_index = HUMAN1;
-    p->model_texture = 0;
-    p->anim_state = ANIM_IDLE;
-
-    p->state = PSTATE_NONE;
-    p->busy = false;
-    p->moving = false;
-    p->running = false;
-
-    p->item_equipped = false;
-    p->item_index = 1;
-    player_set_equipped_item(p, 0);
-
-
-    p->sprite_index = 0;
-    p->sprite_index_direction = 0;
-    p->angle = 0.0;
-
-    p->phys.pos.x = 1000.0;
-    p->phys.pos.y = 1000.0;
-    p->phys.vel.x = 0.0;
-    p->phys.vel.y = 0.0;
-    p->speed = 32.0;
-    p->max_base_speed = 128.0;
-    p->phys.max_linear_vel = p->max_base_speed;
-
-    p->hp_max = 100.0;
-    p->hp = p->hp_max;
-
-    coords_to_map_grid(p->pos.x, p->pos.y, &p->grid_pos.x, &p->grid_pos.y);
-
-    int standard_img = player_image_sets_none[p->model_index][p->model_texture][ANIM_IDLE];
-    if(standard_img != -1)
-    {
-        Rect* r = &gfx_images[standard_img].visible_rects[0];
-        p->scale = (float)PLAYER_HEIGHT/r->h;
-        p->standard_size = *r;
-    }
-    else
-    {
-        LOGE("Player standard_img is -1");
-    }
-    p->standard_size.w *= p->scale;
-    p->standard_size.h *= p->scale;
-
-    float maxw=0.0, maxh=0.0;
-    player_get_maxwh(p, &maxw, &maxh);
-    p->max_size.w = maxw;
-    p->max_size.h = maxh;
 
     // animation
+    // --------------------------------------------------------
     p->anim.curr_frame = 0;
     p->anim.max_frames = 16;
     p->anim.curr_frame_time = 0.0f;
@@ -279,6 +231,80 @@ static void player_init(int index)
     p->anim.frame_sequence[14] = 10;
     p->anim.frame_sequence[15] = 11;
 
+    // state vars
+    // --------------------------------------------------------
+    p->item_equipped = false;
+    p->item_index = 1;
+    player_set_equipped_item(p, 0);
+
+    p->state = PSTATE_NONE;
+    p->busy = false;
+    p->moving = false;
+    p->running = false;
+
+    // model and texture
+    // --------------------------------------------------------
+    p->model_index = HUMAN1;
+    p->model_texture = 0;
+    p->anim_state = ANIM_IDLE;
+    player_update_image(p);
+
+
+
+    // boxes and phys
+    // --------------------------------------------------------
+    p->sprite_index_direction = 0;
+    p->sprite_index = 0;
+    p->angle = 0.0;
+    player_update_sprite_index(p);
+
+    int standard_img = player_image_sets_none[p->model_index][p->model_texture][ANIM_IDLE];
+    if(standard_img != -1)
+    {
+        Rect* r = &gfx_images[standard_img].visible_rects[0];
+        p->scale = (float)PLAYER_HEIGHT/r->h;
+        p->standard_size = *r;
+    }
+    else
+    {
+        LOGE("Player standard_img is -1");
+    }
+    p->standard_size.w *= p->scale;
+    p->standard_size.h *= p->scale;
+
+    float maxw=0.0, maxh=0.0;
+    player_get_maxwh(p, &maxw, &maxh);
+    p->max_size.w = maxw;
+    p->max_size.h = maxh;
+
+    p->phys.pos.x = 1000.0;
+    p->phys.pos.y = 1000.0;
+    p->phys.actual_pos.x = p->phys.pos.x;
+    p->phys.actual_pos.y = p->phys.pos.y;
+    player_update_static_boxes(p);
+    player_update_boxes(p);
+    player_update_pos_offset(p);
+    // p->phys.hit = calc_box(&p->phys.actual_pos, 1.0, 0.5, 0);
+    // p->phys.collision = calc_box(&p->phys.actual_pos, 1.0, 0.4, 2);
+
+    // printf("Collision: "); print_rect(&p->phys.collision);
+    // printf("HIT: "); print_rect(&p->phys.hit);
+
+    p->speed = 128.0;
+    p->max_base_speed = 128.0;
+    p->phys.max_linear_vel = p->max_base_speed;
+    p->phys.vel.x = 0.0;
+    p->phys.vel.y = 0.0;
+
+
+
+    // other
+    // --------------------------------------------------------
+    p->hp_max = 100.0;
+    p->hp = p->hp_max;
+    coords_to_map_grid(p->phys.actual_pos.x, p->phys.actual_pos.y, &p->grid_pos.x, &p->grid_pos.y);
+
+
     p->predicted_state_index = 0;
 
     // light for player
@@ -293,10 +319,7 @@ static void player_init(int index)
     }
     */
 
-    player_update_anim_state(p);
-    player_update_image(p);
-    player_update_sprite_index(p);
-    player_update_boxes(p);
+
 }
 
 void players_init()
@@ -837,18 +860,18 @@ void player_update_image(Player* p)
     p->image = player_get_image_index(p);
 }
 
-void player_update_boxes(Player* p)
+void player_update_boxes2(Player* p)
 {
     GFXImage* img = &gfx_images[p->image];
     Rect* vr = &img->visible_rects[p->sprite_index];
 
-    get_actual_pos(p->phys.pos.x, p->phys.pos.y, p->scale, img->element_width, img->element_height, vr, &p->pos);
+    get_actual_pos(p->phys.pos.x, p->phys.pos.y, p->scale, img->element_width, img->element_height, vr, &p->phys.actual_pos);
 
-    // limit_pos(&map.rect, &p->pos, &p->phys.pos);
-    limit_pos(&map.rect, &p->collision_box, &p->phys.pos);
+    // limit_pos(&map.rect, &p->phys.actual_pos, &p->phys.pos);
+    limit_pos(&map.rect, &p->phys.collision, &p->phys.pos);
 
-    float px = p->pos.x;
-    float py = p->pos.y;
+    float px = p->phys.actual_pos.x;
+    float py = p->phys.actual_pos.y;
 
     p->standard_size.x = px;
     p->standard_size.y = py;
@@ -856,11 +879,59 @@ void player_update_boxes(Player* p)
     p->max_size.x = px;
     p->max_size.y = py;
 
-    p->hit_box = calc_box(&p->pos, 1.0, 0.5, 0);
-    p->collision_box = calc_box(&p->pos, 1.0, 0.4, 2);
-    // p->collision_box.w = 28;
-    // p->collision_box.w = MIN(p->collision_box.w, 31);
+    p->phys.hit = calc_box(&p->phys.actual_pos, 1.0, 0.5, 0);
+    p->phys.collision = calc_box(&p->phys.actual_pos, 1.0, 0.4, 2);
+    // p->phys.collision.w = 28;
+    // p->phys.collision.w = MIN(p->phys.collision.w, 31);
 }
+
+void player_update_pos_offset(Player* p)
+{
+    GFXImage* img = &gfx_images[p->image];
+    Rect* vr = &img->visible_rects[p->sprite_index];
+    float img_center_x = img->element_width/2.0;
+    float img_center_y = img->element_height/2.0;
+    float offset_x = (vr->x - img_center_x)*p->scale;
+    float offset_y = (vr->y - img_center_y)*p->scale;
+    physic_set_pos_offset(&p->phys, offset_x, offset_y);    // change offset based off new sprite
+}
+
+void player_update_boxes(Player* p)
+{
+    GFXImage* img = &gfx_images[p->image];
+    Rect* vr = &img->visible_rects[p->sprite_index];
+
+    p->phys.actual_pos.w = vr->w * p->scale;
+    p->phys.actual_pos.h = vr->h * p->scale;
+
+    // maybe not necessary
+    p->phys.pos.w = p->phys.actual_pos.w;
+    p->phys.pos.h = p->phys.actual_pos.h;
+
+    p->phys.hit = calc_box(&p->phys.actual_pos, 1.0, 0.5, 0);
+    p->phys.collision = calc_box(&p->phys.actual_pos, 1.0, 0.4, 2);
+
+    // Rect hit = calc_box(&p->phys.actual_pos, 1.0, 0.5, 0);
+    // p->phys.hit.w = hit.w;
+    // p->phys.hit.h = hit.h;
+
+    // Rect collision = calc_box(&p->phys.actual_pos, 1.0, 0.4, 2);
+    // p->phys.collision.w = collision.w;
+    // p->phys.collision.h = collision.h;
+}
+
+void player_update_static_boxes(Player* p)
+{
+    float px = p->phys.actual_pos.x;
+    float py = p->phys.actual_pos.y;
+
+    p->standard_size.x = px;
+    p->standard_size.y = py;
+
+    p->max_size.x = px;
+    p->max_size.y = py;
+}
+
 
 
 void player_update_sprite_index(Player* p)
@@ -921,8 +992,16 @@ void player_update(Player* p, double delta_t)
         Zombie* z = zombie_get_by_id(zombie_info_id);
         if(z != NULL)
         {
+            float prior_x = z->phys.pos.x;
+            float prior_y = z->phys.pos.y;
+
             z->phys.pos.x = p->mouse_x;
             z->phys.pos.y = p->mouse_y;
+
+            float dx = z->phys.pos.x - prior_x;
+            float dy = z->phys.pos.y - prior_y;
+
+            physic_apply_pos_offset(&z->phys, dx, dy);
             zombie_update_boxes(z);
         }
     }
@@ -1077,88 +1156,64 @@ void player_update(Player* p, double delta_t)
         accel_factor *= SQRT2OVER2;
     }
 
-    /*
-    if(moving_player && p->item.mouse_aim)
-    {
-        float moving_angle = 0.0;
-
-        if(up && left)          moving_angle = 135.0;
-        else if(up && right)    moving_angle = 45.0;
-        else if(down && left)   moving_angle = 225.0;
-        else if(down && right)  moving_angle = 315.0;
-        else if(up)             moving_angle = 90.0;
-        else if(down)           moving_angle = 270.0;
-        else if(left)           moving_angle = 180.0;
-        else if(right)          moving_angle = 0.0;
-
-        float angle_diff = ABS(moving_angle - DEG(p->angle));
-        if(angle_diff >= 180.0)
-            angle_diff = 360.0 - angle_diff;
-
-        float flux = 1.0 - (angle_diff/360.0f);
-
-        accel_factor *= RANGE(flux,0.5,1.0);
-    }
-    */
-
-    //printf("accel_factor: %f\n",accel_factor);
-
     accel.x *= accel_factor;
     accel.y *= accel_factor;
     p->phys.max_linear_vel *= accel_factor;
 
-#if 0
-    if(role == ROLE_SERVER)
-    {
-        printf("player pos: %f %f, accel: %f %f, delta_t: %f,map rect: %f %f %f %f",
-                p->phys.pos.x,
-                p->phys.pos.y,
-                accel.x,
-                accel.y,
-                delta_t,
-                map.rect.x,
-                map.rect.y,
-                map.rect.w,
-                map.rect.h);
-    }
-#endif
-
-    Rect prior_pos = p->phys.pos;
-    Rect prior_collision_box = p->collision_box;
-
-    physics_begin(&p->phys);
-    physics_add_friction(&p->phys, 16.0);
-    physics_add_force(&p->phys, accel.x, accel.y);
-    physics_simulate(&p->phys, delta_t);
-
-    coords_to_map_grid(p->pos.x, p->pos.y, &p->grid_pos.x, &p->grid_pos.y);
-
     p->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
+
+    // finish attack
+    if(p->state == PSTATE_ATTACKING && p->anim.curr_loop > 0)
+    { 
+        p->state = PSTATE_NONE;
+        p->busy = false;
+    }
 
     player_update_anim_state(p);
     player_update_anim_timing(p);
     player_update_image(p);
-
-    gfx_anim_update(&p->anim,delta_t);
-
-    // finish attack
-    if(p->state == PSTATE_ATTACKING && p->anim.curr_loop > 0)
-    {
-        p->state = PSTATE_NONE;
-        p->busy = false;
-        player_update_anim_state(p);
-        player_update_image(p);
-    }
-
+    gfx_anim_update(&p->anim, delta_t);
     player_update_sprite_index(p);
-    player_update_boxes(p);
+    player_update_boxes(p);  // update width and heights of phys boxes
 
-    player_check_block_collision(p, prior_pos, prior_collision_box);
+    player_update_pos_offset(p);
 
-    player_weapon_melee_check_collision(p);
+    physics_begin(&p->phys);
+    physics_add_friction(&p->phys, 16.0);
+    physics_add_force(&p->phys, accel.x, accel.y);
+    physics_simulate(&p->phys, &map.rect, delta_t);
+
+    player_update_static_boxes(p);
+
+    coords_to_map_grid(p->phys.actual_pos.x, p->phys.actual_pos.y, &p->grid_pos.x, &p->grid_pos.y);
 
 
-    //lighting_point_light_move(p->point_light, p->pos.x, p->pos.y);
+    // player_update_anim_state(p);
+    // player_update_anim_timing(p);
+    // player_update_image(p);
+    // gfx_anim_update(&p->anim,delta_t);
+
+
+
+    // // finish attack
+    // if(p->state == PSTATE_ATTACKING && p->anim.curr_loop > 0)
+    // { 
+    //     p->state = PSTATE_NONE;
+    //     p->busy = false;
+    //     player_update_anim_state(p);
+    //     player_update_anim_timing(p);
+    //     player_update_image(p);
+    //     player_update_sprite_index(p);
+    // }
+
+    // player_update_sprite_index(p);
+    // player_update_boxes(p);
+
+    // player_check_block_collision(p, prior_pos, prior_collision_box);
+    // player_weapon_melee_check_collision(p);
+
+
+    //lighting_point_light_move(p->point_light, p->phys.actual_pos.x, p->phys.actual_pos.y);
 
     if(debug_enabled)
     {
@@ -1234,6 +1289,14 @@ void player_handle_net_inputs(Player* p, double delta_t)
 //TODO: fix this function
 void player_update_other(Player* p, double delta_t)
 {
+
+    if(!p->active) return;
+    if(p == player) return;
+
+    player_add_detect_radius(p, delta_t * -0.8);
+
+
+
     p->lerp_t += delta_t;
 
     float tick_time = 1.0/TICK_RATE;
@@ -1245,13 +1308,21 @@ void player_update_other(Player* p, double delta_t)
 
     p->angle = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
 
+    // player_update_anim_state(p);
+    // player_update_anim_timing(p);
+    // player_update_image(p);
+    // gfx_anim_update(&p->anim, delta_t);
+    // player_update_sprite_index(p);
+    // player_update_boxes(p);
+
+
 }
 
 void player_draw(Player* p, bool add_to_existing_batch)
 {
     if(p == NULL) return;
 
-    if(!is_in_camera_view(&p->pos))
+    if(!is_in_camera_view(&p->phys.actual_pos))
     {
         return;
     }
@@ -1343,9 +1414,9 @@ void player_draw(Player* p, bool add_to_existing_batch)
 
     if(debug_enabled)
     {
-        gfx_draw_rect(&p->pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
-        gfx_draw_rect(&p->collision_box, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
-        gfx_draw_rect(&p->hit_box, COLOR_HIT, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->phys.actual_pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->phys.collision, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&p->phys.hit, COLOR_HIT, 0.0, 1.0,1.0, false, true);
         gfx_draw_rect(&p->max_size, COLOR_MAXSIZE, 0.0, p->scale,1.0, false, true);
 
 
@@ -1360,12 +1431,12 @@ void player_draw(Player* p, bool add_to_existing_batch)
         gfx_draw_rect(&r, COLOR_PURPLE, 0.0, 1.0,1.0, true, true);
 
         // pos
-        r.x = p->pos.x;
-        r.y = p->pos.y;
+        r.x = p->phys.actual_pos.x;
+        r.y = p->phys.actual_pos.y;
         gfx_draw_rect(&r, COLOR_ORANGE, 0.0, 1.0,1.0, true, true);
 
         // detect
-        gfx_draw_circle(p->pos.x,p->pos.y,p->detect_radius*MAP_GRID_PXL_SIZE,COLOR_PINK,1.0,false,true);
+        gfx_draw_circle(p->phys.actual_pos.x,p->phys.actual_pos.y,p->detect_radius*MAP_GRID_PXL_SIZE,COLOR_PINK,1.0,false,true);
     }
 
     // name
@@ -1378,28 +1449,28 @@ void player_draw(Player* p, bool add_to_existing_batch)
 
 void player_draw_offscreen()
 {
-    //@TEMP
-    static bool activate_player = false;
-    if(!activate_player)
-    {
-        Player* p = &players[2];
-        p->phys.pos.x = 1000;
-        p->phys.pos.y = 3000;
-        player_update_anim_state(p);
-        player_update_image(p);
-        player_update_sprite_index(p);
-        player_update_boxes(p);
-        p->active = true;
-        player_count++;
-        activate_player = true;
-    }
+    // //@TEMP
+    // static bool activate_player = false;
+    // if(!activate_player)
+    // {
+    //     Player* p = &players[2];
+    //     p->phys.pos.x = 1000;
+    //     p->phys.pos.y = 3000;
+    //     player_update_anim_state(p);
+    //     player_update_image(p);
+    //     player_update_sprite_index(p);
+    //     // player_update_boxes(p);
+    //     p->active = true;
+    //     player_count++;
+    //     activate_player = true;
+    // }
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
         Player* p = &players[i];
         if(p->active)
         {
-            // Rect* pos = &p->pos;
+            // Rect* pos = &p->phys.actual_pos;
             Rect* pos = &p->phys.pos;
             if(!is_in_camera_view(pos))
             {
@@ -1679,20 +1750,20 @@ void player_weapon_melee_check_collision(Player* p)
             if(zombies[j].dead)
                 continue;
 
-            bool collision = rectangles_colliding(&p->pos, &zombies[j].hit_box);
+            bool collision = rectangles_colliding(&p->phys.actual_pos, &zombies[j].phys.hit);
             // collision = false;
 
             if(!collision)
             {
-                float zx = zombies[j].phys.pos.x;
-                float zy = zombies[j].phys.pos.y;
+                float zx = zombies[j].phys.actual_pos.x;
+                float zy = zombies[j].phys.actual_pos.y;
                 float angle = calc_angle_rad(px, py, zx, zy);
 
                 bool within_angle_range = ABS(angle - p->angle) <= RAD(30); //hardcoded
 
                 if(within_angle_range)
                 {
-                    float zr = MAX(zombies[j].hit_box.w, zombies[j].hit_box.h)/2.0;
+                    float zr = MAX(zombies[j].phys.hit.w, zombies[j].phys.hit.h)/2.0;
                     float d = dist(px, py, zx, zy);
                     if(d <= (zr + melee->range))
                         collision = true;
@@ -1737,7 +1808,7 @@ bool player_check_block_collision(Player* p, Rect prior_pos, Rect prior_collisio
     for(int i = 0; i < blist->count; ++i)
     {
         block_t* b = &blocks[i];
-        Rect cb = p->collision_box;
+        Rect cb = p->phys.collision;
         float delta_x = p->phys.pos.x - prior_pos.x;
         float delta_y = p->phys.pos.y - prior_pos.y;
         bool collide = physics_rect_collision(&prior_collision_box, &cb, &b->collision_box, delta_x, delta_y, &data);
@@ -1746,10 +1817,10 @@ bool player_check_block_collision(Player* p, Rect prior_pos, Rect prior_collisio
             // printf("block collision index: %d\n", i);
             prior_pos.x = p->phys.pos.x;
             prior_pos.y = p->phys.pos.y;
-            // // prior_collision_box = p->collision_box;
-            p->phys.pos.x += (cb.x - p->collision_box.x);
-            p->phys.pos.y += (cb.y - p->collision_box.y);
-            player_update_boxes(p);
+            // // prior_collision_box = p->phys.collision;
+            p->phys.pos.x += (cb.x - p->phys.collision.x);
+            p->phys.pos.y += (cb.y - p->phys.collision.y);
+            // player_update_boxes(p);
         }
     }
     // if(collide)

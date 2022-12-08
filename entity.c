@@ -111,12 +111,13 @@ void entities_update_draw_list()
         Player* p = &players[i];
         if(p->active)
         {
-            if(is_in_camera_view(&p->pos))
+            if(is_in_camera_view(&p->phys.actual_pos))
             {
                 Entity entity = {0};
                 entity.type = ENTITY_TYPE_PLAYER;
                 // entity.sort_val = p->pos.y + p->pos.h/2.0;
                 entity.sort_val = p->phys.pos.y + p->standard_size.h/2.0;
+                // printf("player sort val: %d\n", entity.sort_val);
                 entity.data = (void*)p;
                 list_add(entity_draw_list, (void*)&entity);
             }
@@ -261,6 +262,7 @@ static int get_grid_boxes(Rect* rect, int rows[4], int cols[4])
             int _row = r+row;
             int _col = c+col;
             if(_row < 0 || _col < 0) continue;
+            if(_row >= WORLD_GRID_ROWS_MAX || _col >= WORLD_GRID_COLS_MAX) continue;
 
             if(dbg) printf("%d, %d\n", _row, _col);
 
@@ -291,7 +293,7 @@ int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int cols[4])
         case ENTITY_TYPE_PLAYER:
         {
             Player* p = (Player*)data;
-            rect = p->pos;
+            rect = p->phys.actual_pos;
         } break;
 
         case ENTITY_TYPE_PROJECTILE:

@@ -78,7 +78,7 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
     mouse_r.h = 1;
 
     float angle_deg = angle_offset;
-    if(rectangles_colliding(&mouse_r, &p->pos))
+    if(rectangles_colliding(&mouse_r, &p->phys.actual_pos))
     {
         angle_deg += DEG(p->angle);
     }
@@ -126,7 +126,7 @@ void projectile_update(float delta_t)
             if(proj->dead)
                 break;
 
-            if(are_rects_colliding(&proj->hurt_box_prior, &proj->hurt_box, &zombies[j].hit_box))
+            if(are_rects_colliding(&proj->hurt_box_prior, &proj->hurt_box, &zombies[j].phys.hit))
             {
                 //printf("Bullet collided!\n");
                 proj->dead = true;
@@ -148,7 +148,7 @@ void projectile_update(float delta_t)
                 {
                     Vector2f p0 = {proj->hurt_box.x, proj->hurt_box.y};
                     Vector2f p1 = {proj->hurt_box_prior.x, proj->hurt_box_prior.y};
-                    Vector2f p2 = {zombies[j].hit_box.x, zombies[j].hit_box.y};
+                    Vector2f p2 = {zombies[j].phys.hit.x, zombies[j].phys.hit.y};
 
                     float d = dist(p0.x,p0.y,p2.x,p2.y);
 
@@ -241,7 +241,7 @@ void projectile_update(float delta_t)
                 continue;
             */
 
-            if(are_rects_colliding(&proj->hurt_box_prior, &proj->hurt_box, &zombies[j].hit_box))
+            if(are_rects_colliding(&proj->hurt_box_prior, &proj->hurt_box, &zombies[j].phys.hit))
             {
                 hits[num_hits++] = j;
             }
@@ -254,7 +254,7 @@ void projectile_update(float delta_t)
             for(int _j = 0; _j < num_hits; ++_j)
             {
                 int j = hits[_j];
-                float d = dist(proj->hurt_box_prior.x, proj->hurt_box_prior.y, zombies[j].hit_box.x, zombies[j].hit_box.y);
+                float d = dist(proj->hurt_box_prior.x, proj->hurt_box_prior.y, zombies[j].phys.hit.x, zombies[j].phys.hit.y);
                 if(d < min_d)
                 {
                     min_d = d;
@@ -279,7 +279,7 @@ void projectile_update(float delta_t)
             {
                 Vector2f p0 = {proj->hurt_box.x, proj->hurt_box.y};
                 Vector2f p1 = {proj->hurt_box_prior.x, proj->hurt_box_prior.y};
-                Vector2f p2 = {zombies[j_min].hit_box.x, zombies[j_min].hit_box.y};
+                Vector2f p2 = {zombies[j_min].phys.hit.x, zombies[j_min].phys.hit.y};
 
                 float d = dist(p0.x,p0.y,p2.x,p2.y);
 

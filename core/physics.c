@@ -63,17 +63,61 @@ void physics_print(Physics* phys, bool force)
 
 }
 
-void physics_simulate(Physics* phys, float delta_t)
+void physic_apply_pos_offset(Physics* phys, float offset_x, float offset_y)
+{
+    phys->actual_pos.x += offset_x;
+    phys->actual_pos.y += offset_y;
+
+    phys->hit.x += offset_x;
+    phys->hit.y += offset_y;
+
+    phys->collision.x += offset_x;
+    phys->collision.y += offset_y;
+}
+
+void physic_set_pos_offset(Physics* phys, float offset_x, float offset_y)
+{
+    physic_apply_pos_offset(phys, -phys->pos_offset.x, -phys->pos_offset.y);
+
+    phys->pos_offset.x = offset_x;
+    phys->pos_offset.y = offset_y;
+
+    physic_apply_pos_offset(phys, phys->pos_offset.x, phys->pos_offset.y);
+}
+
+void physics_simulate(Physics* phys, Rect* limit, float delta_t)
 {
     phys->vel.x += phys->accel.x;
     phys->vel.y += phys->accel.y;
 
-    phys->vel.x = RANGE(phys->vel.x, -phys->max_linear_vel,phys->max_linear_vel);
-    phys->vel.y = RANGE(phys->vel.y, -phys->max_linear_vel,phys->max_linear_vel);
+    phys->vel.x = RANGE(phys->vel.x, -phys->max_linear_vel, phys->max_linear_vel);
+    phys->vel.y = RANGE(phys->vel.y, -phys->max_linear_vel, phys->max_linear_vel);
 
-    phys->pos.x += delta_t*phys->vel.x;
-    phys->pos.y += delta_t*phys->vel.y;
+    float dx = delta_t * phys->vel.x;
+    float dy = delta_t * phys->vel.y;
+
+    phys->pos.x += dx;
+    phys->pos.y += dy;
+
+    physic_apply_pos_offset(phys, dx, dy);
+
+    if(limit != NULL)
+    {
+        Rect r = (*phys).pos;
+        physics_limit_pos(limit, &r);
+        float adjx = r.x - phys->pos.x;
+        float adjy = r.y - phys->pos.y;
+        if(!FEQ(adjx,0.0) || !FEQ(adjy,0.0))
+        {
+            phys->pos.x += adjx;
+            phys->pos.y += adjy;
+            physic_apply_pos_offset(phys, adjx, adjy);
+        }
+    }
+
 }
+
+
 
 
 /*

@@ -7,6 +7,11 @@
 typedef struct
 {
     Rect pos;
+    Vector2f pos_offset;
+    Rect actual_pos;
+    Rect collision;
+    Rect hit;
+
     Vector2f vel;
     Vector2f accel;
     float max_linear_vel;
@@ -25,7 +30,12 @@ void physics_begin(Physics* phys);
 void physics_add_force(Physics* phys, float x, float y);
 void physics_add_friction(Physics* phys, float mu);
 void physics_print(Physics* phys, bool force);
-void physics_simulate(Physics* phys, float delta_t);
+
+void physic_apply_pos_offset(Physics* phys, float offset_x, float offset_y);
+void physic_set_pos_offset(Physics* phys, float offset_x, float offset_y);
+void physics_simulate(Physics* phys, Rect* limit, float delta_t);
+
+// void physics_simulate(Physics* phys, float delta_t);
 void physics_limit_pos(Rect* limit, Rect* pos);
 
 

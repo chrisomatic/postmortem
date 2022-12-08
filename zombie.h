@@ -35,20 +35,6 @@ typedef struct
 } ZombieModel;
 
 
-// typedef enum
-// {
-//     ZOMBIE_ACTION_NONE = 0,
-//     ZOMBIE_ACTION_MOVE_UP,
-//     ZOMBIE_ACTION_MOVE_UP_RIGHT,
-//     ZOMBIE_ACTION_MOVE_RIGHT,
-//     ZOMBIE_ACTION_MOVE_DOWN_RIGHT,
-//     ZOMBIE_ACTION_MOVE_DOWN,
-//     ZOMBIE_ACTION_MOVE_DOWN_LEFT,
-//     ZOMBIE_ACTION_MOVE_LEFT,
-//     ZOMBIE_ACTION_MOVE_UP_LEFT,
-//     ZOMBIE_ACTION_MAX,
-// } ZombieAction;
-
 typedef struct
 {
     uint32_t id;
@@ -60,8 +46,8 @@ typedef struct
     float scale;
     float hp;
     float hp_max;
-    Rect hit_box;
-    Rect collision_box;
+    // Rect hit_box;
+    // Rect collision_box;
 
     uint32_t color;
     float opacity;

@@ -258,9 +258,6 @@ typedef struct
 
     Rect standard_size; // only used for scaling
     Rect max_size;      // used for player name mostly
-    Rect hit_box;
-    Rect collision_box;
-    Rect pos;       // actual position of the player
     Physics phys;
     Vector2i grid_pos;
 
@@ -356,7 +353,11 @@ void player_add_detect_radius(Player* p, float add);
 void player_update_anim_timing(Player* p);
 void player_update_anim_state(Player* p);
 void player_update_image(Player* p);
+
+void player_update_pos_offset(Player* p);
 void player_update_boxes(Player* p);
+void player_update_static_boxes(Player* p);
+
 void player_update_sprite_index(Player* p);
 void player_update(Player* p, double delta_t);
 void player_update_other(Player* p, double delta_t);
