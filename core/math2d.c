@@ -34,6 +34,16 @@ Vector2f lerp2f(Vector2f* a, Vector2f* b, float t)
     return r;
 }
 
+Vector3f lerp3f(Vector3f* a, Vector3f* b, float t)
+{
+    float rx = lerp(a->x,b->x,t);
+    float ry = lerp(a->y,b->y,t);
+    float rz = lerp(a->z,b->z,t);
+
+    Vector3f r = {rx,ry,rz};
+    return r;
+}
+
 void ortho(Matrix* m, float left, float right, float bottom, float top, float znear, float zfar)
 {
     memcpy(m,&IDENTITY_MATRIX,sizeof(Matrix));

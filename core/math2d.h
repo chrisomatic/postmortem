@@ -115,5 +115,6 @@ void print_rectxy(RectXY* r);
 
 float lerp(float a, float b, float t);
 Vector2f lerp2f(Vector2f* a, Vector2f* b, float t);
+Vector3f lerp3f(Vector3f* a, Vector3f* b, float t);
 
 float rand_float_between(float lower, float upper);

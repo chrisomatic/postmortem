@@ -5,7 +5,7 @@
 #define ZOMBIE_HEIGHT   50
 #define MAX_ZOMBIES 2000
 #define ZOMBIE_TEXTURES_MAX     5
-#define ZOMBIE_DEAD_MAX_TIME 5.0
+#define ZOMBIE_DEAD_MAX_TIME 10.0
 
 typedef enum
 {
@@ -64,6 +64,7 @@ typedef struct
     Rect collision_box;
 
     uint32_t color;
+    float opacity;
 
     float damage_min;
     float damage_max;

@@ -1278,6 +1278,20 @@ void gfx_print_times()
     printf("Other time:        %.4f\n", other_time);
 }
 
+uint32_t gfx_blend_colors(uint32_t color1, uint32_t color2, float factor)
+{
+    Vector3f c1,c2;
+
+    gfx_color2floats(color1, &c1.x, &c1.y, &c1.z);
+    gfx_color2floats(color2, &c2.x, &c2.y, &c2.z);
+
+    Vector3f r = lerp3f(&c1,&c2,factor);
+
+    uint32_t result = COLOR2(r.x,r.y,r.z);
+
+    return result;
+}
+
 // static functions
 // --------------------------------------------------------
 

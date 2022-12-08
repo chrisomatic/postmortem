@@ -181,6 +181,7 @@ bool zombie_add(ZombieSpawn* spawn)
     zombie.scale = (float)ZOMBIE_HEIGHT/standard_size[zombie.model_index].h;
 
     zombie.color = COLOR_TINT_NONE;
+    zombie.opacity = 1.0;
 
     // animation
     zombie.anim.curr_frame = 0;
@@ -579,6 +580,14 @@ void zombie_update(Zombie* z, float delta_t)
     {
         z->dead_time += delta_t;
 
+        float fade_time = 3.0;
+        float fade_start = ZOMBIE_DEAD_MAX_TIME - fade_time;
+        float factor1 = (z->dead_time/1.0);
+        float factor2 = z->dead_time < fade_start ? 0.0 : (z->dead_time - fade_start)/fade_time;
+
+        z->color = gfx_blend_colors(COLOR_TINT_NONE, 0x00AAAAAA, factor1);
+        z->opacity = lerp(1.0, 0.0, factor2); 
+
         if(z->dead_time >= ZOMBIE_DEAD_MAX_TIME)
         {
             zombie_remove(z);
@@ -686,11 +695,11 @@ bool zombie_draw(Zombie* z, bool add_to_existing_batch)
     {
         if(add_to_existing_batch)
         {
-            gfx_sprite_batch_add(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, z->color,z->scale,0.0,1.0,false,false,false);
+            gfx_sprite_batch_add(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, z->color,z->scale,0.0,z->opacity,false,false,false);
         }
         else
         {
-            gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, z->color,z->scale,0.0,1.0,false,true);
+            gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, z->color,z->scale,0.0,z->opacity,false,true);
         }
 
 
@@ -906,6 +915,5 @@ static void zombie_die(int index)
     zombies[index].dead = true;
     zombies[index].anim.max_loops = 1;
     zombies[index].anim.finite = true;
-    zombies[index].color = 0x00AAAAAA;
 }
 
