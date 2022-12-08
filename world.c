@@ -11,6 +11,7 @@
 #include "player.h"
 #include "lighting.h"
 #include "effects.h"
+#include "entity.h"
 
 #include "world.h"
 
@@ -161,14 +162,14 @@ void world_draw()
     }
 #endif
 
+    int wr1,wc1,wr2,wc2;
+    coords_to_world_grid(r.x-r.w/2.0, r.y-r.h/2.0, &wr1, &wc1);
+    coords_to_world_grid(r.x+r.w/2.0, r.y+r.h/2.0, &wr2, &wc2);
 #if 1
     // draw world grid
     if(debug_enabled)
     {
         uint32_t line_color = 0x000000FF;
-        int wr1,wc1,wr2,wc2;
-        coords_to_world_grid(r.x-r.w/2.0, r.y-r.h/2.0, &wr1, &wc1);
-        coords_to_world_grid(r.x+r.w/2.0, r.y+r.h/2.0, &wr2, &wc2);
         for(int r = (wr1-1); r < (wr2+1); ++r)
         {
             float x0,y0,x1,y1;
@@ -183,6 +184,7 @@ void world_draw()
             world_grid_to_coords_tl(wr2+1, c, &x1, &y1);
             gfx_add_line(x0,y0,x1,y1,line_color);
         }
+
     }
 #endif
 
@@ -210,6 +212,21 @@ void world_draw()
     }
 
     gfx_sprite_batch_draw();
+
+
+    if(debug_enabled)
+    {
+        for(int r = (wr1-1); r < (wr2+1); ++r)
+        {
+            for(int c = (wc1-1); c < (wc2+1); ++c)
+            {
+                float x0,y0;
+                world_grid_to_coords_tl(r, c, &x0, &y0);
+                gfx_draw_string(x0+1.0, y0+1.0, COLOR_ORANGE, 0.1, 0.0, 1.0, true, false, "%d", grid_boxes[r][c].num);
+            }
+        }
+    }
+
 }
 
 uint8_t map_get_tile_index(int row, int col)

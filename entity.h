@@ -24,13 +24,6 @@ typedef struct
     int sort_val;
 } Entity;
 
-// typedef struct
-// {
-//     EntityType type;
-//     int y;
-//     void* data;
-// } SortEntity;
-
 typedef struct
 {
     Entity entities[MAX_GRIDBOX_ENTITIES];

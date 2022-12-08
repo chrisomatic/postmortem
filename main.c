@@ -394,6 +394,8 @@ void simulate(double delta_t)
 
     particles_update(delta_t);
 
+    entities_update_grid_boxes();
+
     entities_update_draw_list(); //sorts the entity list
 }
 

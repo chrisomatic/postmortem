@@ -45,6 +45,13 @@ void gui_draw()
         // GAME ROLE
         gfx_draw_string(0,view_height-(64*0.4)-2,0x0000CCFF,0.4,0.0, 0.7, false,true,"%s", game_role_to_str(role));
     }
+    else
+    {
+        imgui_begin("",view_width - 55, 5);
+        float fps = timer_get_prior_frame_fps(&game_timer);
+        imgui_set_text_size(10);
+        imgui_text("FPS: %.2f", fps);
+    }
 
     if(console_enabled)
     {

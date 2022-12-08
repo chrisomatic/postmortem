@@ -462,7 +462,7 @@ void zombie_update_pursue(Zombie* z, float delta_t)
         if(!has_target)
         {
             float d = dist(z->phys.pos.x, z->phys.pos.y, z->pursue_target.x, z->pursue_target.y);
-            if(d <= 5.0)
+            if(d <= MAX(z->phys.pos.w, z->phys.pos.h)) //TODO
             {
                 printf("(%d) zombie has reached last known player location\n", z->id);
                 z->pursuing = false;
@@ -487,8 +487,20 @@ void zombie_update_pursue(Zombie* z, float delta_t)
                 z->pursue_player = p;
                 z->pursue_target.x = p->phys.pos.x;
                 z->pursue_target.y = p->phys.pos.y;
+
+                Rect r = {0};
+                r.x = z->pursue_target.x;
+                r.y = z->pursue_target.y;
+                r.w = 1.0;
+                r.h = 1.0;
+                Rect camera_rect = {0};
+                get_camera_rect(&camera_rect);
+                physics_limit_pos(&camera_rect, &r);
+
+                z->pursue_target.x = r.x;
+                z->pursue_target.y = r.y;
                 z->pursuing = true;
-                printf("(%d) zombie is now pursuing player '%s'\n", z->id, p->name);
+                printf("(%d) zombie is now pursuing player '%s', target: %.1f, %.1f\n", z->id, p->name, z->pursue_target.x, z->pursue_target.y);
             }
 
         }

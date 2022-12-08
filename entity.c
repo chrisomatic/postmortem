@@ -233,6 +233,10 @@ void entities_draw(bool batched)
         gfx_sprite_batch_draw();
 }
 
+
+
+bool dbg = false;
+
 // @NOTE: assumes that r is smaller than a grid space
 static int get_grid_boxes(Rect* rect, int rows[4], int cols[4])
 {
@@ -244,17 +248,22 @@ static int get_grid_boxes(Rect* rect, int rows[4], int cols[4])
     cols[count] = col;
     count++;
 
-    Rect g = {0};
-    world_grid_to_rect(row, col, &g);
+    // Rect g = {0};
+    // world_grid_to_rect(row, col, &g);
 
-    for(int r = -1; r < 1; ++r)
+    if(dbg) printf("=================\n");
+
+    for(int r = -1; r < 2; ++r)
     {
-        for(int c = -1; c < 1; ++c)
+        for(int c = -1; c < 2; ++c)
         {
             if(r == 0 && c == 0) continue;
             int _row = r+row;
             int _col = c+col;
             if(_row < 0 || _col < 0) continue;
+
+            if(dbg) printf("%d, %d\n", _row, _col);
+
 
             Rect check = {0};
             world_grid_to_rect(_row, _col, &check);
@@ -266,6 +275,8 @@ static int get_grid_boxes(Rect* rect, int rows[4], int cols[4])
             }
         }
     }
+    if(dbg) printf("count: %d\n", count);
+
     return count;
 }
 
@@ -350,7 +361,6 @@ void entity_remove_from_grid_boxes(EntityType type, void* data)
         if(r > WORLD_GRID_ROWS_MAX || c > WORLD_GRID_COLS_MAX)
             continue;
         GridBox* g = &grid_boxes[r][c];
-        
 
         int idx = 0;
         for(;;)
@@ -413,7 +423,9 @@ void entities_update_grid_boxes()
         Player* p = &players[i];
         if(p->active)
         {
+            // if(p->index == 0) dbg = true;
             add_to_grid_boxes(ENTITY_TYPE_PLAYER, (void*)p);
+            dbg = false;
         }
     }
 
