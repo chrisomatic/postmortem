@@ -720,18 +720,22 @@ static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
 
 static void mouse_zombie_move_cb(void* player, MouseTrigger trigger)
 {
+    Player* p = (Player*)player;
+
     if(trigger == MOUSE_TRIGGER_PRESS)
     {
         Zombie* z = zombie_get_by_id(zombie_info_id);
         if(z != NULL)
         {
             moving_zombie = true;
+            p->busy = true;
         }
     }
 
     if(moving_zombie && trigger == MOUSE_TRIGGER_RELEASE)
     {
         moving_zombie = false;
+        p->busy = false;
     }
 
 }

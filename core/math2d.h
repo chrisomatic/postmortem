@@ -15,9 +15,11 @@
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define RANGE(x,y,z) MIN(MAX((x),(y)),(z))
+#define BETWEEN(x,y,z) (x > y && x < z)
 
 #define SQ(x) ((x)*(x))
 #define FEQ(a, b) (ABS(a-b) <= 0.00001f)
+#define FEQ0(a) (ABS(a) <= 0.00001f)
 
 #define BOUND(a,l,u)    MAX(MIN(a,u),l)
 #define IS_BIT_SET(x,b) (((x) & (b)) == (b))
