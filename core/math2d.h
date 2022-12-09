@@ -100,6 +100,8 @@ void dot_product_mat(Matrix a, Matrix b, Matrix* result);
 void mult_mat4(Matrix* m1, Matrix* m2, Matrix* result);
 void print_matrix(Matrix* mat);
 
+float vec_dot(Vector2f a, Vector2f b);
+
 float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b);
 
 bool are_line_segs_intersecting(LineSeg* l1, LineSeg* l2);

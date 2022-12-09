@@ -462,9 +462,14 @@ float vec_magn(Vector3f v)
     return sqrt(v.x * v.x + v.y*v.y + v.z*v.z);
 }
 
-float vec_dot(Vector3f a, Vector3f b)
+float vec_dot3(Vector3f a, Vector3f b)
 {
     return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
+}
+
+float vec_dot(Vector2f a, Vector2f b)
+{
+    return (a.x * b.x) + (a.y * b.y);
 }
 
 float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b)
@@ -475,7 +480,7 @@ float get_angle_between_vectors_rad(Vector3f* a, Vector3f* b)
     if(ma == 0.0 || mb == 0.0)
         return 0.0;
 
-    float d  = vec_dot(*a,*b);
+    float d  = vec_dot3(*a,*b);
     
     float angle = acosf(d/(ma*mb));
     return angle;

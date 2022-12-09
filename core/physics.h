@@ -2,14 +2,13 @@
 
 #include "math2d.h"
 
-
-
 typedef struct
 {
     Rect pos;
     Vector2f pos_offset;
     Rect actual_pos;
     Rect collision;
+    Rect prior_collision;
     Rect hit;
 
     Vector2f vel;

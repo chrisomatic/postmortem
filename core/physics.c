@@ -71,6 +71,8 @@ void physics_apply_pos_offset(Physics* phys, float offset_x, float offset_y)
     phys->hit.x += offset_x;
     phys->hit.y += offset_y;
 
+    memcpy(&phys->prior_collision, &phys->collision,sizeof(Rect));
+
     phys->collision.x += offset_x;
     phys->collision.y += offset_y;
 }
@@ -293,6 +295,26 @@ void physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
         }
     }
 
+    /*
+    Vector2f mov1 = {phys1->collision.x - phys1->prior_collision.x,phys1->collision.y - phys1->prior_collision.y};
+    Vector2f mov2 = {phys2->collision.x - phys2->prior_collision.x,phys2->collision.y - phys2->prior_collision.y};
+
+    normalize(&mov1);
+    normalize(&mov2);
+
+    Vector2f nadj1 = {adj1.x,adj2.y};
+    Vector2f nadj2 = {adj2.x,adj2.y};
+
+    normalize(&adj1);
+    normalize(&adj2);
+    
+    float check1 = vec_dot(nadj1,mov1);
+    float check2 = vec_dot(nadj2,mov2);
+
+    if(!FEQ0(check1) || !FEQ0(check2))
+        printf("dot1: %f, dot2: %f\n",check1,check2);
+    */
+
     adj1.x *= ratio.x;
     adj1.y *= ratio.x;
 
@@ -324,10 +346,4 @@ void physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
     }
 
     //printf("v1: %f %f, v2: %f %f, ratio: %f %f, num_loops: %d\n",v1.x,v1.y,v2.x,v2.y, ratio.x,ratio.y, num_loops);
-
-    //phys1->vel.x = 0.0;
-    //phys1->vel.y = 0.0;
-
-    //phys2->vel.x = 0.0;
-    //phys2->vel.y = 0.0;
 }
