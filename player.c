@@ -186,6 +186,7 @@ void player_init_controls(Player* p)
     window_controls_add_key(&p->actions[PLAYER_ACTION_RELOAD].state, GLFW_KEY_R);
 
     window_controls_add_key(&p->actions[PLAYER_ACTION_EQUIP].state, GLFW_KEY_TAB);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_SPAWN_ZOMBIE].state, GLFW_KEY_Z);
     window_controls_add_key(&p->actions[PLAYER_ACTION_CYCLE_EQUIP_DOWN].state, GLFW_KEY_1);
     window_controls_add_key(&p->actions[PLAYER_ACTION_CYCLE_EQUIP_UP].state, GLFW_KEY_2);
 
@@ -1034,6 +1035,13 @@ void player_update(Player* p, double delta_t)
         pa->prior_state = pa->state;
     }
 
+    if(p->actions[PLAYER_ACTION_SPAWN_ZOMBIE].toggled_on)
+    {
+        ZombieSpawn spawn = {0};
+        spawn.pos.x = p->mouse_x;
+        spawn.pos.y = p->mouse_y;
+        zombie_add(&spawn);
+    }
 
     if(!p->busy)
     {
