@@ -175,6 +175,15 @@ static void editor_draw()
                         }
 
                     }
+                    imgui_horizontal_end();
+
+                    imgui_horizontal_begin();
+
+                    if(imgui_button("Kill All"))
+                    {
+                        zombie_kill_all();
+                    }
+
 
                     char* zfreeze_str = "Freeze";
                     if(zombies_idle)
@@ -195,9 +204,9 @@ static void editor_draw()
                     {
                         zombies_pursue = !zombies_pursue;
                     }
-
-
                     imgui_horizontal_end();
+
+
                     break;
                 case 1:
                     imgui_slider_float("Slider 1", 0.0,1.0,&v1);

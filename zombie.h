@@ -124,6 +124,7 @@ bool zombie_draw(Zombie* z, bool batch);
 void zombies_update(float delta_t);
 void zombies_draw();
 Zombie* zombie_get_by_id(uint32_t id);
+void zombie_kill_all();
 
 const char* zombie_anim_state_str(ZombieAnimState anim_state);
 void zombie_melee_check_collision(Zombie* z);

@@ -783,6 +783,16 @@ Zombie* zombie_get_by_id(uint32_t id)
     return NULL;
 }
 
+void zombie_kill_all()
+{
+    for(int i = zlist->count - 1; i >= 0 ; --i)
+    {
+        zombie_die(i);
+        // Zombie* z = &zombies[i];
+        // zombie_remove(z);
+    }
+}
+
 const char* zombie_anim_state_str(ZombieAnimState anim_state)
 {
     switch(anim_state)
