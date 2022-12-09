@@ -323,6 +323,7 @@ void init()
     firepit.spawn_radius_min = 5.0;
     firepit.spawn_radius_max = 10.0;
     particles_spawn_effect(300,500, &firepit,0.0,true,false);
+    particles_spawn_effect(300,480, &particle_effects[EFFECT_SMOKE],0.0,true,false);
 
     camera_move(player->phys.pos.x, player->phys.pos.y, true, &map.rect);
     camera_zoom(0.4,true);

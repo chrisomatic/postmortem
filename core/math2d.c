@@ -349,6 +349,35 @@ bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check)
 
 bool rectangles_colliding(Rect* a, Rect* b)
 {
+    bool isOverlapping(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2);
+
+    int x1 = a->x-(a->w/2.0);
+    int y1 = a->y-(a->h/2.0);
+    int w1 = a->w;
+    int h1 = a->h;
+
+    int x2 = b->x-(b->w/2.0);
+    int y2 = b->y-(b->h/2.0);
+    int w2 = b->w;
+    int h2 = b->h;
+
+    // Check if one rectangle is on the left side of the other
+    if (x1 + w1 <= x2 || x2 + w2 <= x1) {
+        return false;
+    }
+
+    // Check if one rectangle is above the other
+    if (y1 + h1 <= y2 || y2 + h2 <= y1) {
+        return false;
+    }
+
+    // If neither of the above checks are true, then the
+    // two rectangles must be overlapping.
+    return true;
+}
+
+bool rectangles_colliding2(Rect* a, Rect* b)
+{
     float ax0 = a->x - a->w/2.0;
     float ax1 = a->x + a->w/2.0;
     float ay0 = a->y - a->h/2.0;

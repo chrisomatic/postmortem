@@ -77,12 +77,18 @@ void physics_apply_pos_offset(Physics* phys, float offset_x, float offset_y)
 
 void physics_set_pos_offset(Physics* phys, float offset_x, float offset_y)
 {
-    physics_apply_pos_offset(phys, -phys->pos_offset.x, -phys->pos_offset.y);
+    //physics_apply_pos_offset(phys, -phys->pos_offset.x, -phys->pos_offset.y);
+
+    phys->actual_pos.x -= phys->pos_offset.x;
+    phys->actual_pos.y -= phys->pos_offset.y;
 
     phys->pos_offset.x = offset_x;
     phys->pos_offset.y = offset_y;
 
-    physics_apply_pos_offset(phys, phys->pos_offset.x, phys->pos_offset.y);
+    phys->actual_pos.x += phys->pos_offset.x;
+    phys->actual_pos.y += phys->pos_offset.y;
+
+    //physics_apply_pos_offset(phys, phys->pos_offset.x, phys->pos_offset.y);
 }
 
 void physics_simulate(Physics* phys, Rect* limit, float delta_t)
@@ -99,7 +105,8 @@ void physics_simulate(Physics* phys, Rect* limit, float delta_t)
     phys->pos.x += dx;
     phys->pos.y += dy;
 
-    physics_apply_pos_offset(phys, dx, dy);
+    phys->actual_pos.x += dx;
+    phys->actual_pos.y += dy;
 
     if(limit != NULL)
     {
@@ -107,11 +114,14 @@ void physics_simulate(Physics* phys, Rect* limit, float delta_t)
         physics_limit_pos(limit, &r);
         float adjx = r.x - phys->pos.x;
         float adjy = r.y - phys->pos.y;
+
         if(!FEQ(adjx,0.0) || !FEQ(adjy,0.0))
         {
             phys->pos.x += adjx;
             phys->pos.y += adjy;
-            physics_apply_pos_offset(phys, adjx, adjy);
+
+            phys->actual_pos.x += adjx;
+            phys->actual_pos.y += adjy;
         }
     }
 
@@ -244,7 +254,8 @@ void physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
     Vector2f ratio = {ABS(ux),ABS(uy)};
     normalize(&ratio);
 
-    //printf("v1: %f %f, v2: %f %f, ratio: %f %f\n",v1.x,v1.y,v2.x,v2.y, ratio.x,ratio.y);
+    if(1.0 - ratio.x < 0.001) ratio.x = 1.0;
+    if(1.0 - ratio.y < 0.001) ratio.y = 1.0;
 
     float dx = phys1->collision.x - phys2->collision.x;
     float dy = phys1->collision.y - phys2->collision.y;
@@ -303,6 +314,8 @@ void physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
         phys2->pos.x += adj2.x;
         phys2->pos.y += adj2.y;
 
+        //printf("loop %d: adj1: %f %f, adj2: %f %f\n",num_loops,adj1.x,adj1.y,adj2.x,adj2.y);
+
         physics_apply_pos_offset(phys1, adj1.x, adj1.y);
         physics_apply_pos_offset(phys2, adj2.x, adj2.y);
 
@@ -311,9 +324,11 @@ void physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
             break;
     }
 
-    phys1->vel.x = 0.0;
-    phys1->vel.y = 0.0;
+    //printf("v1: %f %f, v2: %f %f, ratio: %f %f, num_loops: %d\n",v1.x,v1.y,v2.x,v2.y, ratio.x,ratio.y, num_loops);
 
-    phys2->vel.x = 0.0;
-    phys2->vel.y = 0.0;
+    //phys1->vel.x = 0.0;
+    //phys1->vel.y = 0.0;
+
+    //phys2->vel.x = 0.0;
+    //phys2->vel.y = 0.0;
 }

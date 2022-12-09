@@ -667,6 +667,7 @@ static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
             memcpy(&pe, &particle_effects[EFFECT_BLOCK_DESTROY],sizeof(ParticleEffect));
             pe.sprite_index = blocks[i].type;
             particles_spawn_effect(blocks[i].phys.collision.x, blocks[i].phys.collision.y, &pe, 1.0, true, false);
+            particles_spawn_effect(blocks[i].phys.collision.x, blocks[i].phys.collision.y-16, &particle_effects[EFFECT_SMOKE2], 1.0, true, false);
 
             list_remove(blist, i);
 
