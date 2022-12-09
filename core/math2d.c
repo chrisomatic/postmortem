@@ -180,6 +180,11 @@ static float Q_rsqrt(float number)
 	return conv.f;
 }
 
+float magn_fast(Vector2f v)
+{
+    return (0.96*v.x + 0.40*v.y);
+}
+
 float magn(Vector2f v)
 {
     return sqrt(v.x * v.x + v.y*v.y);

@@ -39,6 +39,7 @@ typedef struct
 {
     int row;
     int col;
+    Physics phys;
     Rect collision_box;
     float hp;
     BlockType type;
@@ -47,7 +48,6 @@ typedef struct
 extern block_t blocks[MAX_BLOCKS];
 extern glist* blist;
 extern BlockProp block_props[BLOCK_MAX];
-
 
 typedef enum
 {
@@ -385,5 +385,4 @@ const char* melee_type_str(MeleeType mtype);
 void gun_fire(Player* p, Gun* gun, bool held);
 
 void player_weapon_melee_check_collision(Player* p);
-bool player_check_block_collision(Player* p, Rect prior_pos, Rect prior_collision_box);
 

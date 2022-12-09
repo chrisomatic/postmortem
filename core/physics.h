@@ -32,8 +32,8 @@ void physics_add_force(Physics* phys, float x, float y);
 void physics_add_friction(Physics* phys, float mu);
 void physics_print(Physics* phys, bool force);
 
-void physic_apply_pos_offset(Physics* phys, float offset_x, float offset_y);
-void physic_set_pos_offset(Physics* phys, float offset_x, float offset_y);
+void physics_apply_pos_offset(Physics* phys, float offset_x, float offset_y);
+void physics_set_pos_offset(Physics* phys, float offset_x, float offset_y);
 void physics_simulate(Physics* phys, Rect* limit, float delta_t);
 
 void physics_limit_pos(Rect* limit, Rect* pos);

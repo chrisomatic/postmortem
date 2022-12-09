@@ -279,6 +279,7 @@ static void player_init(int index)
     p->phys.pos.y = 1000.0;
     p->phys.actual_pos.x = p->phys.pos.x;
     p->phys.actual_pos.y = p->phys.pos.y;
+    p->phys.mass = 1.0;
     player_update_static_boxes(p);
     player_update_boxes(p);
     player_update_pos_offset(p);
@@ -640,9 +641,10 @@ static void mouse_block_add_cb(void* player, MouseTrigger trigger)
         b.row = p->mouse_r;
         b.col = p->mouse_c;
 
-        Rect r = {0};
-        map_grid_to_rect(b.row, b.col, &r);
-        b.collision_box = calc_sub_box(&r, 1.0, 0.6, 2);
+        map_grid_to_rect(b.row, b.col, &b.phys.pos);
+        memcpy(&b.phys.collision,&b.phys.pos,sizeof(Rect));
+        //b.phys.collision = calc_sub_box(&b.phys.pos, 1.0, 0.6, 2);
+        b.phys.mass = 10000.0;
 
         b.type = bp->type;
         b.hp = bp->hp;
@@ -664,7 +666,7 @@ static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
             ParticleEffect pe ={0};
             memcpy(&pe, &particle_effects[EFFECT_BLOCK_DESTROY],sizeof(ParticleEffect));
             pe.sprite_index = blocks[i].type;
-            particles_spawn_effect(blocks[i].collision_box.x, blocks[i].collision_box.y, &pe, 1.0, true, false);
+            particles_spawn_effect(blocks[i].phys.collision.x, blocks[i].phys.collision.y, &pe, 1.0, true, false);
 
             list_remove(blist, i);
 
@@ -866,7 +868,7 @@ void player_update_pos_offset(Player* p)
     float img_center_y = img->element_height/2.0;
     float offset_x = (vr->x - img_center_x)*p->scale;
     float offset_y = (vr->y - img_center_y)*p->scale;
-    physic_set_pos_offset(&p->phys, offset_x, offset_y);    // change offset based off new sprite
+    physics_set_pos_offset(&p->phys, offset_x, offset_y);    // change offset based off new sprite
 }
 
 void player_update_boxes(Player* p)
@@ -974,7 +976,7 @@ void player_update(Player* p, double delta_t)
             float dx = z->phys.pos.x - prior_x;
             float dy = z->phys.pos.y - prior_y;
 
-            physic_apply_pos_offset(&z->phys, dx, dy);
+            physics_apply_pos_offset(&z->phys, dx, dy);
             zombie_update_boxes(z);
         }
     }
@@ -1303,16 +1305,6 @@ void player_draw(Player* p, bool add_to_existing_batch)
     GFXImage* img = &gfx_images[p->image];
     Rect* vr = &img->visible_rects[p->sprite_index];
 
-    // //TEMP: blocks
-    // for(int i = 0; i < blist->count; ++i)
-    // {
-    //     block_draw(&blocks[i]);
-    //     // Rect r = {0};
-    //     // map_grid_to_rect(blocks[i].row, blocks[i].col, &r);
-    //     // gfx_draw_rect(&r, block_props[blocks[i].type].color, 0.0, 1.0, 0.50, true, true);
-    // }
-
-
     // player
     if(add_to_existing_batch)
     {
@@ -1497,25 +1489,20 @@ void block_draw(block_t* b, bool add_to_existing_batch)
 {
     if(b == NULL) return;
 
-    Rect r = {0};
-    map_grid_to_rect(b->row, b->col, &r);
-    //gfx_draw_rect(&r, block_props[b->type].color, 0.0, 1.0, 0.50, true, true);
     if(add_to_existing_batch)
     {
-        gfx_sprite_batch_add(block_props[b->type].image, block_props[b->type].sprite_index, r.x, r.y-9, block_props[b->type].color,1.0,0.0,1.0,true,false,false);
+        gfx_sprite_batch_add(block_props[b->type].image, block_props[b->type].sprite_index, b->phys.pos.x, b->phys.pos.y-9, block_props[b->type].color,1.0,0.0,1.0,true,false,false);
     }
     else
     {
-        gfx_draw_image(block_props[b->type].image, block_props[b->type].sprite_index, r.x, r.y-9, block_props[b->type].color,1.0,0.0,1.0,true,true);
-
+        gfx_draw_image(block_props[b->type].image, block_props[b->type].sprite_index, b->phys.pos.x, b->phys.pos.y-9, block_props[b->type].color,1.0,0.0,1.0,true,true);
     }
 
     if(debug_enabled)
     {
-        gfx_draw_rect(&b->collision_box, COLOR_COLLISON, 0.0, 1.0, 1.0, false, true);
+        gfx_draw_rect(&b->phys.collision, COLOR_COLLISON, 0.0, 1.0, 1.0, false, true);
     }
 }
-
 
 
 void weapons_init()
@@ -1752,7 +1739,6 @@ void player_weapon_melee_check_collision(Player* p)
             }
 
         }
-
     }
 }
 
@@ -1769,39 +1755,4 @@ void player_hurt(Player* p, float damage)
         p->hp = 0.0;
         //player_die(p);
     }
-}
-
-bool player_check_block_collision(Player* p, Rect prior_pos, Rect prior_collision_box)
-{
-    rect_collision_data_t data = {0};
-    data.collide = false;
-
-    // bool collide = false;
-    for(int i = 0; i < blist->count; ++i)
-    {
-        block_t* b = &blocks[i];
-        Rect cb = p->phys.collision;
-        float delta_x = p->phys.pos.x - prior_pos.x;
-        float delta_y = p->phys.pos.y - prior_pos.y;
-        bool collide = physics_rect_collision(&prior_collision_box, &cb, &b->collision_box, delta_x, delta_y, &data);
-        if(collide)
-        {
-            // printf("block collision index: %d\n", i);
-            prior_pos.x = p->phys.pos.x;
-            prior_pos.y = p->phys.pos.y;
-            // // prior_collision_box = p->phys.collision;
-            p->phys.pos.x += (cb.x - p->phys.collision.x);
-            p->phys.pos.y += (cb.y - p->phys.collision.y);
-            // player_update_boxes(p);
-        }
-    }
-    // if(collide)
-    // {
-    //     player_colors[p->index] = COLOR_RED;
-    // }
-    // else
-    // {
-    //     player_colors[p->index] = COLOR_BLUE;
-    // }
-    return data.collide;
 }

@@ -231,9 +231,11 @@ bool zombie_add(ZombieSpawn* spawn)
     zombie.phys.accel.y = 0.0;
     zombie.phys.pos.x = spawn->pos.x;
     zombie.phys.pos.y = spawn->pos.y;
+    zombie.phys.mass = 1.0;
     zombie.phys.actual_pos.x = zombie.phys.pos.x;
     zombie.phys.actual_pos.y = zombie.phys.pos.y;
     zombie_update_boxes(&zombie);
+
 
     zombie.phys.max_linear_vel = spawn->max_linear_vel;
     zombie.speed = spawn->speed;

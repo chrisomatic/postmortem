@@ -103,13 +103,11 @@ void entities_update_draw_list()
     for(int i = 0; i < blist->count; ++i)
     {
         block_t* b = &blocks[i];
-        Rect r = {0};
-        map_grid_to_rect(b->row, b->col, &r);
-        if(is_in_camera_view(&r))
+        if(is_in_camera_view(&b->phys.pos))
         {
             Entity entity = {0};
             entity.type = ENTITY_TYPE_BLOCK;
-            entity.sort_val = r.y + r.h/2.0;
+            entity.sort_val = b->phys.pos.y + b->phys.pos.h/2.0;
             entity.data = (void*)b;
             list_add(entity_draw_list, (void*)&entity);
         }
@@ -316,6 +314,14 @@ void entities_handle_collisions(double delta_t)
 
         handle_collisions(ENTITY_TYPE_ZOMBIE, z, delta_t);
     }
+    
+    // blocks
+    for(int i = 0; i < blist->count; ++i)
+    {
+        block_t* b = &blocks[i];
+
+        handle_collisions(ENTITY_TYPE_BLOCK, b, delta_t);
+    }
 
 #if 0
     // projectiles
@@ -324,11 +330,6 @@ void entities_handle_collisions(double delta_t)
         //
     }
 
-    // blocks
-    for(int i = 0; i < blist->count; ++i)
-    {
-        block_t* b = &blocks[i];
-    }
 #endif
 
 }
@@ -411,7 +412,7 @@ static int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int c
         case ENTITY_TYPE_BLOCK:
         {
             block_t* b = (block_t*)data;
-            map_grid_to_rect(b->row, b->col, &rect);
+            rect = b->phys.pos;
         } break;
     }
 
@@ -422,7 +423,6 @@ static int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int c
 
 static void add_to_grid_boxes(EntityType type, void* data)
 {
-
     int rows[4] = {0};
     int cols[4] = {0};
 
@@ -483,6 +483,11 @@ static Physics* entity_get_physics(EntityType type, void* data)
                 return NULL;
             return &z->phys;
         }
+        case ENTITY_TYPE_BLOCK:
+        {
+            return &((block_t*)data)->phys;
+        }
+        break;
         default:
             return NULL;
     }
@@ -503,6 +508,7 @@ static void handle_collisions(EntityType type, void* data, double delta_t)
     {
         int r = rows[i];
         int c = cols[i];
+
         if(r > WORLD_GRID_ROWS_MAX || c > WORLD_GRID_COLS_MAX)
             continue;
 

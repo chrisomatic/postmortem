@@ -5,7 +5,7 @@
 
 #define MAX_ENTITIES 10000
 #define MAX_DRAW_ENTITIES 1000
-#define MAX_GRIDBOX_ENTITIES 32
+#define MAX_GRIDBOX_ENTITIES 64
 
 
 typedef enum

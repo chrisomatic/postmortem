@@ -89,6 +89,7 @@ float calc_angle_rad(float x0, float y0, float x1, float y1);
 float dist_squared(float x0, float y0, float x1, float y1);
 float dist(float x0, float y0, float x1, float y1);
 float magn(Vector2f v);
+float magn_fast(Vector2f v);
 void normalize(Vector2f* v);
 void get_scale_transform(Matrix* mat, Vector3f* scale);
 void get_rotation_transform(Matrix* mat, Vector3f* rotation);

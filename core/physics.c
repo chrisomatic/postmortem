@@ -63,7 +63,7 @@ void physics_print(Physics* phys, bool force)
 
 }
 
-void physic_apply_pos_offset(Physics* phys, float offset_x, float offset_y)
+void physics_apply_pos_offset(Physics* phys, float offset_x, float offset_y)
 {
     phys->actual_pos.x += offset_x;
     phys->actual_pos.y += offset_y;
@@ -75,14 +75,14 @@ void physic_apply_pos_offset(Physics* phys, float offset_x, float offset_y)
     phys->collision.y += offset_y;
 }
 
-void physic_set_pos_offset(Physics* phys, float offset_x, float offset_y)
+void physics_set_pos_offset(Physics* phys, float offset_x, float offset_y)
 {
-    physic_apply_pos_offset(phys, -phys->pos_offset.x, -phys->pos_offset.y);
+    physics_apply_pos_offset(phys, -phys->pos_offset.x, -phys->pos_offset.y);
 
     phys->pos_offset.x = offset_x;
     phys->pos_offset.y = offset_y;
 
-    physic_apply_pos_offset(phys, phys->pos_offset.x, phys->pos_offset.y);
+    physics_apply_pos_offset(phys, phys->pos_offset.x, phys->pos_offset.y);
 }
 
 void physics_simulate(Physics* phys, Rect* limit, float delta_t)
@@ -99,7 +99,7 @@ void physics_simulate(Physics* phys, Rect* limit, float delta_t)
     phys->pos.x += dx;
     phys->pos.y += dy;
 
-    physic_apply_pos_offset(phys, dx, dy);
+    physics_apply_pos_offset(phys, dx, dy);
 
     if(limit != NULL)
     {
@@ -111,7 +111,7 @@ void physics_simulate(Physics* phys, Rect* limit, float delta_t)
         {
             phys->pos.x += adjx;
             phys->pos.y += adjy;
-            physic_apply_pos_offset(phys, adjx, adjy);
+            physics_apply_pos_offset(phys, adjx, adjy);
         }
     }
 
@@ -167,6 +167,85 @@ void physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
         return;
 
     // correct collision
+    float m1 = phys1->mass;
+    float m2 = phys2->mass;
+
+    Vector2f u1 = {phys1->vel.x,phys1->vel.y};
+    Vector2f u2 = {phys2->vel.x,phys2->vel.y};
+
+    Vector2f v1 = {0.0,0.0};
+    Vector2f v2 = {0.0,0.0};
+
+    float denom = m1+m2;
+
+    if(ABS(m1-m2) >= 9999.0)
+    {
+        // immoveable
+        if(m1 > m2)
+        {
+            v2.x = 1.0;
+            v2.y = 1.0;
+        }
+        else
+        {
+            v1.x = 1.0;
+            v1.y = 1.0;
+        }
+    }
+    else if(m1 == m2)
+    {
+        if(u2.x == 0.0 && u2.y == 0.0)
+        {
+            v1.x = 1.0;
+            v1.y = 1.0;
+        }
+        else
+        {
+            v1.x = u2.x;
+            v1.y = u2.y;
+        }
+
+        if(u2.x == 0.0 && u2.y == 0.0)
+        {
+            v2.x = 1.0;
+            v2.y = 1.0;
+        }
+        else
+        {
+            v2.x = u1.x;
+            v2.y = u1.y;
+        }
+    }
+    else if(denom > 0.0)
+    {
+        float mf11 = (m1-m2)/denom;
+        float mf12 = (2.0*m2)/denom;
+        float mf21 = (m2-m1)/denom;
+        float mf22 = (2.0*m1)/denom;
+
+        v1.x = mf11*u1.x+mf12*u2.x;
+        v1.y = mf11*u1.y+mf12*u2.y;
+
+        v2.x = mf22*u1.x+mf21*u2.x;
+        v2.y = mf22*u1.y+mf21*u2.y;
+    }
+    else
+    {
+        v1.x = 1.0;
+        v1.y = 1.0;
+
+        v2.x = 1.0;
+        v2.y = 1.0;
+    }
+
+    float ux = magn_fast(v1);
+    float uy = magn_fast(v2);
+
+    Vector2f ratio = {ABS(ux),ABS(uy)};
+    normalize(&ratio);
+
+    //printf("v1: %f %f, v2: %f %f, ratio: %f %f\n",v1.x,v1.y,v2.x,v2.y, ratio.x,ratio.y);
+
     float dx = phys1->collision.x - phys2->collision.x;
     float dy = phys1->collision.y - phys2->collision.y;
 
@@ -204,11 +283,14 @@ void physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
         }
     }
 
+    adj1.x *= ratio.x;
+    adj1.y *= ratio.x;
+
+    adj2.x *= ratio.y;
+    adj2.y *= ratio.y;
+
     const int max_loops = 10;
     int num_loops = 0;
-
-    Vector2f total_adj1 = {0.0,0.0};
-    Vector2f total_adj2 = {0.0,0.0};
 
     for(;;)
     {
@@ -216,462 +298,22 @@ void physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
         if(num_loops >= max_loops)
             break;
 
-        total_adj1.x += adj1.x;
-        total_adj1.y += adj1.y;
-        total_adj2.x += adj2.x;
-        total_adj2.y += adj2.y;
+        phys1->pos.x += adj1.x;
+        phys1->pos.y += adj1.y;
+        phys2->pos.x += adj2.x;
+        phys2->pos.y += adj2.y;
 
-        phys1->collision.x += adj1.x;
-        phys1->collision.y += adj1.y;
-        phys2->collision.x += adj2.x;
-        phys2->collision.y += adj2.y;
+        physics_apply_pos_offset(phys1, adj1.x, adj1.y);
+        physics_apply_pos_offset(phys2, adj2.x, adj2.y);
 
         colliding = rectangles_colliding(&phys1->collision, &phys2->collision);
         if(!colliding)
             break;
     }
 
-    phys1->pos.x += total_adj1.x;
-    phys1->pos.y += total_adj1.y;
-    phys2->pos.x += total_adj2.x;
-    phys2->pos.y += total_adj2.y;
-
-    physic_apply_pos_offset(phys1, total_adj1.x, total_adj1.y);
-    physic_apply_pos_offset(phys2, total_adj2.x, total_adj2.y);
-
-    //printf("num_loops: %d\n",num_loops);
-}
-
-void physics_handle_collision_old_attempt(Physics* phys1, Physics* phys2, double delta_t) // dont use
-{
-    // check for collision
-    bool colliding = rectangles_colliding(&phys1->pos, &phys2->pos);
-
-    if(!colliding)
-        return;
-
-    // correct collision
-    double check_t = delta_t;
-    double ddt = delta_t;
-
-    int dir = -1;
-    int num_loops = 0;
-
-    const int max_loops = 10;
-
-    Rect pos1 = {phys1->pos.x, phys1->pos.y, phys1->pos.w, phys1->pos.h};
-    Rect pos2 = {phys2->pos.x, phys2->pos.y, phys2->pos.w, phys2->pos.h};
-
-    Vector2f pos1_prior = {0.0,0.0};
-    Vector2f pos2_prior = {0.0,0.0};
-
-    printf("==============\n");
-    printf("Colliding with frame time: %f!!!\n", delta_t);
-    printf("v1: %f %f, v2: %f %f\n", phys1->vel.x, phys1->vel.y, phys2->vel.x, phys2->vel.y);
-    printf("size1: %f %f, size2: %f %f\n", phys1->pos.w, phys1->pos.h, phys2->pos.w, phys2->pos.h);
-
-    for(;;)
-    {
-        if(num_loops >= max_loops)
-        {
-            break;
-        }
-
-        // update positions of objects
-        ddt /= 1.4;
-        check_t += (dir*ddt);
-
-        Vector2f adj1 = { phys1->vel.x*check_t, phys1->vel.y*check_t};
-        Vector2f adj2 = { phys2->vel.x*check_t, phys2->vel.y*check_t};
-
-        pos1_prior.x = pos1.x;
-        pos1_prior.y = pos1.y;
-        pos2_prior.x = pos2.x;
-        pos2_prior.y = pos2.y;
-
-        pos1.x = phys1->pos.x - adj1.x;
-        pos1.y = phys1->pos.y - adj1.y;
-        pos2.x = phys2->pos.x - adj2.x;
-        pos2.y = phys2->pos.y - adj2.y;
-
-        float d1x = ABS(pos1.x - pos1_prior.x);
-        float d1y = ABS(pos1.y - pos1_prior.y);
-        float d2x = ABS(pos2.x - pos2_prior.x);
-        float d2y = ABS(pos2.y - pos2_prior.y);
-
-        // check colliding again
-        colliding = rectangles_colliding(&pos1, &pos2);
-        if(colliding)
-        {
-            dir = +1;
-        }
-        else
-        {
-            dir = -1;
-
-            if(d1x + d1y + d2x + d2y < 2.0)
-            {
-                break;
-            }
-        }
-
-        printf("   loop %d: check_time: %f, colliding: %s, deltas: %f %f %f %f\n",num_loops,check_t, colliding ? "true" : "false", d1x,d1y,d2x,d2y);
-            
-        ++num_loops;
-    }
-
-    if(colliding)
-    {
-        // completely reverse collision
-        phys1->pos.x -= (phys1->vel.x*delta_t);
-        phys1->pos.y -= (phys1->vel.y*delta_t);
-        phys2->pos.x -= (phys2->vel.x*delta_t);
-        phys2->pos.y -= (phys2->vel.y*delta_t);
-    }
-    else
-    {
-        phys1->pos.x = pos1.x;
-        phys1->pos.y = pos1.y;
-        phys2->pos.x = pos2.x;
-        phys2->pos.y = pos2.y;
-    }
-
-    // update velocities
-
-    float m1 = phys1->mass;
-    float m2 = phys2->mass;
-
-    Vector2f u1 = {phys1->vel.x,phys1->vel.y};
-    Vector2f u2 = {phys2->vel.x,phys2->vel.y};
-
-    float denom = m1+m2;
-    if(denom != 0.0)
-    {
-        float mf11 = (m1-m2)/denom;
-        float mf12 = (2.0*m2)/denom;
-        float mf21 = (m2-m1)/denom;
-        float mf22 = (2.0*m1)/denom;
-
-        phys1->vel.x = mf11*u1.x+mf12*u2.x;
-        phys1->vel.y = mf11*u1.y+mf12*u2.y;
-
-        phys2->vel.x = mf22*u1.x+mf21*u2.x;
-        phys2->vel.y = mf22*u1.y+mf21*u2.y;
-    }
-    else
-    {
-        phys1->vel.x = 0.0;
-        phys1->vel.y = 0.0;
-
-        phys2->vel.x = 0.0;
-        phys2->vel.y = 0.0;
-    }
-
-
-    //
-
-    //printf("num_loops: %d\n",num_loops);
-    //printf("==============\n");
-
-
-    //printf("num_loops: %d\n",num_loops);
-}
-
-
-// collision | pos: RIGHT,    - | box:  LEFT,    - | delta pos: 2.14, 0.00 | delta box: -31.50, 7.33
-// block collision index: 1
-// collision | pos: RIGHT,    - | box:  LEFT,    - | delta pos: 2.18, 0.00 | delta box: -31.50, 7.33
-// block collision index: 1
-// collision | pos: RIGHT,    - | box:  LEFT,    - | delta pos: 2.25, 0.00 | delta box: -31.50, 7.33
-// block collision index: 1
-// prior box is inside check!
-// collision | pos: RIGHT,    - | box:     -,    - | delta pos: 2.15, 0.00 | delta box: 31.00, 7.43
-// block collision index: 0
-// collision | pos: RIGHT,    - | box:  LEFT,    - | delta pos: 2.14, 0.00 | delta box: -33.00, 7.43
-// block collision index: 0
-
-bool physics_rect_collision(Rect* prior_box, Rect* curr_box, Rect* check, float delta_x_pos, float delta_y_pos, rect_collision_data_t* data)
-{
-
-    #define UP      -1
-    #define DOWN    1
-    #define LEFT    -1
-    #define RIGHT   1
-
-    #define STR_LR(_xd) (_xd == LEFT ? "LEFT" : (_xd == RIGHT ? "RIGHT" : "-" ))
-    #define STR_UD(_yd) (_yd == UP ? "UP" : (_yd == DOWN ? "DOWN" : "-" ))
-
-
-    // physic position:
-    // what direction is the entity moving
-    int xd = 0;
-    int yd = 0;
-
-    if(!FEQ(delta_x_pos, 0.0))
-    {
-        if(delta_x_pos < 0.0)
-            xd = LEFT;
-        else
-            xd = RIGHT;
-    }
-
-    if(!FEQ(delta_y_pos, 0.0))
-    {
-        if(delta_y_pos < 0.0)
-            yd = UP;
-        else
-            yd = DOWN;
-    }
-
-
-    // prior box:
-    // what side of the box
-    float delta_x = prior_box->x - check->x;
-    float delta_y = prior_box->y - check->y;
-    int xo = 0;
-    int yo = 0;
-
-    if(rectangles_colliding(prior_box, check))
-    {
-        // printf("prior box is inside check!\n");
-        if(ABS(delta_x) > ABS(delta_y))
-        {
-            if(prior_box->x > check->x)
-                xo = RIGHT;
-            else
-                xo = LEFT;
-        }
-        else
-        {
-            if(prior_box->y > check->y)
-                yo = DOWN;
-            else
-                yo = UP;
-        }
-
-    }
-    else if((prior_box->x + prior_box->w/2.0) < (check->x - check->w/2.0))
-    {
-        xo = LEFT;
-    }
-    else if((prior_box->x - prior_box->w/2.0) > (check->x + check->w/2.0))
-    {
-        xo = RIGHT;
-    }
-
-    if((prior_box->y + prior_box->h/2.0) < (check->y - check->h/2.0))
-    {
-        yo = UP;
-    }
-    else if((prior_box->y - prior_box->h/2.0) > (check->y + check->h/2.0))
-    {
-        yo = DOWN;
-    }
-
-
-    float adj = 1.0;
-    float x_left_correction = (check->x - check->w/2.0) - curr_box->w/2.0 - adj;
-    float x_right_correction = (check->x + check->w/2.0) + curr_box->w/2.0 + adj;
-    float y_down_correction = (check->y + check->h/2.0) + curr_box->h/2.0 + adj;
-    float y_up_correction = (check->y - check->h/2.0) - curr_box->h/2.0 - adj;
-
-    bool collide = rectangles_colliding(curr_box, check);
-    if(!collide)
-    {
-        collide = are_rects_colliding(prior_box, curr_box, check);
-    }
-
-    if(collide)
-    {
-        // printf("collision | pos: %5s, %4s | box: %5s, %4s | delta pos: %.2f, %.2f | delta box: %.2f, %.2f\n" , STR_LR(xd), STR_UD(yd), STR_LR(xo), STR_UD(yo), delta_x_pos, delta_y_pos, delta_x, delta_y);
-
-        if(xo == LEFT)
-        {
-            curr_box->x = x_left_correction;
-        }
-        else if(xo == RIGHT)
-        {
-            curr_box->x = x_right_correction;
-        }
-        else if(yo == UP)
-        {
-            curr_box->y = y_up_correction;
-        }
-        else if(yo == DOWN)
-        {
-            curr_box->y = y_down_correction;
-        }
-        else
-        {
-
-            LOGE("help");
-
-            // moving left or right
-            if(ABS(delta_x_pos) > ABS(delta_y_pos))
-            {
-                if(delta_x_pos < 0.0)   // moving to the left
-                    curr_box->x = x_right_correction;
-                else
-                    curr_box->x = x_left_correction;
-            }
-            else
-            {
-                if(delta_y_pos < 0.0)   // moving up
-                    curr_box->y = y_down_correction;
-                else
-                    curr_box->y = y_up_correction;
-            }
-        }
-
-        data->collide = true;
-
-        return true;
-    }
-
-    return false;
-
-
-}
-
-
-//needs works, not used yet
-bool physics_rect_collision2(Rect* prior_box, Rect* curr_box, Rect* check, float delta_x_pos, float delta_y_pos, rect_collision_data_t* data)
-{
-
-    bool collide = rectangles_colliding(curr_box, check);
-    if(!collide)
-    {
-        collide = are_rects_colliding(prior_box, curr_box, check);
-    }
-    if(!collide) return false;
-
-
-    #define UP      -1
-    #define DOWN    1
-    #define LEFT    -1
-    #define RIGHT   1
-
-    #define STR_LR(_xd) (_xd == LEFT ? "LEFT" : (_xd == RIGHT ? "RIGHT" : "-" ))
-    #define STR_UD(_yd) (_yd == UP ? "UP" : (_yd == DOWN ? "DOWN" : "-" ))
-
-
-
-    int xo = 0;
-    int yo = 0;
-    // prior box:
-    // what side of the box
-    float delta_x = prior_box->x - check->x;
-    float delta_y = prior_box->y - check->y;
-
-
-    if(rectangles_colliding(prior_box, check))
-    {
-        // printf("prior box is inside check!\n");
-        if(ABS(delta_x) > ABS(delta_y))
-        {
-            if(prior_box->x > check->x)
-                xo = RIGHT;
-            else
-                xo = LEFT;
-        }
-        else
-        {
-            if(prior_box->y > check->y)
-                yo = DOWN;
-            else
-                yo = UP;
-        }
-
-    }
-    else if((prior_box->x + prior_box->w/2.0) < (check->x - check->w/2.0))
-    {
-        xo = LEFT;
-    }
-    else if((prior_box->x - prior_box->w/2.0) > (check->x + check->w/2.0))
-    {
-        xo = RIGHT;
-    }
-
-    else if((prior_box->y + prior_box->h/2.0) < (check->y - check->h/2.0))
-    {
-        yo = UP;
-    }
-    else if((prior_box->y - prior_box->h/2.0) > (check->y + check->h/2.0))
-    {
-        yo = DOWN;
-    }
-    else
-    {
-        LOGE("help");
-
-        // moving left or right
-        if(ABS(delta_x_pos) > ABS(delta_y_pos))
-        {
-            if(delta_x_pos < 0.0)   // moving to the left
-            {
-                // curr_box->x = x_right_correction;
-                xo = RIGHT;
-            }
-            else
-            {
-                // curr_box->x = x_left_correction;
-                xo = LEFT;
-            }
-        }
-        else
-        {
-            if(delta_y_pos < 0.0)   // moving up
-            {
-                // curr_box->y = y_down_correction;
-                yo = DOWN;
-            }
-            else
-            {
-                // curr_box->y = y_up_correction;
-                yo = UP;
-            }
-        }
-    }
-
-    if(data->collide)
-    {
-        xo = data->xo;
-        yo = data->yo;
-    }
-
-
-
-    float adj = 0.5;
-    float x_left_correction = (check->x - check->w/2.0) - curr_box->w/2.0 - adj;
-    float x_right_correction = (check->x + check->w/2.0) + curr_box->w/2.0 + adj;
-    float y_down_correction = (check->y + check->h/2.0) + curr_box->h/2.0 + adj;
-    float y_up_correction = (check->y - check->h/2.0) - curr_box->h/2.0 - adj;
-
-    printf("%s collision | check: (%.1f,%.1f) | box: %5s, %4s | delta pos: %.2f, %.2f\n" , data->collide ? "another" : "first", check->x, check->y, STR_LR(xo), STR_UD(yo), delta_x_pos, delta_y_pos);
-
-
-    if(xo == LEFT)
-    {
-        curr_box->x = x_left_correction;
-    }
-    else if(xo == RIGHT)
-    {
-        curr_box->x = x_right_correction;
-    }
-    else if(yo == UP)
-    {
-        curr_box->y = y_up_correction;
-    }
-    else if(yo == DOWN)
-    {
-        curr_box->y = y_down_correction;
-    }
-
-    data->collide = true;
-    data->check = *check;
-    data->xo = xo;
-    data->yo = yo;
-
-    return true;
-
+    phys1->vel.x = 0.0;
+    phys1->vel.y = 0.0;
+
+    phys2->vel.x = 0.0;
+    phys2->vel.y = 0.0;
 }
