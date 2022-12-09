@@ -125,7 +125,6 @@ void entities_update_draw_list()
                 entity.type = ENTITY_TYPE_PARTICLE;
                 entity.sort_val = s->pos.y;
                 entity.data = (void*)s;
-                
                 list_add(entity_draw_list, (void*)&entity);
             }
         }
@@ -238,7 +237,6 @@ void entities_update_grid_boxes()
 
 void entity_remove_from_grid_boxes(EntityType type, void* data)
 {
-
     int rows[4] = {0};
     int cols[4] = {0};
     int count = entity_get_grid_boxes(type, data, rows, cols);
@@ -270,27 +268,6 @@ void entity_remove_from_grid_boxes(EntityType type, void* data)
 
     }
 
-
-    // // could make this more efficient probably
-    // for(int r = 0; r < WORLD_GRID_ROWS_MAX; ++r)
-    // {
-    //     for(int c = 0; c < WORLD_GRID_COLS_MAX; ++c)
-    //     {
-    //         GridBox* g = &grid_boxes[r][c];
-    //         int num = g->num;
-    //         for(int i = 0; i < num; ++i)
-    //         {
-    //             if(g->entities[i].type = type)
-    //             {
-    //                 if(g->entities[i].data = data)
-    //                 {
-    //                     memcpy(&g->entities[i], &g->entities[g->num], sizeof(Entity));
-    //                     g->num--;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
 }
 
 void entities_handle_collisions(double delta_t)

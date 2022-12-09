@@ -106,6 +106,7 @@ bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check);
 bool rectangles_colliding(Rect* a, Rect* b);
 
 int angle_sector(float angle, int num_sectors);
+Vector2f angle_sector_range(int num_sectors, int sector);
 float rangef(float arr[], int n, float* fmin, float* fmax);
 
 void rotate_rect(Rect* in, float rotation, float rotation_x, float rotation_y, RectXY* out);

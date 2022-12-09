@@ -70,6 +70,8 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
 
     int mx = p->mouse_x;
     int my = p->mouse_y;
+    int px = p->phys.actual_pos.x;
+    int py = p->phys.actual_pos.y;
 
     Rect mouse_r = {0};
     mouse_r.x = mx;
@@ -77,17 +79,25 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
     mouse_r.w = 1;
     mouse_r.h = 1;
 
-    float angle_deg = angle_offset;
-    if(rectangles_colliding(&mouse_r, &p->phys.actual_pos))
+    // float d = dist(proj.pos.x, proj.pos.y, mx, my);
+
+    float angle_deg = 0.0;
+    // if(rectangles_colliding(&mouse_r, &p->phys.actual_pos) || dist(px, py, mx, my) <= 40.0)
+    // if(rectangles_colliding(&mouse_r, &p->phys.actual_pos))
+    if(dist(px, py, mx, my) <= 40.0)
     {
-        angle_deg += DEG(p->angle);
+        // player_colors[p->index] = COLOR_RED;
+        angle_deg = DEG(p->angle);
     }
     else
     {
-        angle_deg += calc_angle_deg(proj.pos.x, proj.pos.y, mx, my);
+        // player_colors[p->index] = COLOR_BLUE;
+        angle_deg = calc_angle_deg(proj.pos.x, proj.pos.y, mx, my);
     }
+    angle_deg += angle_offset;
 
     float angle = RAD(angle_deg);
+
     proj.angle_deg = angle_deg;
     proj.vel.x = speed*cosf(angle);
     proj.vel.y = speed*sinf(angle);
@@ -98,95 +108,6 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
     list_add(plist, (void*)&proj);
 }
 
-#if 0
-void projectile_update(float delta_t)
-{
-    for(int i = plist->count - 1; i >= 0; --i)
-    {
-        Projectile* proj = &projectiles[i];
-
-        if(proj->dead)
-            continue;
-
-        proj->time += delta_t;
-        if(proj->time >= proj->ttl)
-        {
-            proj->dead = true;
-            continue;
-        }
-
-        proj->pos.x += delta_t*proj->vel.x;
-        proj->pos.y -= delta_t*proj->vel.y; // @minus
-
-        update_hurt_box(proj);
-
-        for(int j = zlist->count - 1; j >= 0; --j) // num_zombies
-        {
-
-            if(proj->dead)
-                break;
-
-            if(are_rects_colliding(&proj->hurt_box_prior, &proj->hurt_box, &zombies[j].phys.hit))
-            {
-                //printf("Bullet collided!\n");
-                proj->dead = true;
-
-                Vector2f force = {
-                    100.0*cosf(RAD(proj->angle_deg)),
-                    100.0*sinf(RAD(proj->angle_deg))
-                };
-                //zombie_push(j,&force);
-
-                if(role == ROLE_SERVER)
-                {
-                    printf("Zombie %d hurt for %d damage!\n",j,proj->damage);
-                }
-
-                particles_spawn_effect(zombies[j].phys.pos.x, zombies[j].phys.pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
-
-                // correct projectile pos back to zombie hitbox
-                {
-                    Vector2f p0 = {proj->hurt_box.x, proj->hurt_box.y};
-                    Vector2f p1 = {proj->hurt_box_prior.x, proj->hurt_box_prior.y};
-                    Vector2f p2 = {zombies[j].phys.hit.x, zombies[j].phys.hit.y};
-
-                    float d = dist(p0.x,p0.y,p2.x,p2.y);
-
-                    Vector2f v = {p0.x - p1.x, p0.y - p1.y};
-                    normalize(&v);
-
-                    Vector2f correction = {-d*v.x, -d*v.y};
-
-                    proj->pos.x += correction.x;
-                    proj->pos.y += correction.y;
-
-                    update_hurt_box(proj);
-                }
-
-                zombie_hurt(j,proj->damage);
-            }
-        }
-
-        float x0 = proj->hurt_box.x;
-        float y0 = proj->hurt_box.y;
-        float x1 = proj->hurt_box_prior.x;
-        float y1 = proj->hurt_box_prior.y;
-
-        //printf("p0 (%f %f) -> p1 (%f %f)\n",x0,y0,x1,y1);
-        gfx_add_line(x0,y0,x1,y1, 0x00FFFF00);
-        gfx_add_line(x0+1,y0+1,x1+1,y1+1, 0x00555555);
-    }
-
-    for(int i = plist->count - 1; i >= 0; --i)
-    {
-        if(projectiles[i].dead)
-        {
-            projectile_remove(i);
-        }
-    }
-
-}
-#endif
 
 void projectile_update(float delta_t)
 {

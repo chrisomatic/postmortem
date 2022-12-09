@@ -152,7 +152,8 @@ void zombie_init()
 bool zombie_add(ZombieSpawn* spawn)
 {
     Zombie zombie = {0};
-    zombie.id = zid++;
+    Zombie* z = &zombie;
+    z->id = zid++;
 
     // set default values if not set by spawn
     // --------------------------------------------------------
@@ -170,93 +171,103 @@ bool zombie_add(ZombieSpawn* spawn)
 
     // animation
     // --------------------------------------------------------
-    zombie.anim.curr_frame = 0;
-    zombie.anim.max_frames = 16;
-    zombie.anim.curr_frame_time = 0.0f;
-    zombie.anim.max_frame_time = 0.04f;
-    zombie.anim.finite = false;
-    zombie.anim.curr_loop = 0;
-    zombie.anim.max_loops = 0;
-    zombie.anim.frame_sequence[0] = 0;
-    zombie.anim.frame_sequence[1] = 1;
-    zombie.anim.frame_sequence[2] = 2;
-    zombie.anim.frame_sequence[3] = 3;
-    zombie.anim.frame_sequence[4] = 4;
-    zombie.anim.frame_sequence[5] = 5;
-    zombie.anim.frame_sequence[6] = 6;
-    zombie.anim.frame_sequence[7] = 7;
-    zombie.anim.frame_sequence[8] = 8;
-    zombie.anim.frame_sequence[9] = 9;
-    zombie.anim.frame_sequence[10] = 10;
-    zombie.anim.frame_sequence[11] = 11;
-    zombie.anim.frame_sequence[12] = 12;
-    zombie.anim.frame_sequence[13] = 13;
-    zombie.anim.frame_sequence[14] = 14;
-    zombie.anim.frame_sequence[15] = 15;
+    z->anim.curr_frame = 0;
+    z->anim.max_frames = 16;
+    z->anim.curr_frame_time = 0.0f;
+    z->anim.max_frame_time = 0.04f;
+    z->anim.finite = false;
+    z->anim.curr_loop = 0;
+    z->anim.max_loops = 0;
+    z->anim.frame_sequence[0] = 0;
+    z->anim.frame_sequence[1] = 1;
+    z->anim.frame_sequence[2] = 2;
+    z->anim.frame_sequence[3] = 3;
+    z->anim.frame_sequence[4] = 4;
+    z->anim.frame_sequence[5] = 5;
+    z->anim.frame_sequence[6] = 6;
+    z->anim.frame_sequence[7] = 7;
+    z->anim.frame_sequence[8] = 8;
+    z->anim.frame_sequence[9] = 9;
+    z->anim.frame_sequence[10] = 10;
+    z->anim.frame_sequence[11] = 11;
+    z->anim.frame_sequence[12] = 12;
+    z->anim.frame_sequence[13] = 13;
+    z->anim.frame_sequence[14] = 14;
+    z->anim.frame_sequence[15] = 15;
 
 
 
     // state vars
     // --------------------------------------------------------
-    zombie.hurt = false;
-    zombie.attacking = false;
-    zombie.dead = false;
+    z->hurt = false;
+    z->attacking = false;
+    z->dead = false;
 
-    zombie.action_timer_max = 2.0;
-    zombie.action_timer = zombie.action_timer_max;
+    z->action_timer_max = 2.0;
+    z->action_timer = z->action_timer_max;
 
 
     // model and texture
     // --------------------------------------------------------
-    zombie.model_index = spawn->model_index;
-    zombie.model_texture = spawn->model_texture;
-    zombie.anim_state = ZANIM_WALK;
-    zombie.sprite_index = 0;
-    zombie.sprite_index_direction = 0;
+    z->model_index = spawn->model_index;
+    z->model_texture = spawn->model_texture;
+    z->anim_state = ZANIM_WALK;
+    z->sprite_index = 0;
+    z->sprite_index_direction = 0;
     zombie_update_image(&zombie);
-    // zombie.image = zombie_image_sets_none[zombie.model_index][zombie.model_texture][zombie.anim_state];
+    // z->image = zombie_image_sets_none[z->model_index][z->model_texture][z->anim_state];
 
-    // zombie.scale = (float)ZOMBIE_HEIGHT*spawn->scale/standard_size[zombie.model_index].h;
-    zombie.scale = (float)ZOMBIE_HEIGHT/standard_size[zombie.model_index].h;
+    // z->scale = (float)ZOMBIE_HEIGHT*spawn->scale/standard_size[z->model_index].h;
+    z->scale = (float)ZOMBIE_HEIGHT/standard_size[z->model_index].h;
 
-    zombie.color = COLOR_TINT_NONE;
-    zombie.opacity = 1.0;
+    z->color = COLOR_TINT_NONE;
+    z->opacity = 1.0;
 
-    zombie.angle = 0.0f;
+    z->angle = 0.0f;
     zombie_update_sprite_index(&zombie);
 
     // boxes and phys stuff
     // --------------------------------------------------------
-    zombie.phys.accel.x = 0.0;
-    zombie.phys.accel.y = 0.0;
-    zombie.phys.pos.x = spawn->pos.x;
-    zombie.phys.pos.y = spawn->pos.y;
-    zombie.phys.mass = 1.0;
-    zombie.phys.actual_pos.x = zombie.phys.pos.x;
-    zombie.phys.actual_pos.y = zombie.phys.pos.y;
-    zombie_update_boxes(&zombie);
+    z->phys.mass = 1.0;
+    z->phys.accel.x = 0.0;
+    z->phys.accel.y = 0.0;
+    z->phys.pos.x = spawn->pos.x;
+    z->phys.pos.y = spawn->pos.y;
+    z->phys.actual_pos.x = z->phys.pos.x;
+    z->phys.actual_pos.y = z->phys.pos.y;
 
+    float sw = standard_size[z->model_index].w * z->scale;
+    float sh = standard_size[z->model_index].h * z->scale;
+    Rect standard = {0};
+    standard.x = z->phys.pos.x;
+    standard.y = z->phys.pos.y;
+    standard.w = sw;
+    standard.h = sh;
+    z->phys.hit = calc_sub_box(&standard, 1.0, 0.5, 0);
+    z->phys.collision = calc_sub_box(&standard, 1.0, 0.4, 2);
 
-    zombie.phys.max_linear_vel = spawn->max_linear_vel;
-    zombie.speed = spawn->speed;
-    zombie.push_vel.x = 0.0;
-    zombie.push_vel.y = 0.0;
+    zombie_update_boxes(z);
+
+    z->phys.max_linear_vel = spawn->max_linear_vel;
+    z->speed = spawn->speed;
+    z->push_vel.x = 0.0;
+    z->push_vel.y = 0.0;
 
 
     // other
     // --------------------------------------------------------
-    coords_to_map_grid(zombie.phys.actual_pos.x, zombie.phys.actual_pos.y, &zombie.map_grid_pos.x, &zombie.map_grid_pos.y);
-    coords_to_world_grid(zombie.phys.actual_pos.x, zombie.phys.actual_pos.y, &zombie.world_grid_pos.x, &zombie.world_grid_pos.y);
-    zombie.attack_range = 40.0;
-    zombie.attack_angle = 0.0;
-    zombie.melee_hit_count = 0;
-    zombie.damage_min = 1.0;
-    zombie.damage_max = 2.0;
-    zombie.hp_max = spawn->hp_max;
-    zombie.hp = zombie.hp_max;
+    coords_to_map_grid(z->phys.actual_pos.x, z->phys.actual_pos.y, &z->map_grid_pos.x, &z->map_grid_pos.y);
+    coords_to_world_grid(z->phys.actual_pos.x, z->phys.actual_pos.y, &z->world_grid_pos.x, &z->world_grid_pos.y);
+    z->attack_range = 40.0;
+    z->attack_angle = 0.0;
+    z->melee_hit_count = 0;
+    z->damage_min = 1.0;
+    z->damage_max = 2.0;
+    z->hp_max = spawn->hp_max;
+    z->hp = z->hp_max;
 
 
-    return list_add(zlist, (void*)&zombie);
+    return list_add(zlist, (void*)z);
 }
 
 bool zombie_add_to_world_grid(ZombieSpawn* spawn, int world_row, int world_col)
@@ -387,16 +398,17 @@ void zombie_update_sprite_index(Zombie* z)
 {
     float angle_deg = DEG(z->angle);
     if(z->attacking) angle_deg = DEG(z->attack_angle);
-    int sector = angle_sector(angle_deg, 16);
+    // int sector = angle_sector(angle_deg, 16);
 
-    if(sector == 15 || sector == 0)       z->sprite_index_direction = 2;
-    else if(sector == 1 || sector == 2)   z->sprite_index_direction = 3;
-    else if(sector == 3 || sector == 4)   z->sprite_index_direction = 4;
-    else if(sector == 5 || sector == 6)   z->sprite_index_direction = 5;
-    else if(sector == 7 || sector == 8)   z->sprite_index_direction = 6;
-    else if(sector == 9 || sector == 10)  z->sprite_index_direction = 7;
-    else if(sector == 11 || sector == 12) z->sprite_index_direction = 0;
-    else if(sector == 13 || sector == 14) z->sprite_index_direction = 1;
+    int sector = player_angle_sector(angle_deg);
+    if(sector == 0) z->sprite_index_direction = 2;
+    else if(sector == 1) z->sprite_index_direction = 3;
+    else if(sector == 2) z->sprite_index_direction = 4;
+    else if(sector == 3) z->sprite_index_direction = 5;
+    else if(sector == 4) z->sprite_index_direction = 6;
+    else if(sector == 5) z->sprite_index_direction = 7;
+    else if(sector == 6) z->sprite_index_direction = 0;
+    else if(sector == 7) z->sprite_index_direction = 1;
 
     z->sprite_index = z->sprite_index_direction * 16;
 
@@ -418,18 +430,6 @@ void zombie_update_boxes(Zombie* z)
     z->phys.pos.w = z->phys.actual_pos.w;
     z->phys.pos.h = z->phys.actual_pos.h;
 
-    z->phys.hit = calc_sub_box(&z->phys.actual_pos, 1.0, 0.5, 0);
-    //z->phys.collision = calc_sub_box(&z->phys.actual_pos, 1.0, 0.4, 2);
-
-    float sw = standard_size[z->model_index].w * z->scale;
-    float sh = standard_size[z->model_index].h * z->scale;
-
-    Rect standard = {0};
-    standard.x = z->phys.actual_pos.x;
-    standard.y = z->phys.actual_pos.y;
-    standard.w = sw;
-    standard.h = sh;
-    z->phys.collision = calc_sub_box(&standard, 1.0, 0.4, 2);
 }
 
 void zombie_update_pursue(Zombie* z, float delta_t)
@@ -566,40 +566,6 @@ Vector2f zombie_update_movement(Zombie* z, float delta_t)
             accel.y += amt*sinf(2*PI-z->angle);
             accel.x += amt*cosf(z->angle);
         }
-
-        // switch(z->action)
-        // {
-        //     case ZOMBIE_ACTION_NONE:
-        //         break;
-        //     case ZOMBIE_ACTION_MOVE_UP:
-        //         accel.y -= amt;
-        //         break;
-        //     case ZOMBIE_ACTION_MOVE_UP_RIGHT:
-        //         accel.x += amt;
-        //         accel.y -= amt;
-        //         break;
-        //     case ZOMBIE_ACTION_MOVE_RIGHT:
-        //         accel.x += amt;
-        //         break;
-        //     case ZOMBIE_ACTION_MOVE_DOWN_RIGHT:
-        //         accel.x += amt;
-        //         accel.y += amt;
-        //         break;
-        //     case ZOMBIE_ACTION_MOVE_DOWN:
-        //         accel.y += amt;
-        //         break;
-        //     case ZOMBIE_ACTION_MOVE_DOWN_LEFT:
-        //         accel.x -= amt;
-        //         accel.y += amt;
-        //         break;
-        //     case ZOMBIE_ACTION_MOVE_LEFT:
-        //         accel.x -= amt;
-        //         break;
-        //     case ZOMBIE_ACTION_MOVE_UP_LEFT:
-        //         accel.x -= amt;
-        //         accel.y -= amt;
-        //         break;
-        // }
     }
 
     return accel;
@@ -666,13 +632,6 @@ void zombie_update(Zombie* z, float delta_t)
     zombie_update_sprite_index(z);
     zombie_update_boxes(z);
 
-    // // player_update_image(p);
-    // gfx_anim_update(&p->anim, delta_t);
-    // player_update_sprite_index(p);
-    // player_update_boxes(p);  // update width and heights of phys boxes
-
-    // Rect prior_pos = z->phys.pos;
-    // Rect prior_phys.collision = z->phys.collision;
 
     physics_begin(&z->phys);
     physics_add_friction(&z->phys, 16.0);
@@ -682,67 +641,7 @@ void zombie_update(Zombie* z, float delta_t)
     coords_to_map_grid(z->phys.pos.x, z->phys.pos.y, &z->map_grid_pos.x, &z->map_grid_pos.y);
     coords_to_world_grid(z->phys.pos.x, z->phys.pos.y, &z->world_grid_pos.x, &z->world_grid_pos.y);
 
-    // zombie_update_anim_state(z);
-    // zombie_update_anim_timing(z);
-    // zombie_update_image(z);
-
-    // // gfx_anim_update(&z->anim, delta_t);
-
-    // if(z->anim_state == ZANIM_HURT && z->anim.curr_loop > 0)
-    // {
-    //     z->anim_state = ZANIM_IDLE;
-    //     z->hurt = false;
-    //     zombie_update_anim_state(z);
-    //     zombie_update_anim_timing(z);
-    //     zombie_update_image(z);
-    // }
-
-    // if(z->anim_state == ZANIM_ATTACK1 && z->anim.curr_loop > 0)
-    // {
-    //     z->anim_state = ZANIM_IDLE;
-    //     z->attacking = false;
-    //     zombie_update_anim_state(z);
-    //     zombie_update_anim_timing(z);
-    //     zombie_update_image(z);
-    // }
-
-    // zombie_update_sprite_index(z);
-    // zombie_update_boxes(z);
-
-    // disabled for now
-    // zombie_check_block_collision(z, prior_pos, prior_phys.collision);
-
-    // zombie_melee_check_collision(z);
 }
-
-// bool zombie_check_block_collision(Zombie* z, Rect prior_pos, Rect prior_phys.collision)
-// {
-//     rect_collision_data_t data = {0};
-//     data.collide = false;
-
-//     bool collide = false;
-//     for(int i = 0; i < blist->count; ++i)
-//     {
-//         block_t* b = &blocks[i];
-//         Rect cb = z->phys.collision;
-//         float delta_x = z->phys.pos.x - prior_pos.x;
-//         float delta_y = z->phys.pos.y - prior_pos.y;
-//         collide = physics_rect_collision(&prior_phys.collision, &cb, &b->phys.collision, delta_x, delta_y, &data);
-//         if(collide)
-//         {
-//             // printf("block collision index: %d\n", i);
-//             prior_pos.x = z->phys.pos.x;
-//             prior_pos.y = z->phys.pos.y;
-//             // prior_phys.collision = p->phys.collision;
-
-//             z->phys.pos.x += (cb.x - z->phys.collision.x);
-//             z->phys.pos.y += (cb.y - z->phys.collision.y);
-//             zombie_update_boxes(z);
-
-//         }
-//     }
-// }
-
 
 bool zombie_draw(Zombie* z, bool add_to_existing_batch)
 {
@@ -949,8 +848,8 @@ void zombie_melee_check_collision(Zombie* z)
 
 static void zombie_remove(Zombie* z)
 {
-    entity_remove_from_grid_boxes(ENTITY_TYPE_ZOMBIE,(void*)z);
-    // LOGE("TODO entity_remove_from_grid_boxes");
+    // don't need to do this actually
+    // entity_remove_from_grid_boxes(ENTITY_TYPE_ZOMBIE,(void*)z);
     list_remove_by_item(zlist, z);
 }
 

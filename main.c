@@ -72,6 +72,16 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
 int main(int argc, char* argv[])
 {
+    // for(int i = 0; i < 16; ++i)
+    // {
+    //     Vector2f r = angle_sector_range(16, i);
+    //     float a = r.x + (r.y-r.x)/2.0;
+    //     int sector = player_angle_sector(a);
+    //     Vector2f r2 = player_angle_sector_range(sector);
+    //     printf("%d) angle: %.2f, sector: %d, range: %.2f - %.2f\n", i, a, sector, r2.x, r2.y);
+    // }
+    // return 1;
+
     init_timer();
     log_init(0);
     parse_args(argc, argv);
@@ -603,36 +613,6 @@ void handle_backspace_timer()
 
 
 
-// FULL image drawn at draw_x, draw_y
-// get the translated and scaled visible_rect of the image
-void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret)
-{
-    float img_center_x = img_w/2.0;
-    float img_center_y = img_h/2.0;
-    float offset_x = (visible_rect->x - img_center_x)*scale;
-    float offset_y = (visible_rect->y - img_center_y)*scale;
-
-    // actual position
-    ret->x = draw_x + offset_x;
-    ret->y = draw_y + offset_y;
-    ret->w = visible_rect->w*scale;
-    ret->h = visible_rect->h*scale;
-}
-
-void limit_pos(Rect* limit, Rect* pos, Rect* phys_pos)
-{
-    Rect pos0 = *pos;
-    physics_limit_pos(limit, &pos0);
-
-    if(!FEQ(pos0.x, pos->x) || !FEQ(pos0.y, pos->y))
-    {
-        phys_pos->x += (pos0.x - pos->x);
-        phys_pos->y += (pos0.y - pos->y);
-        pos->x = pos0.x;
-        pos->y = pos0.y;
-    }
-}
-
 
 // location:
 // 0 = top
@@ -663,3 +643,33 @@ Rect calc_sub_box(Rect* rect, float wscale, float hscale, int location)
 
     return r;
 }
+
+
+
+int player_angle_sector(float angle_deg)
+{
+    int sector = angle_sector(angle_deg, 16);
+    if(sector == 15 || sector == 0) return 0;
+    else return (sector-1) / 2 + 1;
+}
+
+// // sector: 0-7
+// Vector2f player_angle_sector_range(int sector)
+// {
+//     float _range =  22.5;
+
+//     Vector2f angle_range = {0};
+//     if(sector == 0)
+//     {
+//         angle_range.x = _range;
+//         angle_range.y = 360.0 - _range;
+//     }
+//     else
+//     {
+//         angle_range = angle_sector_range(8, sector);
+//         angle_range.x -= _range;
+//         angle_range.y -= _range;
+//     }
+
+//     return angle_range;
+// }

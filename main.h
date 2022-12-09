@@ -48,8 +48,7 @@ char* string_split_index_copy(char* str, const char* delim, int index, bool spli
 
 void handle_backspace_timer();
 
-// used for players
-void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret);
-void limit_pos(Rect* limit, Rect* pos, Rect* phys_pos);
-
 Rect calc_sub_box(Rect* rect, float wscale, float hscale, int location);
+
+int player_angle_sector(float angle_deg);
+Vector2f player_angle_sector_range(int sector);

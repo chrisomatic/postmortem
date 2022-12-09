@@ -279,15 +279,18 @@ static void player_init(int index)
     p->phys.pos.y = 1000.0;
     p->phys.actual_pos.x = p->phys.pos.x;
     p->phys.actual_pos.y = p->phys.pos.y;
+
     p->phys.mass = 1.0;
+
+    Rect r = p->standard_size;
+    r.x = p->phys.pos.x;
+    r.y = p->phys.pos.y;
+    p->phys.hit = calc_sub_box(&r, 1.0, 0.5, 0);
+    p->phys.collision = calc_sub_box(&r, 1.0, 0.4, 2);
+
     player_update_static_boxes(p);
     player_update_boxes(p);
     player_update_pos_offset(p);
-    // p->phys.hit = calc_sub_box(&p->phys.actual_pos, 1.0, 0.5, 0);
-    // p->phys.collision = calc_sub_box(&p->phys.actual_pos, 1.0, 0.4, 2);
-
-    // printf("Collision: "); print_rect(&p->phys.collision);
-    // printf("HIT: "); print_rect(&p->phys.hit);
 
     p->speed = 128.0;
     p->max_base_speed = 128.0;
@@ -572,6 +575,44 @@ void player_equip_item(Player* p, PlayerItemType itype, void* props, bool drawab
     p->item.props = props;
     p->item.drawable = drawable;
     p->item.mouse_aim = mouse_aim;
+}
+
+Rect* player_get_equipped_item_pos(Player* p)
+{
+    if(p->item.drawable && p->item.props != NULL)
+    {
+        if(p->item.item_type == ITEM_TYPE_GUN)
+        {
+            Gun* gun = (Gun*)p->item.props;
+            return &gun->pos;
+        }
+        else if(p->item.item_type == ITEM_TYPE_MELEE)
+        {
+            Melee* melee = (Melee*)p->item.props;
+            return &melee->pos;
+        }
+    }
+
+    return &p->phys.actual_pos;
+}
+
+int player_get_equipped_item_img(Player* p)
+{
+    if(p->item.drawable && p->item.props != NULL)
+    {
+        if(p->item.item_type == ITEM_TYPE_GUN)
+        {
+            Gun* gun = (Gun*)p->item.props;
+            return gun_get_image_index(p->model_index, p->anim_state, gun->type);
+        }
+        else if(p->item.item_type == ITEM_TYPE_MELEE)
+        {
+            Melee* melee = (Melee*)p->item.props;
+            return melee_get_image_index(p->model_index, p->anim_state, melee->type);
+        }
+    }
+
+    return -1;
 }
 
 
@@ -883,17 +924,6 @@ void player_update_boxes(Player* p)
     // maybe not necessary
     p->phys.pos.w = p->phys.actual_pos.w;
     p->phys.pos.h = p->phys.actual_pos.h;
-
-    p->phys.hit = calc_sub_box(&p->phys.actual_pos, 1.0, 0.5, 0);
-    p->phys.collision = calc_sub_box(&p->standard_size, 1.0, 0.4, 2);
-
-    // Rect hit = calc_sub_box(&p->phys.actual_pos, 1.0, 0.5, 0);
-    // p->phys.hit.w = hit.w;
-    // p->phys.hit.h = hit.h;
-
-    // Rect collision = calc_sub_box(&p->phys.actual_pos, 1.0, 0.4, 2);
-    // p->phys.collision.w = collision.w;
-    // p->phys.collision.h = collision.h;
 }
 
 void player_update_static_boxes(Player* p)
@@ -921,16 +951,15 @@ void player_update_sprite_index(Player* p)
 
     if(p->item.mouse_aim)
     {
-        int sector = angle_sector(angle_deg, 16);
-
-        if(sector == 15 || sector == 0)       p->sprite_index_direction = 2;
-        else if(sector == 1 || sector == 2)   p->sprite_index_direction = 3;
-        else if(sector == 3 || sector == 4)   p->sprite_index_direction = 4;
-        else if(sector == 5 || sector == 6)   p->sprite_index_direction = 5;
-        else if(sector == 7 || sector == 8)   p->sprite_index_direction = 6;
-        else if(sector == 9 || sector == 10)  p->sprite_index_direction = 7;
-        else if(sector == 11 || sector == 12) p->sprite_index_direction = 0;
-        else if(sector == 13 || sector == 14) p->sprite_index_direction = 1;
+        int sector = player_angle_sector(angle_deg);
+        if(sector == 0) p->sprite_index_direction = 2;
+        else if(sector == 1) p->sprite_index_direction = 3;
+        else if(sector == 2) p->sprite_index_direction = 4;
+        else if(sector == 3) p->sprite_index_direction = 5;
+        else if(sector == 4) p->sprite_index_direction = 6;
+        else if(sector == 5) p->sprite_index_direction = 7;
+        else if(sector == 6) p->sprite_index_direction = 0;
+        else if(sector == 7) p->sprite_index_direction = 1;
     }
     else
     {
@@ -942,7 +971,6 @@ void player_update_sprite_index(Player* p)
         else if(down)          p->sprite_index_direction = 0;
         else if(left)          p->sprite_index_direction = 6;
         else if(right)         p->sprite_index_direction = 2;
-            
     }
 
     p->sprite_index = p->sprite_index_direction * 16;
@@ -1117,6 +1145,9 @@ void player_update(Player* p, double delta_t)
     }
 
     p->phys.max_linear_vel = p->max_base_speed;
+
+    // Rect* wpos = player_get_equipped_item_pos(p);
+    // p->angle = calc_angle_rad(wpos->x, wpos->y, p->mouse_x, p->mouse_y);
     p->angle = calc_angle_rad(p->phys.pos.x, p->phys.pos.y, p->mouse_x, p->mouse_y);
 
     float accel_factor = 1.0;
@@ -1150,6 +1181,7 @@ void player_update(Player* p, double delta_t)
     player_update_image(p);
     gfx_anim_update(&p->anim, delta_t);
     player_update_sprite_index(p);
+    // player_update_static_boxes(p);
     player_update_boxes(p);  // update width and heights of phys boxes
 
     player_update_pos_offset(p);
@@ -1160,41 +1192,21 @@ void player_update(Player* p, double delta_t)
     physics_simulate(&p->phys, &map.rect, delta_t);
 
     player_update_static_boxes(p);
+    // player_update_boxes(p);
 
     coords_to_map_grid(p->phys.actual_pos.x, p->phys.actual_pos.y, &p->grid_pos.x, &p->grid_pos.y);
 
 
-    // player_update_anim_state(p);
-    // player_update_anim_timing(p);
-    // player_update_image(p);
-    // gfx_anim_update(&p->anim,delta_t);
-
-
-
-    // // finish attack
-    // if(p->state == PSTATE_ATTACKING && p->anim.curr_loop > 0)
-    // { 
-    //     p->state = PSTATE_NONE;
-    //     p->busy = false;
-    //     player_update_anim_state(p);
-    //     player_update_anim_timing(p);
-    //     player_update_image(p);
-    //     player_update_sprite_index(p);
-    // }
-
-    // player_update_sprite_index(p);
-    // player_update_boxes(p);
 
     // player_check_block_collision(p, prior_pos, prior_collision_box);
     // player_weapon_melee_check_collision(p);
-
 
     //lighting_point_light_move(p->point_light, p->phys.actual_pos.x, p->phys.actual_pos.y);
 
     if(debug_enabled)
     {
-        float px = p->phys.pos.x;
-        float py = p->phys.pos.y;
+        float px = p->phys.actual_pos.x;
+        float py = p->phys.actual_pos.y;
         // gfx_add_line(px,py,p->mouse_x,p->mouse_y,0x00FF0000);
 
         if(p->state == PSTATE_ATTACKING && p->item.props != NULL)
@@ -1210,6 +1222,15 @@ void player_update(Player* p, double delta_t)
             gfx_add_line(px,py,x0,y0,0x00FF0000);
             gfx_add_line(px,py,x1,y1,0x00FF0000);
         }
+        // if(p->item.props != NULL)
+        // {
+        //     float x0 = p->mouse_x;
+        //     float y0 = p->mouse_y;
+        //     gfx_add_line(px,py,x0,y0,0x00FF0000);
+        //     Rect* wpos = player_get_equipped_item_pos(p);
+        //     gfx_add_line(wpos->x,wpos->y,x0,y0,0x000000FF);
+        // }
+
     }
 }
 
@@ -1320,24 +1341,13 @@ void player_draw(Player* p, bool add_to_existing_batch)
     {
         if(p->item.item_type == ITEM_TYPE_GUN || p->item.item_type == ITEM_TYPE_MELEE)
         {
-            int wimage = -1;
-            Rect* wpos = NULL;
-            if(p->item.item_type == ITEM_TYPE_GUN)
-            {
-                Gun* gun = (Gun*)p->item.props;
-                wimage = gun_get_image_index(p->model_index, p->anim_state, gun->type);
-                wpos = &gun->pos;
-            }
-            else if(p->item.item_type == ITEM_TYPE_MELEE)
-            {
-                Melee* melee = (Melee*)p->item.props;
-                wimage = melee_get_image_index(p->model_index, p->anim_state, melee->type);
-                wpos = &melee->pos;
-            }
 
+            int wimage = player_get_equipped_item_img(p);
+            Rect* wpos = player_get_equipped_item_pos(p);
 
             GFXImage* wimg = &gfx_images[wimage];
             Rect* wvr = &wimg->visible_rects[p->sprite_index];
+
             if(!IS_RECT_EMPTY(wvr))
             {
                 float wimg_center_x = IMG_ELEMENT_W/2.0;
@@ -1383,7 +1393,6 @@ void player_draw(Player* p, bool add_to_existing_batch)
         gfx_draw_rect(&p->phys.collision, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
         gfx_draw_rect(&p->phys.hit, COLOR_HIT, 0.0, 1.0,1.0, false, true);
         gfx_draw_rect(&p->max_size, COLOR_MAXSIZE, 0.0, p->scale,1.0, false, true);
-
 
         //dots
         Rect r = {0};

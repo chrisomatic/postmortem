@@ -105,12 +105,11 @@ void physics_simulate(Physics* phys, Rect* limit, float delta_t)
     phys->pos.x += dx;
     phys->pos.y += dy;
 
-    phys->actual_pos.x += dx;
-    phys->actual_pos.y += dy;
+    physics_apply_pos_offset(phys, dx, dy);
 
     if(limit != NULL)
     {
-        Rect r = (*phys).pos;
+        Rect r = phys->pos;
         physics_limit_pos(limit, &r);
         float adjx = r.x - phys->pos.x;
         float adjy = r.y - phys->pos.y;
@@ -119,9 +118,9 @@ void physics_simulate(Physics* phys, Rect* limit, float delta_t)
         {
             phys->pos.x += adjx;
             phys->pos.y += adjy;
-
-            phys->actual_pos.x += adjx;
-            phys->actual_pos.y += adjy;
+            physics_apply_pos_offset(phys, adjx, adjy);
+            // phys->actual_pos.x += adjx;
+            // phys->actual_pos.y += adjy;
         }
     }
 

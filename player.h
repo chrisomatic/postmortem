@@ -343,6 +343,8 @@ void player_equip_melee(Player* p, MeleeIndex index);
 void player_equip_block(Player* p, BlockType index);
 void player_set_equipped_item(Player* p, int idx);
 void player_equip_item(Player* p, PlayerItemType itype, void* props, bool drawable, bool mouse_aim);
+Rect* player_get_equipped_item_pos(Player* p);
+int player_get_equipped_item_img(Player* p);
 
 void player_set_mouse_nothing(MouseData* mouse_data);
 void player_set_mouse(MouseData* mouse_data, bool held, bool press, bool release, float period, mouse_trigger_cb_t cb);

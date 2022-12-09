@@ -491,6 +491,16 @@ int angle_sector(float angle_deg, int num_sectors)
     return sector;
 }
 
+Vector2f angle_sector_range(int num_sectors, int sector)
+{
+    Vector2f angle_range = {0};
+    float sector_range = 360.0 / num_sectors;
+
+    angle_range.x = sector * sector_range;
+    angle_range.y = (sector+1) * sector_range;
+    return angle_range;
+}
+
 float rangef(float arr[], int n, float* fmin, float* fmax)
 {
     *fmin = arr[0];
