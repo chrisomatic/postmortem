@@ -282,8 +282,8 @@ static void player_init(int index)
     player_update_static_boxes(p);
     player_update_boxes(p);
     player_update_pos_offset(p);
-    // p->phys.hit = calc_box(&p->phys.actual_pos, 1.0, 0.5, 0);
-    // p->phys.collision = calc_box(&p->phys.actual_pos, 1.0, 0.4, 2);
+    // p->phys.hit = calc_sub_box(&p->phys.actual_pos, 1.0, 0.5, 0);
+    // p->phys.collision = calc_sub_box(&p->phys.actual_pos, 1.0, 0.4, 2);
 
     // printf("Collision: "); print_rect(&p->phys.collision);
     // printf("HIT: "); print_rect(&p->phys.hit);
@@ -642,7 +642,7 @@ static void mouse_block_add_cb(void* player, MouseTrigger trigger)
 
         Rect r = {0};
         map_grid_to_rect(b.row, b.col, &r);
-        b.collision_box = calc_box(&r, 1.0, 0.6, 2);
+        b.collision_box = calc_sub_box(&r, 1.0, 0.6, 2);
 
         b.type = bp->type;
         b.hp = bp->hp;
@@ -881,14 +881,14 @@ void player_update_boxes(Player* p)
     p->phys.pos.w = p->phys.actual_pos.w;
     p->phys.pos.h = p->phys.actual_pos.h;
 
-    p->phys.hit = calc_box(&p->phys.actual_pos, 1.0, 0.5, 0);
-    p->phys.collision = calc_box(&p->standard_size, 1.0, 0.4, 2);
+    p->phys.hit = calc_sub_box(&p->phys.actual_pos, 1.0, 0.5, 0);
+    p->phys.collision = calc_sub_box(&p->standard_size, 1.0, 0.4, 2);
 
-    // Rect hit = calc_box(&p->phys.actual_pos, 1.0, 0.5, 0);
+    // Rect hit = calc_sub_box(&p->phys.actual_pos, 1.0, 0.5, 0);
     // p->phys.hit.w = hit.w;
     // p->phys.hit.h = hit.h;
 
-    // Rect collision = calc_box(&p->phys.actual_pos, 1.0, 0.4, 2);
+    // Rect collision = calc_sub_box(&p->phys.actual_pos, 1.0, 0.4, 2);
     // p->phys.collision.w = collision.w;
     // p->phys.collision.h = collision.h;
 }

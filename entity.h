@@ -31,13 +31,14 @@ typedef struct
 } GridBox;
 
 
-extern GridBox grid_boxes[WORLD_GRID_ROWS_MAX][WORLD_GRID_COLS_MAX];
+extern glist* entity_draw_list;
 extern Entity draw_entities[MAX_DRAW_ENTITIES];
+extern GridBox grid_boxes[WORLD_GRID_ROWS_MAX][WORLD_GRID_COLS_MAX];
 
 void entities_init();
-
 void entities_update_draw_list();
 void entities_draw(bool batched);
+
 
 void entity_remove_from_grid_boxes(EntityType type, void* data);
 void entities_update_grid_boxes();

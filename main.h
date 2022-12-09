@@ -52,4 +52,4 @@ void handle_backspace_timer();
 void get_actual_pos(float draw_x, float draw_y, float scale, int img_w, int img_h, Rect* visible_rect, Rect* ret);
 void limit_pos(Rect* limit, Rect* pos, Rect* phys_pos);
 
-Rect calc_box(Rect* pos, float wscale, float hscale, int location);
+Rect calc_sub_box(Rect* rect, float wscale, float hscale, int location);

@@ -637,15 +637,15 @@ void limit_pos(Rect* limit, Rect* pos, Rect* phys_pos)
 // 0 = top
 // 1 = middle
 // 2 = bottom
-Rect calc_box(Rect* pos, float wscale, float hscale, int location)
+Rect calc_sub_box(Rect* rect, float wscale, float hscale, int location)
 {
     Rect r = {0};
-    r.w = pos->w * wscale;
-    r.h = pos->h * hscale;
-    r.x = pos->x;
+    r.w = rect->w * wscale;
+    r.h = rect->h * hscale;
+    r.x = rect->x;
 
-    float ytop = pos->y - pos->h/2.0;
-    float ybottom = pos->y + pos->h/2.0;
+    float ytop = rect->y - rect->h/2.0;
+    float ybottom = rect->y + rect->h/2.0;
 
     if(location == 0) //top
     {
@@ -657,7 +657,7 @@ Rect calc_box(Rect* pos, float wscale, float hscale, int location)
     }
     else //middle
     {
-        r.y = pos->y;
+        r.y = rect->y;
     }
 
     return r;

@@ -16,6 +16,7 @@
 #include "particles.h"
 #include "io.h"
 #include "effects.h"
+#include "entity.h"
 #include "editor.h"
 #include "gui.h"
 
@@ -481,6 +482,7 @@ static void draw_debug_box()
     window_get_mouse_coords(&mx, &my);
     coords_to_map_grid(wmx, wmy, &mr, &mc);
     coords_to_world_grid(wmx, wmy, &wr, &wc);
+    int w_num_entities = grid_boxes[wr][wc].num;
 
     // camera
     Rect camera_rect = {0};
@@ -560,6 +562,7 @@ static void draw_debug_box()
                 imgui_text("Window: %d, %d", mx, my);
                 imgui_text("Map Grid:   %d, %d", mr, mc);
                 imgui_text("World Grid: %d, %d", wr, wc);
+                imgui_text("Entity Count: %d", w_num_entities);
             imgui_indent_end();
             
             imgui_text_sized(big,"Camera");

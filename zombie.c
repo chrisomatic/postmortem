@@ -416,8 +416,8 @@ void zombie_update_boxes(Zombie* z)
     z->phys.pos.w = z->phys.actual_pos.w;
     z->phys.pos.h = z->phys.actual_pos.h;
 
-    z->phys.hit = calc_box(&z->phys.actual_pos, 1.0, 0.5, 0);
-    //z->phys.collision = calc_box(&z->phys.actual_pos, 1.0, 0.4, 2);
+    z->phys.hit = calc_sub_box(&z->phys.actual_pos, 1.0, 0.5, 0);
+    //z->phys.collision = calc_sub_box(&z->phys.actual_pos, 1.0, 0.4, 2);
 
     float sw = standard_size[z->model_index].w * z->scale;
     float sh = standard_size[z->model_index].h * z->scale;
@@ -427,7 +427,7 @@ void zombie_update_boxes(Zombie* z)
     standard.y = z->phys.actual_pos.y;
     standard.w = sw;
     standard.h = sh;
-    z->phys.collision = calc_box(&standard, 1.0, 0.4, 2);
+    z->phys.collision = calc_sub_box(&standard, 1.0, 0.4, 2);
 }
 
 void zombie_update_pursue(Zombie* z, float delta_t)
@@ -470,7 +470,7 @@ void zombie_update_pursue(Zombie* z, float delta_t)
             }
             else
             {
-                printf("(%d) zombie is NOT pursuing player '%s'\n", z->id, z->pursue_player->name);
+                // printf("(%d) zombie is NOT pursuing player '%s'\n", z->id, z->pursue_player->name);
                 z->pursue_player = NULL;
                 has_target = false;
             }
@@ -481,7 +481,7 @@ void zombie_update_pursue(Zombie* z, float delta_t)
             float d = dist(z->phys.pos.x, z->phys.pos.y, z->pursue_target.x, z->pursue_target.y);
             if(d <= MAX(z->phys.pos.w, z->phys.pos.h)) //TODO
             {
-                printf("(%d) zombie has reached last known player location\n", z->id);
+                // printf("(%d) zombie has reached last known player location\n", z->id);
                 z->pursuing = false;
             }
         }
@@ -517,7 +517,7 @@ void zombie_update_pursue(Zombie* z, float delta_t)
                 z->pursue_target.x = r.x;
                 z->pursue_target.y = r.y;
                 z->pursuing = true;
-                printf("(%d) zombie is now pursuing player '%s', target: %.1f, %.1f\n", z->id, p->name, z->pursue_target.x, z->pursue_target.y);
+                // printf("(%d) zombie is now pursuing player '%s', target: %.1f, %.1f\n", z->id, p->name, z->pursue_target.x, z->pursue_target.y);
             }
 
         }
@@ -947,8 +947,8 @@ void zombie_melee_check_collision(Zombie* z)
 
 static void zombie_remove(Zombie* z)
 {
-    // entity_remove_from_grid_boxes(ENTITY_TYPE_ZOMBIE,(void*)z);
-    LOGE("TODO entity_remove_from_grid_boxes");
+    entity_remove_from_grid_boxes(ENTITY_TYPE_ZOMBIE,(void*)z);
+    // LOGE("TODO entity_remove_from_grid_boxes");
     list_remove_by_item(zlist, z);
 }
 
