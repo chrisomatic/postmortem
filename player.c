@@ -666,10 +666,13 @@ static void mouse_block_add_cb(void* player, MouseTrigger trigger)
     bool in_range = is_grid_within_radius(p->mouse_r, p->mouse_c, p->grid_pos.x, p->grid_pos.y, PLAYER_BLOCK_PLACEMENT_RADIUS);
     if(!in_range) return;
 
+    Rect brect = {0};
+    map_grid_to_rect(p->mouse_r, p->mouse_c, &brect);
+
     bool add_block = true;
-    for(int i = 0; i < blist->count; ++i)
+    for(int i = blist->count-1; i >= 0; --i)
     {
-        if(p->mouse_r == blocks[i].row && p->mouse_c == blocks[i].col)
+        if(rectangles_colliding(&brect, &blocks[i].phys.actual_pos))
         {
             add_block = false;
             break;
@@ -680,12 +683,11 @@ static void mouse_block_add_cb(void* player, MouseTrigger trigger)
         BlockProp* bp = (BlockProp*)p->item.props;
 
         block_t b = {0};
-        b.row = p->mouse_r;
-        b.col = p->mouse_c;
-
-        map_grid_to_rect(b.row, b.col, &b.phys.pos);
-        memcpy(&b.phys.collision,&b.phys.pos,sizeof(Rect));
-        //b.phys.collision = calc_sub_box(&b.phys.pos, 1.0, 0.6, 2);
+        memcpy(&b.phys.pos,&brect,sizeof(Rect));
+        memcpy(&b.phys.actual_pos,&brect,sizeof(Rect));
+        memcpy(&b.phys.collision,&brect,sizeof(Rect));
+        memcpy(&b.phys.prior_collision,&brect,sizeof(Rect));
+        memcpy(&b.phys.hit,&brect,sizeof(Rect));
         b.phys.mass = 10000.0;
 
         b.type = bp->type;
@@ -701,18 +703,23 @@ static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
     if(p->busy)
         return;
 
-    for(int i = 0; i < blist->count; ++i)
+    bool in_range = is_grid_within_radius(p->mouse_r, p->mouse_c, p->grid_pos.x, p->grid_pos.y, PLAYER_BLOCK_PLACEMENT_RADIUS);
+    if(!in_range) return;
+
+    Rect brect = {0};
+    map_grid_to_rect(p->mouse_r, p->mouse_c, &brect);
+
+    for(int i = blist->count-1; i >= 0; --i)
     {
-        if(p->mouse_r == blocks[i].row && p->mouse_c == blocks[i].col)
+        if(rectangles_colliding(&brect, &blocks[i].phys.actual_pos))
         {
             ParticleEffect pe ={0};
             memcpy(&pe, &particle_effects[EFFECT_BLOCK_DESTROY],sizeof(ParticleEffect));
             pe.sprite_index = blocks[i].type;
-            particles_spawn_effect(blocks[i].phys.collision.x, blocks[i].phys.collision.y, &pe, 1.0, true, false);
-            particles_spawn_effect(blocks[i].phys.collision.x, blocks[i].phys.collision.y-16, &particle_effects[EFFECT_SMOKE2], 1.0, true, false);
+            particles_spawn_effect(blocks[i].phys.actual_pos.x, blocks[i].phys.actual_pos.y, &pe, 1.0, true, false);
+            particles_spawn_effect(blocks[i].phys.actual_pos.x, blocks[i].phys.actual_pos.y-16, &particle_effects[EFFECT_SMOKE2], 1.0, true, false);
 
             list_remove(blist, i);
-
             break;
         }
     }

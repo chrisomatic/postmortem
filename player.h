@@ -37,10 +37,7 @@ typedef struct
 } BlockProp;
 typedef struct
 {
-    int row;
-    int col;
     Physics phys;
-    Rect collision_box;
     float hp;
     BlockType type;
 } block_t;
