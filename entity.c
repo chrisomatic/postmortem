@@ -4,6 +4,7 @@
 #include "zombie.h"
 #include "effects.h"
 #include "gui.h"
+#include "item.h"
 
 #include "world.h"
 #include "camera.h"

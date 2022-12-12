@@ -101,6 +101,7 @@ typedef struct
 } ZombieSpawn;
 
 extern uint32_t zombie_info_id;
+extern bool zombie_debug;
 extern bool zombies_pursue;
 extern bool zombies_idle;
 extern ZombieModel zombie_models[ZOMBIE_MODELS_MAX];
@@ -122,6 +123,7 @@ void zombie_update_boxes(Zombie* z);
 void zombie_update(Zombie* z, float delta_t);
 bool zombie_check_block_collision(Zombie* z, Rect prior_pos, Rect prior_collision_box);
 bool zombie_draw(Zombie* z, bool batch);
+void zombie_draw_debug(Zombie* z);
 void zombies_update(float delta_t);
 void zombies_draw();
 Zombie* zombie_get_by_id(uint32_t id);

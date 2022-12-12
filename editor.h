@@ -185,6 +185,16 @@ static void editor_draw()
                     }
 
 
+                    char* zdebug_str = "Debug Selection";
+                    if(zombie_debug)
+                    {
+                        zdebug_str = "Debug All";
+                    }
+                    if(imgui_button(zdebug_str))
+                    {
+                        zombie_debug = !zombie_debug;
+                    }
+
                     char* zfreeze_str = "Freeze";
                     if(zombies_idle)
                     {

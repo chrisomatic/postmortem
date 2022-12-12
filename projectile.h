@@ -1,6 +1,7 @@
 #pragma once
 
 #include "player.h"
+#include "item.h"
 #include "glist.h"
 
 #define MAX_PROJECTILES 1024

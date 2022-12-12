@@ -18,6 +18,8 @@
 #define MAX_LINES 100
 #define SPRITE_BATCH_MAX_SPRITES 4096
 
+#define PRINT_LOAD_LOGS 0
+
 // types
 // --------------------------------------------------------
 typedef struct
@@ -177,12 +179,12 @@ void gfx_init(int width, int height)
     glGenVertexArrays(1, &circle_vao);
     glBindVertexArray(circle_vao);
 
-#define NUMBER_OF_VERTICES 16
-    float radius = 0.5;
-    for(double i = 0; i < 2 * M_PI; i += 2 * M_PI / NUMBER_OF_VERTICES)
-    {
-        printf("%f, %f\n", cos(i)*radius, sin(i)*radius);
-    }
+    // #define NUMBER_OF_VERTICES 16
+    // float radius = 0.5;
+    // for(double i = 0; i < 2 * M_PI; i += 2 * M_PI / NUMBER_OF_VERTICES)
+    // {
+    //     printf("%f, %f\n", cos(i)*radius, sin(i)*radius);
+    // }
 
     Vector2f circle[] =
     {
@@ -276,7 +278,8 @@ void gfx_init(int width, int height)
 
     ortho(&proj_matrix,0.0,(float)width,(float)height,0.0, 0.0, 1000.0);
 
-    print_matrix(&proj_matrix);
+    // printf("proj_matrix:\n");
+    // print_matrix(&proj_matrix);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -316,7 +319,9 @@ bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip)
 
     if(image->data != NULL)
     {
+#if PRINT_LOAD_LOGS
         LOGI("Loaded image: %s (w: %d, h: %d, n: %d)", image_path, image->w, image->h, image->n);
+#endif
         return true;
     }
     else
@@ -360,7 +365,9 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     }
     img.element_count = img.elements_per_row * img.elements_per_col;
 
+#if PRINT_LOAD_LOGS
     LOGI("  Element Count: %d (%d x %d)", img.element_count, img.elements_per_row, img.elements_per_col);
+#endif
 
     img.visible_rects = malloc(img.element_count * sizeof(Rect));
     img.sprite_visible_rects = malloc(img.element_count * sizeof(Rect));
@@ -477,8 +484,9 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     {
         if(gfx_images[i].texture == -1)
         {
+#if PRINT_LOAD_LOGS
             LOGI("  Index: %d", i);
-
+#endif
             GFXImage* p = &gfx_images[i];
             memcpy(p, &img, sizeof(GFXImage));
 
@@ -564,7 +572,7 @@ static void init_sprite_batch()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // Instance VBO
-    printf("Size of sprite: %d\n",sizeof(Sprite));
+    // printf("Size of sprite: %d\n",sizeof(Sprite));
 
     glGenBuffers(1, &batch_instance_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, batch_instance_vbo);

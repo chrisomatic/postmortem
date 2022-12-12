@@ -21,6 +21,7 @@ static MouseAction mouse_right;
 
 static GLFWcursor* cursor_ibeam;
 static GLFWwindow* window;
+static GLFWmonitor* monitor;
 
 int window_width = 0;
 int window_height = 0;
@@ -35,7 +36,10 @@ static int text_buf_max = 0;
 static double window_coord_x = 0;
 static double window_coord_y = 0;
 
+static bool get_window_monitor(GLFWmonitor** monitor, GLFWwindow* window);
+
 static void window_size_callback(GLFWwindow* window, int _window_width, int _window_height);
+static void window_move_callback(GLFWwindow* window, int xpos, int ypos);
 static void window_maximize_callback(GLFWwindow* window, int maximized);
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 static void char_callback(GLFWwindow* window, unsigned int code);
@@ -65,7 +69,7 @@ bool window_init(int _view_width, int _view_height)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
 
     // printf("vw: %d, vh: %d\n", view_width, view_height);
-    //window = glfwCreateWindow(view_width,view_height,"Postmortem",glfwGetPrimaryMonitor(),NULL);
+    // window = glfwCreateWindow(view_width,view_height,"Postmortem",glfwGetPrimaryMonitor(),NULL);
     window = glfwCreateWindow(view_width,view_height,"Postmortem",NULL,NULL);
 
     if(window == NULL)
@@ -77,6 +81,7 @@ bool window_init(int _view_width, int _view_height)
 
     glfwSetWindowAspectRatio(window,ASPECT_NUM,ASPECT_DEM);
     glfwSetWindowSizeCallback(window,window_size_callback);
+    glfwSetWindowPosCallback(window,window_move_callback);
     glfwSetWindowMaximizeCallback(window, window_maximize_callback);
     glfwSetKeyCallback(window, key_callback);
     glfwSetCharCallback(window, char_callback);
@@ -105,6 +110,16 @@ bool window_init(int _view_width, int _view_height)
 
     mouse_left.action = GLFW_RELEASE;
     mouse_right.action = GLFW_RELEASE;
+
+
+    monitor = glfwGetPrimaryMonitor();
+    // bool ret = get_window_monitor(&monitor, window);
+    // if(ret)
+    // {
+    //     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    //     printf("Monitor refresh rate: %d (%s)\n", mode->refreshRate, glfwGetMonitorName(monitor));
+    // }
+
 
     return true;
 }
@@ -187,9 +202,137 @@ void window_swap_buffers()
     glfwSwapBuffers(window);
 }
 
+// https://github.com/glfw/glfw/issues/1699
+static bool get_window_monitor(GLFWmonitor** monitor, GLFWwindow* window)
+{
+    bool success = false;
+
+    int window_rectangle[4] = {0};
+    glfwGetWindowPos(window, &window_rectangle[0], &window_rectangle[1]);
+    glfwGetWindowSize(window, &window_rectangle[2], &window_rectangle[3]);
+
+    int monitors_size = 0;
+    GLFWmonitor** monitors = glfwGetMonitors(&monitors_size);
+
+    GLFWmonitor* closest_monitor = NULL;
+    int max_overlap_area = 0;
+
+    for(int i = 0; i < monitors_size; ++i)
+    {
+        int r[4] = {0};
+        glfwGetMonitorWorkarea(monitors[i], &r[0], &r[1], &r[2], &r[3]);
+
+        printf("%d) %s | x,y: %d, %d | w,h: %d, %d\n", i, glfwGetMonitorName(monitors[i]), r[0], r[1], r[2], r[3]);
+
+        int p[2] = {0};
+        glfwGetMonitorPos(monitors[i], &p[0], &p[1]);
+        printf("%d, %d\n", p[0], p[1]);
+    
+    }
+
+
+    for (int i = 0; i < monitors_size; ++i)
+    {
+        // int monitor_position[2] = {0};
+        // glfwGetMonitorPos(monitors[i], &monitor_position[0], &monitor_position[1]);
+
+        const GLFWvidmode* monitor_video_mode = glfwGetVideoMode(monitors[i]);
+
+        int monitor_rectangle[4] = {0};
+        glfwGetMonitorWorkarea(monitors[i], &monitor_rectangle[0], &monitor_rectangle[1], &monitor_rectangle[2], &monitor_rectangle[3]);
+
+        // printf("checking monitor %s\n", glfwGetMonitorName(monitors[i]));
+
+        if (
+            !(
+                ((window_rectangle[0] + window_rectangle[2]) < monitor_rectangle[0]) ||
+                (window_rectangle[0] > (monitor_rectangle[0] + monitor_rectangle[2])) ||
+                ((window_rectangle[1] + window_rectangle[3]) < monitor_rectangle[1]) ||
+                (window_rectangle[1] > (monitor_rectangle[1] + monitor_rectangle[3]))
+            )
+        ) {
+            int intersection_rectangle[4] = {0};
+
+            // x, width
+            if (window_rectangle[0] < monitor_rectangle[0])
+            {
+                intersection_rectangle[0] = monitor_rectangle[0];
+
+                if ((window_rectangle[0] + window_rectangle[2]) < (monitor_rectangle[0] + monitor_rectangle[2]))
+                {
+                    intersection_rectangle[2] = (window_rectangle[0] + window_rectangle[2]) - intersection_rectangle[0];
+                }
+                else
+                {
+                    intersection_rectangle[2] = monitor_rectangle[2];
+                }
+            }
+            else
+            {
+                intersection_rectangle[0] = window_rectangle[0];
+
+                if ((monitor_rectangle[0] + monitor_rectangle[2]) < (window_rectangle[0] + window_rectangle[2]))
+                {
+                    intersection_rectangle[2] = (monitor_rectangle[0] + monitor_rectangle[2]) - intersection_rectangle[0];
+                }
+                else
+                {
+                    intersection_rectangle[2] = window_rectangle[2];
+                }
+            }
+
+            // y, height
+            if (window_rectangle[1] < monitor_rectangle[1])
+            {
+                intersection_rectangle[1] = monitor_rectangle[1];
+
+                if ((window_rectangle[1] + window_rectangle[3]) < (monitor_rectangle[1] + monitor_rectangle[3]))
+                {
+                    intersection_rectangle[3] = (window_rectangle[1] + window_rectangle[3]) - intersection_rectangle[1];
+                }
+                else
+                {
+                    intersection_rectangle[3] = monitor_rectangle[3];
+                }
+            }
+            else
+            {
+                intersection_rectangle[1] = window_rectangle[1];
+
+                if ((monitor_rectangle[1] + monitor_rectangle[3]) < (window_rectangle[1] + window_rectangle[3]))
+                {
+                    intersection_rectangle[3] = (monitor_rectangle[1] + monitor_rectangle[3]) - intersection_rectangle[1];
+                }
+                else
+                {
+                    intersection_rectangle[3] = window_rectangle[3];
+                }
+            }
+
+            int overlap_area = intersection_rectangle[3] * intersection_rectangle[4];
+            if (overlap_area > max_overlap_area)
+            {
+                closest_monitor = monitors[i];
+                // printf("closest monitor %d\n",i);
+                max_overlap_area = overlap_area;
+            }
+        }
+    }
+
+    if (closest_monitor)
+    {
+        *monitor = closest_monitor;
+        success = true;
+    }
+
+    // true: monitor contains the monitor the window is most on
+    // false: monitor is unmodified
+    return success;
+}
+
 static void window_size_callback(GLFWwindow* window, int width, int height)
 {
-    printf("Window: W %d, H %d\n",width,height);
+    printf("Window Resized: W %d, H %d\n",width,height);
 
     window_height = height;
     window_width  = width; //ASPECT_RATIO * window_height;
@@ -199,6 +342,23 @@ static void window_size_callback(GLFWwindow* window, int width, int height)
 
     glViewport(start_x,start_y,window_width,window_height);
 }
+
+static void window_move_callback(GLFWwindow* window, int xpos, int ypos)
+{
+    printf("Window Moved: %d, %d\n", xpos, ypos);
+
+    // GLFWmonitor* monitor_prior = monitor;
+    // bool ret = get_window_monitor(&monitor, window);
+    // if(ret)
+    // {
+    //     if(monitor != monitor_prior)
+    //     {
+    //         const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    //         printf("Monitor refresh rate: %d (%s)\n", mode->refreshRate, glfwGetMonitorName(monitor));
+    //     }
+    // }
+}
+
 
 static void window_maximize_callback(GLFWwindow* window, int maximized)
 {

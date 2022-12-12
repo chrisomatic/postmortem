@@ -15,7 +15,12 @@
 #include "zombie.h"
 #include "io.h"
 #include "effects.h"
+#include "item.h"
 #include "main.h"
+
+// melee debug prints
+// #define mprint(...) printf(__VA_ARGS__)
+#define mprint(...)
 
 // global vars
 // ------------------------------------------------------------
@@ -39,38 +44,35 @@ int player_image_sets_melees[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][ANIM_MAX][M
 
 PlayerModel player_models[PLAYER_MODELS_MAX];
 
-Gun guns[GUN_MAX] = {0};
-Melee melees[MELEE_MAX] = {0};
+// Gun guns[GUN_MAX] = {0};
+// Melee melees[MELEE_MAX] = {0};
 
 bool moving_zombie = false;
 
 // ------------------------------------------------------------
 
-#define IMG_ELEMENT_W 128
-#define IMG_ELEMENT_H 128
-
-
-static int gun_image_sets[PLAYER_MODELS_MAX][ANIM_MAX][GUN_MAX];
-static int melee_image_sets[PLAYER_MODELS_MAX][ANIM_MAX][MELEE_MAX];
-static int blocks_image;
 static int crosshair_image;
 
 static int gun_light = -1;
 
-
 //TEMP: blocks
-block_t blocks[MAX_BLOCKS] = {0};
-glist* blist = NULL;
-BlockProp block_props[BLOCK_MAX] = {0};
+// block_t blocks[MAX_BLOCKS] = {0};
+// glist* blist = NULL;
+// BlockProp block_props[BLOCK_MAX] = {0};
 
 // ------------------------------------------------------------
 
+void player_equip_gun(Player* p, GunIndex index);
+void player_equip_melee(Player* p, MeleeIndex index);
+void player_equip_block(Player* p, BlockType index);
+void player_equip_item(Player* p, PlayerItemType itype, void* props, bool drawable, bool mouse_aim);
+void player_set_equipped_item(Player* p, int idx);
 
-static void mouse_gun_cb(void* player, MouseTrigger trigger);
-static void mouse_melee_cb(void* player, MouseTrigger trigger);
-static void mouse_block_add_cb(void* player, MouseTrigger trigger);
-static void mouse_block_remove_cb(void* player, MouseTrigger trigger);
-static void mouse_zombie_move_cb(void* player, MouseTrigger trigger);
+static void mouse_gun_cb(void* _player, MouseTrigger trigger);
+static void mouse_melee_cb(void* _player, MouseTrigger trigger);
+static void mouse_block_add_cb(void* _player, MouseTrigger trigger);
+static void mouse_block_remove_cb(void* _player, MouseTrigger trigger);
+static void mouse_zombie_move_cb(void* _player, MouseTrigger trigger);
 
 // ------------------------------------------------------------
 
@@ -163,7 +165,6 @@ void player_init_images()
         }
     }
 
-    blocks_image = gfx_load_image("img/block_set.png", false, true, 32, 50, NULL);
     crosshair_image = gfx_load_image("img/crosshair2.png", false, false, 0, 0, NULL);
 }
 
@@ -330,30 +331,6 @@ void players_init()
 {
     player_init_models();
     player_init_images();
-    
-    //TEMP: blocks
-    // blocks_init()
-    int idx = BLOCK_0;
-    block_props[idx].type = idx;
-    block_props[idx].hp = 100.0;
-    block_props[idx].color = COLOR_TINT_NONE;
-    block_props[idx].image = blocks_image;
-    block_props[idx].sprite_index = idx;
-
-    idx = BLOCK_1;
-    block_props[idx].type = idx;
-    block_props[idx].hp = 100.0;
-    block_props[idx].color = COLOR_TINT_NONE;
-    block_props[idx].image = blocks_image;
-    block_props[idx].sprite_index = idx;
-
-    blist = list_create((void*)blocks, MAX_BLOCKS, sizeof(blocks[0]));
-    if(blist == NULL)
-    {
-        LOGE("block list failed to create");
-    }
-
-    weapons_init();
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
@@ -498,6 +475,7 @@ void player_equip_gun(Player* p, GunIndex index)
 
 void player_equip_melee(Player* p, MeleeIndex index)
 {
+    mprint("player_equip_melee\n");
     Melee* melee = &melees[index];
     player_equip_item(p, ITEM_TYPE_MELEE, (void*)melee, true, true);
 
@@ -619,9 +597,9 @@ int player_get_equipped_item_img(Player* p)
 
 
 // void* to avoid circular reference in player struct
-static void mouse_gun_cb(void* player, MouseTrigger trigger)
+static void mouse_gun_cb(void* _player, MouseTrigger trigger)
 {
-    Player* p = (Player*)player;
+    Player* p = (Player*)_player;
 
     if(p->busy)
         return;
@@ -636,9 +614,11 @@ static void mouse_gun_cb(void* player, MouseTrigger trigger)
     gun_fire(p, gun, trigger == MOUSE_TRIGGER_HOLD);
 }
 
-static void mouse_melee_cb(void* player, MouseTrigger trigger)
+static void mouse_melee_cb(void* _player, MouseTrigger trigger)
 {
-    Player* p = (Player*)player;
+    Player* p = (Player*)_player;
+
+    mprint("mouse_melee_cb\n");
 
     if(p->busy)
         return;
@@ -650,13 +630,15 @@ static void mouse_melee_cb(void* player, MouseTrigger trigger)
     p->melee_hit_count = 0;
     p->attacking_state = melee->anim_state;
     p->state = PSTATE_ATTACKING;
+    mprint("mouse_melee_cb set state attacking\n");
+
     p->busy = true;
-    player_add_detect_radius(p, 2.0);
+    player_add_detect_radius(p,2.0);
 }
 
-static void mouse_block_add_cb(void* player, MouseTrigger trigger)
+static void mouse_block_add_cb(void* _player, MouseTrigger trigger)
 {
-    Player* p = (Player*)player;
+    Player* p = (Player*)_player;
 
     if(p->busy)
         return;
@@ -667,55 +649,13 @@ static void mouse_block_add_cb(void* player, MouseTrigger trigger)
     bool in_range = is_grid_within_radius(p->mouse_r, p->mouse_c, p->grid_pos.x, p->grid_pos.y, PLAYER_BLOCK_PLACEMENT_RADIUS);
     if(!in_range) return;
 
-    Rect brect = {0};
-    map_grid_to_rect(p->mouse_r, p->mouse_c, &brect);
-
-    bool add_block = true;
-    for(int i = blist->count-1; i >= 0; --i)
-    {
-        if(rectangles_colliding(&brect, &blocks[i].phys.actual_pos))
-        {
-            add_block = false;
-            break;
-        }
-    }
-    if(add_block)
-    {
-        BlockProp* bp = (BlockProp*)p->item.props;
-
-        block_t b = {0};
-
-        memcpy(&b.phys.pos,&brect,sizeof(Rect));
-        memcpy(&b.phys.actual_pos,&brect,sizeof(Rect));
-        memcpy(&b.phys.collision,&brect,sizeof(Rect));
-        memcpy(&b.phys.prior_collision,&brect,sizeof(Rect));
-        memcpy(&b.phys.hit,&brect,sizeof(Rect));
-
-        b.phys.mass = 10000.0;
-
-        if(bp->type == BLOCK_0)
-            b.phys.mass = 5.0;
-
-        b.type = bp->type;
-        b.hp = bp->hp;
-        list_add(blist, (void*)&b);
-    }
+    BlockProp* bp = (BlockProp*)p->item.props;
+    block_add(bp, p->mouse_r, p->mouse_c);
 }
 
-static void block_destroy(block_t* b)
+static void mouse_block_remove_cb(void* _player, MouseTrigger trigger)
 {
-    ParticleEffect pe ={0};
-    memcpy(&pe, &particle_effects[EFFECT_BLOCK_DESTROY],sizeof(ParticleEffect));
-    pe.sprite_index = b->type;
-    particles_spawn_effect(b->phys.actual_pos.x, b->phys.actual_pos.y, &pe, 1.0, true, false);
-    particles_spawn_effect(b->phys.actual_pos.x, b->phys.actual_pos.y-16, &particle_effects[EFFECT_SMOKE2], 1.0, true, false);
-
-    list_remove_by_item(blist, b);
-}
-
-static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
-{
-    Player* p = (Player*)player;
+    Player* p = (Player*)_player;
 
     if(p->busy)
         return;
@@ -723,22 +663,12 @@ static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
     bool in_range = is_grid_within_radius(p->mouse_r, p->mouse_c, p->grid_pos.x, p->grid_pos.y, PLAYER_BLOCK_PLACEMENT_RADIUS);
     if(!in_range) return;
 
-    Rect brect = {0};
-    map_grid_to_rect(p->mouse_r, p->mouse_c, &brect);
-
-    for(int i = blist->count-1; i >= 0; --i)
-    {
-        if(rectangles_colliding(&brect, &blocks[i].phys.actual_pos))
-        {
-            block_destroy(&blocks[i]);
-            break;
-        }
-    }
+    block_remove(p->mouse_r, p->mouse_c);
 }
 
-static void mouse_zombie_move_cb(void* player, MouseTrigger trigger)
+static void mouse_zombie_move_cb(void* _player, MouseTrigger trigger)
 {
-    Player* p = (Player*)player;
+    Player* p = (Player*)_player;
 
     if(trigger == MOUSE_TRIGGER_PRESS)
     {
@@ -881,6 +811,7 @@ void player_update_anim_state(Player* p)
     if(p->state == PSTATE_ATTACKING)
     {
         p->anim_state = p->attacking_state;
+        mprint("p->anim_state = (%d) PSTATE_ATTACKING\n", p->anim_state);
         //TEMP
         p->anim.frame_sequence[0] = 0;
         p->anim.frame_sequence[1] = 1;
@@ -1201,13 +1132,6 @@ void player_update(Player* p, double delta_t)
 
     p->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
 
-    // finish attack
-    if(p->state == PSTATE_ATTACKING && p->anim.curr_loop > 0)
-    { 
-        p->state = PSTATE_NONE;
-        p->busy = false;
-    }
-
     player_update_anim_state(p);
     player_update_anim_timing(p);
     player_update_image(p);
@@ -1228,7 +1152,13 @@ void player_update(Player* p, double delta_t)
 
     coords_to_map_grid(p->phys.actual_pos.x, p->phys.actual_pos.y, &p->grid_pos.x, &p->grid_pos.y);
 
-
+    // finish attack
+    if(p->state == PSTATE_ATTACKING && p->anim.curr_loop > 0)
+    {
+        mprint("finished attacking\n");
+        p->state = PSTATE_NONE;
+        p->busy = false;
+    }
 
     // player_check_block_collision(p, prior_pos, prior_collision_box);
     // player_weapon_melee_check_collision(p);
@@ -1237,22 +1167,21 @@ void player_update(Player* p, double delta_t)
 
     if(debug_enabled)
     {
-        float px = p->phys.actual_pos.x;
-        float py = p->phys.actual_pos.y;
-        // gfx_add_line(px,py,p->mouse_x,p->mouse_y,0x00FF0000);
 
         if(p->state == PSTATE_ATTACKING && p->item.props != NULL)
         {
             Melee* melee = (Melee*)p->item.props;
+            float wx = melee->pos.x;
+            float wy = melee->pos.y;
             float d = melee->range;
             float a0 = p->angle - RAD(15);
             float a1 = p->angle + RAD(15);
-            float x0 = px + d*cosf(a0);
-            float y0 = py - d*sinf(a0);
-            float x1 = px + d*cosf(a1);
-            float y1 = py - d*sinf(a1);
-            gfx_add_line(px,py,x0,y0,0x00FF0000);
-            gfx_add_line(px,py,x1,y1,0x00FF0000);
+            float x0 = wx + d*cosf(a0);
+            float y0 = wy - d*sinf(a0);
+            float x1 = wx + d*cosf(a1);
+            float y1 = wy - d*sinf(a1);
+            gfx_add_line(wx,wy,x0,y0,0x00FF0000);
+            gfx_add_line(wx,wy,x1,y1,0x00FF0000);
         }
         // if(p->item.props != NULL)
         // {
@@ -1325,7 +1254,6 @@ void player_update_other(Player* p, double delta_t)
     player_add_detect_radius(p, delta_t * -0.8);
 
 
-
     p->lerp_t += delta_t;
 
     float tick_time = 1.0/TICK_RATE;
@@ -1336,14 +1264,6 @@ void player_update_other(Player* p, double delta_t)
     p->phys.pos.y = lp.y;
 
     p->angle = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
-
-    // player_update_anim_state(p);
-    // player_update_anim_timing(p);
-    // player_update_image(p);
-    // gfx_anim_update(&p->anim, delta_t);
-    // player_update_sprite_index(p);
-    // player_update_boxes(p);
-
 
 }
 
@@ -1403,8 +1323,7 @@ void player_draw(Player* p, bool add_to_existing_batch)
             }
 
         }
-
-        if(p->item.item_type == ITEM_TYPE_BLOCK)
+        else if(p->item.item_type == ITEM_TYPE_BLOCK)
         {
             BlockProp* bp = (BlockProp*)p->item.props;
             Rect r = {0};
@@ -1419,38 +1338,46 @@ void player_draw(Player* p, bool add_to_existing_batch)
         }
     }
 
-    if(debug_enabled)
-    {
-        gfx_draw_rect(&p->phys.actual_pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
-        gfx_draw_rect(&p->phys.collision, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
-        gfx_draw_rect(&p->phys.hit, COLOR_HIT, 0.0, 1.0,1.0, false, true);
-        gfx_draw_rect(&p->max_size, COLOR_MAXSIZE, 0.0, p->scale,1.0, false, true);
-
-        //dots
-        Rect r = {0};
-
-        // phys.pos
-        r.x = p->phys.pos.x;
-        r.y = p->phys.pos.y;
-        r.w = 2;
-        r.h = 2;
-        gfx_draw_rect(&r, COLOR_PURPLE, 0.0, 1.0,1.0, true, true);
-
-        // pos
-        r.x = p->phys.actual_pos.x;
-        r.y = p->phys.actual_pos.y;
-        gfx_draw_rect(&r, COLOR_ORANGE, 0.0, 1.0,1.0, true, true);
-
-        // detect
-        gfx_draw_circle(p->phys.actual_pos.x,p->phys.actual_pos.y,p->detect_radius*MAP_GRID_PXL_SIZE,COLOR_PINK,1.0,false,true);
-    }
-
     // name
     const float name_size = 0.11;
     Vector2f size = gfx_string_get_size(name_size, p->name);
     float x = p->phys.pos.x - size.x/2.0;
     float y = p->phys.pos.y + p->scale*p->max_size.h*0.5 + 2.0;
     gfx_draw_string(x, y, player_colors[p->index], name_size, 0.0, 0.8, true, true, p->name);
+}
+
+void player_draw_debug(Player* p)
+{
+    if(p == NULL) return;
+    if(!p->active) return;
+
+    if(!is_in_camera_view(&p->phys.actual_pos))
+    {
+        return;
+    }
+
+    gfx_draw_rect(&p->phys.actual_pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
+    gfx_draw_rect(&p->phys.collision, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
+    gfx_draw_rect(&p->phys.hit, COLOR_HIT, 0.0, 1.0,1.0, false, true);
+    gfx_draw_rect(&p->max_size, COLOR_MAXSIZE, 0.0, p->scale,1.0, false, true);
+
+    //dots
+    Rect r = {0};
+
+    // phys.pos
+    r.x = p->phys.pos.x;
+    r.y = p->phys.pos.y;
+    r.w = 2;
+    r.h = 2;
+    gfx_draw_rect(&r, COLOR_PURPLE, 0.0, 1.0,1.0, true, true);
+
+    // pos
+    r.x = p->phys.actual_pos.x;
+    r.y = p->phys.actual_pos.y;
+    gfx_draw_rect(&r, COLOR_ORANGE, 0.0, 1.0,1.0, true, true);
+
+    // detect
+    gfx_draw_circle(p->phys.pos.x,p->phys.pos.y,p->detect_radius*MAP_GRID_PXL_SIZE,COLOR_PINK,1.0,false,true);
 }
 
 void player_draw_offscreen()
@@ -1511,230 +1438,6 @@ void player_draw_crosshair(Player* p)
 {
     // crosshair
     gfx_draw_image_ignore_light(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 1.0,0.0,0.80, false,true);
-}
-
-const char* player_item_type_str(PlayerItemType item_type)
-{
-    switch(item_type)
-    {
-        case ITEM_TYPE_NONE: return "none";
-        case ITEM_TYPE_MELEE: return "melee";
-        case ITEM_TYPE_GUN: return "gun";
-        case ITEM_TYPE_BLOCK: return "block";
-        case ITEM_TYPE_OBJECT: return "object";
-        default: return "UNKNOWN";
-    }
-}
-
-
-void block_draw(block_t* b, bool add_to_existing_batch)
-{
-    if(b == NULL) return;
-    if(b->type < 0 || b->type >= BLOCK_MAX) return;
-
-    if(add_to_existing_batch)
-    {
-        gfx_sprite_batch_add(block_props[b->type].image, block_props[b->type].sprite_index, b->phys.pos.x, b->phys.pos.y-9, block_props[b->type].color,1.0,0.0,1.0,true,false,false);
-    }
-    else
-    {
-        gfx_draw_image(block_props[b->type].image, block_props[b->type].sprite_index, b->phys.pos.x, b->phys.pos.y-9, block_props[b->type].color,1.0,0.0,1.0,true,true);
-    }
-
-    if(debug_enabled)
-    {
-        gfx_draw_rect(&b->phys.collision, COLOR_COLLISON, 0.0, 1.0, 1.0, false, true);
-    }
-}
-
-void block_hurt(block_t* b, float damage)
-{
-    b->hp -= damage;
-    if(b->hp <= 0.0)
-    {
-        block_destroy(b);
-    }
-}
-
-void weapons_init()
-{
-    int idx = 0;
-
-    idx = GUN_PISTOL1;
-    guns[idx].index = idx;
-    guns[idx].name = "pistol1";
-    guns[idx].type = GUN_TYPE_HANDGUN;
-    guns[idx].anim_state = ANIM_NONE;    // no change in state
-    guns[idx].power = 1.0;
-    guns[idx].recoil_spread = 2.0;
-    guns[idx].fire_range = 500.0;
-    guns[idx].fire_speed = 4000.0;
-    guns[idx].fire_period = 500.0; // milliseconds
-    guns[idx].fire_spread = 0.0;
-    guns[idx].fire_count = 1;
-    guns[idx].bullets = 7;
-    guns[idx].bullets_max = 7;
-    guns[idx].reload_time = 1000.0;
-    guns[idx].projectile_type = PROJECTILE_TYPE_BULLET;
-
-    idx = GUN_MACHINEGUN1;
-    guns[idx].index = idx;
-    guns[idx].name = "pistol1"; //TODO
-    guns[idx].type = GUN_TYPE_HANDGUN; //TODO
-    guns[idx].anim_state = ANIM_NONE;    // no change in state
-    guns[idx].power = 1.0;
-    guns[idx].recoil_spread = 4.0;
-    guns[idx].fire_range = 500.0;
-    guns[idx].fire_speed = 4000.0;
-    guns[idx].fire_period = 100.0; // milliseconds
-    guns[idx].fire_spread = 0.0;
-    guns[idx].fire_count = 1;
-    guns[idx].bullets = 9999;
-    guns[idx].bullets_max = 9999;
-    guns[idx].reload_time = 1000.0;
-    guns[idx].projectile_type = PROJECTILE_TYPE_BULLET;
-
-    idx = GUN_SHOTGUN1;
-    guns[idx].index = idx;
-    guns[idx].name = "pistol1"; //TODO
-    guns[idx].type = GUN_TYPE_HANDGUN; //TODO
-    guns[idx].anim_state = ANIM_NONE;    // no change in state
-    guns[idx].power = 1.0;
-    guns[idx].recoil_spread = 0.0;
-    guns[idx].fire_range = 300.0;
-    guns[idx].fire_speed = 4000.0;
-    guns[idx].fire_period = 100.0; // milliseconds
-    guns[idx].fire_spread = 30.0;
-    guns[idx].fire_count = 5;
-    guns[idx].bullets = 9999;
-    guns[idx].bullets_max = 9999;
-    guns[idx].reload_time = 1000.0;
-    guns[idx].projectile_type = PROJECTILE_TYPE_BULLET;
-
-
-
-    idx = MELEE_KNIFE1;
-    melees[idx].index = idx;
-    melees[idx].name = "pistol1"; //TEMP
-    melees[idx].type = MELEE_TYPE0;
-    melees[idx].anim_state = ANIM_ATTACK1;
-    melees[idx].range = 40.0;
-    melees[idx].power = 0.5;
-    melees[idx].period = 100.0;
-
-    weapons_init_images();
-
-}
-
-// must call this after players_init()?
-void weapons_init_images()
-{
-
-    // guns
-    for(int pm = 0; pm < PLAYER_MODELS_MAX; ++pm)
-    {
-        for(int ps = 0; ps < ANIM_MAX; ++ps)
-        {
-            for(int w = 0; w < GUN_MAX; ++w)
-            {
-                gun_image_sets[pm][ps][w] = -1;
-
-                char fname[100] = {0};
-                sprintf(fname, "img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_anim_state_str(ps), gun_type_str(guns[w].type), guns[w].name);
-                gun_image_sets[pm][ps][w] = gfx_load_image(fname, false, false, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
-            }
-        }
-    }
-
-    // melee
-    for(int pm = 0; pm < PLAYER_MODELS_MAX; ++pm)
-    {
-        for(int ps = 0; ps < ANIM_MAX; ++ps)
-        {
-            for(int w = 0; w < MELEE_MAX; ++w)
-            {
-                melee_image_sets[pm][ps][w] = -1;
-                char fname[100] = {0};
-                sprintf(fname, "img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_anim_state_str(ps), melee_type_str(melees[w].type), melees[w].name);
-                melee_image_sets[pm][ps][w] = gfx_load_image(fname, false, false, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
-            }
-        }
-    }
-}
-
-
-int gun_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state, GunType gtype)
-{
-    return gun_image_sets[model_index][anim_state][gtype];
-}
-
-int melee_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state, MeleeType mtype)
-{
-    return melee_image_sets[model_index][anim_state][mtype];
-}
-
-
-const char* gun_type_str(GunType gtype)
-{
-    switch(gtype)
-    {
-        case GUN_TYPE_HANDGUN: return "handgun";
-        case GUN_TYPE_RIFLE: return "rifle";
-        case GUN_TYPE_BOW: return "bow";
-        default: return "";
-    }
-}
-
-const char* melee_type_str(MeleeType mtype)
-{
-    switch(mtype)
-    {
-        case MELEE_TYPE0: return "handgun";//TEMP
-        case MELEE_TYPE1: return "type1";
-        default: return "";
-    }
-}
-
-
-void gun_fire(Player* p, Gun* gun, bool held)
-{
-
-    if(gun->bullets <= 0) return;
-
-    if(gun->fire_count > 1)
-    {
-        for(int i = 0; i < gun->fire_count; ++i)
-        {
-            float angle_offset = RAND_FLOAT(-gun->fire_spread/2.0, gun->fire_spread/2.0);
-            projectile_add(p, gun, angle_offset);
-        }
-    }
-    else
-    {
-        float angle_offset = 0.0;
-        if(held && !FEQ(gun->recoil_spread,0.0))
-        {
-            angle_offset = RAND_FLOAT(-gun->recoil_spread/2.0, gun->recoil_spread/2.0);
-            // recoil_camera_offset.x = 5.0*cosf(RAD(angle_offset));
-            // recoil_camera_offset.y = 5.0*sinf(RAD(angle_offset));
-            // float cam_pos_x = player->phys.pos.x + aim_camera_offset.x + recoil_camera_offset.x;
-            // float cam_pos_y = player->phys.pos.y + aim_camera_offset.y + recoil_camera_offset.y;
-            // camera_move(cam_pos_x, cam_pos_y, 0.00, true, &map.rect);
-        }
-        projectile_add(p, gun, angle_offset);
-    }
-
-    player_add_detect_radius(p, 10.0);
-
-    particles_spawn_effect(gun->pos.x, gun->pos.y-5, &particle_effects[EFFECT_GUN_SMOKE1], 0.5, true, false); // smoke
-    particles_spawn_effect(gun->pos.x, gun->pos.y-5, &particle_effects[EFFECT_SPARKS1], 0.5, true, false); // sparks
-    particles_spawn_effect(gun->pos.x, gun->pos.y, &particle_effects[EFFECT_BULLET_CASING], 1.4, true, false); // bullet casing
-
-    particles_spawn_effect(gun->pos.x + 10*cos(player->angle), gun->pos.y - 10*sin(player->angle), &particle_effects[EFFECT_GUN_BLAST], 0.1, true, false);
-
-    gun_light = lighting_point_light_add(gun->pos.x,gun->pos.y,1.0,1.0,1.0,0.5);
-
-    gun->bullets--;
 }
 
 void player_weapon_melee_check_collision(Player* p)
