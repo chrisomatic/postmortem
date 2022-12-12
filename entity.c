@@ -502,7 +502,11 @@ static void handle_collisions(EntityType type, void* data, double delta_t)
             if(!phys2)
                 continue;
 
-            physics_handle_collision(phys1, phys2, delta_t);
+            bool collision = physics_handle_collision(phys1, phys2, delta_t);
+            if(collision)
+            {
+                //@NOTE: update grid boxes?
+            }
         }
     }
 }

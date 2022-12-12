@@ -169,13 +169,13 @@ void physics_limit_pos(Rect* limit, Rect* pos)
         pos->y = ly1-pos->h/2.0;
     // printf("after: "); print_rect(pos);
 }
-void physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
+bool physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
 {
     // check for collision
     bool colliding = rectangles_colliding(&phys1->collision, &phys2->collision);
 
     if(!colliding)
-        return;
+        return false;
 
     // correct collision
     float m1 = phys1->mass;
@@ -346,4 +346,5 @@ void physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
     }
 
     //printf("v1: %f %f, v2: %f %f, ratio: %f %f, num_loops: %d\n",v1.x,v1.y,v2.x,v2.y, ratio.x,ratio.y, num_loops);
+    return true;
 }
