@@ -24,7 +24,7 @@
 #define NUM_ZOMBIES_INIT    1
 
 uint32_t zombie_info_id = 0xFFFFFFFF;
-// int zombie_info_index = -1;
+bool zombie_debug = false;
 bool zombies_pursue = true;
 bool zombies_idle = false;
 ZombieModel zombie_models[ZOMBIE_MODELS_MAX];
@@ -613,6 +613,21 @@ void zombie_update(Zombie* z, float delta_t)
         }
     }
 
+    zombie_update_anim_state(z);
+    zombie_update_anim_timing(z);
+    zombie_update_image(z);
+    gfx_anim_update(&z->anim, delta_t);
+    zombie_update_sprite_index(z);
+    zombie_update_boxes(z);
+
+    physics_begin(&z->phys);
+    physics_add_friction(&z->phys, 16.0);
+    physics_add_force(&z->phys, accel.x, accel.y);
+    physics_simulate(&z->phys, &map.rect, delta_t);
+
+    coords_to_map_grid(z->phys.pos.x, z->phys.pos.y, &z->map_grid_pos.x, &z->map_grid_pos.y);
+    coords_to_world_grid(z->phys.pos.x, z->phys.pos.y, &z->world_grid_pos.x, &z->world_grid_pos.y);
+
     if(z->anim_state == ZANIM_HURT && z->anim.curr_loop > 0)
     {
         z->anim_state = ZANIM_IDLE;
@@ -624,22 +639,6 @@ void zombie_update(Zombie* z, float delta_t)
         z->anim_state = ZANIM_IDLE;
         z->attacking = false;
     }
-
-    zombie_update_anim_state(z);
-    zombie_update_anim_timing(z);
-    zombie_update_image(z);
-    gfx_anim_update(&z->anim, delta_t);
-    zombie_update_sprite_index(z);
-    zombie_update_boxes(z);
-
-
-    physics_begin(&z->phys);
-    physics_add_friction(&z->phys, 16.0);
-    physics_add_force(&z->phys, accel.x, accel.y);
-    physics_simulate(&z->phys, &map.rect, delta_t);
-
-    coords_to_map_grid(z->phys.pos.x, z->phys.pos.y, &z->map_grid_pos.x, &z->map_grid_pos.y);
-    coords_to_world_grid(z->phys.pos.x, z->phys.pos.y, &z->world_grid_pos.x, &z->world_grid_pos.y);
 
 }
 
@@ -658,58 +657,61 @@ bool zombie_draw(Zombie* z, bool add_to_existing_batch)
             gfx_draw_image(z->image, z->sprite_index,(int)z->phys.pos.x,(int)z->phys.pos.y, z->color,z->scale,0.0,z->opacity,false,true);
         }
 
-        if(debug_enabled)
-        {
-            float maxw = maxwh[z->model_index].x * z->scale;
-            float maxh = maxwh[z->model_index].y * z->scale;
-            Rect max_size = {0};
-            max_size.x = z->phys.actual_pos.x;
-            max_size.y = z->phys.actual_pos.y;
-            max_size.w = maxw;
-            max_size.h = maxh;
-    
-            bool draw_debug_stuff = (z == zombie_get_by_id(zombie_info_id));
-            if(true)//draw_debug_stuff)
-            {
-                gfx_draw_rect(&z->phys.actual_pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
-                gfx_draw_rect(&z->phys.collision, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
-                gfx_draw_rect(&z->phys.hit, COLOR_HIT, 0.0, 1.0,1.0, false, true);
-                gfx_draw_rect(&max_size, COLOR_MAXSIZE, 0.0, 1.0,1.0, false, true);
-
-                // health bars
-                float h = 4.0;
-                float y = z->phys.actual_pos.y + maxh * 0.5 + h/2.0 + 2.0;
-                float w = maxw;
-                float x = z->phys.actual_pos.x;
-
-                Rect r = {0};
-                r.x = x;
-                r.y = y;
-                r.w = w;
-                r.h = h;
-                gfx_draw_rect(&r, COLOR_WHITE, 0.0, 1.0,1.0, true, true);
-
-                float p = z->hp/z->hp_max;
-                r.h *= 0.8;
-                r.x = r.x-r.w/2.0;
-                r.w *= p;
-                r.x = r.x+r.w/2.0;
-                gfx_draw_rect(&r, COLOR_RED, 0.0, 1.0,1.0, true, true);
-            }
-
-            // anim state
-            // const float name_size = 0.11;
-            // char* str = (char*)zombie_anim_state_str(z->anim_state);
-            // Vector2f size = gfx_string_get_size(name_size, str);
-            // float _x = z->phys.pos.x - size.x/2.0;
-            // float _y = z->phys.pos.y + max_size.h*0.5 + 2.0;
-            // gfx_draw_string(_x, _y, COLOR_WHITE, name_size, 0.0, 0.8, true, true, str);
-        }
-
         return true;
     }
 
     return false;
+}
+
+void zombie_draw_debug(Zombie* z)
+{
+    if(z == NULL) return;
+    float maxw = maxwh[z->model_index].x * z->scale;
+    float maxh = maxwh[z->model_index].y * z->scale;
+    Rect max_size = {0};
+    max_size.x = z->phys.actual_pos.x;
+    max_size.y = z->phys.actual_pos.y;
+    max_size.w = maxw;
+    max_size.h = maxh;
+
+    bool draw_debug_stuff = (z == zombie_get_by_id(zombie_info_id));
+    if(zombie_debug) draw_debug_stuff = true;
+
+    if(draw_debug_stuff)
+    {
+        gfx_draw_rect(&z->phys.actual_pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&z->phys.collision, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&z->phys.hit, COLOR_HIT, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&max_size, COLOR_MAXSIZE, 0.0, 1.0,1.0, false, true);
+
+        // health bars
+        float h = 4.0;
+        float y = z->phys.actual_pos.y + maxh * 0.5 + h/2.0 + 2.0;
+        float w = maxw;
+        float x = z->phys.actual_pos.x;
+
+        Rect r = {0};
+        r.x = x;
+        r.y = y;
+        r.w = w;
+        r.h = h;
+        gfx_draw_rect(&r, COLOR_WHITE, 0.0, 1.0,1.0, true, true);
+
+        float p = z->hp/z->hp_max;
+        r.h *= 0.8;
+        r.x = r.x-r.w/2.0;
+        r.w *= p;
+        r.x = r.x+r.w/2.0;
+        gfx_draw_rect(&r, COLOR_RED, 0.0, 1.0,1.0, true, true);
+    }
+
+    // anim state
+    // const float name_size = 0.11;
+    // char* str = (char*)zombie_anim_state_str(z->anim_state);
+    // Vector2f size = gfx_string_get_size(name_size, str);
+    // float _x = z->phys.pos.x - size.x/2.0;
+    // float _y = z->phys.pos.y + max_size.h*0.5 + 2.0;
+    // gfx_draw_string(_x, _y, COLOR_WHITE, name_size, 0.0, 0.8, true, true, str);
 }
 
 

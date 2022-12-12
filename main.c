@@ -63,6 +63,7 @@ void init();
 void deinit();
 void simulate(double);
 void simulate_client(double);
+void draw_debug();
 void draw();
 void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
@@ -435,24 +436,148 @@ void simulate_client(double delta_t)
     entities_update_draw_list(); //sorts the entity list
 }
 
+void draw_debug()
+{
+    if(!debug_enabled) return;
+
+    Rect r;
+    get_camera_rect(&r);
+
+    int wr1,wc1,wr2,wc2;
+    coords_to_world_grid(r.x-r.w/2.0, r.y-r.h/2.0, &wr1, &wc1);
+    coords_to_world_grid(r.x+r.w/2.0, r.y+r.h/2.0, &wr2, &wc2);
+
+#if 0
+    // tile grid
+    // -----------------------------------------------------------------------
+    {
+        int r1,c1,r2,c2;
+        uint32_t line_color = COLOR_GREEN;
+        coords_to_map_grid(r.x-r.w/2.0, r.y-r.h/2.0, &r1, &c1);
+        coords_to_map_grid(r.x+r.w/2.0, r.y+r.h/2.0, &r2, &c2);
+        // float xadj = -1.0*MAP_GRID_PXL_SIZE/2.0;
+        // float yadj = -1.0*MAP_GRID_PXL_SIZE/2.0;
+        for(int r = (r1-1); r < (r2+1); ++r)
+        {
+            float x0,y0,x1,y1;
+            map_grid_to_coords_tl(r, c1-1, &x0, &y0);
+            map_grid_to_coords_tl(r, c2+1, &x1, &y1);
+            // x0 += xadj; x1 += xadj;
+            // y0 += yadj; y1 += yadj;
+            // gfx_add_line(x0,y0,x1,y1,COLOR_GREEN);
+            Rect r = {0};
+            r.x = x0 + (x1-x0)/2.0;
+            r.y = y0 + (y1-y0)/2.0;
+            r.w = x1-x0;
+            r.h = 0.1;
+            gfx_draw_rect(&r, line_color, 0.0,1.0,1.0, false, true);
+        }
+        for(int c = (c1-1); c < (c2+1); ++c)
+        {
+            float x0,y0,x1,y1;
+            map_grid_to_coords_tl(r1-1, c, &x0, &y0);
+            map_grid_to_coords_tl(r2+1, c, &x1, &y1);
+            // x0 += xadj; x1 += xadj;
+            // y0 += yadj; y1 += yadj;
+            // gfx_add_line(x0,y0,x1,y1,COLOR_GREEN);
+            Rect r = {0};
+            r.x = x0 + (x1-x0)/2.0;
+            r.y = y0 + (y1-y0)/2.0;
+            r.w = 0.1;
+            r.h = y1-y0;
+            gfx_draw_rect(&r, line_color, 0.0,1.0,1.0, false, true);
+        }
+    }
+#endif
+
+    // world grid
+    // -----------------------------------------------------------------------
+    {
+        uint32_t line_color = COLOR_PINK;
+        for(int r = (wr1-1); r < (wr2+1); ++r)
+        {
+            float x0,y0,x1,y1;
+            world_grid_to_coords_tl(r, wc1-1, &x0, &y0);
+            world_grid_to_coords_tl(r, wc2+1, &x1, &y1);
+            // gfx_add_line(x0,y0,x1,y1,line_color);
+            Rect r = {0};
+            r.x = x0 + (x1-x0)/2.0;
+            r.y = y0 + (y1-y0)/2.0;
+            r.w = x1-x0;
+            r.h = 0.1;
+            gfx_draw_rect(&r, line_color, 0.0,1.0,1.0, false, true);
+
+        }
+        for(int c = (wc1-1); c < (wc2+1); ++c)
+        {
+            float x0,y0,x1,y1;
+            world_grid_to_coords_tl(wr1-1, c, &x0, &y0);
+            world_grid_to_coords_tl(wr2+1, c, &x1, &y1);
+            // gfx_add_line(x0,y0,x1,y1,line_color);
+            Rect r = {0};
+            r.x = x0 + (x1-x0)/2.0;
+            r.y = y0 + (y1-y0)/2.0;
+            r.w = 0.1;
+            r.h = y1-y0;
+            gfx_draw_rect(&r, line_color, 0.0,1.0,1.0, false, true);
+        }
+    }
+
+    // players
+    // -----------------------------------------------------------------------
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        player_draw_debug(&players[i]);
+    }
+
+    // zombies
+    // -----------------------------------------------------------------------
+    for(int i = 0; i < zlist->count; ++i)
+    {
+        zombie_draw_debug(&zombies[i]);
+    }
+
+    // blocks
+    // -----------------------------------------------------------------------
+    for(int i = 0; i < blist->count; ++i)
+    {
+        block_draw_debug(&blocks[i]);
+    }
+
+    // grid box counts
+    // -----------------------------------------------------------------------
+    for(int r = (wr1-1); r < (wr2+1); ++r)
+    {
+        for(int c = (wc1-1); c < (wc2+1); ++c)
+        {
+            float x0,y0;
+            world_grid_to_coords_tl(r, c, &x0, &y0);
+            gfx_draw_string(x0+1.0, y0+1.0, COLOR_ORANGE, 0.1, 0.0, 1.0, true, false, "%d", grid_boxes[r][c].num);
+        }
+    }
+
+}
+
 void draw()
 {
     gfx_clear_buffer(50,50,50);
 
     world_draw();
-    gfx_draw_lines();
-
-    // zombies_draw();
-    //projectile_draw();
-    // player_draw_all();
-    // particles_draw();
+    // gfx_draw_lines();
 
     entities_draw(true);
+
+    gfx_draw_lines();
+
+    draw_debug();
+
     gui_draw();
 
     player_draw_offscreen();
     player_draw_crosshair(player);
 }
+
+
 
 
 void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)

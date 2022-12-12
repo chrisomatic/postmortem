@@ -135,59 +135,6 @@ void world_draw()
     coords_to_map_grid(r.x+r.w/2.0, r.y+r.h/2.0, &r2, &c2);
 
 
-#if 0
-    // draw tile grid
-    if(debug_enabled)
-    {
-        // float xadj = -1.0*MAP_GRID_PXL_SIZE/2.0;
-        // float yadj = -1.0*MAP_GRID_PXL_SIZE/2.0;
-        for(int r = (r1-1); r < (r2+1); ++r)
-        {
-            float x0,y0,x1,y1;
-            map_grid_to_coords_tl(r, c1-1, &x0, &y0);
-            map_grid_to_coords_tl(r, c2+1, &x1, &y1);
-            // x0 += xadj; x1 += xadj;
-            // y0 += yadj; y1 += yadj;
-            gfx_add_line(x0,y0,x1,y1,0x00FF0000);
-        }
-        for(int c = (c1-1); c < (c2+1); ++c)
-        {
-            float x0,y0,x1,y1;
-            map_grid_to_coords_tl(r1-1, c, &x0, &y0);
-            map_grid_to_coords_tl(r2+1, c, &x1, &y1);
-            // x0 += xadj; x1 += xadj;
-            // y0 += yadj; y1 += yadj;
-            gfx_add_line(x0,y0,x1,y1,0x00FF0000);
-        }
-    }
-#endif
-
-    int wr1,wc1,wr2,wc2;
-    coords_to_world_grid(r.x-r.w/2.0, r.y-r.h/2.0, &wr1, &wc1);
-    coords_to_world_grid(r.x+r.w/2.0, r.y+r.h/2.0, &wr2, &wc2);
-#if 1
-    // draw world grid
-    if(debug_enabled)
-    {
-        uint32_t line_color = 0x000000FF;
-        for(int r = (wr1-1); r < (wr2+1); ++r)
-        {
-            float x0,y0,x1,y1;
-            world_grid_to_coords_tl(r, wc1-1, &x0, &y0);
-            world_grid_to_coords_tl(r, wc2+1, &x1, &y1);
-            gfx_add_line(x0,y0,x1,y1,line_color);
-        }
-        for(int c = (wc1-1); c < (wc2+1); ++c)
-        {
-            float x0,y0,x1,y1;
-            world_grid_to_coords_tl(wr1-1, c, &x0, &y0);
-            world_grid_to_coords_tl(wr2+1, c, &x1, &y1);
-            gfx_add_line(x0,y0,x1,y1,line_color);
-        }
-
-    }
-#endif
-
     gfx_sprite_batch_begin(true);
 
     for(int r = (r1-1); r < (r2+1); ++r)
@@ -212,20 +159,6 @@ void world_draw()
     }
 
     gfx_sprite_batch_draw();
-
-
-    if(debug_enabled)
-    {
-        for(int r = (wr1-1); r < (wr2+1); ++r)
-        {
-            for(int c = (wc1-1); c < (wc2+1); ++c)
-            {
-                float x0,y0;
-                world_grid_to_coords_tl(r, c, &x0, &y0);
-                gfx_draw_string(x0+1.0, y0+1.0, COLOR_ORANGE, 0.1, 0.0, 1.0, true, false, "%d", grid_boxes[r][c].num);
-            }
-        }
-    }
 
 }
 

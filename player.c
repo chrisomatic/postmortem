@@ -17,6 +17,10 @@
 #include "effects.h"
 #include "main.h"
 
+// melee debug prints
+// #define mprint(...) printf(__VA_ARGS__)
+#define mprint(...)
+
 // global vars
 // ------------------------------------------------------------
 Player players[MAX_CLIENTS];
@@ -497,6 +501,7 @@ void player_equip_gun(Player* p, GunIndex index)
 
 void player_equip_melee(Player* p, MeleeIndex index)
 {
+    mprint("player_equip_melee\n");
     Melee* melee = &melees[index];
     player_equip_item(p, ITEM_TYPE_MELEE, (void*)melee, true, true);
 
@@ -639,6 +644,8 @@ static void mouse_melee_cb(void* player, MouseTrigger trigger)
 {
     Player* p = (Player*)player;
 
+    mprint("mouse_melee_cb\n");
+
     if(p->busy)
         return;
 
@@ -649,8 +656,10 @@ static void mouse_melee_cb(void* player, MouseTrigger trigger)
     p->melee_hit_count = 0;
     p->attacking_state = melee->anim_state;
     p->state = PSTATE_ATTACKING;
+    mprint("mouse_melee_cb set state attacking\n");
+
     p->busy = true;
-    player_add_detect_radius(p, 2.0);
+    player_add_detect_radius(p,2.0);
 }
 
 static void mouse_block_add_cb(void* player, MouseTrigger trigger)
@@ -870,6 +879,7 @@ void player_update_anim_state(Player* p)
     if(p->state == PSTATE_ATTACKING)
     {
         p->anim_state = p->attacking_state;
+        mprint("p->anim_state = (%d) PSTATE_ATTACKING\n", p->anim_state);
         //TEMP
         p->anim.frame_sequence[0] = 0;
         p->anim.frame_sequence[1] = 1;
@@ -1188,13 +1198,6 @@ void player_update(Player* p, double delta_t)
 
     p->moving = !(FEQ(accel.x,0.0) && FEQ(accel.y,0.0));
 
-    // finish attack
-    if(p->state == PSTATE_ATTACKING && p->anim.curr_loop > 0)
-    { 
-        p->state = PSTATE_NONE;
-        p->busy = false;
-    }
-
     player_update_anim_state(p);
     player_update_anim_timing(p);
     player_update_image(p);
@@ -1215,7 +1218,13 @@ void player_update(Player* p, double delta_t)
 
     coords_to_map_grid(p->phys.actual_pos.x, p->phys.actual_pos.y, &p->grid_pos.x, &p->grid_pos.y);
 
-
+    // finish attack
+    if(p->state == PSTATE_ATTACKING && p->anim.curr_loop > 0)
+    {
+        mprint("finished attacking\n");
+        p->state = PSTATE_NONE;
+        p->busy = false;
+    }
 
     // player_check_block_collision(p, prior_pos, prior_collision_box);
     // player_weapon_melee_check_collision(p);
@@ -1224,22 +1233,24 @@ void player_update(Player* p, double delta_t)
 
     if(debug_enabled)
     {
-        float px = p->phys.actual_pos.x;
-        float py = p->phys.actual_pos.y;
+        // float px = p->phys.actual_pos.x;
+        // float py = p->phys.actual_pos.y;
         // gfx_add_line(px,py,p->mouse_x,p->mouse_y,0x00FF0000);
 
         if(p->state == PSTATE_ATTACKING && p->item.props != NULL)
         {
             Melee* melee = (Melee*)p->item.props;
+            float wx = melee->pos.x;
+            float wy = melee->pos.y;
             float d = melee->range;
             float a0 = p->angle - RAD(15);
             float a1 = p->angle + RAD(15);
-            float x0 = px + d*cosf(a0);
-            float y0 = py - d*sinf(a0);
-            float x1 = px + d*cosf(a1);
-            float y1 = py - d*sinf(a1);
-            gfx_add_line(px,py,x0,y0,0x00FF0000);
-            gfx_add_line(px,py,x1,y1,0x00FF0000);
+            float x0 = wx + d*cosf(a0);
+            float y0 = wy - d*sinf(a0);
+            float x1 = wx + d*cosf(a1);
+            float y1 = wy - d*sinf(a1);
+            gfx_add_line(wx,wy,x0,y0,0x00FF0000);
+            gfx_add_line(wx,wy,x1,y1,0x00FF0000);
         }
         // if(p->item.props != NULL)
         // {
@@ -1312,7 +1323,6 @@ void player_update_other(Player* p, double delta_t)
     player_add_detect_radius(p, delta_t * -0.8);
 
 
-
     p->lerp_t += delta_t;
 
     float tick_time = 1.0/TICK_RATE;
@@ -1323,14 +1333,6 @@ void player_update_other(Player* p, double delta_t)
     p->phys.pos.y = lp.y;
 
     p->angle = lerp(p->server_state_prior.angle,p->server_state_target.angle,t);
-
-    // player_update_anim_state(p);
-    // player_update_anim_timing(p);
-    // player_update_image(p);
-    // gfx_anim_update(&p->anim, delta_t);
-    // player_update_sprite_index(p);
-    // player_update_boxes(p);
-
 
 }
 
@@ -1390,8 +1392,7 @@ void player_draw(Player* p, bool add_to_existing_batch)
             }
 
         }
-
-        if(p->item.item_type == ITEM_TYPE_BLOCK)
+        else if(p->item.item_type == ITEM_TYPE_BLOCK)
         {
             BlockProp* bp = (BlockProp*)p->item.props;
             Rect r = {0};
@@ -1406,38 +1407,46 @@ void player_draw(Player* p, bool add_to_existing_batch)
         }
     }
 
-    if(debug_enabled)
-    {
-        gfx_draw_rect(&p->phys.actual_pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
-        gfx_draw_rect(&p->phys.collision, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
-        gfx_draw_rect(&p->phys.hit, COLOR_HIT, 0.0, 1.0,1.0, false, true);
-        gfx_draw_rect(&p->max_size, COLOR_MAXSIZE, 0.0, p->scale,1.0, false, true);
-
-        //dots
-        Rect r = {0};
-
-        // phys.pos
-        r.x = p->phys.pos.x;
-        r.y = p->phys.pos.y;
-        r.w = 2;
-        r.h = 2;
-        gfx_draw_rect(&r, COLOR_PURPLE, 0.0, 1.0,1.0, true, true);
-
-        // pos
-        r.x = p->phys.actual_pos.x;
-        r.y = p->phys.actual_pos.y;
-        gfx_draw_rect(&r, COLOR_ORANGE, 0.0, 1.0,1.0, true, true);
-
-        // detect
-        gfx_draw_circle(p->phys.actual_pos.x,p->phys.actual_pos.y,p->detect_radius*MAP_GRID_PXL_SIZE,COLOR_PINK,1.0,false,true);
-    }
-
     // name
     const float name_size = 0.11;
     Vector2f size = gfx_string_get_size(name_size, p->name);
     float x = p->phys.pos.x - size.x/2.0;
     float y = p->phys.pos.y + p->scale*p->max_size.h*0.5 + 2.0;
     gfx_draw_string(x, y, player_colors[p->index], name_size, 0.0, 0.8, true, true, p->name);
+}
+
+void player_draw_debug(Player* p)
+{
+    if(p == NULL) return;
+    if(!p->active) return;
+
+    if(!is_in_camera_view(&p->phys.actual_pos))
+    {
+        return;
+    }
+
+    gfx_draw_rect(&p->phys.actual_pos, COLOR_POS, 0.0, 1.0,1.0, false, true);
+    gfx_draw_rect(&p->phys.collision, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
+    gfx_draw_rect(&p->phys.hit, COLOR_HIT, 0.0, 1.0,1.0, false, true);
+    gfx_draw_rect(&p->max_size, COLOR_MAXSIZE, 0.0, p->scale,1.0, false, true);
+
+    //dots
+    Rect r = {0};
+
+    // phys.pos
+    r.x = p->phys.pos.x;
+    r.y = p->phys.pos.y;
+    r.w = 2;
+    r.h = 2;
+    gfx_draw_rect(&r, COLOR_PURPLE, 0.0, 1.0,1.0, true, true);
+
+    // pos
+    r.x = p->phys.actual_pos.x;
+    r.y = p->phys.actual_pos.y;
+    gfx_draw_rect(&r, COLOR_ORANGE, 0.0, 1.0,1.0, true, true);
+
+    // detect
+    gfx_draw_circle(p->phys.pos.x,p->phys.pos.y,p->detect_radius*MAP_GRID_PXL_SIZE,COLOR_PINK,1.0,false,true);
 }
 
 void player_draw_offscreen()
@@ -1527,10 +1536,11 @@ void block_draw(block_t* b, bool add_to_existing_batch)
         gfx_draw_image(block_props[b->type].image, block_props[b->type].sprite_index, b->phys.pos.x, b->phys.pos.y-9, block_props[b->type].color,1.0,0.0,1.0,true,true);
     }
 
-    if(debug_enabled)
-    {
-        gfx_draw_rect(&b->phys.collision, COLOR_COLLISON, 0.0, 1.0, 1.0, false, true);
-    }
+}
+
+void block_draw_debug(block_t* b)
+{
+    gfx_draw_rect(&b->phys.collision, COLOR_COLLISON, 0.0, 1.0, 1.0, false, true);
 }
 
 
