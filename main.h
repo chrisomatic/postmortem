@@ -23,6 +23,10 @@ typedef enum
 #define VIEW_WIDTH   1200
 #define VIEW_HEIGHT  800
 
+// players, zombies, items
+#define IMG_ELEMENT_W 128
+#define IMG_ELEMENT_H 128
+
 // strings
 #define STR_EMPTY(x)      (x == 0 || strlen(x) == 0)
 #define STR_EQUAL(x,y)    (strncmp((x),(y),strlen((x))) == 0 && strlen(x) == strlen(y))

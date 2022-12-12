@@ -18,8 +18,8 @@
 
 #include "zombie.h"
 
-#define IMG_ELEMENT_W 128
-#define IMG_ELEMENT_H 128
+// #define IMG_ELEMENT_W 128
+// #define IMG_ELEMENT_H 128
 
 #define NUM_ZOMBIES_INIT    1
 

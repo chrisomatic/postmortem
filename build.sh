@@ -23,6 +23,7 @@ gcc core/gfx.c \
     gui.c \
     net.c \
     projectile.c \
+    item.c \
     entity.c \
     -Icore \
     -lglfw -lGLU -lGLEW -lGL -lm \

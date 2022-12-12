@@ -1,9 +1,13 @@
 #pragma once
 
+#include "main.h"
+
 #include "gfx.h"
 #include "physics.h"
 #include "net.h"
+#include "item.h"
 #include "glist.h"
+
 
 // debug box colors
 #define COLOR_POS        COLOR_BLUE
@@ -18,51 +22,51 @@
 
 #define PLAYER_BLOCK_PLACEMENT_RADIUS   10
 
-//TEMP: blocks
-#define MAX_BLOCKS  1000
-typedef enum
-{
-    BLOCK_0,
-    BLOCK_1,
+// //TEMP: blocks
+// #define MAX_BLOCKS  1000
+// typedef enum
+// {
+//     BLOCK_0,
+//     BLOCK_1,
 
-    BLOCK_MAX
-} BlockType;
-typedef struct
-{
-    BlockType type;
-    float hp;
-    int image;
-    int sprite_index;
-    uint32_t color;
-} BlockProp;
-typedef struct
-{
-    Physics phys;
-    float hp;
-    BlockType type;
-} block_t;
+//     BLOCK_MAX
+// } BlockType;
+// typedef struct
+// {
+//     BlockType type;
+//     float hp;
+//     int image;
+//     int sprite_index;
+//     uint32_t color;
+// } BlockProp;
+// typedef struct
+// {
+//     Physics phys;
+//     float hp;
+//     BlockType type;
+// } block_t;
 
-extern block_t blocks[MAX_BLOCKS];
-extern glist* blist;
-extern BlockProp block_props[BLOCK_MAX];
+// extern block_t blocks[MAX_BLOCKS];
+// extern glist* blist;
+// extern BlockProp block_props[BLOCK_MAX];
 
-typedef enum
-{
-    ITEM_TYPE_NONE,
-    ITEM_TYPE_MELEE,
-    ITEM_TYPE_GUN,
-    ITEM_TYPE_BLOCK,
-    ITEM_TYPE_OBJECT,
-} PlayerItemType;
+// typedef enum
+// {
+//     ITEM_TYPE_NONE,
+//     ITEM_TYPE_MELEE,
+//     ITEM_TYPE_GUN,
+//     ITEM_TYPE_BLOCK,
+//     ITEM_TYPE_OBJECT,
+// } PlayerItemType;
 
-typedef struct
-{
-    PlayerItemType item_type;
-    void* props;
-    bool drawable;
-    bool mouse_aim;
-    Rect pos;
-} PlayerItem;
+// typedef struct
+// {
+//     PlayerItemType item_type;
+//     void* props;
+//     bool drawable;
+//     bool mouse_aim;
+//     Rect pos;
+// } PlayerItem;
 
 // animation states
 typedef enum
@@ -90,83 +94,83 @@ typedef struct
     int textures;
 } PlayerModel;
 
-typedef enum
-{
-    GUN_TYPE_HANDGUN,
-    GUN_TYPE_RIFLE,
-    GUN_TYPE_BOW,
+// typedef enum
+// {
+//     GUN_TYPE_HANDGUN,
+//     GUN_TYPE_RIFLE,
+//     GUN_TYPE_BOW,
 
-    GUN_TYPE_MAX
-} GunType;
+//     GUN_TYPE_MAX
+// } GunType;
 
-typedef enum
-{
-    GUN_PISTOL1,
-    GUN_MACHINEGUN1,
-    GUN_SHOTGUN1,
+// typedef enum
+// {
+//     GUN_PISTOL1,
+//     GUN_MACHINEGUN1,
+//     GUN_SHOTGUN1,
 
-    GUN_MAX
-} GunIndex;
-
-
-
-typedef struct
-{
-    GunIndex index;
-    GunType type;
-    const char* name;
-
-    PlayerAnimState anim_state;
-    Rect pos;
-
-    // should get rid of this probably
-    int projectile_type; // sprite index
-
-    float power;
-
-    float recoil_spread;
-    float fire_range;
-    float fire_speed;
-    float fire_period;
-    float fire_spread;
-    int fire_count;
+//     GUN_MAX
+// } GunIndex;
 
 
-    int bullets;
-    int bullets_max;
-    float reload_time;
-} Gun;
+
+// typedef struct
+// {
+//     GunIndex index;
+//     GunType type;
+//     const char* name;
+
+//     PlayerAnimState anim_state;
+//     Rect pos;
+
+//     // should get rid of this probably
+//     int projectile_type; // sprite index
+
+//     float power;
+
+//     float recoil_spread;
+//     float fire_range;
+//     float fire_speed;
+//     float fire_period;
+//     float fire_spread;
+//     int fire_count;
+
+
+//     int bullets;
+//     int bullets_max;
+//     float reload_time;
+// } Gun;
 
 
 //TODO
-typedef enum
-{
-    MELEE_TYPE0,
-    MELEE_TYPE1,
+// typedef enum
+// {
+//     MELEE_TYPE0,
+//     MELEE_TYPE1,
 
-    MELEE_TYPE_MAX
-} MeleeType;
+//     MELEE_TYPE_MAX
+// } MeleeType;
 
-typedef enum
-{
-    MELEE_KNIFE1,
+// typedef enum
+// {
+//     MELEE_KNIFE1,
 
-    MELEE_MAX
-} MeleeIndex;
+//     MELEE_MAX
+// } MeleeIndex;
 
-typedef struct
-{
-    MeleeIndex index;
-    MeleeType type;
-    const char* name;
+// typedef struct
+// {
+//     MeleeIndex index;
+//     MeleeType type;
+//     const char* name;
 
-    PlayerAnimState anim_state;
-    Rect pos;
+//     PlayerAnimState anim_state;
+//     Rect pos;
 
-    float period;
-    float power;
-    float range;
-} Melee;
+//     float period;
+//     float power;
+//     float range;
+// } Melee;
 
 enum PlayerActions
 {
@@ -320,8 +324,8 @@ extern int player_count;
 extern uint32_t player_colors[MAX_CLIENTS];
 extern PlayerModel player_models[PLAYER_MODELS_MAX];
 
-extern Gun guns[GUN_MAX];
-extern Melee melees[MELEE_MAX];
+// extern Gun guns[GUN_MAX];
+// extern Melee melees[MELEE_MAX];
 
 extern bool moving_zombie;
 
@@ -336,11 +340,12 @@ int player_get_image_index(Player* p);
 int players_get_count();
 void player_get_maxwh(Player* p, float* w, float* h);
 
-void player_equip_gun(Player* p, GunIndex index);
-void player_equip_melee(Player* p, MeleeIndex index);
-void player_equip_block(Player* p, BlockType index);
-void player_set_equipped_item(Player* p, int idx);
-void player_equip_item(Player* p, PlayerItemType itype, void* props, bool drawable, bool mouse_aim);
+// void player_equip_gun(Player* p, GunIndex index);
+// void player_equip_melee(Player* p, MeleeIndex index);
+// void player_equip_block(Player* p, BlockType index);
+// void player_equip_item(Player* p, PlayerItemType itype, void* props, bool drawable, bool mouse_aim);
+// void player_set_equipped_item(Player* p, int idx);
+
 Rect* player_get_equipped_item_pos(Player* p);
 int player_get_equipped_item_img(Player* p);
 
@@ -371,21 +376,21 @@ void player_draw_crosshair(Player* p);
 
 void player_hurt(Player* p, float damage);
 
-const char* player_item_type_str(PlayerItemType item_type);
+// const char* player_item_type_str(PlayerItemType item_type);
 
-//TEMP: blocks
-void block_draw(block_t* b, bool add_to_existing_batch);
-void block_draw_debug(block_t* b);
+// //TEMP: blocks
+// void block_draw(block_t* b, bool add_to_existing_batch);
+// void block_draw_debug(block_t* b);
 
 
-void weapons_init();
-void weapons_init_images();
+// void weapons_init();
+// void weapons_init_images();
 
-int gun_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state, GunType gtype);
-int melee_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state, MeleeType mtype);
-const char* gun_type_str(GunType gtype);
-const char* melee_type_str(MeleeType mtype);
-void gun_fire(Player* p, Gun* gun, bool held);
+// int gun_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state, GunType gtype);
+// int melee_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state, MeleeType mtype);
+// const char* gun_type_str(GunType gtype);
+// const char* melee_type_str(MeleeType mtype);
+// void gun_fire(Player* p, Gun* gun, bool held);
 
 void player_weapon_melee_check_collision(Player* p);
 
