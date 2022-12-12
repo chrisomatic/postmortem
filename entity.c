@@ -25,6 +25,7 @@ static void add_to_grid_boxes(EntityType type, void* data);
 static void sort_entity_list(glist* list);
 static Physics* entity_get_physics(EntityType type, void* data);
 static void handle_collisions(EntityType type, void* data, double delta_t);
+static void handle_proj_collisions(void* data, double delta_t);
 
 void entities_init()
 {
@@ -296,18 +297,19 @@ void entities_handle_collisions(double delta_t)
     for(int i = 0; i < blist->count; ++i)
     {
         block_t* b = &blocks[i];
-
         handle_collisions(ENTITY_TYPE_BLOCK, b, delta_t);
     }
 
-#if 0
     // projectiles
     for(int i = plist->count - 1; i >= 0 ; --i)
     {
-        //
+        Projectile* p = &projectiles[i];
+        if(p->dead)
+            continue;
+        handle_proj_collisions(p,delta_t);
     }
 
-#endif
+
 
 }
 
@@ -377,7 +379,7 @@ static int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int c
         case ENTITY_TYPE_PROJECTILE:
         {
             Projectile* p = (Projectile*)data;
-            rect = p->hurt_box;
+            rect = p->phys.collision;
         } break;
 
         case ENTITY_TYPE_ZOMBIE:
@@ -481,6 +483,8 @@ static void handle_collisions(EntityType type, void* data, double delta_t)
     if(!phys1)
         return;
 
+    phys1->num_colliding_entities = 0;
+
     for(int i = 0; i < count; ++i)
     {
         int r = rows[i];
@@ -502,13 +506,126 @@ static void handle_collisions(EntityType type, void* data, double delta_t)
             if(!phys2)
                 continue;
 
-            bool collision = physics_handle_collision(phys1, phys2, delta_t);
+            bool collision = physics_check_collisions(phys1, phys2, delta_t);
+
             if(collision)
             {
                 //@NOTE: update grid boxes?
+                physics_resolve_collisions(phys1);
             }
         }
     }
 }
 
+static void handle_proj_collisions(void* data, double delta_t)
+{
+    int rows[4] = {0};
+    int cols[4] = {0};
+
+    EntityType type = ENTITY_TYPE_PROJECTILE;
+
+    Projectile* proj = (Projectile*)data;
+
+    int count = entity_get_grid_boxes(type, data, rows, cols);
+
+    Physics* phys1 = &proj->phys;
+    if(!phys1)
+        return;
+
+    #define HITS_MAX 100
+    Entity* hits[HITS_MAX] = {0};
+    int num_hits = 0;
+
+    for(int i = 0; i < count; ++i)
+    {
+        int r = rows[i];
+        int c = cols[i];
+
+        if(r > WORLD_GRID_ROWS_MAX || c > WORLD_GRID_COLS_MAX)
+            continue;
+
+        GridBox* g = &grid_boxes[r][c];
+
+        for(int i = 0; i < g->num; ++i)
+        {
+            Entity* e = &g->entities[i];
+
+            if(e->data == data) // don't check self
+                continue;
+
+            if(e->data == player) // don't hit player
+                continue;
+
+            Physics* phys2 = entity_get_physics(e->type,e->data);
+            if(!phys2)
+                continue;
+
+            if(num_hits >= HITS_MAX)
+                break;
+
+            if(are_rects_colliding(&phys1->prior_collision, &phys1->collision, &phys2->hit))
+            {
+                hits[num_hits++] = e;
+            }
+        }
+    }
+
+    if(num_hits > 0)
+    {
+        Entity* min_e;
+        Physics* min_phys2;
+
+        float min_d = INFINITY;
+        for(int _j = 0; _j < num_hits; ++_j)
+        {
+            Entity* e = hits[_j];
+            Physics* phys2 = entity_get_physics(e->type,e->data);
+
+            float d = dist(phys1->prior_collision.x, phys1->prior_collision.y, phys2->hit.x, phys2->hit.y);
+            if(d < min_d)
+            {
+                min_d = d;
+                min_e = e;
+                min_phys2 = phys2;
+            }
+        }
+
+        ParticleEffect pe;
+        memcpy(&pe,&particle_effects[EFFECT_BLOOD1],sizeof(ParticleEffect));
+
+        pe.scale.init_min *= 0.5;
+        pe.scale.init_max *= 0.5;
+        pe.velocity_x.init_min = -(proj->vel.x*0.03);
+        pe.velocity_x.init_max = -(proj->vel.x*0.03);
+        pe.velocity_x.rate = -0.02;
+        pe.velocity_y.init_min = (proj->vel.y*0.03);
+        pe.velocity_y.init_max = 0.0;
+        pe.velocity_y.rate = -0.02;
+
+        switch(min_e->type)
+        {
+            case ENTITY_TYPE_PLAYER:
+            {
+                Player* p = (Player*)min_e->data;
+                player_hurt(p,proj->damage);
+            } break;
+            case ENTITY_TYPE_ZOMBIE:
+            {
+                Zombie* z = (Zombie*)min_e->data;
+                zombie_hurt(z,proj->damage);
+            } break;
+            case ENTITY_TYPE_BLOCK:
+            {
+                block_t* b = (block_t*)min_e->data;
+                block_hurt(b,proj->damage);
+                pe.img_index = 12;
+                pe.sprite_index = b->type;
+            } break;
+        }
+
+        particles_spawn_effect(min_phys2->pos.x, min_phys2->pos.y, &pe, 0.6, true, false);
+
+        proj->dead = true;
+    }
+}
 

@@ -110,6 +110,8 @@ void world_init()
     load_map_file("map/test.map");
     ground_sheet = gfx_load_image("img/ground_set.png", false, false, 32, 32, NULL);
 
+    lighting_init();
+
     // world lights
     lighting_point_light_add(100.0,100.0,1.0,0.0,0.0,0.5);
     lighting_point_light_add(200.0,200.0,0.0,1.0,0.0,0.5);

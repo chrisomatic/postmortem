@@ -5,22 +5,31 @@
 
 #include "math2d.h"
 #include "log.h"
+#include "glist.h"
 #include "lighting.h"
 
 PointLight point_lights[MAX_POINT_LIGHTS] = {0};
-int point_light_count = 0;
+glist* lighting_list = NULL;
 
 uint32_t ambient_light = 0x00646464;
 
+void lighting_init()
+{
+    lighting_list = list_create((void*)point_lights,MAX_POINT_LIGHTS,sizeof(PointLight));
+    if(lighting_list == NULL)
+    {
+        LOGE("point light list failed to create");
+    }
+}
 int lighting_point_light_add(float x, float y, float r, float g, float b, float radius)
 {
-    if(point_light_count >= MAX_POINT_LIGHTS)
+    if(list_is_full(lighting_list))
     {
         LOGW("Too many point lights");
         return -1;
     }
 
-    PointLight* pl = &point_lights[point_light_count++];
+    PointLight* pl = &point_lights[lighting_list->count];
 
     pl->pos.x = x;
     pl->pos.y = y;
@@ -32,7 +41,14 @@ int lighting_point_light_add(float x, float y, float r, float g, float b, float 
     pl->attenuation.y = 0.01 / radius;
     pl->attenuation.z = 0.0001 / radius;
 
-    return point_light_count-1;
+    list_add(lighting_list,pl);
+
+    return lighting_list->count-1;
+}
+
+void lighting_point_light_remove(int point_light)
+{
+    list_remove(lighting_list,point_light);
 }
 
 void lighting_point_light_move(int index, float x, float y)

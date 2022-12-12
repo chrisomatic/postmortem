@@ -372,8 +372,8 @@ void player_hurt(Player* p, float damage);
 const char* player_item_type_str(PlayerItemType item_type);
 
 //TEMP: blocks
+void block_hurt(block_t* b, float damage);
 void block_draw(block_t* b, bool add_to_existing_batch);
-
 
 void weapons_init();
 void weapons_init_images();

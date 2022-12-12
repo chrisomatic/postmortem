@@ -169,13 +169,45 @@ void physics_limit_pos(Rect* limit, Rect* pos)
         pos->y = ly1-pos->h/2.0;
     // printf("after: "); print_rect(pos);
 }
-bool physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
+
+bool physics_check_collisions(Physics* phys1, Physics* phys2, double delta_t)
 {
-    // check for collision
     bool colliding = rectangles_colliding(&phys1->collision, &phys2->collision);
+
+    if(!IS_RECT_EMPTY(&phys1->prior_collision) && !IS_RECT_EMPTY(&phys1->collision))
+    {
+        float distance = dist(phys1->prior_collision.x, phys1->prior_collision.y, phys1->collision.x,phys1->collision.y);
+        if(!colliding && distance >= 10.0)
+        {
+            printf("Entity is moving more than 10 pixels!\n");
+            // more hardcore check
+            colliding = are_rects_colliding(&phys1->prior_collision, &phys1->collision, &phys2->collision);
+        }
+    }
 
     if(!colliding)
         return false;
+
+    if(phys1->num_colliding_entities >= 4)
+    {
+        LOGW("Too many colliding entities");
+    }
+    else
+    {
+        phys1->colliding_entities[phys1->num_colliding_entities++] = (void*)phys2;
+    }
+
+    return true;
+
+}
+
+void physics_resolve_collisions(Physics* phys1)
+{
+    int num_collisions = phys1->num_colliding_entities;
+    if(num_collisions == 0)
+        return;
+
+    Physics* phys2 = (Physics*)phys1->colliding_entities[0];
 
     // correct collision
     float m1 = phys1->mass;
@@ -255,8 +287,8 @@ bool physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
     Vector2f ratio = {ABS(ux),ABS(uy)};
     normalize(&ratio);
 
-    if(1.0 - ratio.x < 0.001) ratio.x = 1.0;
-    if(1.0 - ratio.y < 0.001) ratio.y = 1.0;
+    if(1.000 - ratio.x < 0.001) ratio.x = 1.0;
+    if(1.000 - ratio.y < 0.001) ratio.y = 1.0;
 
     float dx = phys1->collision.x - phys2->collision.x;
     float dy = phys1->collision.y - phys2->collision.y;
@@ -266,7 +298,7 @@ bool physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
 
     if(ABS(dx) > ABS(dy))
     {
-        if(phys1->collision.x > phys2->collision.x)
+        if(phys1->prior_collision.x > phys2->prior_collision.x)
         {
             // move phys1 right, phys2 left
             adj1.x = 1.0;
@@ -281,7 +313,7 @@ bool physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
     }
     else
     {
-        if(phys1->collision.y > phys2->collision.y)
+        if(phys1->prior_collision.y > phys2->prior_collision.y)
         {
             // move phys1 down, phys2 up
             adj1.y = 1.0;
@@ -295,33 +327,13 @@ bool physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
         }
     }
 
-    /*
-    Vector2f mov1 = {phys1->collision.x - phys1->prior_collision.x,phys1->collision.y - phys1->prior_collision.y};
-    Vector2f mov2 = {phys2->collision.x - phys2->prior_collision.x,phys2->collision.y - phys2->prior_collision.y};
-
-    normalize(&mov1);
-    normalize(&mov2);
-
-    Vector2f nadj1 = {adj1.x,adj2.y};
-    Vector2f nadj2 = {adj2.x,adj2.y};
-
-    normalize(&adj1);
-    normalize(&adj2);
-    
-    float check1 = vec_dot(nadj1,mov1);
-    float check2 = vec_dot(nadj2,mov2);
-
-    if(!FEQ0(check1) || !FEQ0(check2))
-        printf("dot1: %f, dot2: %f\n",check1,check2);
-    */
-
     adj1.x *= ratio.x;
     adj1.y *= ratio.x;
 
     adj2.x *= ratio.y;
     adj2.y *= ratio.y;
 
-    const int max_loops = 10;
+    const int max_loops = 32;
     int num_loops = 0;
 
     for(;;)
@@ -340,11 +352,15 @@ bool physics_handle_collision(Physics* phys1, Physics* phys2, double delta_t)
         physics_apply_pos_offset(phys1, adj1.x, adj1.y);
         physics_apply_pos_offset(phys2, adj2.x, adj2.y);
 
-        colliding = rectangles_colliding(&phys1->collision, &phys2->collision);
+        bool colliding = rectangles_colliding(&phys1->collision, &phys2->collision);
+
         if(!colliding)
             break;
     }
 
+    phys1->num_colliding_entities = 0;
+
     //printf("v1: %f %f, v2: %f %f, ratio: %f %f, num_loops: %d\n",v1.x,v1.y,v2.x,v2.y, ratio.x,ratio.y, num_loops);
-    return true;
+    return;
 }
+

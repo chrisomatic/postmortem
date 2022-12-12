@@ -15,7 +15,7 @@ typedef enum
 typedef struct
 {
     ProjectileType type;
-    Vector2f pos;
+    Physics phys;
     Vector2i grid_pos;
     Vector2i grid_pos_prior;
     Vector2f vel;
@@ -23,8 +23,6 @@ typedef struct
     float power;
     int damage;
     int sprite_index;
-    Rect hurt_box;
-    Rect hurt_box_prior;
     float time;
     float ttl;
     bool dead;

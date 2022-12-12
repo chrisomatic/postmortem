@@ -55,6 +55,7 @@ static int melee_image_sets[PLAYER_MODELS_MAX][ANIM_MAX][MELEE_MAX];
 static int blocks_image;
 static int crosshair_image;
 
+static int gun_light = -1;
 
 
 //TEMP: blocks
@@ -683,17 +684,33 @@ static void mouse_block_add_cb(void* player, MouseTrigger trigger)
         BlockProp* bp = (BlockProp*)p->item.props;
 
         block_t b = {0};
+
         memcpy(&b.phys.pos,&brect,sizeof(Rect));
         memcpy(&b.phys.actual_pos,&brect,sizeof(Rect));
         memcpy(&b.phys.collision,&brect,sizeof(Rect));
         memcpy(&b.phys.prior_collision,&brect,sizeof(Rect));
         memcpy(&b.phys.hit,&brect,sizeof(Rect));
+
         b.phys.mass = 10000.0;
+
+        if(bp->type == BLOCK_0)
+            b.phys.mass = 5.0;
 
         b.type = bp->type;
         b.hp = bp->hp;
         list_add(blist, (void*)&b);
     }
+}
+
+static void block_destroy(block_t* b)
+{
+    ParticleEffect pe ={0};
+    memcpy(&pe, &particle_effects[EFFECT_BLOCK_DESTROY],sizeof(ParticleEffect));
+    pe.sprite_index = b->type;
+    particles_spawn_effect(b->phys.actual_pos.x, b->phys.actual_pos.y, &pe, 1.0, true, false);
+    particles_spawn_effect(b->phys.actual_pos.x, b->phys.actual_pos.y-16, &particle_effects[EFFECT_SMOKE2], 1.0, true, false);
+
+    list_remove_by_item(blist, b);
 }
 
 static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
@@ -713,13 +730,7 @@ static void mouse_block_remove_cb(void* player, MouseTrigger trigger)
     {
         if(rectangles_colliding(&brect, &blocks[i].phys.actual_pos))
         {
-            ParticleEffect pe ={0};
-            memcpy(&pe, &particle_effects[EFFECT_BLOCK_DESTROY],sizeof(ParticleEffect));
-            pe.sprite_index = blocks[i].type;
-            particles_spawn_effect(blocks[i].phys.actual_pos.x, blocks[i].phys.actual_pos.y, &pe, 1.0, true, false);
-            particles_spawn_effect(blocks[i].phys.actual_pos.x, blocks[i].phys.actual_pos.y-16, &particle_effects[EFFECT_SMOKE2], 1.0, true, false);
-
-            list_remove(blist, i);
+            block_destroy(&blocks[i]);
             break;
         }
     }
@@ -997,6 +1008,8 @@ void player_update_sprite_index(Player* p)
 
 void player_update(Player* p, double delta_t)
 {
+    if(gun_light > -1)
+        lighting_point_light_remove(gun_light);
 
     player_add_detect_radius(p, delta_t * -0.8);
 
@@ -1517,6 +1530,7 @@ const char* player_item_type_str(PlayerItemType item_type)
 void block_draw(block_t* b, bool add_to_existing_batch)
 {
     if(b == NULL) return;
+    if(b->type < 0 || b->type >= BLOCK_MAX) return;
 
     if(add_to_existing_batch)
     {
@@ -1533,6 +1547,14 @@ void block_draw(block_t* b, bool add_to_existing_batch)
     }
 }
 
+void block_hurt(block_t* b, float damage)
+{
+    b->hp -= damage;
+    if(b->hp <= 0.0)
+    {
+        block_destroy(b);
+    }
+}
 
 void weapons_init()
 {
@@ -1708,6 +1730,10 @@ void gun_fire(Player* p, Gun* gun, bool held)
     particles_spawn_effect(gun->pos.x, gun->pos.y-5, &particle_effects[EFFECT_SPARKS1], 0.5, true, false); // sparks
     particles_spawn_effect(gun->pos.x, gun->pos.y, &particle_effects[EFFECT_BULLET_CASING], 1.4, true, false); // bullet casing
 
+    particles_spawn_effect(gun->pos.x + 10*cos(player->angle), gun->pos.y - 10*sin(player->angle), &particle_effects[EFFECT_GUN_BLAST], 0.1, true, false);
+
+    gun_light = lighting_point_light_add(gun->pos.x,gun->pos.y,1.0,1.0,1.0,0.5);
+
     gun->bullets--;
 }
 
@@ -1762,7 +1788,7 @@ void player_weapon_melee_check_collision(Player* p)
             {
                 float damage = melee->power;
                 // printf("zombie hurt\n");
-                zombie_hurt(j,damage);
+                zombie_hurt2(j,damage);
                 p->melee_hit_count++;
                 return;
             }

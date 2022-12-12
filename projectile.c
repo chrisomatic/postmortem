@@ -33,9 +33,9 @@ static void projectile_remove(int index)
 
 static void update_hurt_box(Projectile* proj)
 {
-    memcpy(&proj->hurt_box_prior,&proj->hurt_box,sizeof(Rect));
-    proj->hurt_box.x = proj->pos.x;
-    proj->hurt_box.y = proj->pos.y;
+    memcpy(&proj->phys.prior_collision,&proj->phys.collision,sizeof(Rect));
+    proj->phys.collision.x = proj->phys.pos.x;
+    proj->phys.collision.y = proj->phys.pos.y;
 }
 
 void projectile_init()
@@ -57,15 +57,15 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
 
     float _x = gun->pos.x;
     float _y = gun->pos.y;
-    proj.pos.x = _x;
-    proj.pos.y = _y;
+    proj.phys.pos.x = _x;
+    proj.phys.pos.y = _y;
 
-    coords_to_map_grid(proj.pos.x, proj.pos.y, &proj.grid_pos.x, &proj.grid_pos.y);
+    coords_to_map_grid(proj.phys.pos.x, proj.phys.pos.y, &proj.grid_pos.x, &proj.grid_pos.y);
     memcpy(&proj.grid_pos_prior, &proj.grid_pos, sizeof(Vector2i));
 
     Rect* vr = &gfx_images[projectile_image_set].visible_rects[proj.sprite_index];
-    proj.hurt_box.w = vr->w;
-    proj.hurt_box.h = vr->h;
+    proj.phys.collision.w = vr->w;
+    proj.phys.collision.h = vr->h;
     update_hurt_box(&proj);
 
     int mx = p->mouse_x;
@@ -92,7 +92,7 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
     else
     {
         // player_colors[p->index] = COLOR_BLUE;
-        angle_deg = calc_angle_deg(proj.pos.x, proj.pos.y, mx, my);
+        angle_deg = calc_angle_deg(proj.phys.pos.x, proj.phys.pos.y, mx, my);
     }
     angle_deg += angle_offset;
 
@@ -125,122 +125,34 @@ void projectile_update(float delta_t)
             continue;
         }
 
-        proj->pos.x += delta_t*proj->vel.x;
-        proj->pos.y -= delta_t*proj->vel.y; // @minus
+        proj->phys.pos.x += delta_t*proj->vel.x;
+        proj->phys.pos.y -= delta_t*proj->vel.y; // @minus
 
         memcpy(&proj->grid_pos_prior, &proj->grid_pos, sizeof(Vector2i));
-        coords_to_map_grid(proj->pos.x, proj->pos.y, &proj->grid_pos.x, &proj->grid_pos.y);
+        coords_to_map_grid(proj->phys.pos.x, proj->phys.pos.y, &proj->grid_pos.x, &proj->grid_pos.y);
 
         update_hurt_box(proj);
 
-        #define HITS_MAX 100
-        int hits[HITS_MAX] = {0};
-        int num_hits = 0;
-        for(int j = zlist->count - 1; j >= 0; --j)
-        {
-            if(num_hits >= HITS_MAX) break;
-
-            if(zombies[j].dead)
-                continue;
-
-            /*
-            int x0 = proj->grid_pos_prior.x;
-            int y0 = proj->grid_pos_prior.y;
-            int x1 = proj->grid_pos.x;
-            int y1 = proj->grid_pos.y;
-
-            int dx = x1 - x0;
-            int dy = y1 - y0;
-
-            int cx = x0 + dx/2.0;
-            int cy = y0 + dy/2.0;
-
-            int radius = (ABS(dx) + ABS(dy))/2.0;
-            printf("center %d %d, radius: %d\n",cx, cy, radius);
-
-            if(!is_grid_within_radius(cx,cy,zombies[j].grid_pos.x, zombies[j].grid_pos.y,radius))
-                continue;
-            */
-
-            if(are_rects_colliding(&proj->hurt_box_prior, &proj->hurt_box, &zombies[j].phys.hit))
-            {
-                hits[num_hits++] = j;
-            }
-        }
-
-        if(num_hits > 0)
-        {
-            int j_min = 0;
-            float min_d = INFINITY;
-            for(int _j = 0; _j < num_hits; ++_j)
-            {
-                int j = hits[_j];
-                float d = dist(proj->hurt_box_prior.x, proj->hurt_box_prior.y, zombies[j].phys.hit.x, zombies[j].phys.hit.y);
-                if(d < min_d)
-                {
-                    min_d = d;
-                    j_min = j;
-                }
-            }
-
-            proj->dead = true;
-
-            Vector2f force = {
-                100.0*cosf(RAD(proj->angle_deg)),
-                100.0*sinf(RAD(proj->angle_deg))
-            };
-            //zombie_push(j_min,&force);
-
-            if(role == ROLE_SERVER)
-            {
-                printf("Zombie %d hurt for %d damage!\n",j_min,proj->damage);
-            }
-
-            // correct projectile pos back to zombie hitbox
-            {
-                Vector2f p0 = {proj->hurt_box.x, proj->hurt_box.y};
-                Vector2f p1 = {proj->hurt_box_prior.x, proj->hurt_box_prior.y};
-                Vector2f p2 = {zombies[j_min].phys.hit.x, zombies[j_min].phys.hit.y};
-
-                float d = dist(p0.x,p0.y,p2.x,p2.y);
-
-                Vector2f v = {p0.x - p1.x, p0.y - p1.y};
-                normalize(&v);
-
-                Vector2f correction = {-d*v.x, -d*v.y};
-
-                proj->pos.x += correction.x;
-                proj->pos.y += correction.y;
-
-                update_hurt_box(proj);
-            }
-
-            ParticleEffect pe;
-            memcpy(&pe,&particle_effects[EFFECT_BLOOD1],sizeof(ParticleEffect));
-
-            pe.scale.init_min *= 0.5;
-            pe.scale.init_max *= 0.5;
-            pe.velocity_x.init_min = (proj->vel.x*0.03);
-            pe.velocity_x.init_max = (proj->vel.x*0.03);
-            pe.velocity_x.rate = -0.02;
-            pe.velocity_y.init_min = -(proj->vel.y*0.03);
-            pe.velocity_y.init_max = 0.0;
-            pe.velocity_y.rate = -0.02;
-
-            particles_spawn_effect(zombies[j_min].phys.pos.x, zombies[j_min].phys.pos.y, &pe, 0.6, true, false);
-
-
-            zombie_hurt(j_min,proj->damage);
-        }
-
-        float x0 = proj->hurt_box.x;
-        float y0 = proj->hurt_box.y;
-        float x1 = proj->hurt_box_prior.x;
-        float y1 = proj->hurt_box_prior.y;
+        /*
+        float x0 = proj->phys.collision.x;
+        float y0 = proj->phys.collision.y;
+        float x1 = proj->phys.prior_collision.x;
+        float y1 = proj->phys.prior_collision.y;
 
         //printf("p0 (%f %f) -> p1 (%f %f)\n",x0,y0,x1,y1);
         gfx_add_line(x0,y0,x1,y1, 0x00FFFF00);
         gfx_add_line(x0+1,y0+1,x1+1,y1+1, 0x00555555);
+        */
+        ParticleEffect pe;
+        memcpy(&pe,&particle_effects[EFFECT_BULLET_TRAIL],sizeof(ParticleEffect));
+
+        pe.velocity_x.init_min = proj->phys.vel.x;
+        pe.velocity_x.init_max = proj->phys.vel.x;
+
+        pe.velocity_y.init_min = proj->phys.vel.y;
+        pe.velocity_y.init_max = proj->phys.vel.y;
+
+        //particles_spawn_effect(proj->phys.pos.x, proj->phys.pos.y, &pe, 0.6, true, false);
     }
 
     for(int i = plist->count - 1; i >= 0; --i)
@@ -259,15 +171,15 @@ void projectile_draw()
     {
         Projectile* proj = &projectiles[i];
 
-        if(is_in_camera_view(&proj->hurt_box))
+        if(is_in_camera_view(&proj->phys.collision))
         {
-            //gfx_add_line(proj->hurt_box.x + proj->hurt_box.w/2.0, proj->hurt_box.y + proj->hurt_box.h/2.0, proj->hurt_box_prior.x + proj->hurt_box_prior.w/2.0, proj->hurt_box_prior.y + proj->hurt_box_prior.h/2.0, 0x00FFFF00);
+            //gfx_add_line(proj->phys.collision.x + proj->phys.collision.w/2.0, proj->phys.collision.y + proj->phys.collision.h/2.0, proj->phys.prior_collision.x + proj->phys.prior_collision.w/2.0, proj->phys.prior_collision.y + proj->phys.prior_collision.h/2.0, 0x00FFFF00);
 
-            //gfx_draw_image(projectile_image_set,proj->sprite_index,proj->pos.x,proj->pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0, false,true);
+            //gfx_draw_image(projectile_image_set,proj->sprite_index,proj->phys.pos.x,proj->phys.pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0, false,true);
 
             if(debug_enabled)
             {
-                gfx_draw_rect(&proj->hurt_box, 0x0000FFFF, 0.0, 1.0,1.0, false, true);
+                gfx_draw_rect(&proj->phys.collision, 0x0000FFFF, 0.0, 1.0,1.0, false, true);
             }
         }
     }

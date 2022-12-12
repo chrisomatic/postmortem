@@ -40,7 +40,8 @@ static uint32_t zid = 0;
 
 static void zombie_remove(Zombie* zom);
 static void wander(Zombie* z, float delta_t);
-static void zombie_die(int index);
+static void zombie_die2(int index);
+static void zombie_die(Zombie* z);
 
 void zombie_init()
 {
@@ -304,7 +305,7 @@ void zombie_push(int index, Vector2f* force)
     z->push_vel.y = force->y;
 }
 
-void zombie_hurt(int index, float val)
+void zombie_hurt2(int index, float val)
 {
     if(index < 0 || index >= zlist->count)
     {
@@ -320,11 +321,23 @@ void zombie_hurt(int index, float val)
 
     if(z->hp <= 0.0)
     {
-        zombie_die(index);
+        zombie_die2(index);
     }
 
 }
 
+void zombie_hurt(Zombie* z, float val)
+{
+    z->hurt = true;
+
+    z->hp -= val;
+    particles_spawn_effect(z->phys.actual_pos.x, z->phys.actual_pos.y, &particle_effects[EFFECT_BLOOD1], 0.6, true, false);
+
+    if(z->hp <= 0.0)
+    {
+        zombie_die(z);
+    }
+}
 
 
 void zombie_update_image(Zombie* z)
@@ -787,7 +800,7 @@ void zombie_kill_all()
 {
     for(int i = zlist->count - 1; i >= 0 ; --i)
     {
-        zombie_die(i);
+        zombie_die2(i);
         // Zombie* z = &zombies[i];
         // zombie_remove(z);
     }
@@ -876,10 +889,17 @@ static void wander(Zombie* z, float delta_t)
     }
 }
 
-static void zombie_die(int index)
+static void zombie_die2(int index)
 {
     zombies[index].dead = true;
     zombies[index].anim.max_loops = 1;
     zombies[index].anim.finite = true;
+}
+
+static void zombie_die(Zombie* z)
+{
+    z->dead = true;
+    z->anim.max_loops = 1;
+    z->anim.finite = true;
 }
 

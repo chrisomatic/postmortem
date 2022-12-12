@@ -111,7 +111,8 @@ void zombie_init();
 bool zombie_add(ZombieSpawn* spawn);
 bool zombie_add_to_world_grid(ZombieSpawn* spawn, int world_row, int world_col);
 void zombie_push(int index, Vector2f* force);
-void zombie_hurt(int index, float val);
+void zombie_hurt2(int index, float val);
+void zombie_hurt(Zombie* z, float val);
 
 void zombie_update_image(Zombie* z);
 void zombie_update_anim_state(Zombie* z);

@@ -622,6 +622,7 @@ bool gfx_sprite_batch_begin(bool in_world)
 
 bool gfx_sprite_batch_add(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool ignore_light, bool blend_additive) 
 {
+
     if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
     {
         LOGE("%s: Invalid image index!", __func__);
@@ -740,7 +741,7 @@ void gfx_sprite_batch_draw()
 
     for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
     {
-        if(i < point_light_count)
+        if(i < lighting_list->count)
         {
             PointLight* pl = &point_lights[i];
             glUniform2f(loc_sprite_batch_light_pos[i],pl->pos.x,pl->pos.y);
