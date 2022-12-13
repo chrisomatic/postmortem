@@ -64,9 +64,15 @@ enum PlayerActions
     PLAYER_ACTION_DEBUG,
     PLAYER_ACTION_EDITOR,
     PLAYER_ACTION_MENU,
+
+    PLAYER_ACTION_1,
+    PLAYER_ACTION_2,
+    PLAYER_ACTION_3,
+    PLAYER_ACTION_4,
+    PLAYER_ACTION_5,
+    PLAYER_ACTION_6,
+
     PLAYER_ACTION_SPAWN_ZOMBIE,     //TEMP
-    PLAYER_ACTION_CYCLE_EQUIP_DOWN, //TEMP
-    PLAYER_ACTION_CYCLE_EQUIP_UP,   //TEMP
 
     PLAYER_ACTION_MAX
 };
@@ -77,6 +83,7 @@ typedef struct
     bool prior_state;
     bool toggled_on;
     bool toggled_off;
+    int key; // gets set when state is true
 } PlayerAction;
 
 typedef struct
@@ -210,17 +217,13 @@ extern bool moving_zombie;
 void player_init_images();
 void player_init_controls(Player* p);
 void players_init();
+void player_set_pos(Player* p, float x, float y);
+
 const char* player_state_str(PlayerState state);
 const char* player_anim_state_str(PlayerAnimState anim_state);
 int player_get_image_index(Player* p);
 int players_get_count();
 void player_get_maxwh(Player* p, float* w, float* h);
-
-// void player_equip_gun(Player* p, GunIndex index);
-// void player_equip_melee(Player* p, MeleeIndex index);
-// void player_equip_block(Player* p, BlockType index);
-// void player_equip_item(Player* p, PlayerItemType itype, void* props, bool drawable, bool mouse_aim);
-// void player_set_equipped_item(Player* p, int idx);
 
 Rect* player_get_equipped_item_pos(Player* p);
 int player_get_equipped_item_img(Player* p);
@@ -251,17 +254,6 @@ void player_draw_offscreen();
 void player_draw_crosshair(Player* p);
 
 void player_hurt(Player* p, float damage);
-
-// const char* player_item_type_str(PlayerItemType item_type);
-
-// void weapons_init();
-// void weapons_init_images();
-
-// int gun_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state, GunType gtype);
-// int melee_get_image_index(PlayerModelIndex model_index, PlayerAnimState anim_state, MeleeType mtype);
-// const char* gun_type_str(GunType gtype);
-// const char* melee_type_str(MeleeType mtype);
-// void gun_fire(Player* p, Gun* gun, bool held);
 
 void player_weapon_melee_check_collision(Player* p);
 

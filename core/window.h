@@ -41,6 +41,7 @@ void window_controls_set_key_mode(KeyMode mode);
 KeyMode window_controls_get_key_mode();
 void window_controls_clear_keys();
 void window_controls_add_key(bool* state, int key);
+
 void window_controls_add_mouse_button(bool* state, int key);
 
 bool window_is_cursor_enabled();

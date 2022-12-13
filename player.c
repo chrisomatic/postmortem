@@ -43,20 +43,11 @@ int player_image_sets_guns[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][ANIM_MAX][GUN
 int player_image_sets_melees[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][ANIM_MAX][MELEE_TYPE_MAX];
 
 PlayerModel player_models[PLAYER_MODELS_MAX];
-
-// Gun guns[GUN_MAX] = {0};
-// Melee melees[MELEE_MAX] = {0};
-
 bool moving_zombie = false;
 
 // ------------------------------------------------------------
 
 static int crosshair_image;
-
-//TEMP: blocks
-// block_t blocks[MAX_BLOCKS] = {0};
-// glist* blist = NULL;
-// BlockProp block_props[BLOCK_MAX] = {0};
 
 // ------------------------------------------------------------
 
@@ -186,8 +177,13 @@ void player_init_controls(Player* p)
 
     window_controls_add_key(&p->actions[PLAYER_ACTION_EQUIP].state, GLFW_KEY_TAB);
     window_controls_add_key(&p->actions[PLAYER_ACTION_SPAWN_ZOMBIE].state, GLFW_KEY_Z);
-    window_controls_add_key(&p->actions[PLAYER_ACTION_CYCLE_EQUIP_DOWN].state, GLFW_KEY_1);
-    window_controls_add_key(&p->actions[PLAYER_ACTION_CYCLE_EQUIP_UP].state, GLFW_KEY_2);
+
+    window_controls_add_key(&p->actions[PLAYER_ACTION_1].state, GLFW_KEY_1);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_2].state, GLFW_KEY_2);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_3].state, GLFW_KEY_3);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_4].state, GLFW_KEY_4);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_5].state, GLFW_KEY_5);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_6].state, GLFW_KEY_6);
 
     window_controls_add_key(&p->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
     window_controls_add_key(&p->actions[PLAYER_ACTION_EDITOR].state, GLFW_KEY_F3);
@@ -349,6 +345,33 @@ void players_init()
 
 }
 
+void player_set_pos(Player* p, float x, float y)
+{
+    float dx = x - p->phys.pos.x;
+    float dy = y - p->phys.pos.y;
+
+    p->phys.pos.x = x;
+    p->phys.pos.y = y;
+
+    p->phys.actual_pos.x += dx;
+    p->phys.actual_pos.y += dy;
+
+    p->phys.collision.x += dx;
+    p->phys.collision.y += dy;
+
+    p->phys.prior_collision.x += dx;
+    p->phys.prior_collision.y += dy;
+
+    p->phys.hit.x += dx;
+    p->phys.hit.y += dy;
+
+    p->standard_size.x += dx;
+    p->standard_size.y += dy;
+
+    p->max_size.x += dx;
+    p->max_size.y += dy;
+}
+
 const char* player_state_str(PlayerState state)
 {
     switch(state)
@@ -501,17 +524,8 @@ void player_set_equipped_item(Player* p, int idx) //TEMP
         return;
     }
 
-    p->item_index = idx;
-    if(idx > 6)
-    {
-        p->item_index = 1;
-    }
-    else if(idx <= 0)
-    {
-        p->item_index = 6;
-    }
-    idx = p->item_index;
 
+    p->item_index = idx;
 
     if(idx == 1)
     {
@@ -533,15 +547,12 @@ void player_set_equipped_item(Player* p, int idx) //TEMP
     {
         player_equip_block(p, BLOCK_0);
     }
-    else if(idx == 6)
+    else
+    // else if(idx == 6)
     {
+        p->item_index = 6;
         player_equip_block(p, BLOCK_1);
     }
-    // else
-    // {
-    //     player_equip_item(p, ITEM_TYPE_NONE, NULL, false, false);
-    //     p->item_equipped = false;
-    // }
 
 }
 
@@ -1009,14 +1020,20 @@ void player_update(Player* p, double delta_t)
 
         if(p->item_equipped)
         {
-            if(p->actions[PLAYER_ACTION_CYCLE_EQUIP_UP].toggled_on)
+
+            //PLAYER_ACTION_6
+            for(int i = 0; i < 6; ++i)
             {
-                player_set_equipped_item(p, p->item_index+1);
+                int a = PLAYER_ACTION_1+i;
+                bool toggled = p->actions[a].toggled_on;
+                if(toggled)
+                {
+                    // 1 based
+                    player_set_equipped_item(p, i+1);
+                    break;
+                }
             }
-            if(p->actions[PLAYER_ACTION_CYCLE_EQUIP_DOWN].toggled_on)
-            {
-                player_set_equipped_item(p, p->item_index-1);
-            }
+
         }
 
         if(p->actions[PLAYER_ACTION_RELOAD].toggled_on)
@@ -1376,21 +1393,24 @@ void player_draw_debug(Player* p)
 
 void player_draw_offscreen()
 {
-    // //@TEMP
-    // static bool activate_player = false;
-    // if(!activate_player)
-    // {
-    //     Player* p = &players[2];
-    //     p->phys.pos.x = 1000;
-    //     p->phys.pos.y = 3000;
-    //     player_update_anim_state(p);
-    //     player_update_image(p);
-    //     player_update_sprite_index(p);
-    //     // player_update_boxes(p);
-    //     p->active = true;
-    //     player_count++;
-    //     activate_player = true;
-    // }
+#if 0
+    //@TEMP
+    {
+        Player* p = &players[2];
+        if(!p->active)
+        {
+            player_set_pos(p, 1000, 3000);
+            // p->phys.pos.x = 1000;
+            // p->phys.pos.y = 3000;
+            player_update_anim_state(p);
+            player_update_image(p);
+            player_update_sprite_index(p);
+            // player_update_boxes(p);
+            p->active = true;
+            player_count++;
+        }
+    }
+#endif
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {

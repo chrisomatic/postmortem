@@ -469,7 +469,7 @@ static void draw_debug_box()
     float pvy = player->phys.vel.y;
     float pv = sqrt(SQ(pvx) + SQ(pvy));
 
-    char keys[16+1] = {0};
+    char keys[32+1] = {0};
     for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
     {
         keys[i] = player->actions[i].state ? '1' : '0';
