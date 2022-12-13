@@ -404,7 +404,11 @@ void simulate(double delta_t)
     world_update(delta_t);
     zombies_update(delta_t);
 
-    player_update(player,delta_t);
+    // player_update(player,delta_t);
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+        player_update(&players[i],delta_t);
+
+
     projectile_update(delta_t);
 
     particles_update(delta_t);

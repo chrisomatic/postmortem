@@ -72,6 +72,11 @@ enum PlayerActions
     PLAYER_ACTION_5,
     PLAYER_ACTION_6,
 
+    PLAYER_ACTION_P2_UP,
+    PLAYER_ACTION_P2_DOWN,
+    PLAYER_ACTION_P2_LEFT,
+    PLAYER_ACTION_P2_RIGHT,
+
     PLAYER_ACTION_SPAWN_ZOMBIE,     //TEMP
 
     PLAYER_ACTION_MAX
@@ -83,7 +88,6 @@ typedef struct
     bool prior_state;
     bool toggled_on;
     bool toggled_off;
-    int key; // gets set when state is true
 } PlayerAction;
 
 typedef struct

@@ -142,10 +142,33 @@ static void editor_draw()
                     imgui_slider_float("Camera Z", -1.0,1.0,&camera_z);
                     camera_zoom(camera_z, false);
 
-                    imgui_text_sized(18,"Point Lights");
-                    imgui_slider_float("Atten0", 0.00,1.5,&point_lights[player->point_light].attenuation.x);
-                    imgui_slider_float("Atten1", 0.00,0.03,&point_lights[player->point_light].attenuation.y);
-                    imgui_slider_float("Atten2", 0.0,0.0005,&point_lights[player->point_light].attenuation.z);
+
+                    Player* p2 = &players[2];
+                    char* p2_str = "Activate Player 2";
+                    if(p2->active)
+                    {
+                        p2_str = "Deactivate Player 2";
+                    }
+                    if(imgui_button(p2_str))
+                    {
+                        if(!p2->active)
+                        {
+                            printf("activating player\n");
+                            player_set_pos(p2, player->phys.pos.x, player->phys.pos.y);
+                            player_count++;
+                            p2->active = true;
+                        }
+                        else
+                        {
+                            player_count--;
+                            p2->active = false;
+                        }
+                    }
+
+                    // imgui_text_sized(18,"Point Lights");
+                    // imgui_slider_float("Atten0", 0.00,1.5,&point_lights[player->point_light].attenuation.x);
+                    // imgui_slider_float("Atten1", 0.00,0.03,&point_lights[player->point_light].attenuation.y);
+                    // imgui_slider_float("Atten2", 0.0,0.0005,&point_lights[player->point_light].attenuation.z);
 
                     imgui_text_sized(18,"Zombies");
                     imgui_horizontal_begin();
@@ -173,7 +196,6 @@ static void editor_draw()
                             spawn.scale = 1.0;
                             zombie_add(&spawn);
                         }
-
                     }
                     imgui_horizontal_end();
 

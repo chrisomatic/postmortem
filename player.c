@@ -188,6 +188,11 @@ void player_init_controls(Player* p)
     window_controls_add_key(&p->actions[PLAYER_ACTION_DEBUG].state, GLFW_KEY_F2);
     window_controls_add_key(&p->actions[PLAYER_ACTION_EDITOR].state, GLFW_KEY_F3);
     window_controls_add_key(&p->actions[PLAYER_ACTION_MENU].state, GLFW_KEY_ESCAPE);
+
+    window_controls_add_key(&p->actions[PLAYER_ACTION_P2_UP].state, GLFW_KEY_UP);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_P2_DOWN].state, GLFW_KEY_DOWN);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_P2_LEFT].state, GLFW_KEY_LEFT);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_P2_RIGHT].state, GLFW_KEY_RIGHT);
 }
 
 static void player_init(int index)
@@ -947,6 +952,8 @@ void player_update_sprite_index(Player* p)
 
 void player_update(Player* p, double delta_t)
 {
+    if(!p->active) return;
+
     player_add_detect_radius(p, delta_t * -0.8);
 
     window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
@@ -971,28 +978,46 @@ void player_update(Player* p, double delta_t)
         }
     }
 
-    for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
+    Player* p2 = &players[2];
+    bool skip_actions = false;
+    if(p == p2 && role == ROLE_LOCAL)
     {
-        PlayerAction* pa = &p->actions[i];
-        if(pa->state && !pa->prior_state)
-        {
-            pa->toggled_on = true;
-        }
-        else
-        {
-            pa->toggled_on = false;
-        }
+        skip_actions = true;
+    }
 
-        if(!pa->state && pa->prior_state)
+    if(!skip_actions)
+    {
+        for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
         {
-            pa->toggled_off = true;
-        }
-        else
-        {
-            pa->toggled_off = false;
-        }
+            PlayerAction* pa = &p->actions[i];
+            if(pa->state && !pa->prior_state)
+            {
+                pa->toggled_on = true;
+            }
+            else
+            {
+                pa->toggled_on = false;
+            }
 
-        pa->prior_state = pa->state;
+            if(!pa->state && pa->prior_state)
+            {
+                pa->toggled_off = true;
+            }
+            else
+            {
+                pa->toggled_off = false;
+            }
+
+            pa->prior_state = pa->state;
+        }
+    }
+
+    if(p == player && p2->active)
+    {
+        memcpy(&p2->actions[PLAYER_ACTION_UP], &p->actions[PLAYER_ACTION_P2_UP], sizeof(PlayerAction));
+        memcpy(&p2->actions[PLAYER_ACTION_DOWN], &p->actions[PLAYER_ACTION_P2_DOWN], sizeof(PlayerAction));
+        memcpy(&p2->actions[PLAYER_ACTION_LEFT], &p->actions[PLAYER_ACTION_P2_LEFT], sizeof(PlayerAction));
+        memcpy(&p2->actions[PLAYER_ACTION_RIGHT], &p->actions[PLAYER_ACTION_P2_RIGHT], sizeof(PlayerAction));
     }
 
     if(p->actions[PLAYER_ACTION_SPAWN_ZOMBIE].toggled_on)
@@ -1393,32 +1418,13 @@ void player_draw_debug(Player* p)
 
 void player_draw_offscreen()
 {
-#if 0
-    //@TEMP
-    {
-        Player* p = &players[2];
-        if(!p->active)
-        {
-            player_set_pos(p, 1000, 3000);
-            // p->phys.pos.x = 1000;
-            // p->phys.pos.y = 3000;
-            player_update_anim_state(p);
-            player_update_image(p);
-            player_update_sprite_index(p);
-            // player_update_boxes(p);
-            p->active = true;
-            player_count++;
-        }
-    }
-#endif
 
     for(int i = 0; i < MAX_CLIENTS; ++i)
     {
         Player* p = &players[i];
         if(p->active)
         {
-            // Rect* pos = &p->phys.actual_pos;
-            Rect* pos = &p->phys.pos;
+            Rect* pos = &p->phys.actual_pos;
             if(!is_in_camera_view(pos))
             {
                 Rect camera_rect = {0};

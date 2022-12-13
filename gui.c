@@ -570,6 +570,7 @@ static void draw_debug_box()
             
             imgui_text_sized(big,"Camera");
             imgui_indent_begin(small);
+                // imgui_text("VH: %d", cam_view_height);
                 imgui_text("Pos: %.2f, %.2f", camera_rect.x, camera_rect.y);
                 imgui_text("w,h: %.2f, %.2f", camera_rect.w, camera_rect.h);
                 imgui_text("Offset: %.2f, %.2f", aim_camera_offset.x, aim_camera_offset.y);
