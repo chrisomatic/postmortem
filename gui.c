@@ -21,11 +21,11 @@
 #include "gui.h"
 
 static void draw_debug_box();
-static int gun_profile_image;
+static int item_profile_image;
 
 void gui_init()
 {
-    gun_profile_image = gfx_load_image("img/gun_profile_set.png", false, true, 64, 64, NULL);
+    item_profile_image = gfx_load_image("img/item_profile_set.png", false, true, 64, 64, NULL);
     editor_init();
 }
 
@@ -194,12 +194,15 @@ void gui_draw()
                 case 0: sprite_index = 1; break;
                 case 1: sprite_index = 2; break;
                 case 2: sprite_index = 0; break;
+                case 3: sprite_index = 3; break;
+                case 4: sprite_index = 4; break;
+                case 5: sprite_index = 5; break;
                 default: sprite_index = -1; break; // no sprite
             }
 
             gfx_draw_rect_xywh(curr_x,curr_y,hotbar_box_size,hotbar_box_size,COLOR_WHITE,0.0,1.0,0.8,false,false);
             gfx_draw_rect_xywh(curr_x,curr_y,hotbar_box_size-1,hotbar_box_size-1,color,0.0,1.0,0.5,true,false);
-            gfx_draw_image_ignore_light(gun_profile_image, sprite_index, curr_x,curr_y, COLOR_TINT_NONE,0.7,0.0,1.0,true,false);
+            gfx_draw_image_ignore_light(item_profile_image, sprite_index, curr_x,curr_y, COLOR_TINT_NONE,0.7,0.0,1.0,true,false);
             gfx_draw_string(curr_x-half_hotbar_box_size+1,curr_y-half_hotbar_box_size,COLOR_WHITE,0.2,0.0,1.0,false,true,"%d",i+1);
 
             curr_x += (hotbar_box_size + hotbar_padding);

@@ -18,7 +18,7 @@ static bool io_file_exists(char* file_path)
     return (access(file_path, F_OK) == 0);
 }
 
-static int io_get_files_in_dir(char* dir_path, char files[][32])
+static int io_get_files_in_dir(char* dir_path, char* match_str, char files[][32])
 {
     DIR *dir = opendir(dir_path);
 
@@ -27,9 +27,10 @@ static int io_get_files_in_dir(char* dir_path, char files[][32])
 
     int num_files = 0;
     struct dirent *ent;
+
     while ((ent = readdir(dir)) != NULL)
     {
-        if(strcmp(ent->d_name,".") ==  0 || strcmp(ent->d_name,"..") == 0)
+        if(strstr(ent->d_name,match_str) == NULL || strcmp(ent->d_name,".") ==  0 || strcmp(ent->d_name,"..") == 0)
             continue;
 
         strcpy(files[num_files],ent->d_name);

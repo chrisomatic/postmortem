@@ -34,8 +34,8 @@ static int get_effect_map_index(char* file_name)
 
 void effects_load_all()
 {
-    char files[10][32] = {0};
-    int num_effects = io_get_files_in_dir("effects",files);
+    char files[32][32] = {0};
+    int num_effects = io_get_files_in_dir("effects",".effect", files);
 
     LOGI("Num effects: %d",num_effects);
 
@@ -43,6 +43,7 @@ void effects_load_all()
     {
         char full_path[64] = {0};
         snprintf(full_path,63,"effects/%s",files[i]);
+        printf("files[i]: %s\n",files[i]);
         int index = get_effect_map_index(files[i]);
         if(index == -1)
         {
