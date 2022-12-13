@@ -593,16 +593,6 @@ static void handle_proj_collisions(void* data, double delta_t)
         }
 
         ParticleEffect pe;
-        memcpy(&pe,&particle_effects[EFFECT_BLOOD1],sizeof(ParticleEffect));
-
-        pe.scale.init_min *= 0.5;
-        pe.scale.init_max *= 0.5;
-        pe.velocity_x.init_min = -(proj->vel.x*0.03);
-        pe.velocity_x.init_max = -(proj->vel.x*0.03);
-        pe.velocity_x.rate = -0.02;
-        pe.velocity_y.init_min = (proj->vel.y*0.03);
-        pe.velocity_y.init_max = 0.0;
-        pe.velocity_y.rate = -0.02;
 
         switch(min_e->type)
         {
@@ -610,20 +600,31 @@ static void handle_proj_collisions(void* data, double delta_t)
             {
                 Player* p = (Player*)min_e->data;
                 player_hurt(p,proj->damage);
+                memcpy(&pe,&particle_effects[EFFECT_BLOOD1],sizeof(ParticleEffect));
             } break;
             case ENTITY_TYPE_ZOMBIE:
             {
                 Zombie* z = (Zombie*)min_e->data;
                 zombie_hurt(z,proj->damage);
+                memcpy(&pe,&particle_effects[EFFECT_BLOOD1],sizeof(ParticleEffect));
             } break;
             case ENTITY_TYPE_BLOCK:
             {
                 block_t* b = (block_t*)min_e->data;
                 block_hurt(b,proj->damage);
-                pe.img_index = 12;
+                memcpy(&pe,&particle_effects[EFFECT_DEBRIS1],sizeof(ParticleEffect));
                 pe.sprite_index = b->type;
             } break;
         }
+
+        pe.scale.init_min *= 0.5;
+        pe.scale.init_max *= 0.5;
+        pe.velocity_x.init_min = -(proj->vel.x*0.02);
+        pe.velocity_x.init_max = -(proj->vel.x*0.02);
+        pe.velocity_x.rate = -0.02;
+        pe.velocity_y.init_min = (proj->vel.y*0.02);
+        pe.velocity_y.init_max = 0.0;
+        pe.velocity_y.rate = -0.02;
 
         particles_spawn_effect(min_phys2->pos.x, min_phys2->pos.y, &pe, 0.6, true, false);
 

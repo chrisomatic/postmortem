@@ -401,7 +401,7 @@ void simulate(double delta_t)
     camera_set();
     camera_update(VIEW_WIDTH, VIEW_HEIGHT);
 
-    world_update();
+    world_update(delta_t);
     zombies_update(delta_t);
 
     player_update(player,delta_t);

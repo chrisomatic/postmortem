@@ -53,8 +53,6 @@ bool moving_zombie = false;
 
 static int crosshair_image;
 
-static int gun_light = -1;
-
 //TEMP: blocks
 // block_t blocks[MAX_BLOCKS] = {0};
 // glist* blist = NULL;
@@ -75,7 +73,6 @@ static void mouse_block_remove_cb(void* _player, MouseTrigger trigger);
 static void mouse_zombie_move_cb(void* _player, MouseTrigger trigger);
 
 // ------------------------------------------------------------
-
 
 
 void player_init_models()
@@ -939,9 +936,6 @@ void player_update_sprite_index(Player* p)
 
 void player_update(Player* p, double delta_t)
 {
-    if(gun_light > -1)
-        lighting_point_light_remove(gun_light);
-
     player_add_detect_radius(p, delta_t * -0.8);
 
     window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);

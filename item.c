@@ -1,6 +1,7 @@
 #include "item.h"
 #include "projectile.h"
 #include "player.h"
+#include "lighting.h"
 #include "world.h"
 
 // global vars
@@ -96,7 +97,10 @@ bool block_add(BlockProp* bp, int row, int col)
     memcpy(&b.phys.collision,&brect,sizeof(Rect));
     memcpy(&b.phys.prior_collision,&brect,sizeof(Rect));
     memcpy(&b.phys.hit,&brect,sizeof(Rect));
+
     b.phys.mass = 10000.0;
+    if(bp->type == 0)
+        b.phys.mass = 5.0;
 
     b.type = bp->type;
     b.hp = bp->hp;
@@ -199,6 +203,8 @@ void gun_fire(void* _player, Gun* gun, bool held)
     particles_spawn_effect(gun->pos.x, gun->pos.y, &particle_effects[EFFECT_BULLET_CASING], 1.4, true, false); // bullet casing
 
     particles_spawn_effect(gun->pos.x + 10*cos(player->angle), gun->pos.y - 10*sin(player->angle), &particle_effects[EFFECT_GUN_BLAST], 0.1, true, false);
+
+    lighting_point_light_add(gun->pos.x,gun->pos.y,1.0,1.0,1.0,0.5,0.2);
 
     gun->bullets--;
 }

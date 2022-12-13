@@ -85,7 +85,6 @@ static void load_map_file(const char* file_path)
         map.cols = MAP_GRID_COLS_MAX;
     }
 
-
     // print map
     LOGI("Map Loaded (%s):", file_path);
     LOGI("  ID: %u",map.id);
@@ -113,17 +112,17 @@ void world_init()
     lighting_init();
 
     // world lights
-    lighting_point_light_add(100.0,100.0,1.0,0.0,0.0,0.5);
-    lighting_point_light_add(200.0,200.0,0.0,1.0,0.0,0.5);
-    lighting_point_light_add(300.0,300.0,0.0,0.0,1.0,0.5);
+    lighting_point_light_add(100.0,100.0,1.0,0.0,0.0,0.5,0.0);
+    lighting_point_light_add(200.0,200.0,0.0,1.0,0.0,0.5,0.0);
+    lighting_point_light_add(300.0,300.0,0.0,0.0,1.0,0.5,0.0);
 
     // test fire pit
-    lighting_point_light_add(300.0,500.0,1.0,0.7,0.6,2.0);
+    lighting_point_light_add(300.0,500.0,1.0,0.7,0.6,2.0,0.0);
 }
 
-void world_update()
+void world_update(double delta_t)
 {
-
+    lighting_point_light_update(delta_t);
 }
 
 void world_draw()

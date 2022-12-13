@@ -8,6 +8,7 @@ EffectEntry effect_map[] = {
     {EFFECT_GUN_SMOKE1,"gun_smoke.effect"},
     {EFFECT_SPARKS1,"sparks1.effect"},
     {EFFECT_BLOOD1,"blood1.effect"},
+    {EFFECT_DEBRIS1,"debris1.effect"},
     {EFFECT_MELEE1,"melee1.effect"},
     {EFFECT_BULLET_CASING,"bullet_casing.effect"},
     {EFFECT_FIRE,"fire.effect"},
