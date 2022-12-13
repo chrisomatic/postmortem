@@ -1153,7 +1153,8 @@ void player_update(Player* p, double delta_t)
 
     if(p->running && moving_player && !p->busy)
     {
-        accel_factor *= 3.0;
+        //accel_factor *= 3.0;
+        accel_factor *= 20.0;
     }
 
     if((up || down) && (left || right))

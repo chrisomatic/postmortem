@@ -267,9 +267,7 @@ void entity_remove_from_grid_boxes(EntityType type, void* data)
             }
             idx++;
         }
-
     }
-
 }
 
 void entities_handle_collisions(double delta_t)
@@ -309,9 +307,6 @@ void entities_handle_collisions(double delta_t)
             continue;
         handle_proj_collisions(p,delta_t);
     }
-
-
-
 }
 
 
@@ -516,7 +511,7 @@ static void handle_collisions(EntityType type, void* data, double delta_t)
         }
     }
 
-    physics_resolve_collisions(phys1);
+    physics_resolve_collisions(phys1, delta_t);
 }
 
 static void handle_proj_collisions(void* data, double delta_t)

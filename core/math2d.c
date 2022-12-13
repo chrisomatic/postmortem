@@ -198,6 +198,7 @@ void normalize(Vector2f* v)
     v->x *= r;
     v->y *= r;
 }
+
 void print_matrix(Matrix* mat)
 {
     printf("Matrix:\n");
