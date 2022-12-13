@@ -188,7 +188,7 @@ bool physics_check_collisions(Physics* phys1, Physics* phys2, double delta_t)
     if(!colliding)
         return false;
 
-    if(phys1->num_colliding_entities >= 4)
+    if(phys1->num_colliding_entities >= MAX_COLLIDING_ENTITIES)
     {
         LOGW("Too many colliding entities");
     }
@@ -201,161 +201,208 @@ bool physics_check_collisions(Physics* phys1, Physics* phys2, double delta_t)
 
 }
 
+typedef struct
+{
+    Physics* phys;
+    float dist;
+} PhysicsSortObj;
+
+static void sort_physics_obj(PhysicsSortObj lst[MAX_COLLIDING_ENTITIES], int count)
+{
+    // insertion sort
+    int i, j;
+    PhysicsSortObj key;
+    for (i = 1; i < count; i++) 
+    {
+        memcpy(&key, &lst[i], sizeof(PhysicsSortObj));
+        j = i - 1;
+
+        while (j >= 0 && lst[j].dist > key.dist)
+        {
+            memcpy(&lst[j+1], &lst[j], sizeof(PhysicsSortObj));
+            j = j - 1;
+        }
+        memcpy(&lst[j+1], &key, sizeof(PhysicsSortObj));
+    }
+
+}
+
 void physics_resolve_collisions(Physics* phys1)
 {
     int num_collisions = phys1->num_colliding_entities;
     if(num_collisions == 0)
         return;
 
-    Physics* phys2 = (Physics*)phys1->colliding_entities[0];
+    PhysicsSortObj obj[MAX_COLLIDING_ENTITIES] = {0};
 
-    // correct collision
-    float m1 = phys1->mass;
-    float m2 = phys2->mass;
-
-    Vector2f u1 = {phys1->vel.x,phys1->vel.y};
-    Vector2f u2 = {phys2->vel.x,phys2->vel.y};
-
-    Vector2f v1 = {0.0,0.0};
-    Vector2f v2 = {0.0,0.0};
-
-    float denom = m1+m2;
-
-    if(ABS(m1-m2) >= 9999.0)
+    if(num_collisions == 1)
     {
-        // immoveable
-        if(m1 > m2)
+        obj[0].phys = (Physics*)phys1->colliding_entities[0];
+    }
+    else
+    {
+
+        for(int i = 0; i < num_collisions; ++i)
         {
-            v2.x = 1.0;
-            v2.y = 1.0;
+            obj[i].phys = (Physics*)phys1->colliding_entities[i];
+            obj[i].dist = dist(phys1->prior_collision.x, phys1->prior_collision.y, obj[i].phys->prior_collision.x,obj[i].phys->prior_collision.y);
+        }
+
+        sort_physics_obj(obj,num_collisions);
+    }
+
+    for(int i = 0; i < num_collisions; ++i)
+    {
+        Physics* phys2 = obj[i].phys;
+
+        // correct collision
+        float m1 = phys1->mass;
+        float m2 = phys2->mass;
+
+        Vector2f u1 = {phys1->vel.x,phys1->vel.y};
+        Vector2f u2 = {phys2->vel.x,phys2->vel.y};
+
+        Vector2f v1 = {0.0,0.0};
+        Vector2f v2 = {0.0,0.0};
+
+        float denom = m1+m2;
+
+        if(ABS(m1-m2) >= 9999.0)
+        {
+            // immoveable
+            if(m1 > m2)
+            {
+                v2.x = 1.0;
+                v2.y = 1.0;
+            }
+            else
+            {
+                v1.x = 1.0;
+                v1.y = 1.0;
+            }
+        }
+        else if(m1 == m2)
+        {
+            if(u2.x == 0.0 && u2.y == 0.0)
+            {
+                v1.x = 1.0;
+                v1.y = 1.0;
+            }
+            else
+            {
+                v1.x = u2.x;
+                v1.y = u2.y;
+            }
+
+            if(u2.x == 0.0 && u2.y == 0.0)
+            {
+                v2.x = 1.0;
+                v2.y = 1.0;
+            }
+            else
+            {
+                v2.x = u1.x;
+                v2.y = u1.y;
+            }
+        }
+        else if(denom > 0.0)
+        {
+            float mf11 = (m1-m2)/denom;
+            float mf12 = (2.0*m2)/denom;
+            float mf21 = (m2-m1)/denom;
+            float mf22 = (2.0*m1)/denom;
+
+            v1.x = mf11*u1.x+mf12*u2.x;
+            v1.y = mf11*u1.y+mf12*u2.y;
+
+            v2.x = mf22*u1.x+mf21*u2.x;
+            v2.y = mf22*u1.y+mf21*u2.y;
         }
         else
         {
             v1.x = 1.0;
             v1.y = 1.0;
-        }
-    }
-    else if(m1 == m2)
-    {
-        if(u2.x == 0.0 && u2.y == 0.0)
-        {
-            v1.x = 1.0;
-            v1.y = 1.0;
-        }
-        else
-        {
-            v1.x = u2.x;
-            v1.y = u2.y;
-        }
 
-        if(u2.x == 0.0 && u2.y == 0.0)
-        {
             v2.x = 1.0;
             v2.y = 1.0;
         }
-        else
+
+        float ux = magn_fast(v1);
+        float uy = magn_fast(v2);
+
+        Vector2f ratio = {ABS(ux),ABS(uy)};
+        normalize(&ratio);
+
+        if(1.000 - ratio.x < 0.001) ratio.x = 1.0;
+        if(1.000 - ratio.y < 0.001) ratio.y = 1.0;
+
+        float dx = phys1->collision.x - phys2->collision.x;
+        float dy = phys1->collision.y - phys2->collision.y;
+
+        Vector2f adj1 = {0.0,0.0};
+        Vector2f adj2 = {0.0,0.0};
+
+        if(ABS(dx) > ABS(dy))
         {
-            v2.x = u1.x;
-            v2.y = u1.y;
-        }
-    }
-    else if(denom > 0.0)
-    {
-        float mf11 = (m1-m2)/denom;
-        float mf12 = (2.0*m2)/denom;
-        float mf21 = (m2-m1)/denom;
-        float mf22 = (2.0*m1)/denom;
-
-        v1.x = mf11*u1.x+mf12*u2.x;
-        v1.y = mf11*u1.y+mf12*u2.y;
-
-        v2.x = mf22*u1.x+mf21*u2.x;
-        v2.y = mf22*u1.y+mf21*u2.y;
-    }
-    else
-    {
-        v1.x = 1.0;
-        v1.y = 1.0;
-
-        v2.x = 1.0;
-        v2.y = 1.0;
-    }
-
-    float ux = magn_fast(v1);
-    float uy = magn_fast(v2);
-
-    Vector2f ratio = {ABS(ux),ABS(uy)};
-    normalize(&ratio);
-
-    if(1.000 - ratio.x < 0.001) ratio.x = 1.0;
-    if(1.000 - ratio.y < 0.001) ratio.y = 1.0;
-
-    float dx = phys1->collision.x - phys2->collision.x;
-    float dy = phys1->collision.y - phys2->collision.y;
-
-    Vector2f adj1 = {0.0,0.0};
-    Vector2f adj2 = {0.0,0.0};
-
-    if(ABS(dx) > ABS(dy))
-    {
-        if(phys1->prior_collision.x > phys2->prior_collision.x)
-        {
-            // move phys1 right, phys2 left
-            adj1.x = 1.0;
-            adj2.x = -1.0;
+            if(phys1->prior_collision.x > phys2->prior_collision.x)
+            {
+                // move phys1 right, phys2 left
+                adj1.x = 1.0;
+                adj2.x = -1.0;
+            }
+            else
+            {
+                // move phys1 right, phys2 left
+                adj1.x = -1.0;
+                adj2.x = 1.0;
+            }
         }
         else
         {
-            // move phys1 right, phys2 left
-            adj1.x = -1.0;
-            adj2.x = 1.0;
+            if(phys1->prior_collision.y > phys2->prior_collision.y)
+            {
+                // move phys1 down, phys2 up
+                adj1.y = 1.0;
+                adj2.y = -1.0;
+            }
+            else
+            {
+                // move phys1 up, phys2 down
+                adj1.y = -1.0;
+                adj2.y = 1.0;
+            }
         }
-    }
-    else
-    {
-        if(phys1->prior_collision.y > phys2->prior_collision.y)
+
+        adj1.x *= ratio.x;
+        adj1.y *= ratio.x;
+
+        adj2.x *= ratio.y;
+        adj2.y *= ratio.y;
+
+        const int max_loops = 32;
+        int num_loops = 0;
+
+        for(;;)
         {
-            // move phys1 down, phys2 up
-            adj1.y = 1.0;
-            adj2.y = -1.0;
+            num_loops++;
+            if(num_loops >= max_loops)
+                break;
+
+            phys1->pos.x += adj1.x;
+            phys1->pos.y += adj1.y;
+            phys2->pos.x += adj2.x;
+            phys2->pos.y += adj2.y;
+
+            //printf("loop %d: adj1: %f %f, adj2: %f %f\n",num_loops,adj1.x,adj1.y,adj2.x,adj2.y);
+
+            physics_apply_pos_offset(phys1, adj1.x, adj1.y);
+            physics_apply_pos_offset(phys2, adj2.x, adj2.y);
+
+            bool colliding = rectangles_colliding(&phys1->collision, &phys2->collision);
+
+            if(!colliding)
+                break;
         }
-        else
-        {
-            // move phys1 up, phys2 down
-            adj1.y = -1.0;
-            adj2.y = 1.0;
-        }
-    }
-
-    adj1.x *= ratio.x;
-    adj1.y *= ratio.x;
-
-    adj2.x *= ratio.y;
-    adj2.y *= ratio.y;
-
-    const int max_loops = 32;
-    int num_loops = 0;
-
-    for(;;)
-    {
-        num_loops++;
-        if(num_loops >= max_loops)
-            break;
-
-        phys1->pos.x += adj1.x;
-        phys1->pos.y += adj1.y;
-        phys2->pos.x += adj2.x;
-        phys2->pos.y += adj2.y;
-
-        //printf("loop %d: adj1: %f %f, adj2: %f %f\n",num_loops,adj1.x,adj1.y,adj2.x,adj2.y);
-
-        physics_apply_pos_offset(phys1, adj1.x, adj1.y);
-        physics_apply_pos_offset(phys2, adj2.x, adj2.y);
-
-        bool colliding = rectangles_colliding(&phys1->collision, &phys2->collision);
-
-        if(!colliding)
-            break;
     }
 
     phys1->num_colliding_entities = 0;

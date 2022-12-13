@@ -2,6 +2,8 @@
 
 #include "math2d.h"
 
+#define MAX_COLLIDING_ENTITIES 10 
+
 typedef struct
 {
     Rect pos;
@@ -17,7 +19,7 @@ typedef struct
     float max_linear_vel;
 
     int num_colliding_entities;
-    void* colliding_entities[4];
+    void* colliding_entities[MAX_COLLIDING_ENTITIES];
 } Physics;
 
 typedef struct

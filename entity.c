@@ -512,10 +512,11 @@ static void handle_collisions(EntityType type, void* data, double delta_t)
             if(collision)
             {
                 //@NOTE: update grid boxes?
-                physics_resolve_collisions(phys1);
             }
         }
     }
+
+    physics_resolve_collisions(phys1);
 }
 
 static void handle_proj_collisions(void* data, double delta_t)
