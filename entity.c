@@ -270,8 +270,52 @@ void entity_remove_from_grid_boxes(EntityType type, void* data)
     }
 }
 
+static void reset_total_adjs()
+{
+    for(int i = 0; i < MAX_CLIENTS;++i)
+    {
+        Player* p = &players[i];
+        if(p->active)
+        {
+            p->phys.total_adj.x = 0.0;
+            p->phys.total_adj.y = 0.0;
+        }
+    }
+
+    // zombies
+    for(int i = zlist->count - 1; i >= 0 ; --i)
+    {
+        Zombie* z = &zombies[i];
+        if(z->dead)
+            continue;
+
+        z->phys.total_adj.x = 0.0;
+        z->phys.total_adj.y = 0.0;
+    }
+    
+    // blocks
+    for(int i = 0; i < blist->count; ++i)
+    {
+        block_t* b = &blocks[i];
+        b->phys.total_adj.x = 0.0;
+        b->phys.total_adj.y = 0.0;
+    }
+
+    // projectiles
+    for(int i = plist->count - 1; i >= 0 ; --i)
+    {
+        Projectile* p = &projectiles[i];
+        if(p->dead)
+            continue;
+        p->phys.total_adj.x = 0.0;
+        p->phys.total_adj.y = 0.0;
+    }
+}
+
 void entities_handle_collisions(double delta_t)
 {
+    reset_total_adjs();
+
     // players
     for(int i = 0; i < MAX_CLIENTS;++i)
     {
@@ -380,6 +424,7 @@ static int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int c
         case ENTITY_TYPE_PROJECTILE:
         {
             Projectile* p = (Projectile*)data;
+            /*
             float dx = p->phys.collision.x - p->phys.prior_collision.x;
             float dy = p->phys.collision.y - p->phys.prior_collision.y;
 
@@ -387,9 +432,9 @@ static int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int c
             rect.y = p->phys.prior_collision.y + (dx/2.0);
             rect.w = p->phys.collision.w + ABS(dx);
             rect.h = p->phys.collision.w + ABS(dy);
-
+            */
+            rect = p->phys.collision;
             //printf("projectile: xywh: %f %f %f %f\n",rect.x,rect.y,rect.w,rect.h);
-            gfx_draw_rect(&rect, 0x00FFFF00, 0.0, 1.0,1.0, false, true);
 
         } break;
 

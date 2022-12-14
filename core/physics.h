@@ -2,7 +2,7 @@
 
 #include "math2d.h"
 
-#define MAX_COLLIDING_ENTITIES 16 
+#define MAX_COLLIDING_ENTITIES 4 
 
 typedef struct
 {
@@ -12,6 +12,8 @@ typedef struct
     Rect collision;
     Rect prior_collision;
     Rect hit;
+
+    Vector2f total_adj;
 
     Vector2f vel;
     Vector2f accel;

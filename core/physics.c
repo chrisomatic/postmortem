@@ -206,7 +206,7 @@ bool physics_check_collisions(Physics* phys1, Physics* phys2, double delta_t)
 
     if(phys1->num_colliding_entities >= MAX_COLLIDING_ENTITIES)
     {
-        LOGW("Too many colliding entities");
+        //LOGW("Too many colliding entities");
     }
     else
     {
@@ -347,6 +347,7 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
         r1 = r1 / total;
         r2 = r2 / total;
 
+        /*
         if(!slow)
         {
             // fast entity, try and prevent running through walls
@@ -382,6 +383,7 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
 
             slow = true;
         }
+        */
 
         float ax = MAX(phys1->collision.x-phys1->collision.w/2.0,phys2->collision.x-phys2->collision.w/2.0);
         float bx = MIN(phys1->collision.x+phys1->collision.w/2.0,phys2->collision.x+phys2->collision.w/2.0);
@@ -399,7 +401,7 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
 
         if(ABS(overlap.y) > ABS(overlap.x))
         {
-            if(phys1->prior_collision.x > phys2->prior_collision.x)
+            if(phys1->collision.x - phys1->total_adj.x > phys2->collision.x - phys2->total_adj.x )
             {
                 // move phys1 right, phys2 left
                 adj1.x = 1.0;
@@ -414,7 +416,12 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
         }
         else
         {
-            if(phys1->prior_collision.y > phys2->prior_collision.y)
+            if(phys2->total_adj.y > 16.0)
+            {
+                printf("%f %f\n", phys1->collision.y-phys1->total_adj.y,phys2->collision.y-phys2->total_adj.y);
+            }
+
+            if(phys1->collision.y - phys1->total_adj.y > phys2->collision.y - phys2->total_adj.y)
             {
                 // move phys1 down, phys2 up
                 adj1.y = 1.0;
@@ -428,47 +435,24 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
             }
         }
 
-        adj1.x *= r1;
-        adj1.y *= r1;
+        adj1.x *= (r1*overlap.x);
+        adj1.y *= (r1*overlap.y);
 
-        adj2.x *= r2;
-        adj2.y *= r2;
+        adj2.x *= (r2*overlap.x);
+        adj2.y *= (r2*overlap.y);
 
-        phys1->pos.x += (adj1.x*overlap.x);
-        phys1->pos.y += (adj1.y*overlap.y);
-        phys2->pos.x += (adj2.x*overlap.x);
-        phys2->pos.y += (adj2.y*overlap.y);
+        phys1->pos.x += adj1.x;
+        phys1->pos.y += adj1.y;
+        phys2->pos.x += adj2.x;
+        phys2->pos.y += adj2.y;
 
-        physics_apply_pos_offset(phys1, adj1.x*overlap.x, adj1.y*overlap.y);
-        physics_apply_pos_offset(phys2, adj2.x*overlap.x, adj2.y*overlap.y);
+        physics_apply_pos_offset(phys1, adj1.x, adj1.y);
+        physics_apply_pos_offset(phys2, adj2.x, adj2.y);
 
-        const int max_loops = 32;
-        int num_loops = 0;
-
-        for(;;)
-        {
-            if(!is_colliding(phys1, phys2, NULL, delta_t))
-                break;
-
-            //LOGW("Still colliding!?!");
-
-            num_loops++;
-            if(num_loops >= max_loops)
-                break;
-
-            phys1->pos.x += adj1.x;
-            phys1->pos.y += adj1.y;
-            phys2->pos.x += adj2.x;
-            phys2->pos.y += adj2.y;
-
-            physics_apply_pos_offset(phys1, adj1.x, adj1.y);
-            physics_apply_pos_offset(phys2, adj2.x, adj2.y);
-        }
-
-        if(num_loops == max_loops)
-        {
-            LOGW("Num loops hit max loops! adj1: %f %f, adj2: %f %f", adj1.x,adj1.y,adj2.x,adj2.y);
-        }
+        phys1->total_adj.x += adj1.x;
+        phys1->total_adj.y += adj1.y;
+        phys2->total_adj.x += adj2.x;
+        phys2->total_adj.y += adj2.y;
 
         memcpy(&phys1->prior_collision, &phys1->collision,sizeof(Rect));
         memcpy(&phys2->prior_collision, &phys2->collision,sizeof(Rect));
