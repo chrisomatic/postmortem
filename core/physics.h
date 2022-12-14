@@ -2,7 +2,7 @@
 
 #include "math2d.h"
 
-#define MAX_COLLIDING_ENTITIES 10 
+#define MAX_COLLIDING_ENTITIES 16 
 
 typedef struct
 {
