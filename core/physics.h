@@ -20,6 +20,7 @@ typedef struct
 
     int num_colliding_entities;
     void* colliding_entities[MAX_COLLIDING_ENTITIES];
+    bool  collision_overlap[MAX_COLLIDING_ENTITIES];
 } Physics;
 
 typedef struct

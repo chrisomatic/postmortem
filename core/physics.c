@@ -171,18 +171,23 @@ void physics_limit_pos(Rect* limit, Rect* pos)
     // printf("after: "); print_rect(pos);
 }
 
-static bool is_colliding(Physics* phys1, Physics* phys2, double delta_t)
+static bool is_colliding(Physics* phys1, Physics* phys2, bool* overlapping, double delta_t)
 {
     bool colliding = rectangles_colliding(&phys1->collision, &phys2->collision);
 
-    if(!IS_RECT_EMPTY(&phys1->prior_collision) && !IS_RECT_EMPTY(&phys1->collision))
+    if(overlapping)
+        *overlapping = colliding;
+
+    if(!colliding && !IS_RECT_EMPTY(&phys1->prior_collision) && !IS_RECT_EMPTY(&phys1->collision))
     {
         float distance = dist(phys1->prior_collision.x, phys1->prior_collision.y, phys1->collision.x,phys1->collision.y);
-        if(!colliding && distance >= 10.0)
+        if(distance >= 10.0)
         {
             // more hardcore check
-            LOGI("Entity is moving more than 10 pixels!\n");
+            //LOGI("Entity is moving more than 10 pixels!\n");
             colliding = are_rects_colliding(&phys1->prior_collision, &phys1->collision, &phys2->collision);
+            if(overlapping)
+                *overlapping = false;
         }
     }
 
@@ -191,7 +196,8 @@ static bool is_colliding(Physics* phys1, Physics* phys2, double delta_t)
 
 bool physics_check_collisions(Physics* phys1, Physics* phys2, double delta_t)
 {
-    bool colliding = is_colliding(phys1, phys2,delta_t);
+    bool overlapping;
+    bool colliding = is_colliding(phys1, phys2,&overlapping, delta_t);
 
     if(!colliding) return false;
 
@@ -201,7 +207,9 @@ bool physics_check_collisions(Physics* phys1, Physics* phys2, double delta_t)
     }
     else
     {
-        phys1->colliding_entities[phys1->num_colliding_entities++] = (void*)phys2;
+        phys1->colliding_entities[phys1->num_colliding_entities] = (void*)phys2;
+        phys1->collision_overlap[phys1->num_colliding_entities] = overlapping;
+        phys1->num_colliding_entities++;
     }
 
     return true;
@@ -212,6 +220,7 @@ typedef struct
 {
     Physics* phys;
     float dist;
+    bool overlapping;
 } PhysicsSortObj;
 
 static void sort_physics_obj(PhysicsSortObj lst[MAX_COLLIDING_ENTITIES], int count)
@@ -245,6 +254,7 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
     if(num_collisions == 1)
     {
         obj[0].phys = (Physics*)phys1->colliding_entities[0];
+        obj[0].overlapping = phys1->collision_overlap;
     }
     else
     {
@@ -253,6 +263,7 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
         {
             obj[i].phys = (Physics*)phys1->colliding_entities[i];
             obj[i].dist = dist(phys1->prior_collision.x, phys1->prior_collision.y, obj[i].phys->prior_collision.x,obj[i].phys->prior_collision.y);
+            obj[i].overlapping = phys1->collision_overlap[i];
         }
 
         sort_physics_obj(obj,num_collisions);
@@ -261,6 +272,7 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
     for(int i = 0; i < num_collisions; ++i)
     {
         Physics* phys2 = obj[i].phys;
+        bool overlapping = obj[i].overlapping;
 
         // correct collision
         float m1 = phys1->mass;
@@ -333,53 +345,11 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
         r1 = r1 / total;
         r2 = r2 / total;
 
-        //printf("%f %f = %f\n",r1,r2,r1+r2);
-
-        /*
-        Vector2f d1 = {phys1->collision.x - phys1->prior_collision.x, phys1->collision.y - phys1->prior_collision.y};
-        Vector2f d2 = {phys2->collision.x - phys2->prior_collision.x, phys2->collision.y - phys2->prior_collision.y};
-
-        if(ABS(d1.x) > ABS(d1.y))
-        {
-            if(d1.x < 0.0) adj1.x = 1.0;
-            else           adj1.x = -1.0;
-        }
-        else
-        {
-            if(d1.y < 0.0) adj1.y = 1.0;
-            else           adj1.y = -1.0;
-        }
-
-        if(ABS(d2.x) > ABS(d2.y))
-        {
-            if(d2.x < 0.0) adj2.x = 1.0;
-            else           adj2.x = -1.0;
-        }
-        else
-        {
-            if(d2.y < 0.0) adj2.y = 1.0;
-            else           adj2.y = -1.0;
-        }
-        */
-
         Vector2f adj1 = {0.0,0.0};
         Vector2f adj2 = {0.0,0.0};
 
-        /*
-        float ax = MAX(phys1->collision.x,phys2->collision.x);
-        float bx = MIN(phys1->collision.x+phys1->collision.w/2.0,phys2->collision.x+phys2->collision.w/2.0);
-
-        float ay = MAX(phys1->collision.y,phys2->collision.y);
-        float by = MIN(phys1->collision.y+phys1->collision.h/2.0,phys2->collision.y+phys2->collision.h/2.0);
-
-        Vector2f overlap = {0.0,0.0};
-
-        overlap.x = MAX(0.0,bx - ax); // width
-        overlap.y = MAX(0.0,by - ay); // height
-        */
-
-        float dx = phys1->collision.x - phys2->collision.x;
-        float dy = phys1->collision.y - phys2->collision.y;
+        float dx = overlapping ? phys1->collision.x - phys2->collision.x : phys1->prior_collision.x - phys2->prior_collision.x;
+        float dy = overlapping ? phys1->collision.y - phys2->collision.y : phys1->prior_collision.y - phys2->prior_collision.y;
 
         if(ABS(dx) > ABS(dy))
         {
@@ -391,7 +361,7 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
             }
             else
             {
-                // move phys1 right, phys2 left
+                // move phys1 left, phys2 right
                 adj1.x = -1.0;
                 adj2.x = 1.0;
             }
@@ -412,50 +382,56 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
             }
         }
 
-        adj1.x *= r1;
-        adj1.y *= r1;
-
-        adj2.x *= r2;
-        adj2.y *= r2;
-
-        const int max_loops = 32;
-        int num_loops = 0;
-
-        if(num_collisions == 1)
+        if(!overlapping)
         {
-            // if only 1 collision, we know the entities are currently colliding before any adjustment,
-            // so adjust first and check once after
-            for(;;)
-            {
-                num_loops++;
-                if(num_loops >= max_loops)
-                    break;
+            float dx = phys1->collision.x - phys1->prior_collision.x;
+            float dy = phys1->collision.y - phys1->prior_collision.y;
 
-                phys1->pos.x += adj1.x;
-                phys1->pos.y += adj1.y;
-                phys2->pos.x += adj2.x;
-                phys2->pos.y += adj2.y;
+            phys1->pos.x += dx;
+            phys1->pos.y += dy;
 
-                physics_apply_pos_offset(phys1, adj1.x, adj1.y);
-                physics_apply_pos_offset(phys2, adj2.x, adj2.y);
-
-                bool colliding = is_colliding(phys1, phys2, delta_t);
-
-                if(!colliding)
-                    break;
-            }
-
-            memcpy(&phys1->prior_collision, &phys1->collision,sizeof(Rect));
-            memcpy(&phys2->prior_collision, &phys2->collision,sizeof(Rect));
+            physics_apply_pos_offset(phys1, dx,dy);
+            LOGW("non-overlapping collision!");
         }
         else
         {
+            float ax = MAX(phys1->collision.x-phys1->collision.w/2.0,phys2->collision.x-phys2->collision.w/2.0);
+            float bx = MIN(phys1->collision.x+phys1->collision.w/2.0,phys2->collision.x+phys2->collision.w/2.0);
+
+            float ay = MAX(phys1->collision.y-phys1->collision.h/2.0,phys2->collision.y-phys2->collision.h/2.0);
+            float by = MIN(phys1->collision.y+phys1->collision.h/2.0,phys2->collision.y+phys2->collision.h/2.0);
+
+            Vector2f overlap = {
+                .x = MAX(0.0,bx - ax),
+                .y = MAX(0.0,by - ay)
+            };
+
+            adj1.x *= r1;
+            adj1.y *= r1;
+
+            adj2.x *= r2;
+            adj2.y *= r2;
+
+            phys1->pos.x += (adj1.x*overlap.x);
+            phys1->pos.y += (adj1.y*overlap.y);
+            phys2->pos.x += (adj2.x*overlap.x);
+            phys2->pos.y += (adj2.y*overlap.y);
+
+            physics_apply_pos_offset(phys1, adj1.x*overlap.x, adj1.y*overlap.y);
+            physics_apply_pos_offset(phys2, adj2.x*overlap.x, adj2.y*overlap.y);
+
+            //memcpy(&phys1->prior_collision, &phys1->collision,sizeof(Rect));
+            //memcpy(&phys2->prior_collision, &phys2->collision,sizeof(Rect));
+
+            const int max_loops = 32;
+            int num_loops = 0;
+
             for(;;)
             {
-                bool colliding = is_colliding(phys1, phys2, delta_t);
-
-                if(!colliding)
+                if(!is_colliding(phys1, phys2, NULL, delta_t))
                     break;
+
+                //LOGW("Still colliding!?!");
 
                 num_loops++;
                 if(num_loops >= max_loops)
@@ -470,17 +446,15 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
                 physics_apply_pos_offset(phys2, adj2.x, adj2.y);
             }
 
-            memcpy(&phys1->prior_collision, &phys1->collision,sizeof(Rect));
-            memcpy(&phys2->prior_collision, &phys2->collision,sizeof(Rect));
+            if(num_loops == max_loops)
+            {
+                LOGW("Num loops hit max loops!");
+            }
         }
-        
 
-        if(num_loops == max_loops)
-        {
-            LOGW("Num loops hit max loops!");
-        }
+        memcpy(&phys1->prior_collision, &phys1->collision,sizeof(Rect));
+        memcpy(&phys2->prior_collision, &phys2->collision,sizeof(Rect));
     }
-
 
     phys1->num_colliding_entities = 0;
 

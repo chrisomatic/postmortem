@@ -1458,7 +1458,7 @@ void player_draw_all()
 void player_draw_crosshair(Player* p)
 {
     // crosshair
-    gfx_draw_image_ignore_light(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 1.0,0.0,0.80, false,true);
+    gfx_draw_image_ignore_light(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 0.1,0.0,0.80, false,true);
 }
 
 void player_weapon_melee_check_collision(Player* p)

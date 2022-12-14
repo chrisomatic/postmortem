@@ -369,19 +369,32 @@ static int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int c
         case ENTITY_TYPE_PLAYER:
         {
             Player* p = (Player*)data;
-            rect = p->phys.actual_pos;
+            rect = p->max_size; // @FIXME
+            rect.w *= p->scale;
+            rect.h *= p->scale;
         } break;
 
         case ENTITY_TYPE_PROJECTILE:
         {
             Projectile* p = (Projectile*)data;
-            rect = p->phys.collision;
+            float dx = p->phys.collision.x - p->phys.prior_collision.x;
+            float dy = p->phys.collision.y - p->phys.prior_collision.y;
+
+            rect.x = p->phys.prior_collision.x + (dx/2.0);
+            rect.y = p->phys.prior_collision.y + (dx/2.0);
+            rect.w = p->phys.collision.w + ABS(dx);
+            rect.h = p->phys.collision.w + ABS(dy);
+
+            //printf("projectile: xywh: %f %f %f %f\n",rect.x,rect.y,rect.w,rect.h);
+            gfx_draw_rect(&rect, 0x00FFFF00, 0.0, 1.0,1.0, false, true);
+
         } break;
 
         case ENTITY_TYPE_ZOMBIE:
         {
             Zombie* z = (Zombie*)data;
-            rect = z->phys.actual_pos;
+            rect = zombie_get_max_size(z);
+
         } break;
 
         case ENTITY_TYPE_BLOCK:
@@ -390,6 +403,10 @@ static int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int c
             rect = b->phys.pos;
         } break;
     }
+
+    // increase space by a little to allow considering of neighboring grid boxes
+    rect.w +=1;
+    rect.h +=1;
 
     int count = rect_get_grid_boxes(&rect, 1, rows, cols);
     return count;

@@ -676,16 +676,26 @@ bool zombie_draw(Zombie* z, bool add_to_existing_batch)
     return false;
 }
 
-void zombie_draw_debug(Zombie* z)
+Rect zombie_get_max_size(Zombie* z)
 {
-    if(z == NULL) return;
+    Rect max_size = {0};
+
     float maxw = maxwh[z->model_index].x * z->scale;
     float maxh = maxwh[z->model_index].y * z->scale;
-    Rect max_size = {0};
+
     max_size.x = z->phys.actual_pos.x;
     max_size.y = z->phys.actual_pos.y;
     max_size.w = maxw;
     max_size.h = maxh;
+
+    return max_size;
+}
+
+void zombie_draw_debug(Zombie* z)
+{
+    if(z == NULL) return;
+
+    Rect max_size = zombie_get_max_size(z);
 
     bool draw_debug_stuff = (z == zombie_get_by_id(zombie_info_id));
     if(zombie_debug) draw_debug_stuff = true;
@@ -699,8 +709,8 @@ void zombie_draw_debug(Zombie* z)
 
         // health bars
         float h = 4.0;
-        float y = z->phys.actual_pos.y + maxh * 0.5 + h/2.0 + 2.0;
-        float w = maxw;
+        float y = z->phys.actual_pos.y + max_size.h * 0.5 + h/2.0 + 2.0;
+        float w = max_size.w;
         float x = z->phys.actual_pos.x;
 
         Rect r = {0};

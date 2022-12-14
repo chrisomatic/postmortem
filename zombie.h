@@ -129,5 +129,7 @@ void zombies_draw();
 Zombie* zombie_get_by_id(uint32_t id);
 void zombie_kill_all();
 
+Rect zombie_get_max_size(Zombie* z);
+
 const char* zombie_anim_state_str(ZombieAnimState anim_state);
 void zombie_melee_check_collision(Zombie* z);
