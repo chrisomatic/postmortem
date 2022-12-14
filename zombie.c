@@ -21,7 +21,7 @@
 // #define IMG_ELEMENT_W 128
 // #define IMG_ELEMENT_H 128
 
-#define NUM_ZOMBIES_INIT    1
+#define NUM_ZOMBIES_INIT    0
 
 uint32_t zombie_info_id = 0xFFFFFFFF;
 bool zombie_debug = false;

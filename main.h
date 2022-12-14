@@ -20,6 +20,8 @@ typedef enum
     ROLE_SERVER,
 } GameRole;
 
+#define DEBUG_PROJ_GRIDS    0
+
 #define VIEW_WIDTH   1200
 #define VIEW_HEIGHT  800
 
@@ -36,6 +38,7 @@ typedef enum
 
 #define DEBUG_PRINT()   printf("%d %s %s()\n", __LINE__, __FILE__, __func__)
 
+extern bool paused;
 extern Timer game_timer;
 extern GameRole role;
 extern Vector2f aim_camera_offset;

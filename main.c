@@ -27,6 +27,7 @@
 // Global Vars
 // =========================
 
+bool paused = false;
 Timer game_timer = {0};
 GameRole role;
 Vector2f aim_camera_offset = {0};
@@ -396,6 +397,12 @@ void camera_set()
 
 void simulate(double delta_t)
 {
+    if(paused)
+    {
+        player_update(player,delta_t);
+        return;
+    }
+
     gfx_clear_lines();
 
     camera_set();
@@ -551,6 +558,14 @@ void draw_debug()
         block_draw_debug(&blocks[i]);
     }
 
+    // projectiles
+    // -----------------------------------------------------------------------
+    for(int i = 0; i < plist->count; ++i)
+    {
+        projectile_draw_debug(&projectiles[i]);
+    }
+
+
     // grid box counts
     // -----------------------------------------------------------------------
     for(int r = (wr1-1); r < (wr2+1); ++r)
@@ -570,15 +585,31 @@ void draw()
     gfx_clear_buffer(50,50,50);
 
     world_draw();
-    // gfx_draw_lines();
 
     entities_draw(true);
+
+#if DEBUG_PROJ_GRIDS
+    if(pg_count > 0)
+    {
+        gfx_add_line(cb.x, cb.y, pcb.x, pcb.y, COLOR_RED);
+    }
+#endif
 
     gfx_draw_lines();
 
     draw_debug();
 
     gui_draw();
+
+#if DEBUG_PROJ_GRIDS
+    for(int i = 0; i < pg_count; ++i)
+    {
+        gfx_draw_rect(&pg[i], COLOR_BLUE, 0, 1.0, 0.3, true, true);
+        gfx_draw_rect(&cb, COLOR_COLLISON, 0, 1.0, 1.0, false, true);
+        gfx_draw_rect(&pcb, COLOR_ORANGE, 0, 1.0, 1.0, false, true);
+        gfx_draw_string(pg[i].x, pg[i].y, COLOR_BLACK, 0.13, 0, 1.0, true, false, "%d", i);
+    }
+#endif
 
     player_draw_offscreen();
     player_draw_crosshair(player);

@@ -48,8 +48,9 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
 {
     Projectile proj = {0};
 
-    float speed = gun->fire_speed;
-    // speed = 10.0;
+    // float speed = gun->fire_speed;
+    float speed = gun->fire_speed*10000.0;
+    // speed = 400.0;
 
     proj.sprite_index = gun->projectile_type;
     proj.damage = gun->power + proj.power;
@@ -63,9 +64,11 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
     coords_to_map_grid(proj.phys.pos.x, proj.phys.pos.y, &proj.grid_pos.x, &proj.grid_pos.y);
     memcpy(&proj.grid_pos_prior, &proj.grid_pos, sizeof(Vector2i));
 
-    Rect* vr = &gfx_images[projectile_image_set].visible_rects[proj.sprite_index];
-    proj.phys.collision.w = vr->w;
-    proj.phys.collision.h = vr->h;
+    // Rect* vr = &gfx_images[projectile_image_set].visible_rects[proj.sprite_index];
+    // proj.phys.collision.w = vr->w;
+    // proj.phys.collision.h = vr->h;
+    proj.phys.collision.w = 4.0;
+    proj.phys.collision.h = 4.0;
     update_hurt_box(&proj);
 
     int mx = p->mouse_x;
@@ -118,12 +121,18 @@ void projectile_update(float delta_t)
         if(proj->dead)
             continue;
 
-        proj->time += delta_t;
+
+
         if(proj->time >= proj->ttl)
         {
             proj->dead = true;
             continue;
         }
+
+        delta_t = RANGE(delta_t, 0.0, proj->ttl - proj->time);
+
+        proj->time += delta_t;
+
 
         proj->phys.pos.x += delta_t*proj->vel.x;
         proj->phys.pos.y -= delta_t*proj->vel.y; // @minus
@@ -167,20 +176,29 @@ void projectile_update(float delta_t)
 
 void projectile_draw()
 {
+    return;
+
     for(int i = 0; i < plist->count; ++i)
     {
         Projectile* proj = &projectiles[i];
 
-        if(is_in_camera_view(&proj->phys.collision))
-        {
-            //gfx_add_line(proj->phys.collision.x + proj->phys.collision.w/2.0, proj->phys.collision.y + proj->phys.collision.h/2.0, proj->phys.prior_collision.x + proj->phys.prior_collision.w/2.0, proj->phys.prior_collision.y + proj->phys.prior_collision.h/2.0, 0x00FFFF00);
+        // if(is_in_camera_view(&proj->phys.collision))
+        // {
+        //     //gfx_add_line(proj->phys.collision.x + proj->phys.collision.w/2.0, proj->phys.collision.y + proj->phys.collision.h/2.0, proj->phys.prior_collision.x + proj->phys.prior_collision.w/2.0, proj->phys.prior_collision.y + proj->phys.prior_collision.h/2.0, 0x00FFFF00);
+        //     //gfx_draw_image(projectile_image_set,proj->sprite_index,proj->phys.pos.x,proj->phys.pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0, false,true);
+        //     if(debug_enabled)
+        //     {
+        //         gfx_draw_rect(&proj->phys.collision, 0x0000FFFF, 0.0, 1.0,1.0, false, true);
+        //     }
+        // }
+    }
+}
 
-            //gfx_draw_image(projectile_image_set,proj->sprite_index,proj->phys.pos.x,proj->phys.pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0, false,true);
-
-            if(debug_enabled)
-            {
-                gfx_draw_rect(&proj->phys.collision, 0x0000FFFF, 0.0, 1.0,1.0, false, true);
-            }
-        }
+void projectile_draw_debug(Projectile* proj)
+{
+    if(is_in_camera_view(&proj->phys.collision))
+    {
+        gfx_draw_rect(&proj->phys.prior_collision, COLOR_ORANGE, 0.0, 1.0,1.0, false, true);
+        gfx_draw_rect(&proj->phys.collision, COLOR_COLLISON, 0.0, 1.0,1.0, false, true);
     }
 }

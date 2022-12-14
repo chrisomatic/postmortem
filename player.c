@@ -26,6 +26,8 @@
 // ------------------------------------------------------------
 Player players[MAX_CLIENTS];
 Player* player = &players[0];
+Player* p2 = &players[2];
+
 int player_count = 0;
 uint32_t player_colors[MAX_CLIENTS] = {
     COLOR_BLUE,
@@ -189,10 +191,18 @@ void player_init_controls(Player* p)
     window_controls_add_key(&p->actions[PLAYER_ACTION_EDITOR].state, GLFW_KEY_F3);
     window_controls_add_key(&p->actions[PLAYER_ACTION_MENU].state, GLFW_KEY_ESCAPE);
 
-    window_controls_add_key(&p->actions[PLAYER_ACTION_P2_UP].state, GLFW_KEY_UP);
-    window_controls_add_key(&p->actions[PLAYER_ACTION_P2_DOWN].state, GLFW_KEY_DOWN);
-    window_controls_add_key(&p->actions[PLAYER_ACTION_P2_LEFT].state, GLFW_KEY_LEFT);
-    window_controls_add_key(&p->actions[PLAYER_ACTION_P2_RIGHT].state, GLFW_KEY_RIGHT);
+    if(role == ROLE_LOCAL)
+    {
+        window_controls_add_key(&p->actions[PLAYER_ACTION_PAUSE].state, GLFW_KEY_P);
+    }
+}
+
+void player_init_debug_controls(Player* p)
+{
+    window_controls_add_key(&p->actions[PLAYER_ACTION_UP].state, GLFW_KEY_UP);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_DOWN].state, GLFW_KEY_DOWN);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_LEFT].state, GLFW_KEY_LEFT);
+    window_controls_add_key(&p->actions[PLAYER_ACTION_RIGHT].state, GLFW_KEY_RIGHT);
 }
 
 static void player_init(int index)
@@ -341,6 +351,10 @@ void players_init()
                 LOGI("My player: %d", i);
                 player_init_controls(p);
                 p->active = true;
+            }
+            if(p2 == p)
+            {
+                player_init_debug_controls(p2);
             }
         }
 
@@ -954,6 +968,40 @@ void player_update(Player* p, double delta_t)
 {
     if(!p->active) return;
 
+    for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
+    {
+        PlayerAction* pa = &p->actions[i];
+        if(pa->state && !pa->prior_state)
+        {
+            pa->toggled_on = true;
+        }
+        else
+        {
+            pa->toggled_on = false;
+        }
+
+        if(!pa->state && pa->prior_state)
+        {
+            pa->toggled_off = true;
+        }
+        else
+        {
+            pa->toggled_off = false;
+        }
+
+        pa->prior_state = pa->state;
+    }
+
+    if(p->actions[PLAYER_ACTION_PAUSE].toggled_on)
+    {
+        paused = !paused;
+    }
+
+    if(paused)
+    {
+        return;
+    }
+
     player_add_detect_radius(p, delta_t * -0.8);
 
     window_get_mouse_world_coords(&player->mouse_x, &player->mouse_y);
@@ -976,48 +1024,6 @@ void player_update(Player* p, double delta_t)
             physics_apply_pos_offset(&z->phys, dx, dy);
             zombie_update_boxes(z);
         }
-    }
-
-    Player* p2 = &players[2];
-    bool skip_actions = false;
-    if(p == p2 && role == ROLE_LOCAL)
-    {
-        skip_actions = true;
-    }
-
-    if(!skip_actions)
-    {
-        for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
-        {
-            PlayerAction* pa = &p->actions[i];
-            if(pa->state && !pa->prior_state)
-            {
-                pa->toggled_on = true;
-            }
-            else
-            {
-                pa->toggled_on = false;
-            }
-
-            if(!pa->state && pa->prior_state)
-            {
-                pa->toggled_off = true;
-            }
-            else
-            {
-                pa->toggled_off = false;
-            }
-
-            pa->prior_state = pa->state;
-        }
-    }
-
-    if(p == player && p2->active)
-    {
-        memcpy(&p2->actions[PLAYER_ACTION_UP], &p->actions[PLAYER_ACTION_P2_UP], sizeof(PlayerAction));
-        memcpy(&p2->actions[PLAYER_ACTION_DOWN], &p->actions[PLAYER_ACTION_P2_DOWN], sizeof(PlayerAction));
-        memcpy(&p2->actions[PLAYER_ACTION_LEFT], &p->actions[PLAYER_ACTION_P2_LEFT], sizeof(PlayerAction));
-        memcpy(&p2->actions[PLAYER_ACTION_RIGHT], &p->actions[PLAYER_ACTION_P2_RIGHT], sizeof(PlayerAction));
     }
 
     if(p->actions[PLAYER_ACTION_SPAWN_ZOMBIE].toggled_on)

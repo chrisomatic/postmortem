@@ -319,7 +319,11 @@ static int rect_get_grid_boxes(Rect* rect, int radius, int* rows, int* cols)
     int row = 0, col = 0;
     coords_to_world_grid(rect->x, rect->y, &row, &col);
 
+    // bool in_world = !(row < 0 || col < 0 || row >= WORLD_GRID_ROWS_MAX || col >= WORLD_GRID_COLS_MAX);
+    
     int count = 0;
+    row = RANGE(row, 0, WORLD_GRID_ROWS_MAX);
+    col = RANGE(col, 0, WORLD_GRID_COLS_MAX);
     rows[count] = row;
     cols[count] = col;
     count++;
@@ -340,7 +344,6 @@ static int rect_get_grid_boxes(Rect* rect, int radius, int* rows, int* cols)
             if(_row >= WORLD_GRID_ROWS_MAX || _col >= WORLD_GRID_COLS_MAX) continue;
 
             if(dbg) printf("%d, %d\n", _row, _col);
-
 
             Rect check = {0};
             world_grid_to_rect(_row, _col, &check);
@@ -531,16 +534,173 @@ static void handle_collisions(EntityType type, void* data, double delta_t)
     physics_resolve_collisions(phys1, delta_t);
 }
 
+#if DEBUG_PROJ_GRIDS
+Rect pg[20] = {0};
+int pg_count = 0;
+Rect cb = {0};
+Rect pcb = {0};
+#endif
+
+static int scum(Projectile* proj, double delta_t, int rows[20], int cols[20])
+{
+
+    int gc = 0;
+
+    Rect* rc = &proj->phys.collision;
+    Rect* prc = &proj->phys.prior_collision;
+
+#if DEBUG_PROJ_GRIDS
+    pg_count = 0;
+    cb = *rc;
+    pcb = *prc;
+#endif
+
+    int edge_rows[8] = {0};
+    int edge_cols[8] = {0};
+
+    int pcount = rect_get_grid_boxes(prc, 1, edge_rows, edge_cols);
+    int ccount = rect_get_grid_boxes(rc, 1, edge_rows+pcount, edge_cols+pcount);
+    int count = pcount + ccount;
+
+    if(count == 0)
+    {
+        printf("count is 0\n");
+        return 0;
+    }
+
+    int min_row=edge_rows[0], max_row=edge_rows[0], min_col=edge_cols[0], max_col=edge_cols[0];
+    for(int i = 1; i < count; ++i)
+    {
+        int r = edge_rows[i];
+        int c = edge_cols[i];
+        if(r < min_row) min_row = r;
+        if(r > max_row) max_row = r;
+        if(c < min_col) min_col = c;
+        if(c > max_col) max_col = c;
+    }
+
+    printf("-----------------------------------------------------------------------------\n");
+    printf("min: %d, %d\n", min_row, min_col);
+    printf("max: %d, %d\n", max_row, max_col);
+
+    // 1 grid space
+    if(min_row == max_row && min_col == max_col)
+    {
+        rows[gc] = min_row;
+        cols[gc] = min_col;
+        gc = 1;
+
+#if DEBUG_PROJ_GRIDS
+        pg_count = 0;
+        world_grid_to_rect(min_row, min_col, &pg[pg_count++]);
+#endif
+
+        goto scum_exit;
+    }
+
+
+    int rrange = max_row - min_row;
+    int crange = max_col - min_col;
+
+    int xdir = 1;   // moving right
+    int start_col = min_col;
+    if(prc->x > rc->x)
+    {
+        xdir = -1;  // moving left
+        start_col = max_col;
+    }
+
+    int ydir = 1;   // moving down
+    int start_row = min_row;
+    if(prc->y > rc->y)
+    {
+        ydir = -1;  // moving up
+        start_row = max_row;
+    }
+
+
+    if(min_row == max_row)
+    {
+
+        for(int i = 0; i <= crange; ++i)
+        {
+            int c = start_col + i*xdir;
+            rows[gc] = min_row;
+            cols[gc] = c;
+            gc++;
+            if(gc >= 20) goto scum_exit;
+        }
+
+    }
+    else if(min_col == max_col)
+    {
+
+        for(int i = 0; i <= rrange; ++i)
+        {
+            int r = start_row + i*ydir;
+            rows[gc] = r;
+            cols[gc] = min_col;
+            gc++;
+            if(gc >= 20) goto scum_exit;
+        }
+
+    }
+    else
+    {
+
+        LineSeg segs[5] = {0};
+        rects_to_ling_segs(prc, rc, segs);
+
+        for(int i = 0; i <= crange; ++i)
+        {
+            for(int j = 0; j <= rrange; ++j)
+            {
+                int c = start_col + i*xdir;
+                int r = start_row + j*ydir;
+                Rect wr = {0};
+                world_grid_to_rect(r, c, &wr);
+                bool intersect = are_line_segs_intersecting_rect(segs, 5, &wr);
+                if(intersect)
+                {
+                    rows[gc] = r;
+                    cols[gc] = c;
+                    gc++;
+                    if(gc >= 20) goto scum_exit;
+                }
+
+            }
+        }
+
+    }
+
+scum_exit:
+
+#if DEBUG_PROJ_GRIDS
+    pg_count = 0;
+    for(int i = 0; i < gc; ++i)
+    {
+        world_grid_to_rect(rows[i], cols[i], &pg[pg_count++]);
+    }
+#endif
+
+    return gc;
+}
+
 static void handle_proj_collisions(void* data, double delta_t)
 {
-    int rows[4] = {0};
-    int cols[4] = {0};
-
     EntityType type = ENTITY_TYPE_PROJECTILE;
-
     Projectile* proj = (Projectile*)data;
 
+    if(proj == &projectiles[0])
+    {
+        int all_rows[20],all_cols[20];
+        scum(proj, delta_t, all_rows, all_cols);
+    }
+
+    int rows[4] = {0};
+    int cols[4] = {0};
     int count = entity_get_grid_boxes(type, data, rows, cols);
+
 
     Physics* phys1 = &proj->phys;
     if(!phys1)

@@ -305,24 +305,35 @@ bool is_line_seg_intersecting_rect(LineSeg* l, Rect* r)
     return false;
 }
 
-bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check)
+
+bool are_line_segs_intersecting_rect(LineSeg* segs, int seg_count, Rect* check)
 {
-    // prior_s is the rect for t-1
-    // check rect is the thing we're checking to see if s is intersecting it
+    for(int i = 0; i < seg_count; ++i)
+    {
+        if(is_line_seg_intersecting_rect(&segs[i], check))
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
-    float px = prior_s->x;
-    float py = prior_s->y;
-    float px0 = prior_s->x - prior_s->w/2.0;
-    float px1 = prior_s->x + prior_s->w/2.0;
-    float py0 = prior_s->y - prior_s->h/2.0;
-    float py1 = prior_s->y + prior_s->h/2.0;
 
-    float cx = curr_s->x;
-    float cy = curr_s->y;
-    float cx0 = curr_s->x - curr_s->w/2.0;
-    float cx1 = curr_s->x + curr_s->w/2.0;
-    float cy0 = curr_s->y - curr_s->h/2.0;
-    float cy1 = curr_s->y + curr_s->h/2.0;
+void rects_to_ling_segs(Rect* a, Rect* b, LineSeg out[5])
+{
+    float px = a->x;
+    float py = a->y;
+    float px0 = a->x - a->w/2.0;
+    float px1 = a->x + a->w/2.0;
+    float py0 = a->y - a->h/2.0;
+    float py1 = a->y + a->h/2.0;
+
+    float cx = b->x;
+    float cy = b->y;
+    float cx0 = b->x - b->w/2.0;
+    float cx1 = b->x + b->w/2.0;
+    float cy0 = b->y - b->h/2.0;
+    float cy1 = b->y + b->h/2.0;
 
     LineSeg sc =  {{px, py},{cx, cy}};
     LineSeg s00 = {{px0, py0},{cx0, cy0}};
@@ -330,22 +341,19 @@ bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check)
     LineSeg s10 = {{px0, py1},{cx0, cy1}};
     LineSeg s11 = {{px1, py1},{cx1, cy1}};
 
-    bool bc = is_line_seg_intersecting_rect(&sc, check);
-    if(bc) return true;
+    out[0] = sc;
+    out[1] = s00;
+    out[2] = s01;
+    out[3] = s10;
+    out[4] = s11;
+}
 
-    bool b00 = is_line_seg_intersecting_rect(&s00, check);
-    if(b00) return true;
 
-    bool b01 = is_line_seg_intersecting_rect(&s01, check);
-    if(b01) return true;
-
-    bool b10 = is_line_seg_intersecting_rect(&s10, check);
-    if(b10) return true;
-
-    bool b11 = is_line_seg_intersecting_rect(&s11, check);
-    if(b11) return true;
-
-    return false;
+bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check)
+{
+    LineSeg segs[5] = {0};
+    rects_to_ling_segs(prior_s, curr_s, segs);
+    return are_line_segs_intersecting_rect(segs, 5, check);
 }
 
 bool rectangles_colliding(Rect* a, Rect* b)

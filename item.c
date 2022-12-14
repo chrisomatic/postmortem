@@ -248,13 +248,14 @@ static void weapons_init()
     guns[idx].anim_state = ANIM_NONE;    // no change in state
     guns[idx].power = 1.0;
     guns[idx].recoil_spread = 2.0;
-    guns[idx].fire_range = 500.0;
+    guns[idx].fire_range = MAP_GRID_PXL_SIZE*16; //pixels
+    // guns[idx].fire_range = MAP_GRID_PXL_SIZE*1000; //pixels
     guns[idx].fire_speed = 4000.0;
     guns[idx].fire_period = 500.0; // milliseconds
     guns[idx].fire_spread = 0.0;
     guns[idx].fire_count = 1;
-    guns[idx].bullets = 7;
-    guns[idx].bullets_max = 7;
+    guns[idx].bullets = 9999;
+    guns[idx].bullets_max = 9999;
     guns[idx].reload_time = 1000.0;
     guns[idx].projectile_type = PROJECTILE_TYPE_BULLET;
 
