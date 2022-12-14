@@ -209,7 +209,6 @@ void entities_update_grid_boxes()
     {
         Projectile* p = &projectiles[i];
         add_to_grid_boxes(ENTITY_TYPE_PROJECTILE, (void*)p);
-
     }
 
     // zombies
@@ -396,6 +395,8 @@ static int rect_get_grid_boxes(Rect* rect, int radius, int* rows, int* cols)
                 rows[count] = _row;
                 cols[count] = _col;
                 count++;
+                if(count >= 4)
+                    return count;
             }
         }
     }
@@ -424,16 +425,16 @@ static int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int c
         case ENTITY_TYPE_PROJECTILE:
         {
             Projectile* p = (Projectile*)data;
-            /*
+
             float dx = p->phys.collision.x - p->phys.prior_collision.x;
             float dy = p->phys.collision.y - p->phys.prior_collision.y;
 
             rect.x = p->phys.prior_collision.x + (dx/2.0);
             rect.y = p->phys.prior_collision.y + (dx/2.0);
             rect.w = p->phys.collision.w + ABS(dx);
-            rect.h = p->phys.collision.w + ABS(dy);
-            */
-            rect = p->phys.collision;
+            rect.h = p->phys.collision.h + ABS(dy);
+            
+            //rect = p->phys.collision;
             //printf("projectile: xywh: %f %f %f %f\n",rect.x,rect.y,rect.w,rect.h);
 
         } break;
