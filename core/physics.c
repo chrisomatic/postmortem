@@ -73,6 +73,9 @@ void physics_apply_pos_offset(Physics* phys, float offset_x, float offset_y)
 
     phys->collision.x += offset_x;
     phys->collision.y += offset_y;
+
+    phys->total_adj.x += offset_x;
+    phys->total_adj.y += offset_y;
 }
 
 void physics_set_pos_offset(Physics* phys, float offset_x, float offset_y)
@@ -274,6 +277,7 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
     for(int i = 0; i < num_collisions; ++i)
     {
         Physics* phys2 = obj[i].phys;
+        
         bool slow = obj[i].slow;
 
         // correct collision
@@ -347,7 +351,6 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
         r1 = r1 / total;
         r2 = r2 / total;
 
-        /*
         if(!slow)
         {
             // fast entity, try and prevent running through walls
@@ -383,7 +386,6 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
 
             slow = true;
         }
-        */
 
         float ax = MAX(phys1->collision.x-phys1->collision.w/2.0,phys2->collision.x-phys2->collision.w/2.0);
         float bx = MIN(phys1->collision.x+phys1->collision.w/2.0,phys2->collision.x+phys2->collision.w/2.0);
@@ -401,7 +403,7 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
 
         if(ABS(overlap.y) > ABS(overlap.x))
         {
-            if(phys1->collision.x - phys1->total_adj.x > phys2->collision.x - phys2->total_adj.x )
+            if(phys1->prior_collision.x > phys2->prior_collision.x)
             {
                 // move phys1 right, phys2 left
                 adj1.x = 1.0;
@@ -416,16 +418,12 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
         }
         else
         {
-            if(phys2->total_adj.y > 16.0)
-            {
-                printf("%f %f\n", phys1->collision.y-phys1->total_adj.y,phys2->collision.y-phys2->total_adj.y);
-            }
-
-            if(phys1->collision.y - phys1->total_adj.y > phys2->collision.y - phys2->total_adj.y)
+            if(phys1->prior_collision.y > phys2->prior_collision.y)
             {
                 // move phys1 down, phys2 up
                 adj1.y = 1.0;
                 adj2.y = -1.0;
+
             }
             else
             {
@@ -441,6 +439,9 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
         adj2.x *= (r2*overlap.x);
         adj2.y *= (r2*overlap.y);
 
+        memcpy(&phys1->prior_collision, &phys1->collision,sizeof(Rect));
+        memcpy(&phys2->prior_collision, &phys2->collision,sizeof(Rect));
+
         phys1->pos.x += adj1.x;
         phys1->pos.y += adj1.y;
         phys2->pos.x += adj2.x;
@@ -448,15 +449,8 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
 
         physics_apply_pos_offset(phys1, adj1.x, adj1.y);
         physics_apply_pos_offset(phys2, adj2.x, adj2.y);
-
-        phys1->total_adj.x += adj1.x;
-        phys1->total_adj.y += adj1.y;
-        phys2->total_adj.x += adj2.x;
-        phys2->total_adj.y += adj2.y;
-
-        memcpy(&phys1->prior_collision, &phys1->collision,sizeof(Rect));
-        memcpy(&phys2->prior_collision, &phys2->collision,sizeof(Rect));
     }
+
 
     phys1->num_colliding_entities = 0;
 

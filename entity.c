@@ -610,7 +610,7 @@ static int scum(Projectile* proj, double delta_t, int rows[20], int cols[20])
 
     if(count == 0)
     {
-        printf("count is 0\n");
+        LOGW("count is 0\n");
         return 0;
     }
 
@@ -625,9 +625,9 @@ static int scum(Projectile* proj, double delta_t, int rows[20], int cols[20])
         if(c > max_col) max_col = c;
     }
 
-    printf("-----------------------------------------------------------------------------\n");
-    printf("min: %d, %d\n", min_row, min_col);
-    printf("max: %d, %d\n", max_row, max_col);
+    //printf("-----------------------------------------------------------------------------\n");
+    //printf("min: %d, %d\n", min_row, min_col);
+    //printf("max: %d, %d\n", max_row, max_col);
 
     // 1 grid space
     if(min_row == max_row && min_col == max_col)
@@ -737,16 +737,14 @@ static void handle_proj_collisions(void* data, double delta_t)
     EntityType type = ENTITY_TYPE_PROJECTILE;
     Projectile* proj = (Projectile*)data;
 
-    if(proj == &projectiles[0])
-    {
-        int all_rows[20],all_cols[20];
-        scum(proj, delta_t, all_rows, all_cols);
-    }
+    int rows[20],cols[20];
+    int count = scum(proj, delta_t, rows, cols);
 
+    /*
     int rows[4] = {0};
     int cols[4] = {0};
     int count = entity_get_grid_boxes(type, data, rows, cols);
-
+    */
 
     Physics* phys1 = &proj->phys;
     if(!phys1)

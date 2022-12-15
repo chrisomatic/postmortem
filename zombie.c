@@ -244,7 +244,7 @@ bool zombie_add(ZombieSpawn* spawn)
     standard.y = z->phys.pos.y;
     standard.w = sw;
     standard.h = sh;
-    z->phys.hit = calc_sub_box(&standard, 1.0, 0.5, 0);
+    z->phys.hit = calc_sub_box(&standard, 1.0, 0.85, 0);
     z->phys.collision = calc_sub_box(&standard, 1.0, 0.4, 2);
 
     zombie_update_boxes(z);
