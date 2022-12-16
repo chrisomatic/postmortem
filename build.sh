@@ -26,5 +26,5 @@ gcc core/gfx.c \
     item.c \
     entity.c \
     -Icore \
-    -lglfw -lGLU -lGLEW -lGL -lm \
+    -lglfw -lGLU -lGLEW -lGL -lm -O2 \
     -o bin/postmortem
