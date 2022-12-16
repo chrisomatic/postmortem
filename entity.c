@@ -1,4 +1,3 @@
-#include "particles.h"
 #include "projectile.h"
 #include "player.h"
 #include "zombie.h"
@@ -74,18 +73,18 @@ void entities_update_draw_list()
 
     // not drawing projectiles
     // // projectiles
-    // for(int i = plist->count - 1; i >= 0 ; --i)
-    // {
-    //     Projectile* p = &projectiles[i];
-    //     if(is_in_camera_view(&p->hurt_box))
-    //     {
-    //         Entity entity = {0};
-    //         entity.type = ENTITY_TYPE_PROJECTILE;
-    //         entity.sort_val = p->pos.y + p->hurt_box.h/2.0;
-    //         entity.data = (void*)p;
-    //         list_add(entity_draw_list, (void*)&entity);
-    //     }
-    // }
+    for(int i = plist->count - 1; i >= 0 ; --i)
+    {
+         Projectile* p = &projectiles[i];
+         if(is_in_camera_view(&p->phys.collision))
+         {
+             Entity entity = {0};
+             entity.type = ENTITY_TYPE_PROJECTILE;
+             entity.sort_val = p->phys.pos.y + p->phys.collision.h/2.0;
+             entity.data = (void*)p;
+             list_add(entity_draw_list, (void*)&entity);
+         }
+     }
 
     // zombies
     for(int i = zlist->count - 1; i >= 0 ; --i)
@@ -154,8 +153,7 @@ void entities_draw(bool batched)
 
             case ENTITY_TYPE_PROJECTILE:
             {
-                // not drawing projectiles
-                // (Projectile*)e->data
+                projectile_draw((Projectile*)e->data,batched);
             } break;
 
             case ENTITY_TYPE_ZOMBIE:

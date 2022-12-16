@@ -13,7 +13,6 @@
 #include "player.h"
 #include "zombie.h"
 #include "effects.h"
-#include "particles.h"
 #include "projectile.h"
 
 
@@ -50,9 +49,9 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
 
     // float speed = gun->fire_speed;
     float speed = gun->fire_speed*10000.0;
-    // speed = 400.0;
+    //speed = 600.0;
 
-    proj.sprite_index = gun->projectile_type;
+    proj.sprite_index = 26;//gun->projectile_type;
     proj.damage = gun->power + proj.power;
     proj.dead = false;
 
@@ -152,6 +151,7 @@ void projectile_update(float delta_t)
         gfx_add_line(x0,y0,x1,y1, 0x00FFFF00);
         gfx_add_line(x0+1,y0+1,x1+1,y1+1, 0x00555555);
         */
+        /*
         ParticleEffect pe;
         memcpy(&pe,&particle_effects[EFFECT_BULLET_TRAIL],sizeof(ParticleEffect));
 
@@ -160,6 +160,7 @@ void projectile_update(float delta_t)
 
         pe.velocity_y.init_min = proj->phys.vel.y;
         pe.velocity_y.init_max = proj->phys.vel.y;
+        */
 
         //particles_spawn_effect(proj->phys.pos.x, proj->phys.pos.y, &pe, 0.6, true, false);
     }
@@ -174,23 +175,15 @@ void projectile_update(float delta_t)
 
 }
 
-void projectile_draw()
+void projectile_draw(Projectile* proj,bool add_to_existing_batch)
 {
-    return;
-
-    for(int i = 0; i < plist->count; ++i)
+    if(add_to_existing_batch)
     {
-        Projectile* proj = &projectiles[i];
-
-        // if(is_in_camera_view(&proj->phys.collision))
-        // {
-        //     //gfx_add_line(proj->phys.collision.x + proj->phys.collision.w/2.0, proj->phys.collision.y + proj->phys.collision.h/2.0, proj->phys.prior_collision.x + proj->phys.prior_collision.w/2.0, proj->phys.prior_collision.y + proj->phys.prior_collision.h/2.0, 0x00FFFF00);
-        //     //gfx_draw_image(projectile_image_set,proj->sprite_index,proj->phys.pos.x,proj->phys.pos.y, COLOR_TINT_NONE,1.0, proj->angle_deg, 1.0, false,true);
-        //     if(debug_enabled)
-        //     {
-        //         gfx_draw_rect(&proj->phys.collision, 0x0000FFFF, 0.0, 1.0,1.0, false, true);
-        //     }
-        // }
+        gfx_sprite_batch_add(particles_image,proj->sprite_index,proj->phys.pos.x,proj->phys.pos.y, 0x00FFCC00,1.0, proj->angle_deg-90.0, 1.0, false,true,false);
+    }
+    else
+    {
+        gfx_draw_image(particles_image,proj->sprite_index,proj->phys.pos.x,proj->phys.pos.y, 0x00FFCC00,1.0, proj->angle_deg-90.0, 1.0, false,true);
     }
 }
 

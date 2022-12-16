@@ -36,5 +36,5 @@ void projectile_init();
 void projectile_add(Player* p, Gun* gun, float angle_offset);
 
 void projectile_update(float delta_t);
-void projectile_draw();
+void projectile_draw(Projectile* proj,bool add_to_existing_batch);
 void projectile_draw_debug(Projectile* proj);
