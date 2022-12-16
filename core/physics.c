@@ -353,6 +353,8 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
 
         if(!slow)
         {
+            //printf("%d: Fast entity! pos_start: %f %f, ",i, phys1->pos.x,phys1->pos.y);
+
             // fast entity, try and prevent running through walls
             Vector2f d = {phys1->collision.x - phys1->prior_collision.x,phys1->collision.y - phys1->prior_collision.y};
 
@@ -365,7 +367,7 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
             d.y *= (phys1->collision.h/2.0);
 
             int num_loops = 0;
-            const int max_loops = 16;
+            const int max_loops = 32;
             
             for(;;)
             {
@@ -382,9 +384,12 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
                     break;
             }
 
+            //printf("pos_end: %f %f\n",phys1->pos.x,phys1->pos.y);
+
             //printf("num_loops: %d\n",num_loops);
 
-            slow = true;
+            for(int i = 0; i < num_collisions; ++i)
+                obj[i].slow = true;
         }
 
         float ax = MAX(phys1->collision.x-phys1->collision.w/2.0,phys2->collision.x-phys2->collision.w/2.0);
@@ -397,6 +402,8 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
             .x = MAX(0.0,bx - ax),
             .y = MAX(0.0,by - ay)
         };
+
+        //printf("overlap: %f %f\n",overlap.x,overlap.y);
 
         Vector2f adj1 = {0.0,0.0};
         Vector2f adj2 = {0.0,0.0};

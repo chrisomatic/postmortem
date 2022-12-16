@@ -20,12 +20,13 @@ GridBox grid_boxes[WORLD_GRID_ROWS_MAX][WORLD_GRID_COLS_MAX];
 static bool dbg = false;
 
 static int rect_get_grid_boxes(Rect* rect, int radius, int* rows, int* cols);
-static int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int cols[4]);
+static int entity_get_grid_boxes(EntityType type, void* data, int rows[20], int cols[20]);
 static void add_to_grid_boxes(EntityType type, void* data);
 static void sort_entity_list(glist* list);
 static Physics* entity_get_physics(EntityType type, void* data);
 static void handle_collisions(EntityType type, void* data, double delta_t);
 static void handle_proj_collisions(void* data, double delta_t);
+static int scum(Physics* phys, int rows[20], int cols[20]);
 
 void entities_init()
 {
@@ -181,7 +182,6 @@ void entities_draw(bool batched)
 
 void entities_update_grid_boxes()
 {
-
     for(int r = 0; r < WORLD_GRID_ROWS_MAX; ++r)
     {
         for(int c = 0; c < WORLD_GRID_COLS_MAX; ++c)
@@ -213,7 +213,8 @@ void entities_update_grid_boxes()
     for(int i = zlist->count - 1; i >= 0 ; --i)
     {
         Zombie* z = &zombies[i];
-        add_to_grid_boxes(ENTITY_TYPE_ZOMBIE, (void*)z);
+        if(!z->dead)
+            add_to_grid_boxes(ENTITY_TYPE_ZOMBIE, (void*)z);
     }
 
     // blocks
@@ -236,8 +237,8 @@ void entities_update_grid_boxes()
 
 void entity_remove_from_grid_boxes(EntityType type, void* data)
 {
-    int rows[4] = {0};
-    int cols[4] = {0};
+    int rows[20] = {0};
+    int cols[20] = {0};
     int count = entity_get_grid_boxes(type, data, rows, cols);
 
     for(int i = 0; i < count; ++i)
@@ -393,7 +394,7 @@ static int rect_get_grid_boxes(Rect* rect, int radius, int* rows, int* cols)
                 rows[count] = _row;
                 cols[count] = _col;
                 count++;
-                if(count >= 4)
+                if(count >= 8)
                     return count;
             }
         }
@@ -404,66 +405,21 @@ static int rect_get_grid_boxes(Rect* rect, int radius, int* rows, int* cols)
     return count;
 }
 
-static int entity_get_grid_boxes(EntityType type, void* data, int rows[4], int cols[4])
+static int entity_get_grid_boxes(EntityType type, void* data, int rows[20], int cols[20])
 {
     if(type == ENTITY_TYPE_PARTICLE)
         return 0;
 
-    Rect rect = {0};
-    switch(type)
-    {
-        case ENTITY_TYPE_PLAYER:
-        {
-            Player* p = (Player*)data;
-            rect = p->max_size; // @FIXME
-            rect.w *= p->scale;
-            rect.h *= p->scale;
-        } break;
+    Physics* phys = entity_get_physics(type,data);
+    int count = scum(phys, rows, cols);
 
-        case ENTITY_TYPE_PROJECTILE:
-        {
-            Projectile* p = (Projectile*)data;
-
-            float dx = p->phys.collision.x - p->phys.prior_collision.x;
-            float dy = p->phys.collision.y - p->phys.prior_collision.y;
-
-            rect.x = p->phys.prior_collision.x + (dx/2.0);
-            rect.y = p->phys.prior_collision.y + (dx/2.0);
-            rect.w = p->phys.collision.w + ABS(dx);
-            rect.h = p->phys.collision.h + ABS(dy);
-            
-            //rect = p->phys.collision;
-            //printf("projectile: xywh: %f %f %f %f\n",rect.x,rect.y,rect.w,rect.h);
-
-        } break;
-
-        case ENTITY_TYPE_ZOMBIE:
-        {
-            Zombie* z = (Zombie*)data;
-            rect = zombie_get_max_size(z);
-
-        } break;
-
-        case ENTITY_TYPE_BLOCK:
-        {
-            block_t* b = (block_t*)data;
-            rect = b->phys.pos;
-        } break;
-    }
-
-    // increase space by a little to allow considering of neighboring grid boxes
-    rect.w +=1;
-    rect.h +=1;
-
-    int count = rect_get_grid_boxes(&rect, 1, rows, cols);
     return count;
 }
 
-
 static void add_to_grid_boxes(EntityType type, void* data)
 {
-    int rows[4] = {0};
-    int cols[4] = {0};
+    int rows[20] = {0};
+    int cols[20] = {0};
 
     int count = entity_get_grid_boxes(type, data, rows, cols);
 
@@ -488,6 +444,9 @@ static void add_to_grid_boxes(EntityType type, void* data)
 
 static void sort_entity_list(glist* list)
 {
+    if(!list)
+        return;
+
     Entity* lst = (Entity*)list->buf;
     int count = list->count;
 
@@ -506,7 +465,6 @@ static void sort_entity_list(glist* list)
         }
         memcpy(&lst[j+1], &key, sizeof(Entity));
     }
-
 }
 
 static Physics* entity_get_physics(EntityType type, void* data)
@@ -526,7 +484,13 @@ static Physics* entity_get_physics(EntityType type, void* data)
         {
             return &((block_t*)data)->phys;
         }
-        break;
+        case ENTITY_TYPE_PROJECTILE:
+        {
+            Projectile* p = (Projectile*)data;
+            if(p->dead)
+                return NULL;
+            return &p->phys;
+        }
         default:
             return NULL;
     }
@@ -534,8 +498,8 @@ static Physics* entity_get_physics(EntityType type, void* data)
 
 static void handle_collisions(EntityType type, void* data, double delta_t)
 {
-    int rows[4] = {0};
-    int cols[4] = {0};
+    int rows[20] = {0};
+    int cols[20] = {0};
 
     int count = entity_get_grid_boxes(type, data, rows, cols);
 
@@ -585,13 +549,12 @@ Rect cb = {0};
 Rect pcb = {0};
 #endif
 
-static int scum(Projectile* proj, double delta_t, int rows[20], int cols[20])
+static int scum(Physics* phys, int rows[20], int cols[20])
 {
-
     int gc = 0;
 
-    Rect* rc = &proj->phys.collision;
-    Rect* prc = &proj->phys.prior_collision;
+    Rect* rc = &phys->collision;
+    Rect* prc = &phys->prior_collision;
 
 #if DEBUG_PROJ_GRIDS
     pg_count = 0;
@@ -735,14 +698,15 @@ static void handle_proj_collisions(void* data, double delta_t)
     EntityType type = ENTITY_TYPE_PROJECTILE;
     Projectile* proj = (Projectile*)data;
 
-    int rows[20],cols[20];
-    int count = scum(proj, delta_t, rows, cols);
+    if(!proj)
+        return;
 
-    /*
-    int rows[4] = {0};
-    int cols[4] = {0};
-    int count = entity_get_grid_boxes(type, data, rows, cols);
-    */
+    if(proj->dead)
+        return;
+
+    int rows[20],cols[20];
+    int count = scum(&proj->phys, rows, cols);
+
 
     Physics* phys1 = &proj->phys;
     if(!phys1)
@@ -762,9 +726,9 @@ static void handle_proj_collisions(void* data, double delta_t)
 
         GridBox* g = &grid_boxes[r][c];
 
-        for(int i = 0; i < g->num; ++i)
+        for(int j = 0; j < g->num; ++j)
         {
-            Entity* e = &g->entities[i];
+            Entity* e = &g->entities[j];
 
             if(e->data == data) // don't check self
                 continue;
