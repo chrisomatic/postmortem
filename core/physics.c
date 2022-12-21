@@ -307,11 +307,15 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
         v2.x = mf22*u1.x+mf21*u2.x;
         v2.y = mf22*u1.y+mf21*u2.y;
 
+        bool m1_immovable = false;
+        bool m2_immovable = false;
+
         if(m1 >= 10000.0)
         {
             // immovable
             v1.x = 0.0;
             v1.y = 0.0;
+            m1_immovable = true;
         }
             
         if(m2 >= 10000.0)
@@ -319,6 +323,7 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
             // immovable
             v2.x = 0.0;
             v2.y = 0.0;
+            m2_immovable = true;
         }
 
         float r1 = magn_fast(v1);
@@ -415,12 +420,22 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
                 // move phys1 right, phys2 left
                 adj1.x = 1.0;
                 adj2.x = -1.0;
+
+                if(m1_immovable)
+                    phys2->blocked[PHYSICS_BLOCKED_RIGHT] = true;
+                if(m2_immovable)
+                    phys1->blocked[PHYSICS_BLOCKED_LEFT] = true;
             }
             else
             {
                 // move phys1 left, phys2 right
                 adj1.x = -1.0;
                 adj2.x = 1.0;
+
+                if(m1_immovable)
+                    phys2->blocked[PHYSICS_BLOCKED_LEFT] = true;
+                if(m2_immovable)
+                    phys1->blocked[PHYSICS_BLOCKED_RIGHT] = true;
             }
         }
         else
@@ -431,13 +446,66 @@ void physics_resolve_collisions(Physics* phys1, double delta_t)
                 adj1.y = 1.0;
                 adj2.y = -1.0;
 
+                if(m1_immovable)
+                    phys2->blocked[PHYSICS_BLOCKED_DOWN] = true;
+                if(m2_immovable)
+                    phys1->blocked[PHYSICS_BLOCKED_UP] = true;
             }
             else
             {
                 // move phys1 up, phys2 down
                 adj1.y = -1.0;
                 adj2.y = 1.0;
+
+                if(m1_immovable)
+                    phys2->blocked[PHYSICS_BLOCKED_UP] = true;
+                if(m2_immovable)
+                    phys1->blocked[PHYSICS_BLOCKED_DOWN] = true;
             }
+        }
+
+        /*
+        if((adj1.x > 0.0 && phys1->blocked[PHYSICS_BLOCKED_RIGHT]) || 
+           (adj1.x < 0.0 && phys1->blocked[PHYSICS_BLOCKED_LEFT]) ||
+           (adj1.y > 0.0 && phys1->blocked[PHYSICS_BLOCKED_DOWN]) ||
+           (adj1.y < 0.0 && phys1->blocked[PHYSICS_BLOCKED_UP]))
+        {
+            //printf("Phys1 is Blocked, adjusting r values from %f, %f ",r1,r2);
+            if(r2 != 0.0)
+                r2 += r1;
+            r1 = 0.0;
+
+            if(adj1.x > 0.0 && phys1->blocked[PHYSICS_BLOCKED_RIGHT]) phys2->blocked[PHYSICS_BLOCKED_RIGHT] = true;
+            if(adj1.x < 0.0 && phys1->blocked[PHYSICS_BLOCKED_LEFT]) phys2->blocked[PHYSICS_BLOCKED_LEFT] = true;
+            if(adj1.y > 0.0 && phys1->blocked[PHYSICS_BLOCKED_DOWN]) phys2->blocked[PHYSICS_BLOCKED_DOWN] = true;
+            if(adj1.y < 0.0 && phys1->blocked[PHYSICS_BLOCKED_UP]) phys2->blocked[PHYSICS_BLOCKED_UP] = true;
+                
+            //printf(" to %f, %f\n",r1,r2);
+        }
+        */
+
+        if((adj2.x > 0.0 && phys2->blocked[PHYSICS_BLOCKED_RIGHT]) || 
+           (adj2.x < 0.0 && phys2->blocked[PHYSICS_BLOCKED_LEFT]) ||
+           (adj2.y > 0.0 && phys2->blocked[PHYSICS_BLOCKED_DOWN]) ||
+           (adj2.y < 0.0 && phys2->blocked[PHYSICS_BLOCKED_UP]))
+        {
+            //printf("Phys2 is Blocked, adjusting r values from %f, %f",r1,r2);
+            if(r1 != 0.0)
+                r1 += r2;
+            r2 = 0.0;
+
+            if(adj2.x > 0.0 && phys2->blocked[PHYSICS_BLOCKED_RIGHT]) phys1->blocked[PHYSICS_BLOCKED_RIGHT] = true;
+            if(adj2.x < 0.0 && phys2->blocked[PHYSICS_BLOCKED_LEFT]) phys1->blocked[PHYSICS_BLOCKED_LEFT] = true;
+            if(adj2.y > 0.0 && phys2->blocked[PHYSICS_BLOCKED_DOWN]) phys1->blocked[PHYSICS_BLOCKED_DOWN] = true;
+            if(adj2.y < 0.0 && phys2->blocked[PHYSICS_BLOCKED_UP]) phys1->blocked[PHYSICS_BLOCKED_UP] = true;
+            
+            //printf(" to %f, %f\n",r1,r2);
+        }
+
+        float sum = r1 + r2;
+        if(!FEQ(sum, 1.0000))
+        {
+            printf("WTF! r1 + r2 = %f + %f = %f\n",r1,r2,sum);
         }
 
         adj1.x *= (r1*overlap.x);

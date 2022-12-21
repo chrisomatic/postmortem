@@ -352,7 +352,7 @@ static void editor_draw()
 
                     imgui_horizontal_begin();
 
-                        imgui_inputtext("##file_name_particles",particles_file_name,IM_ARRAYSIZE(particles_file_name));
+                        imgui_input_text("##file_name_particles",particles_file_name,IM_ARRAYSIZE(particles_file_name));
 
                         char file_path[64]= {0};
                         snprintf(file_path,63,"effects/%s.effect",particles_file_name);

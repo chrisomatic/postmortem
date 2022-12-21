@@ -465,9 +465,13 @@ void window_disable_cursor()
 
 static void char_callback(GLFWwindow* window, unsigned int code)
 {
-    char c = (char)code;
     if(key_mode == KEY_MODE_TEXT)
-        windows_text_mode_buf_append(c);
+    {
+        char c = (char)code;
+        int index = imgui_get_text_cursor_index();
+        windows_text_mode_buf_insert(c,index);
+        imgui_text_cursor_inc(1);
+    }
 }
 
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods)
@@ -496,11 +500,26 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
             {
                 if(key == GLFW_KEY_ENTER)
                 {
-                    windows_text_mode_buf_append('\n');
+                    windows_text_mode_buf_insert('\n',-1);
                 }
                 else if(key == GLFW_KEY_BACKSPACE)
                 {
-                    window_text_mode_buf_backspace();
+                    int index = imgui_get_text_cursor_index();
+                    window_text_mode_buf_remove(index,true);
+                    imgui_text_cursor_inc(-1);
+                }
+                else if(key == GLFW_KEY_DELETE)
+                {
+                    int index = imgui_get_text_cursor_index();
+                    window_text_mode_buf_remove(index,false);
+                }
+                else if(key == GLFW_KEY_LEFT)
+                {
+                    imgui_text_cursor_inc(-1);
+                }
+                else if(key == GLFW_KEY_RIGHT)
+                {
+                    imgui_text_cursor_inc(+1);
                 }
                 else if(key == GLFW_KEY_ESCAPE)
                 {
@@ -586,32 +605,59 @@ void window_mouse_set_cursor_normal()
     glfwSetCursor(window,NULL); // standard
 }
 
-void windows_text_mode_buf_append(char c)
+void windows_text_mode_buf_insert(char c, int index)
 {
     if(text_buf != NULL)
     {
         int len = strlen(text_buf);
 
-        int index = MIN(len,text_buf_max-1);
+        if(index == -1)
+        {
+            index = MIN(len,text_buf_max-1);
+        }
+        else
+        {
+            for(int i = len; i >= index; i--)
+            {
+                if(i+1 >= text_buf_max)
+                    continue;
+
+                text_buf[i+1] = text_buf[i];
+            }
+        }
 
         text_buf[index] = c;
-
-        // // always save space for \n at the end
-        // if(len >= (text_buf_max-1))
-        //     return;
-        // text_buf[len] = c;
     }
 }
 
-void window_text_mode_buf_backspace()
+void window_text_mode_buf_remove(int index, bool backspace)
 {
     if(text_buf != NULL)
     {
         int len = strlen(text_buf);
         if(len == 0)
             return;
-        text_buf[len-1] = '\0';
-        // printf("backspace\n");
+
+        if(index == -1)
+        {
+            text_buf[len-1] = '\0';
+        }
+        else
+        {
+            if(backspace)
+                index-=1;
+
+            if(index < 0)
+                return;
+
+            //printf("Help me! index: %d, len: %d\n",index,len);
+            for(int i = index; i < len-1; ++i)
+            {
+                text_buf[i] = text_buf[i+1];
+            }
+            if(index <= len-1)
+                text_buf[len-1] = '\0';
+        }
     }
 }
 

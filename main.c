@@ -768,7 +768,7 @@ void handle_backspace_timer()
         // printf("delta: %.2f\n", timer_get_time() - t0_backspace);
         if((timer_get_time() - t0_backspace) >= 0.1)
         {
-            window_text_mode_buf_backspace();
+            window_text_mode_buf_remove(-1,true);
             t0_backspace = timer_get_time();
         }
     }

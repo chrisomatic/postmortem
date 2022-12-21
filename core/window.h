@@ -48,8 +48,8 @@ bool window_is_cursor_enabled();
 void window_enable_cursor();
 void window_disable_cursor();
 
-void windows_text_mode_buf_append(char c);
-void window_text_mode_buf_backspace();
+void windows_text_mode_buf_insert(char c, int index);
+void window_text_mode_buf_remove(int index, bool backspace);
 
 bool window_mouse_left_went_down();
 bool window_mouse_left_went_up();

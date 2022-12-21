@@ -55,8 +55,10 @@ typedef struct
 
     bool text_click_held;
     Vector2i text_pt_0, text_pt_1;
+    int text_cursor_index;
+    float text_cursor_x;
 
-    bool inputtext_highlighted;
+    bool input_text_highlighted;
     bool theme_initialized;
 
 } ImGuiContext;
@@ -95,9 +97,11 @@ typedef struct
     // number box
     int number_box_width;
 
-    // inputtext
-    uint32_t inputtext_color_background;
-    uint32_t inputtext_color_highlighted;
+    // input_text
+    uint32_t input_text_color_background;
+    uint32_t input_text_color_highlighted;
+    int input_text_width;
+    int input_text_height;
 
     // panel
     uint32_t panel_color;
@@ -156,7 +160,7 @@ void imgui_begin(char* name, int x, int y)
     ctx->accum_width = 0;
     ctx->horiontal_max_height = 0;
 
-    ctx->inputtext_highlighted = false;
+    ctx->input_text_highlighted = false;
 
     if(!ctx->theme_initialized)
     {
@@ -578,24 +582,45 @@ Vector2f imgui_number_box(char* label, int min, int max, int* result)
     Vector2f ret = {ctx->curr.w, ctx->curr.h};
     return ret;
 }
-void imgui_inputtext(char* label, char* buf, int bufsize)
+void imgui_input_text(char* label, char* buf, int bufsize)
 {
     uint32_t hash = hash_str(label,strlen(label),0x0);
 
     char new_label[32] = {0};
     mask_off_hidden(label, new_label, 32);
 
+    float size_array[100] = {0.0};
+    int array_size = 0;
+    gfx_string_get_size_array(theme.text_scale, &size_array[1],99,&array_size, buf);
+
+    ctx->text_cursor_x = size_array[ctx->text_cursor_index];
+
     if(is_highlighted(hash))
     {
-        ctx->inputtext_highlighted = true;
+        ctx->input_text_highlighted = true;
         window_mouse_set_cursor_ibeam();
 
         if(window_mouse_left_went_down())
         {
+            float min_dist = 10000.0;
+            int selected_index = 0;
+            int click_x = (int)(ctx->mouse_x - ctx->curr.x - theme.text_padding);
+            for(int i = array_size+1; i >= 0; --i)
+            {
+                float dist = ABS(size_array[i] - (float)click_x);
+                if(dist < min_dist)
+                {
+                    min_dist = dist;
+                    selected_index = i;
+                }
+            }
+
             ctx->focused_text_id = hash;
+            ctx->text_cursor_index = selected_index;
+            ctx->text_cursor_x = size_array[selected_index];
+
             ctx->text_pt_0.x = ctx->mouse_x;
             ctx->text_pt_0.y = ctx->mouse_y;
-            printf("text pt 0: %d %d\n",ctx->text_pt_0.x, ctx->text_pt_0.y);
             window_controls_set_text_buf(buf,bufsize);
             window_controls_set_key_mode(KEY_MODE_TEXT);
             ctx->text_click_held = true;
@@ -613,15 +638,22 @@ void imgui_inputtext(char* label, char* buf, int bufsize)
         ctx->text_click_held = false;
     }
 
+    int str_size = strlen(buf);
+    if(ctx->text_cursor_index > str_size)
+    {
+        ctx->text_cursor_index = str_size;
+        ctx->text_cursor_x = size_array[str_size];
+    }
 
     Vector2f text_size = gfx_string_get_size(theme.text_scale, new_label);
-    Rect interactive = {ctx->curr.x, ctx->curr.y, 150, text_size.y + 2*theme.text_padding};
+
+    Rect interactive = {ctx->curr.x, ctx->curr.y, theme.input_text_width, theme.input_text_height};
     handle_highlighting(hash, &interactive);
 
     draw_input_box(hash, new_label, &interactive, buf);
 
-    ctx->curr.w = 150 + text_size.x + theme.text_padding + theme.spacing;
-    ctx->curr.h = text_size.y + 2*theme.text_padding + theme.spacing;
+    ctx->curr.w = theme.input_text_width + text_size.x + theme.text_padding + theme.spacing;
+    ctx->curr.h = theme.input_text_height + theme.spacing;
 
     progress_pos();
 }
@@ -671,8 +703,8 @@ Vector2f imgui_draw_demo(int x, int y)
         imgui_color_picker("Color 1", &color1);
         imgui_color_picker("Color 2", &color2);
         imgui_text_colored(0xFFFFFFFF, "Test");
-        imgui_inputtext("Name",name,IM_ARRAYSIZE(name));
-        imgui_inputtext("Something else",something,IM_ARRAYSIZE(something));
+        imgui_input_text("Name",name,IM_ARRAYSIZE(name));
+        imgui_input_text("Something else",something,IM_ARRAYSIZE(something));
         imgui_toggle_button(&toggle, "Toggle me");
 
         char* buttons[] = {"Apples", "Bananas", "Oranges"};
@@ -740,9 +772,9 @@ void imgui_theme_editor()
 
     imgui_text_sized(header_size,"Input Text");
     imgui_indent_begin(10);
-    imgui_color_picker("InputText Background", &theme.inputtext_color_background);
-    imgui_color_picker("InputText Highlighted", &theme.inputtext_color_highlighted);
-    imgui_inputtext("Test##inputtext",_editor_text,IM_ARRAYSIZE(_editor_text));
+    imgui_color_picker("input_text Background", &theme.input_text_color_background);
+    imgui_color_picker("input_text Highlighted", &theme.input_text_color_highlighted);
+    imgui_input_text("Test##input_text",_editor_text,IM_ARRAYSIZE(_editor_text));
     imgui_indent_end();
 
     imgui_text_sized(header_size,"Panels");
@@ -775,6 +807,17 @@ void imgui_deselect_text_box()
     window_controls_set_key_mode(KEY_MODE_NORMAL);
 }
 
+int imgui_get_text_cursor_index()
+{
+    return ctx->text_cursor_index;
+}
+
+void imgui_text_cursor_inc(int val)
+{
+    ctx->text_cursor_index += val;
+    ctx->text_cursor_index = MAX(0,ctx->text_cursor_index);
+}
+
 Vector2f imgui_end()
 {
     ctx->panel_width = MAX(theme.panel_min_width,ctx->max_width+2.0*theme.spacing);
@@ -783,7 +826,7 @@ Vector2f imgui_end()
     bool text_highlighted = false;
     for(int i = 0; i < MAX_CONTEXTS; ++i)
     {
-        if(contexts[i].inputtext_highlighted)
+        if(contexts[i].input_text_highlighted)
         {
             text_highlighted = true;
             break;
@@ -875,9 +918,11 @@ static void set_default_theme()
     // number box
     theme.number_box_width = 40;
 
-    // inputtext
-    theme.inputtext_color_background = 0x55555555;
-    theme.inputtext_color_highlighted = 0x66666666;
+    // input_text
+    theme.input_text_color_background = 0x55555555;
+    theme.input_text_color_highlighted = 0x66666666;
+    theme.input_text_width = 150;
+    theme.input_text_height = 22;
 
     // panel
     theme.panel_color = 0x20202020;
@@ -1166,11 +1211,11 @@ static void draw_number_box(uint32_t hash, char* label, Rect* r, int val, int ma
 
 static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text)
 {
-    uint32_t box_color = theme.inputtext_color_background;
+    uint32_t box_color = theme.input_text_color_background;
 
     if(is_highlighted(hash))
     {
-        box_color = theme.inputtext_color_highlighted;
+        box_color = theme.input_text_color_highlighted;
     }
 
     Vector2f label_size = gfx_string_get_size(theme.text_scale, label);
@@ -1189,14 +1234,18 @@ static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text)
 
     gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, box_color, 0.0, 1.0, theme.button_opacity, true,false);
 
-    gfx_draw_rect_xywh(sx + sw/2.0, sy + sh/2.0, sw, sh, 0x000000FF, 0.0, 1.0, theme.button_opacity, true,false);
+    //gfx_draw_rect_xywh(sx + sw/2.0, sy + sh/2.0, sw, sh, 0x000000FF, 0.0, 1.0, theme.button_opacity, true,false);
 
     gfx_draw_string(r->x+theme.text_padding, r->y-(label_size.y-r->h)/2.0, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, text);
 
     if(ctx->focused_text_id == hash)
     {
         Vector2f text_size = gfx_string_get_size(theme.text_scale, text);
-        gfx_draw_string(r->x+theme.text_padding+text_size.x, r->y-(text_size.y-r->h)/2.0, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, "|");
+        //ctx->focused_text_cursor_index;
+        float x = r->x+theme.text_padding+ctx->text_cursor_x;
+        float y = r->y-(text_size.y-r->h)/2.0f;
+
+        gfx_draw_rect_xywh(x,y+(text_size.y*1.3)/2.0, 1, text_size.y*1.3, theme.text_color, 0.0, 1.0, 1.0, true,false);
     }
 
     draw_label(r->x + r->w+theme.text_padding, r->y-(label_size.y-r->h)/2.0, theme.text_color, label);

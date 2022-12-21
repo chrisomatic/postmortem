@@ -524,6 +524,11 @@ static void draw_debug_box()
                 imgui_text("Anim State: %s (%d)", player_anim_state_str(player->anim_state), player->anim_state);
                 imgui_text("Detection Radius: %.2f", player->detect_radius);
                 imgui_text("Controls: %s", keys);
+                imgui_newline();
+                imgui_text("Blocked Up:    %s", player->phys.blocked[0] ? "True" : "False");
+                imgui_text("Blocked Down:  %s", player->phys.blocked[1] ? "True" : "False");
+                imgui_text("Blocked Left:  %s", player->phys.blocked[2] ? "True" : "False");
+                imgui_text("Blocked Right: %s", player->phys.blocked[3] ? "True" : "False");
             imgui_indent_end();
 
             imgui_text_sized(big,"Player Item");

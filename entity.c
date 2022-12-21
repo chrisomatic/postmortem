@@ -277,6 +277,7 @@ static void reset_total_adjs()
         {
             p->phys.total_adj.x = 0.0;
             p->phys.total_adj.y = 0.0;
+            memset(&p->phys.blocked[0],false,4*sizeof(bool));
         }
     }
 
@@ -289,6 +290,7 @@ static void reset_total_adjs()
 
         z->phys.total_adj.x = 0.0;
         z->phys.total_adj.y = 0.0;
+        memset(&z->phys.blocked[0],false,4*sizeof(bool));
     }
     
     // blocks
@@ -297,6 +299,7 @@ static void reset_total_adjs()
         block_t* b = &blocks[i];
         b->phys.total_adj.x = 0.0;
         b->phys.total_adj.y = 0.0;
+        memset(&b->phys.blocked[0],false,4*sizeof(bool));
     }
 
     // projectiles
@@ -307,12 +310,21 @@ static void reset_total_adjs()
             continue;
         p->phys.total_adj.x = 0.0;
         p->phys.total_adj.y = 0.0;
+        memset(&p->phys.blocked[0],false,4*sizeof(bool));
     }
 }
 
 void entities_handle_collisions(double delta_t)
 {
     reset_total_adjs();
+    
+    // blocks
+    for(int i = 0; i < blist->count; ++i)
+    {
+        block_t* b = &blocks[i];
+        handle_collisions(ENTITY_TYPE_BLOCK, b, delta_t);
+    }
+
 
     // players
     for(int i = 0; i < MAX_CLIENTS;++i)
@@ -334,13 +346,6 @@ void entities_handle_collisions(double delta_t)
         handle_collisions(ENTITY_TYPE_ZOMBIE, z, delta_t);
     }
     
-    // blocks
-    for(int i = 0; i < blist->count; ++i)
-    {
-        block_t* b = &blocks[i];
-        handle_collisions(ENTITY_TYPE_BLOCK, b, delta_t);
-    }
-
     // projectiles
     for(int i = plist->count - 1; i >= 0 ; --i)
     {

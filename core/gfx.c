@@ -1246,6 +1246,46 @@ Vector2f gfx_string_get_size(float scale, char* fmt, ...)
     return ret;
 }
 
+Vector2f gfx_string_get_size_array(float scale, float* size_arr, int len, int* ret_len, char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char str[256] = {0};
+    vsprintf(str,fmt, args);
+    va_end(args);
+
+    float x_pos = 0.0;
+    float fontsize = 64.0 * scale;
+
+    char* c = str;
+    int i = 0;
+
+    for(;;)
+    {
+        if(*c == '\0')
+            break;
+
+        FontChar* fc = &font_chars[*c];
+
+        float adv = (fontsize*fc->advance);
+
+        x_pos += adv;
+
+        if(i < len)
+            size_arr[i++] = x_pos;
+
+        c++;
+    }
+
+    if(ret_len)
+        *ret_len = i;
+
+    Vector2f ret = {x_pos, fontsize};
+    return ret;
+
+}
+
+
 void gfx_anim_update(GFXAnimation* anim, double delta_t)
 {
     if(anim->finite && anim->curr_loop >= anim->max_loops)

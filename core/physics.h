@@ -4,6 +4,14 @@
 
 #define MAX_COLLIDING_ENTITIES 4 
 
+enum
+{
+    PHYSICS_BLOCKED_UP = 0,
+    PHYSICS_BLOCKED_DOWN,
+    PHYSICS_BLOCKED_LEFT,
+    PHYSICS_BLOCKED_RIGHT,
+};
+
 typedef struct
 {
     Rect pos;
@@ -23,6 +31,9 @@ typedef struct
     int num_colliding_entities;
     void* colliding_entities[MAX_COLLIDING_ENTITIES];
     bool  collision_overlap[MAX_COLLIDING_ENTITIES];
+
+    bool blocked[4]; // used to handle entities against immovable objects
+
 } Physics;
 
 typedef struct

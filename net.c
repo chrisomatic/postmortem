@@ -469,10 +469,10 @@ static void server_update_players()
         for(int i = 0; i < cli->input_count; ++i)
         {
             // apply input to player
-            for(int i = 0; i < PLAYER_ACTION_MAX; ++i)
+            for(int j = 0; j < PLAYER_ACTION_MAX; ++j)
             {
-                bool key_state = (cli->net_player_inputs[i].keys & (1<<i)) != 0;
-                p->actions[i].state = key_state;
+                bool key_state = (cli->net_player_inputs[j].keys & ((uint32_t)1<<j)) != 0;
+                p->actions[j].state = key_state;
             }
 
             p->mouse_x = cli->net_player_inputs[i].mouse_x;
