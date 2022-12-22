@@ -478,9 +478,9 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
 {
     // printf("key callback: %d\n", key);
 
-    if(action == GLFW_PRESS || action == GLFW_RELEASE || action == GLFW_REPEAT)
+    if(key_mode == KEY_MODE_NORMAL)
     {
-        if(key_mode == KEY_MODE_NORMAL)
+        if(action == GLFW_PRESS || action == GLFW_RELEASE)
         {
             for(int i = 0; i < window_keys_count; ++i)
             {
@@ -494,40 +494,39 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                 }
             }
         }
-        else if(key_mode == KEY_MODE_TEXT)
+    }
+    else if(key_mode == KEY_MODE_TEXT)
+    {
+        if(action == GLFW_PRESS || action == GLFW_REPEAT)
         {
-            if(action == GLFW_PRESS || action == GLFW_REPEAT)
+            if(key == GLFW_KEY_ENTER)
             {
-                if(key == GLFW_KEY_ENTER)
-                {
-                    windows_text_mode_buf_insert('\n',-1);
-                }
-                else if(key == GLFW_KEY_BACKSPACE)
-                {
-                    int index = imgui_get_text_cursor_index();
-                    window_text_mode_buf_remove(index,true);
-                    imgui_text_cursor_inc(-1);
-                }
-                else if(key == GLFW_KEY_DELETE)
-                {
-                    int index = imgui_get_text_cursor_index();
-                    window_text_mode_buf_remove(index,false);
-                }
-                else if(key == GLFW_KEY_LEFT)
-                {
-                    imgui_text_cursor_inc(-1);
-                }
-                else if(key == GLFW_KEY_RIGHT)
-                {
-                    imgui_text_cursor_inc(+1);
-                }
-                else if(key == GLFW_KEY_ESCAPE)
-                {
-                    imgui_deselect_text_box();
-                }
+                windows_text_mode_buf_insert('\n',-1);
+            }
+            else if(key == GLFW_KEY_BACKSPACE)
+            {
+                int index = imgui_get_text_cursor_index();
+                window_text_mode_buf_remove(index,true);
+                imgui_text_cursor_inc(-1);
+            }
+            else if(key == GLFW_KEY_DELETE)
+            {
+                int index = imgui_get_text_cursor_index();
+                window_text_mode_buf_remove(index,false);
+            }
+            else if(key == GLFW_KEY_LEFT)
+            {
+                imgui_text_cursor_inc(-1);
+            }
+            else if(key == GLFW_KEY_RIGHT)
+            {
+                imgui_text_cursor_inc(+1);
+            }
+            else if(key == GLFW_KEY_ESCAPE)
+            {
+                imgui_deselect_text_box();
             }
         }
-
     }
 
     if(key_mode != KEY_MODE_NONE && key_cb != NULL)

@@ -368,6 +368,10 @@ void editor_draw()
                     }
 
                     imgui_text_box("Command##console",command_text,IM_ARRAYSIZE(command_text));
+                    for(int i = 0; i < console_msg_count; ++i)
+                    {
+                        imgui_text_colored(console_msg[i].color, "%d: %s",i,console_msg[i].msg);
+                    }
 
                 } break;
                 case 4:
