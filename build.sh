@@ -2,6 +2,8 @@
 rm -rf bin
 mkdir bin
 
+cd src
+
 gcc core/gfx.c \
     core/shader.c \
     core/timer.c \
@@ -25,6 +27,8 @@ gcc core/gfx.c \
     projectile.c \
     item.c \
     entity.c \
+    editor.c \
+    console.c \
     -Icore \
     -lglfw -lGLU -lGLEW -lGL -lm -O2 \
-    -o bin/postmortem
+    -o ../bin/postmortem
