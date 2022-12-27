@@ -158,32 +158,40 @@ void start_local()
     timer_set_fps(&game_timer,TARGET_FPS);
     timer_begin(&game_timer);
 
-    double t0=timer_get_time();
-    double t1=0.0;
+    double curr_time = timer_get_time();
+    double new_time  = 0.0;
+    double accum = 0.0;
 
     bitpack_test(); //@TEMP
+
+    const double dt = 1.0/60.0;
 
     // main game loop
     for(;;)
     {
-        window_poll_events();
+        new_time = timer_get_time();
+        double frame_time = new_time - curr_time;
+        curr_time = new_time;
 
+        accum += frame_time;
+
+        window_poll_events();
         if(window_should_close())
         {
             break;
         }
 
+        while(accum >= dt)
+        {
+            simulate(dt);
+            accum -= dt;
+        }
 
-        t1 = timer_get_time();
-
-        simulate(t1-t0);
         draw();
 
         timer_wait_for_frame(&game_timer);
         window_swap_buffers();
-        t0 = t1;
         window_mouse_update_actions();
-
     }
 
     deinit();
@@ -212,12 +220,21 @@ void start_client()
 
     init();
 
-    double t0=timer_get_time();
-    double t1=0.0;
+    double curr_time = timer_get_time();
+    double new_time  = 0.0;
+    double accum = 0.0;
+
+    const double dt = 1.0/60.0;
 
     // main game loop
     for(;;)
     {
+        new_time = timer_get_time();
+        double frame_time = new_time - curr_time;
+        curr_time = new_time;
+
+        accum += frame_time;
+
         window_poll_events();
 
         if(window_should_close())
@@ -228,20 +245,17 @@ void start_client()
         if(!net_client_is_connected())
             break;
 
-        t1 = timer_get_time();
-
-        double delta_t = t1-t0;
-
-        simulate_client(delta_t); // client-side prediction
-
-        //printf("player pos %f %f, angle %f\n",player->phys.pos.x, player->phys.pos.y, player->angle);
-        net_client_update();
+        while(accum >= dt)
+        {
+            simulate_client(dt); // client-side prediction
+            net_client_update();
+            accum -= dt;
+        }
 
         draw();
 
         timer_wait_for_frame(&game_timer);
         window_swap_buffers();
-        t0 = t1;
         window_mouse_update_actions();
     }
 
