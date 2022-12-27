@@ -471,7 +471,7 @@ static void server_update_players()
             // apply input to player
             for(int j = 0; j < PLAYER_ACTION_MAX; ++j)
             {
-                bool key_state = (cli->net_player_inputs[j].keys & ((uint32_t)1<<j)) != 0;
+                bool key_state = (cli->net_player_inputs[i].keys & ((uint32_t)1<<j)) != 0;
                 p->actions[j].state = key_state;
             }
 
