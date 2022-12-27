@@ -62,20 +62,17 @@ void gui_draw()
         imgui_set_text_size(10);
         imgui_indent_begin(10);
             imgui_text("W,A,S,D: Move");
-            imgui_text("Tab: Ready/Unready gun");
+            imgui_text("Tab: Ready/Unready item");
             imgui_text("R: Reload");
-            imgui_text("1,2: Cycle through guns");
+            imgui_text("1-6: Cycle through items");
             imgui_text("Shift: Toggle Run");
             imgui_text("F2: Toggle Debug");
             imgui_text("F3: Toggle Editor");
-            imgui_text("F10: Open Console");
         imgui_indent_end();
     imgui_end();
 
     // player HUD
     {
-
-
         //float factor = (window_height / (float)view_height);
         int num_boxes = 7;
         float hotbar_padding = 3.0;
@@ -151,74 +148,9 @@ void gui_draw()
     if(editor_enabled)
     {
         editor_draw();
-
         // for testing new gui features
         //imgui_draw_demo(10,size.y+20);
     }
-
-    /*
-    if(console_enabled)
-    {
-        float scale = 0.24;
-        scale *= 1.0;
-
-        Vector2f size = gfx_string_get_size(scale, "x");
-
-        float yspace = size.y*1.5;
-
-        Rect tbox = {0};
-        tbox.w = view_width*0.6;
-        tbox.x = view_width*0.5;
-
-        tbox.h = yspace * (CONSOLE_MSG_MAX+1);
-        tbox.y = tbox.h/2.0;
-
-        gfx_draw_rect(&tbox, 0x001F1F1F, 0.0, 1.0, 0.6, true, false);
-
-        float x0 = tbox.x-tbox.w/2.0;
-        float y0 = tbox.y-tbox.h/2.0;
-
-        for(int i = 0; i < console_msg_count; ++i)
-        {
-            float y = y0+i*yspace;
-            float x = x0+1.0;
-            gfx_draw_string(x, y, console_msg[i].color, scale, 0.0, 1.0, false, false, "%s", console_msg[i].msg);// y += size.y+ypad;
-        }
-
-        Vector2f psize = gfx_string_get_size(scale, (char*)CONSOLE_PROMPT);
-
-        int index = 0;
-        int tlen = strlen(console_text);
-        if(tlen > 0)
-        {
-            if(console_text[tlen-1] == '\n')
-            {
-                console_text[tlen-1] = '\0';
-                // printf("submit command: '%s'\n", console_text);
-                run_console_command(console_text);
-                memset(console_text, 0, CONSOLE_TEXT_MAX*sizeof(console_text[0]));
-            }
-            else
-            {
-                float x1 = x0+1.0+tbox.w;
-                for(int i = 0; i < tlen; ++i)
-                {
-                    Vector2f tsize = gfx_string_get_size(scale, console_text+i);
-                    
-                    if(x0 + psize.x + tsize.x <= x1)
-                    {
-                        index = i;
-                        break;
-                    }
-
-                }
-            }
-        }
-
-        size = gfx_draw_string(x0+1.0, y0+yspace*(CONSOLE_MSG_MAX), COLOR_WHITE, scale, 0.0, 1.0, false, false, "%s%s", CONSOLE_PROMPT, console_text+index);// y += size.y+ypad;
-
-    }
-    */
 }
 
 static void draw_debug_box()
@@ -254,9 +186,6 @@ static void draw_debug_box()
     char server_ip_str[32] = {0};
     net_client_get_server_ip_str(server_ip_str);
     int player_count = net_client_get_player_count();
-
-    Vector2f size = {0};
-    float maxw = 0.0;
 
     {
         float factor = (window_height / (float)view_height);

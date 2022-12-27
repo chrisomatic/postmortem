@@ -46,8 +46,6 @@ typedef struct
     float scale;
     float hp;
     float hp_max;
-    // Rect hit_box;
-    // Rect collision_box;
 
     uint32_t color;
     float opacity;

@@ -33,7 +33,6 @@ static uint64_t get_timer_value(void)
     }
 }
 
-// static void init_timer(void)
 void init_timer(void)
 {
 #if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
@@ -57,12 +56,10 @@ void init_timer(void)
 static double get_time()
 {
     return (double) (get_timer_value() - _timer.offset) / _timer.frequency;
-
 }
 
 void timer_begin(Timer* timer)
 {
-    // init_timer();
     timer->time_start = get_time();
     timer->time_last = timer->time_start;
     timer->frame_fps = 0.0f;

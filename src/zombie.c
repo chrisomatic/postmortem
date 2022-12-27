@@ -883,8 +883,6 @@ void zombie_melee_check_collision(Zombie* z)
 
 static void zombie_remove(Zombie* z)
 {
-    // don't need to do this actually
-    // entity_remove_from_grid_boxes(ENTITY_TYPE_ZOMBIE,(void*)z);
     list_remove_by_item(zlist, z);
 }
 
