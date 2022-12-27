@@ -95,7 +95,7 @@ bool window_init(int _view_width, int _view_height)
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1); // vsync
+    glfwSwapInterval(0); // vsync
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
     printf("Initializing GLEW.\n");

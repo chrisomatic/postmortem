@@ -164,7 +164,7 @@ void start_local()
 
     bitpack_test(); //@TEMP
 
-    const double dt = 1.0/60.0;
+    const double dt = 1.0/TARGET_FPS;
 
     // main game loop
     for(;;)
@@ -224,7 +224,7 @@ void start_client()
     double new_time  = 0.0;
     double accum = 0.0;
 
-    const double dt = 1.0/60.0;
+    const double dt = 1.0/TARGET_FPS;
 
     // main game loop
     for(;;)
