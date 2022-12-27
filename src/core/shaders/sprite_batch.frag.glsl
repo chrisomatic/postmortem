@@ -36,17 +36,23 @@ void main() {
     total_diffuse = min(total_diffuse,vec3(1.0,1.0,1.0)); // cap the total diffuse
     total_diffuse = max(total_diffuse, ambient_color);
 
-    //color = vec4(color0,1.0);
+    vec4 my_color;
+
     if(ignore_light0 == uint(1))
     {
-        color = vec4(tex_color.rgb*color0,tex_color.a*opacity0);
+        my_color = vec4(tex_color.rgb*color0,tex_color.a*opacity0);
     }
     else
     {
-        color = vec4(total_diffuse*color0, opacity0)*tex_color;
+        my_color = vec4(total_diffuse*color0, opacity0)*tex_color;
     }
 
-    color.rgb *= color.a;
+    my_color.rgb *= my_color.a;
+
     if(blending_mode0 == uint(1))
-        color.a = 0.0; // additive
+    {
+        my_color.a = 0.0; // additive
+    }
+
+    color = my_color;
 }
