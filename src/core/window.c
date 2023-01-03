@@ -505,14 +505,34 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
             }
             else if(key == GLFW_KEY_BACKSPACE)
             {
-                int index = imgui_get_text_cursor_index();
-                window_text_mode_buf_remove(index,true);
-                imgui_text_cursor_inc(-1);
+                int i0, i1;
+                imgui_get_text_cursor_indices(&i0, &i1);
+
+                if(i0 == i1)
+                {
+                    window_text_mode_buf_remove(i0,true);
+                    imgui_text_cursor_inc(-1);
+                }
+                else
+                {
+                    for(int i = i1; i > i0; --i)
+                        window_text_mode_buf_remove(i0,true);
+                }
             }
             else if(key == GLFW_KEY_DELETE)
             {
-                int index = imgui_get_text_cursor_index();
-                window_text_mode_buf_remove(index,false);
+                int i0, i1;
+                imgui_get_text_cursor_indices(&i0, &i1);
+
+                if(i0 == i1)
+                {
+                    window_text_mode_buf_remove(i0,false);
+                }
+                else
+                {
+                    for(int i = i1; i > i0; --i)
+                        window_text_mode_buf_remove(i0,false);
+                }
             }
             else if(key == GLFW_KEY_LEFT)
             {

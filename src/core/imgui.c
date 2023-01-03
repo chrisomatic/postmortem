@@ -27,6 +27,19 @@ typedef struct
 
 typedef struct
 {
+    bool text_click_held;
+
+    int text_cursor_index_held_from;
+    int text_cursor_index;
+
+    float text_cursor_x_held_from;
+    float text_cursor_x;
+
+    bool highlighted;
+} TextBoxProps;
+
+typedef struct
+{
     uint32_t hash;
 
     // ids
@@ -53,12 +66,8 @@ typedef struct
     int prior_mouse_x, prior_mouse_y;
     int mouse_x, mouse_y;
 
-    bool text_click_held;
-    Vector2i text_pt_0, text_pt_1;
-    int text_cursor_index;
-    float text_cursor_x;
+    TextBoxProps text_box_props;
 
-    bool text_box_highlighted;
     bool theme_initialized;
 
 } ImGuiContext;
@@ -160,7 +169,7 @@ void imgui_begin(char* name, int x, int y)
     ctx->accum_width = 0;
     ctx->horiontal_max_height = 0;
 
-    ctx->text_box_highlighted = false;
+    ctx->text_box_props.highlighted = false;
 
     if(!ctx->theme_initialized)
     {
@@ -582,6 +591,7 @@ Vector2f imgui_number_box(char* label, int min, int max, int* result)
     Vector2f ret = {ctx->curr.w, ctx->curr.h};
     return ret;
 }
+
 void imgui_text_box(char* label, char* buf, int bufsize)
 {
     uint32_t hash = hash_str(label,strlen(label),0x0);
@@ -593,59 +603,66 @@ void imgui_text_box(char* label, char* buf, int bufsize)
     int array_size = 0;
     gfx_string_get_size_array(theme.text_scale, &size_array[1],99,&array_size, buf);
 
-    if(ctx->text_cursor_index >= bufsize)
-        ctx->text_cursor_index = bufsize-1;
+    if(ctx->text_box_props.text_cursor_index >= bufsize)
+        ctx->text_box_props.text_cursor_index = bufsize-1;
 
-    ctx->text_cursor_x = size_array[ctx->text_cursor_index];
+    ctx->text_box_props.text_cursor_x = size_array[ctx->text_box_props.text_cursor_index];
+    ctx->text_box_props.text_cursor_x_held_from = size_array[ctx->text_box_props.text_cursor_index_held_from];
 
     if(is_highlighted(hash))
     {
-        ctx->text_box_highlighted = true;
+        ctx->text_box_props.highlighted = true;
         window_mouse_set_cursor_ibeam();
 
-        if(window_mouse_left_went_down())
+        bool mouse_went_down = window_mouse_left_went_down();
+
+        if(mouse_went_down || ctx->text_box_props.text_click_held)
         {
             float min_dist = 10000.0;
             int selected_index = 0;
-            int click_x = (int)(ctx->mouse_x - ctx->curr.x - theme.text_padding);
-            for(int i = array_size+1; i >= 0; --i)
+
+            int box_x_start = ctx->curr.x + theme.text_padding;
+
+            if(ctx->mouse_x >= box_x_start)
             {
-                float dist = ABS(size_array[i] - (float)click_x);
-                if(dist < min_dist)
+                int click_x = (int)(ctx->mouse_x - box_x_start);
+                for(int i = array_size; i >= 0; --i)
                 {
-                    min_dist = dist;
-                    selected_index = i;
+                    float dist = ABS(size_array[i] - (float)click_x);
+                    if(dist < min_dist)
+                    {
+                        min_dist = dist;
+                        selected_index = i;
+                    }
                 }
             }
 
             ctx->focused_text_id = hash;
-            ctx->text_cursor_index = selected_index;
-            ctx->text_cursor_x = size_array[selected_index];
+            ctx->text_box_props.text_cursor_index = selected_index;
+            ctx->text_box_props.text_cursor_x = size_array[selected_index];
 
-            ctx->text_pt_0.x = ctx->mouse_x;
-            ctx->text_pt_0.y = ctx->mouse_y;
-            window_controls_set_text_buf(buf,bufsize);
-            window_controls_set_key_mode(KEY_MODE_TEXT);
-            ctx->text_click_held = true;
-        }
+            if(mouse_went_down)
+            {
+                window_controls_set_text_buf(buf,bufsize);
+                window_controls_set_key_mode(KEY_MODE_TEXT);
+                ctx->text_box_props.text_click_held = true;
+                ctx->text_box_props.text_cursor_x_held_from = ctx->text_box_props.text_cursor_x;
+                ctx->text_box_props.text_cursor_index_held_from = ctx->text_box_props.text_cursor_index;
 
-        if(ctx->text_click_held)
-        {
-            ctx->text_pt_1.x = ctx->mouse_x;
-            ctx->text_pt_1.y = ctx->mouse_y;
+            }
         }
     }
 
-    if(ctx->text_click_held && window_mouse_left_went_up())
+    if(ctx->text_box_props.text_click_held && window_mouse_left_went_up())
     {
-        ctx->text_click_held = false;
+        ctx->text_box_props.text_click_held = false;
     }
 
     int str_size = strlen(buf);
-    if(ctx->text_cursor_index > str_size)
+    if(ctx->text_box_props.text_cursor_index > str_size)
     {
-        ctx->text_cursor_index = str_size;
-        ctx->text_cursor_x = size_array[str_size];
+        ctx->text_box_props.text_cursor_index = str_size;
+        ctx->text_box_props.text_cursor_x = size_array[str_size];
     }
 
     Vector2f text_size = gfx_string_get_size(theme.text_scale, new_label);
@@ -812,13 +829,28 @@ void imgui_deselect_text_box()
 
 int imgui_get_text_cursor_index()
 {
-    return ctx->text_cursor_index;
+    return ctx->text_box_props.text_cursor_index;
+}
+
+void imgui_get_text_cursor_indices(int* i0, int* i1)
+{
+    if(ctx->text_box_props.text_cursor_index <= ctx->text_box_props.text_cursor_index_held_from)
+    {
+        *i0 = ctx->text_box_props.text_cursor_index;
+        *i1 = ctx->text_box_props.text_cursor_index_held_from;
+    }
+    else
+    {
+        *i0 = ctx->text_box_props.text_cursor_index_held_from;
+        *i1 = ctx->text_box_props.text_cursor_index;
+    }
 }
 
 void imgui_text_cursor_inc(int val)
 {
-    ctx->text_cursor_index += val;
-    ctx->text_cursor_index = MAX(0,ctx->text_cursor_index);
+    ctx->text_box_props.text_cursor_index += val;
+    ctx->text_box_props.text_cursor_index = MAX(0,ctx->text_box_props.text_cursor_index);
+    ctx->text_box_props.text_cursor_index_held_from = ctx->text_box_props.text_cursor_index;
 }
 
 Vector2f imgui_end()
@@ -829,7 +861,7 @@ Vector2f imgui_end()
     bool text_highlighted = false;
     for(int i = 0; i < MAX_CONTEXTS; ++i)
     {
-        if(contexts[i].text_box_highlighted)
+        if(contexts[i].text_box_props.highlighted)
         {
             text_highlighted = true;
             break;
@@ -1223,21 +1255,17 @@ static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text)
 
     Vector2f label_size = gfx_string_get_size(theme.text_scale, label);
 
-    float sx = ctx->text_pt_0.x < ctx->text_pt_1.x ? ctx->text_pt_0.x : ctx->text_pt_1.x;
-    float sy = r->y+2; //ctx->text_pt_0.y < ctx->text_pt_1.y ? ctx->text_pt_0.y : ctx->text_pt_1.y;
-    float sw = ABS(ctx->text_pt_1.x - ctx->text_pt_0.x);
-    float sh = label_size.y+2;//r->h - 2;//ABS(ctx->text_pt_1.y - ctx->text_pt_0.y);
-
     Vector2f text_size = gfx_string_get_size(theme.text_scale, text);
-
-    if(sx+sw > text_size.x)
-    {
-        sw = text_size.x;
-    }
 
     gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, box_color, 0.0, 1.0, theme.button_opacity, true,false);
 
-    //gfx_draw_rect_xywh(sx + sw/2.0, sy + sh/2.0, sw, sh, 0x000000FF, 0.0, 1.0, theme.button_opacity, true,false);
+    float min_x = ctx->text_box_props.text_cursor_x > ctx->text_box_props.text_cursor_x_held_from ? ctx->text_box_props.text_cursor_x_held_from : ctx->text_box_props.text_cursor_x;
+    float sx = r->x + theme.text_padding + min_x; 
+    float sy = r->y;
+    float sw = ABS(ctx->text_box_props.text_cursor_x_held_from - ctx->text_box_props.text_cursor_x);
+    float sh = r->h;
+
+    gfx_draw_rect_xywh(sx + sw/2.0, sy + sh/2.0, sw, sh, 0x000000FF, 0.0, 1.0, theme.button_opacity, true,false);
 
     gfx_draw_string(r->x+theme.text_padding, r->y-(label_size.y-r->h)/2.0, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, text);
 
@@ -1245,7 +1273,7 @@ static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text)
     {
         Vector2f text_size = gfx_string_get_size(theme.text_scale, text);
         //ctx->focused_text_cursor_index;
-        float x = r->x+theme.text_padding+ctx->text_cursor_x;
+        float x = r->x+theme.text_padding+ctx->text_box_props.text_cursor_x;
         float y = r->y-(text_size.y-r->h)/2.0f;
 
         gfx_draw_rect_xywh(x,y+(text_size.y*1.3)/2.0, 1, text_size.y*1.3, theme.text_color, 0.0, 1.0, 1.0, true,false);
