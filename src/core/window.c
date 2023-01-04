@@ -148,22 +148,10 @@ void window_set_mouse_view_coords(int x, int y)
 
 void window_get_mouse_world_coords(int* x, int* y)
 {
-    int mouse_x, mouse_y;
-    window_get_mouse_view_coords(&mouse_x, &mouse_y);
-
-    Rect r;
-    get_camera_rect(&r);
-
-    float cam_z = camera_get_zoom();
-    float factor = 1.0 - cam_z;
-
-    Vector2i top_left = {r.x - r.w/2.0, r.y - r.h/2.0};
-
-    *x = top_left.x + (factor*mouse_x);
-    *y = top_left.y + (factor*mouse_y);
+    window_get_mouse_view_coords(x,y);
+    window_translate_view_to_world(x,y);
 }
 
-//TODO: change to float args to ints I think
 void window_set_mouse_world_coords(float x, float y)
 {
     Matrix* view = get_camera_transform();
@@ -180,6 +168,47 @@ void window_set_mouse_world_coords(float x, float y)
 void window_deinit()
 {
     glfwTerminate();
+}
+
+float window_scale_view_to_world(float distance)
+{
+    float cam_z = camera_get_zoom();
+    float factor = 1.0 - cam_z;
+    return (distance * factor);
+}
+
+void window_translate_view_to_world(int* x, int* y)
+{
+    Rect r;
+    get_camera_rect(&r);
+
+    float cam_z = camera_get_zoom();
+    float factor = 1.0 - cam_z;
+
+    Vector2i top_left = {r.x - r.w/2.0, r.y - r.h/2.0};
+
+    int view_x = *x;
+    int view_y = *y;
+
+    *x = top_left.x + (factor * view_x);
+    *y = top_left.y + (factor * view_y);
+}
+
+void window_translate_world_to_view(int* x, int* y)
+{
+    Rect r;
+    get_camera_rect(&r);
+
+    float cam_z = camera_get_zoom();
+    float factor = 1.0 - cam_z;
+
+    Vector2i top_left = {r.x - r.w/2.0, r.y - r.h/2.0};
+
+    int world_x = *x;
+    int world_y = *y;
+
+    *x = (world_x - top_left.x) / factor;
+    *y = (world_y - top_left.y) / factor;
 }
 
 void window_poll_events()

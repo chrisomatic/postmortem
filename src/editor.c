@@ -72,7 +72,10 @@ void editor_draw()
 {
     particle_spawner->hidden = true;
 
-    imgui_begin_panel("Editor", 10,10);
+    float tl_x = 10.0;
+    float tl_y = 10.0;
+
+    imgui_begin_panel("Editor", (int)tl_x, (int)tl_y);
 
         imgui_store_theme();
         imgui_set_text_size(12);
@@ -109,12 +112,15 @@ void editor_draw()
 
             Matrix* view = get_camera_transform();
 
+            float curr_pscale = player->scale;
+            float slider_pscale = player->scale;
+
             switch(selection)
             {
                 case 0: // game
                     imgui_color_picker("Ambient Color", &ambient_light);
                     imgui_checkbox("Debug Enabled",&debug_enabled);
-                    imgui_slider_float("Player Scale", 0.1,10.0,&player->scale);
+                    imgui_slider_float("Player Scale", 0.1,10.0,&slider_pscale);
                     imgui_slider_float("Camera Z", -1.0,1.0,&camera_z);
                     camera_zoom(camera_z, false);
 
@@ -383,10 +389,26 @@ void editor_draw()
                     break;
             }
 
+            if(!FEQ(curr_pscale, slider_pscale))
+            {
+                player_set_scale(player, slider_pscale);
+            }
+
         }
 
     imgui_restore_theme();
     Vector2f size = imgui_end();
+
+    Rect panel_rect = {0};
+    int px = tl_x;
+    int py = tl_y;
+    window_translate_view_to_world(&px, &py);
+    panel_rect.w = window_scale_view_to_world(size.x);
+    panel_rect.h = window_scale_view_to_world(size.y);
+    panel_rect.x = px + panel_rect.w/2.0;
+    panel_rect.y = py + panel_rect.h/2.0;
+    Rect mouse_rect = player_get_mouse_rect(player);
+    player->click_ready = !rectangles_colliding(&panel_rect, &mouse_rect);
 }
 
 static void randomize_effect(ParticleEffect* effect)

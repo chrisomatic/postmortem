@@ -621,6 +621,9 @@ void draw()
 
     player_draw_offscreen();
     player_draw_crosshair(player);
+
+    if(debug_enabled)
+        player_draw_crosshair_debug(player);
 }
 
 

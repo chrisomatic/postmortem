@@ -160,6 +160,10 @@ void gui_draw()
         // for testing new gui features
         //imgui_draw_demo(10,size.y+20);
     }
+    else
+    {
+        player->click_ready = true;
+    }
 }
 
 static void draw_debug_box()
