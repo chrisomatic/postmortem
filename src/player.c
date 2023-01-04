@@ -1615,6 +1615,7 @@ void player_add_xp(Player* p, float xp)
         p->xp -= p->max_xp;
         p->max_xp *= 1.5;
         p->level++;
+        particles_spawn_effect(p->phys.pos.x, p->phys.pos.y, &particle_effects[EFFECT_LEVEL_UP], 1.5, true, false);
     }
 }
 

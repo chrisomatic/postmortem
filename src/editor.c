@@ -339,7 +339,7 @@ void editor_draw()
                         imgui_text_box("##file_name_particles",particles_file_name,IM_ARRAYSIZE(particles_file_name));
 
                         char file_path[64]= {0};
-                        snprintf(file_path,63,"effects/%s.effect",particles_file_name);
+                        snprintf(file_path,63,"src/effects/%s.effect",particles_file_name);
 
                         if(imgui_button("Save##particles"))
                         {

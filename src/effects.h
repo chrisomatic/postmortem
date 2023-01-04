@@ -18,6 +18,7 @@ typedef enum
     EFFECT_SMOKE2,
     EFFECT_BULLET_TRAIL,
     EFFECT_GUN_BLAST,
+    EFFECT_LEVEL_UP,
     EFFECT_MAX,
 } Effect;
 

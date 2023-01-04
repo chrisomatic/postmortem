@@ -867,7 +867,7 @@ void zombie_melee_check_collision(Zombie* z)
             if(collision)
             {
                 z->melee_hit_count++;
-                printf("(%d) zombie hit '%s'\n", z->id, p->name);
+                //printf("(%d) zombie hit '%s'\n", z->id, p->name);
                 float damage = RAND_FLOAT(z->damage_min, z->damage_max);
                 player_hurt(p,damage);
             }
