@@ -832,6 +832,12 @@ int imgui_get_text_cursor_index()
     return ctx->text_box_props.text_cursor_index;
 }
 
+void imgui_set_text_cursor_indices(int i0, int i1)
+{
+    ctx->text_box_props.text_cursor_index = i0;
+    ctx->text_box_props.text_cursor_index_held_from = i1;
+}
+
 void imgui_get_text_cursor_indices(int* i0, int* i1)
 {
     if(ctx->text_box_props.text_cursor_index <= ctx->text_box_props.text_cursor_index_held_from)

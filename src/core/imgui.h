@@ -33,6 +33,7 @@ void imgui_set_spacing(int spacing);
 void imgui_set_slider_width(int width);
 
 int imgui_get_text_cursor_index();
+void imgui_set_text_cursor_indices(int i0, int i1);
 void imgui_get_text_cursor_indices(int* i0, int* i1);
 void imgui_text_cursor_inc(int val);
 

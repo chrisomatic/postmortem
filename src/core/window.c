@@ -515,8 +515,10 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                 }
                 else
                 {
-                    for(int i = i1; i > i0; --i)
-                        window_text_mode_buf_remove(i0,true);
+                    for(int i = i0; i < i1; ++i)
+                        window_text_mode_buf_remove(i0+1,true);
+
+                    imgui_set_text_cursor_indices(i0,i0);
                 }
             }
             else if(key == GLFW_KEY_DELETE)
@@ -530,8 +532,10 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                 }
                 else
                 {
-                    for(int i = i1; i > i0; --i)
-                        window_text_mode_buf_remove(i0,false);
+                    for(int i = i0; i < i1; ++i)
+                        window_text_mode_buf_remove(i0+1,true);
+
+                    imgui_set_text_cursor_indices(i0,i0);
                 }
             }
             else if(key == GLFW_KEY_LEFT)
