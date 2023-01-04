@@ -171,6 +171,7 @@ typedef struct
     float detect_radius;    // unit is 1 map grid space
 
     // mouse stuff
+    bool click_ready;
     MouseData lmouse;
     MouseData rmouse;
     int mouse_x;
@@ -217,6 +218,7 @@ extern bool moving_zombie;
 void player_init_images();
 void player_init_controls(Player* p);
 void players_init();
+void player_set_scale(Player* p, float scale);
 void player_set_pos(Player* p, float x, float y);
 
 const char* player_state_str(PlayerState state);
@@ -228,6 +230,7 @@ void player_get_maxwh(Player* p, float* w, float* h);
 Rect* player_get_equipped_item_pos(Player* p);
 int player_get_equipped_item_img(Player* p);
 
+Rect player_get_mouse_rect(Player* p);
 void player_set_mouse_nothing(MouseData* mouse_data);
 void player_set_mouse(MouseData* mouse_data, bool held, bool press, bool release, float period, mouse_trigger_cb_t cb);
 void player_update_mouse_click(Player* p, bool active, bool toggled, MouseData* mouse, float delta_t);
@@ -252,6 +255,7 @@ void player_draw_debug(Player* p);
 void player_draw_all();
 void player_draw_offscreen();
 void player_draw_crosshair(Player* p);
+void player_draw_crosshair_debug(Player* p);
 
 void player_hurt(Player* p, float damage);
 

@@ -24,6 +24,11 @@ extern int view_height;
 
 bool window_init(int _view_width, int _view_height);
 void window_deinit();
+
+float window_scale_view_to_world(float distance);
+void window_translate_view_to_world(int* x, int* y);
+void window_translate_world_to_view(int* x, int* y);
+
 void window_get_mouse_coords(int* x, int* y);
 void window_get_mouse_view_coords(int* x, int* y);
 void window_set_mouse_view_coords(int x, int y);

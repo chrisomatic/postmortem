@@ -757,11 +757,7 @@ void zombies_update(float delta_t)
             {
                 zombie_info_id = 0xFFFFFFFF;
 
-                Rect rm = {0};
-                rm.x = player->mouse_x;
-                rm.y = player->mouse_y;
-                rm.w = 10;
-                rm.h = rm.w;
+                Rect rm = player_get_mouse_rect(player);
 
                 for(int j = zlist->count - 1; j >= 0; --j)
                 {

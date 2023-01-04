@@ -365,6 +365,27 @@ void players_init()
 
 }
 
+void player_set_scale(Player* p, float scale)
+{
+    p->standard_size.w /= p->scale;
+    p->standard_size.h /= p->scale;
+
+    p->scale = scale;
+
+    p->standard_size.w *= p->scale;
+    p->standard_size.h *= p->scale;
+
+    Rect r = p->standard_size;
+    r.x = p->phys.pos.x;
+    r.y = p->phys.pos.y;
+    p->phys.hit = calc_sub_box(&r, 1.0, 0.5, 0);
+    p->phys.collision = calc_sub_box(&r, 1.0, 0.4, 2);
+
+    player_update_static_boxes(p);
+    player_update_boxes(p);
+    player_update_pos_offset(p);
+}
+
 void player_set_pos(Player* p, float x, float y)
 {
     float dx = x - p->phys.pos.x;
@@ -501,6 +522,16 @@ void player_get_maxwh(Player* p, float* w, float* h)
 }
 
 
+
+Rect player_get_mouse_rect(Player* p)
+{
+    Rect rm = {0};
+    rm.x = p->mouse_x;
+    rm.y = p->mouse_y;
+    rm.w = 10;
+    rm.h = rm.w;
+    return rm;
+}
 
 void player_equip_gun(Player* p, GunIndex index)
 {
@@ -740,6 +771,12 @@ void player_set_mouse(MouseData* mouse_data, bool held, bool press, bool release
 
 void player_update_mouse_click(Player* p, bool active, bool toggled, MouseData* mouse, float delta_t)
 {
+    if(!p->click_ready)
+    {
+        mouse->triggered = false;
+        return;
+    }
+
     if(mouse->cooldown > 0.0)
     {
         mouse->cooldown -= (delta_t*1000);
@@ -1110,10 +1147,10 @@ void player_update(Player* p, double delta_t)
     if(p->actions[PLAYER_ACTION_EDITOR].toggled_on)
     {
         editor_enabled = !editor_enabled;
-        if(editor_enabled)
-            window_enable_cursor();
-        else
-            window_disable_cursor();
+        // if(editor_enabled)
+        //     window_enable_cursor();
+        // else
+        //     window_disable_cursor();
     }
 
     if(p->actions[PLAYER_ACTION_MENU].toggled_on)
@@ -1464,8 +1501,29 @@ void player_draw_all()
 
 void player_draw_crosshair(Player* p)
 {
-    // crosshair
-    gfx_draw_image_ignore_light(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 0.1,0.0,0.80, false,true);
+    if(p->click_ready)
+    {
+        gfx_draw_image_ignore_light(crosshair_image, 0, p->mouse_x,p->mouse_y, 0x00CCCCCC, 0.1,0.0,0.80, false,true);
+        return;
+    }
+
+    uint32_t color = COLOR_ORANGE;
+    Rect mouse_rect = player_get_mouse_rect(p);
+    mouse_rect.w = 3.0;
+    mouse_rect.h = 3.0;
+    gfx_draw_rect(&mouse_rect, color, 0.0, 1.0, 0.5, true, true);
+
+}
+
+void player_draw_crosshair_debug(Player* p)
+{
+    uint32_t color = COLOR_BLACK;
+
+    if(!p->click_ready)
+        color = COLOR_WHITE;
+
+    Rect mouse_rect = player_get_mouse_rect(p);
+    gfx_draw_rect(&mouse_rect, color, 0.0, 1.0, 1.0, false,true);
 }
 
 void player_weapon_melee_check_collision(Player* p)
