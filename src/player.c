@@ -23,6 +23,9 @@
 // #define mprint(...) printf(__VA_ARGS__)
 #define mprint(...)
 
+#define PLAYER_STARTING_POS_X 1000.0
+#define PLAYER_STARTING_POS_Y 1000.0
+
 // global vars
 // ------------------------------------------------------------
 Player players[MAX_CLIENTS];
@@ -287,12 +290,17 @@ static void player_init(int index)
     p->max_size.w = maxw;
     p->max_size.h = maxh;
 
-    p->phys.pos.x = 1000.0;
-    p->phys.pos.y = 1000.0;
+    p->phys.pos.x = PLAYER_STARTING_POS_X;
+    p->phys.pos.y = PLAYER_STARTING_POS_Y;
+
     p->phys.actual_pos.x = p->phys.pos.x;
     p->phys.actual_pos.y = p->phys.pos.y;
 
     p->phys.mass = 1.0;
+
+    p->level = 0;
+    p->xp = 0.0;
+    p->max_xp = 10.0;
 
     Rect r = p->standard_size;
     r.x = p->phys.pos.x;
@@ -320,6 +328,7 @@ static void player_init(int index)
 
 
     p->predicted_state_index = 0;
+    p->invincible = false;
 
     // light for player
     p->point_light = -1;
@@ -1204,8 +1213,7 @@ void player_update(Player* p, double delta_t)
         p->busy = false;
     }
 
-    // player_check_block_collision(p, prior_pos, prior_collision_box);
-    // player_weapon_melee_check_collision(p);
+    player_weapon_melee_check_collision(p);
 
     //lighting_point_light_move(p->point_light, p->phys.actual_pos.x, p->phys.actual_pos.y);
 
@@ -1520,6 +1528,10 @@ void player_weapon_melee_check_collision(Player* p)
                 float damage = melee->power;
                 // printf("zombie hurt\n");
                 zombie_hurt2(j,damage);
+                if(zombies[j].dead)
+                {
+                    player_add_xp(p,zombies[j].xp);
+                }
                 p->melee_hit_count++;
                 return;
             }
@@ -1528,9 +1540,33 @@ void player_weapon_melee_check_collision(Player* p)
     }
 }
 
+static void player_die(Player* p)
+{
+    p->hp = p->hp_max;
+    p->level = 0;
+    p->xp = 0.0;
+    p->max_xp = 10.0;
+    player_set_pos(p,PLAYER_STARTING_POS_X,PLAYER_STARTING_POS_Y);
+}
+
+void player_add_xp(Player* p, float xp)
+{
+    p->xp += xp;
+    while(p->xp >= p->max_xp)
+    {
+        p->xp -= p->max_xp;
+        p->max_xp *= 1.5;
+        p->level++;
+    }
+}
+
+
 void player_hurt(Player* p, float damage)
 {
     if(!p)
+        return;
+
+    if(p->invincible)
         return;
 
     p->hp -= damage;
@@ -1538,7 +1574,6 @@ void player_hurt(Player* p, float damage)
 
     if(p->hp <= 0.0)
     {
-        p->hp = 0.0;
-        //player_die(p);
+        player_die(p);
     }
 }

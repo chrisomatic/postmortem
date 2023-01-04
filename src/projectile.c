@@ -47,6 +47,8 @@ void projectile_add(Player* p, Gun* gun, float angle_offset)
 {
     Projectile proj = {0};
 
+    proj.player = p;
+
     // float speed = gun->fire_speed;
     float speed = gun->fire_speed*10000.0;
     //speed = 600.0;

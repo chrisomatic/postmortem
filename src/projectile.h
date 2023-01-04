@@ -20,6 +20,7 @@ typedef struct
     Vector2i grid_pos;
     Vector2i grid_pos_prior;
     Vector2f vel;
+    Player* player;
     float angle_deg;
     float power;
     int damage;

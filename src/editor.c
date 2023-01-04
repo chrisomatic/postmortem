@@ -141,6 +141,8 @@ void editor_draw()
                         }
                     }
 
+                    imgui_checkbox("Invincible",&player->invincible);
+
                     // imgui_text_sized(18,"Point Lights");
                     // imgui_slider_float("Atten0", 0.00,1.5,&point_lights[player->point_light].attenuation.x);
                     // imgui_slider_float("Atten1", 0.00,0.03,&point_lights[player->point_light].attenuation.y);

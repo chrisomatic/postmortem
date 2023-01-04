@@ -487,10 +487,10 @@ void imgui_checkbox(char* label, bool* result)
         }
     }
 
-    Rect interactive = {ctx->curr.x, ctx->curr.y, theme.checkbox_size, theme.checkbox_size};
-    handle_highlighting(hash, &interactive);
-
     Vector2f text_size = gfx_string_get_size(theme.text_scale, label);
+
+    Rect interactive = {ctx->curr.x, ctx->curr.y, theme.checkbox_size + theme.text_padding + text_size.x, theme.checkbox_size};
+    handle_highlighting(hash, &interactive);
 
     draw_checkbox(hash, label, *result);
     progress_pos();
@@ -1271,7 +1271,7 @@ static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text)
     float sw = ABS(ctx->text_box_props.text_cursor_x_held_from - ctx->text_box_props.text_cursor_x);
     float sh = r->h;
 
-    gfx_draw_rect_xywh(sx + sw/2.0, sy + sh/2.0, sw, sh, 0x000000FF, 0.0, 1.0, theme.button_opacity, true,false);
+    gfx_draw_rect_xywh(sx + sw/2.0, sy + sh/2.0, sw, sh, 0x000055CC, 0.0, 1.0, theme.button_opacity, true,false);
 
     gfx_draw_string(r->x+theme.text_padding, r->y-(label_size.y-r->h)/2.0, theme.text_color, theme.text_scale, 0.0, 1.0, false, false, text);
 

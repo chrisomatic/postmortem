@@ -266,6 +266,7 @@ bool zombie_add(ZombieSpawn* spawn)
     z->damage_max = 2.0;
     z->hp_max = spawn->hp_max;
     z->hp = z->hp_max;
+    z->xp = 1.0;
 
 
     return list_add(zlist, (void*)z);
@@ -632,6 +633,7 @@ void zombie_update(Zombie* z, float delta_t)
     gfx_anim_update(&z->anim, delta_t);
     zombie_update_sprite_index(z);
     zombie_update_boxes(z);
+    zombie_melee_check_collision(z);
 
     physics_begin(&z->phys);
     physics_add_friction(&z->phys, 16.0);

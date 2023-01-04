@@ -146,6 +146,10 @@ typedef struct
     Physics phys;
     Vector2i grid_pos;
 
+    int level;
+    float xp;
+    float max_xp;
+
     float angle;
     float scale;
     float speed;
@@ -162,6 +166,7 @@ typedef struct
 
     uint8_t melee_hit_count;
 
+    bool invincible;
     bool item_equipped;
     PlayerItem item;    //equipped item
 
@@ -254,6 +259,7 @@ void player_draw_offscreen();
 void player_draw_crosshair(Player* p);
 
 void player_hurt(Player* p, float damage);
+void player_add_xp(Player* p, float xp);
 
 void player_weapon_melee_check_collision(Player* p);
 

@@ -786,6 +786,10 @@ static void handle_proj_collisions(void* data, double delta_t)
             {
                 Zombie* z = (Zombie*)min_e->data;
                 zombie_hurt(z,proj->damage);
+                if(z->dead)
+                {
+                    player_add_xp(proj->player,z->xp);
+                }
                 memcpy(&pe,&particle_effects[EFFECT_BLOOD1],sizeof(ParticleEffect));
             } break;
             case ENTITY_TYPE_BLOCK:

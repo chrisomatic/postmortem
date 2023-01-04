@@ -75,6 +75,8 @@ typedef struct
     bool dead;
     float dead_time;
 
+    float xp;
+
     // physical/graphical properties of the player
     GFXAnimation anim;
     ZombieAnimState anim_state;

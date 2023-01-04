@@ -77,7 +77,7 @@ void gui_draw()
         int num_boxes = 7;
         float hotbar_padding = 3.0;
         float hotbar_bottom_padding = 10.0;
-        float hotbar_box_size = 50.0;
+        float hotbar_box_size = 48.0;
         float half_hotbar_box_size = hotbar_box_size/2.0;
         float hotbar_size = (num_boxes*hotbar_box_size)+((num_boxes-1)*hotbar_padding);
 
@@ -98,21 +98,30 @@ void gui_draw()
         {
             // show bullet count
             Gun* g = (Gun*)item->props;
-            gfx_draw_image_ignore_light(particles_image, 80, curr_x-half_hotbar_box_size+10,curr_y-half_hotbar_box_size-12, COLOR_TINT_NONE,0.7,45.0,1.0,true,false);
-            gfx_draw_string(curr_x-half_hotbar_box_size+20,curr_y-half_hotbar_box_size-22,COLOR_WHITE,0.24,0.0,1.0,false,true,"x%d",g->bullets);
+            float x = (view_width + hotbar_size)/2.0;
+            float y = curr_y-half_hotbar_box_size;
+            gfx_draw_image_ignore_light(particles_image, 80, x+12,y+22, COLOR_TINT_NONE,0.7,45.0,1.0,true,false);
+            gfx_draw_string(x+20,y+12,COLOR_WHITE,0.24,0.0,1.0,false,true,"x%d",g->bullets);
         }
 
         // draw health
-        float health_bar_width  = 200.0;
+        float health_bar_width  = hotbar_size;
         float red_width = health_bar_width*(player->hp/player->hp_max);
-        float health_bar_height = 12.0;
+        float health_bar_height = 15.0;
         float health_bar_padding = 4.0;
 
-        float health_bar_x = curr_x + health_bar_width/2.0;
+        float health_bar_x = (view_width - hotbar_size)/2.0;
         float health_bar_y = curr_y - (hotbar_box_size + health_bar_height)/2.0 - health_bar_padding;
 
-        gfx_draw_rect_xywh(health_bar_x,health_bar_y,health_bar_width,health_bar_height,COLOR_BLACK,0.0,1.0,0.7,true,false);
-        gfx_draw_rect_xywh(curr_x + red_width/2.0,health_bar_y,red_width,health_bar_height,0x00CC0000,0.0,1.0,0.4,true,false);
+        gfx_draw_rect_xywh(health_bar_x + health_bar_width/2.0,health_bar_y,health_bar_width,health_bar_height,COLOR_BLACK,0.0,1.0,0.7,true,false);
+        gfx_draw_rect_xywh(health_bar_x + red_width/2.0,health_bar_y,red_width,health_bar_height,0x00CC0000,0.0,1.0,0.4,true,false);
+        gfx_draw_rect_xywh(health_bar_x + health_bar_width/2.0,health_bar_y,health_bar_width,health_bar_height,COLOR_BLACK,0.0,1.0,0.7,false,false); // border
+
+        // draw level
+        gfx_draw_string((view_width-hotbar_size)/2.0-14,view_height - hotbar_box_size/2.0,0x0000CCCC,0.3,0.0,1.0,false,true,"%d",player->level);
+        float xp_width = health_bar_width*(player->xp/player->max_xp);
+        gfx_draw_rect_xywh(health_bar_x + health_bar_width/2.0,view_height - 8,health_bar_width,3,COLOR_BLACK,0.0,1.0,0.9,true,false);
+        gfx_draw_rect_xywh(health_bar_x + xp_width/2.0,view_height - 8,xp_width,3,0x0000FFFF,0.0,1.0,0.7,true,false);
         
         // draw hotbar
         for(int i = 0; i < num_boxes; ++i)
