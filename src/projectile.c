@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <math.h>
+#include "headers.h"
 #include "main.h"
 #include "math2d.h"
 #include "window.h"

@@ -1,0 +1,172 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="core">
+      <UniqueIdentifier>{e139b269-307a-4e8b-a59a-2d31f7478026}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{b29fab27-14d7-4432-8f89-f3a2d6814edc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="util">
+      <UniqueIdentifier>{bd108ba3-ee93-4bae-af64-403ec6c0d3aa}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\core\bitpack.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\camera.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\gfx.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\glist.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\imgui.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\lighting.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\math2d.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\physics.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\shader.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\socket.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\timer.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\window.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\console.c" />
+    <ClCompile Include="..\src\core\particles.c">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\editor.c" />
+    <ClCompile Include="..\src\effects.c" />
+    <ClCompile Include="..\src\entity.c" />
+    <ClCompile Include="..\src\gui.c" />
+    <ClCompile Include="..\src\item.c" />
+    <ClCompile Include="..\src\main.c" />
+    <ClCompile Include="..\src\net.c" />
+    <ClCompile Include="..\src\player.c" />
+    <ClCompile Include="..\src\projectile.c" />
+    <ClCompile Include="..\src\world.c" />
+    <ClCompile Include="..\src\zombie.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\core\bitpack.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\camera.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\circbuf.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\gfx.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\glist.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\hash.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\imgui.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\io.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\lighting.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\math2d.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\physics.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\shader.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\socket.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\timer.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\window.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\log.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\console.h" />
+    <ClInclude Include="..\src\core\packet_queue.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\particles.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\headers.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\editor.h" />
+    <ClInclude Include="..\src\effects.h" />
+    <ClInclude Include="..\src\entity.h" />
+    <ClInclude Include="..\src\gui.h" />
+    <ClInclude Include="..\src\item.h" />
+    <ClInclude Include="..\src\main.h" />
+    <ClInclude Include="..\src\net.h" />
+    <ClInclude Include="..\src\player.h" />
+    <ClInclude Include="..\src\projectile.h" />
+    <ClInclude Include="..\src\world.h" />
+    <ClInclude Include="..\src\zombie.h" />
+    <ClInclude Include="..\src\core\util\stb_image.h">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\util\stb_truetype.h">
+      <Filter>util</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\core\LICENSE" />
+    <None Include="..\src\core\README.md" />
+    <None Include="..\src\core\shaders\font.frag.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\src\core\shaders\font.vert.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\src\core\shaders\line.frag.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\src\core\shaders\line.vert.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\src\core\shaders\shape.frag.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\src\core\shaders\shape.vert.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\src\core\shaders\sprite_batch.frag.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\src\core\shaders\sprite_batch.vert.glsl">
+      <Filter>shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>

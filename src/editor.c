@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <string.h>
-
+#include "headers.h"
 #include "main.h"
 #include "window.h"
 #include "gfx.h"
@@ -415,7 +411,7 @@ static void randomize_effect(ParticleEffect* effect)
 {
     effect->life.init_min = RAND_FLOAT(0.1,5.0);
     effect->life.init_max = RAND_FLOAT(0.1,5.0);
-    effect->life.rate     = RAND_FLOAT(1.0,1.0);
+    effect->life.rate = 1.0;
 
     effect->rotation_init_min = RAND_FLOAT(-360.0,360.0);
     effect->rotation_init_max = RAND_FLOAT(-360.0,360.0);

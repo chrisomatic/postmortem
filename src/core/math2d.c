@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <math.h>
-
+#include "headers.h"
 #include "gfx.h"
 
 #include "math2d.h"

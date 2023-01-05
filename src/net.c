@@ -1,10 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <errno.h> 
-#include <time.h>
+#include "headers.h"
+
+#if _WIN32
+#else
 #include <sys/select.h>
+#endif
 
 #include "socket.h"
 #include "timer.h"
@@ -68,8 +67,6 @@ struct
 
 #define IMAX_BITS(m) ((m)/((m)%255+1) / 255%255*8 + 7-86/((m)%255+12))
 #define RAND_MAX_WIDTH IMAX_BITS(RAND_MAX)
-
-_Static_assert((RAND_MAX & (RAND_MAX + 1u)) == 0, "RAND_MAX not a Mersenne number");
 
 // ---
 
@@ -184,6 +181,9 @@ static void print_packet_simple(Packet* pkt, const char* hdr)
 
 static bool has_data_waiting(int socket)
 {
+#if _WIN32
+    return false; //@TODO
+#else
     fd_set readfds;
 
     //clear the socket set  
@@ -205,6 +205,7 @@ static bool has_data_waiting(int socket)
 
     bool has_data = FD_ISSET(socket , &readfds);
     return has_data;
+#endif
 }
 
 static int net_send(NodeInfo* node_info, Address* to, Packet* pkt)

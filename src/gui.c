@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <string.h>
-
+#include "headers.h"
 #include "main.h"
 #include "window.h"
 #include "gfx.h"
@@ -241,13 +237,13 @@ static void draw_debug_box()
     {
         float factor = (window_height / (float)view_height);
         float big = 23.0/factor;
-        float small = 15.0/factor;
+        float _small = 15.0/factor;
 
         imgui_begin_panel("Debug",950,10);
-            imgui_set_text_size(small);
+            imgui_set_text_size(_small);
 
             imgui_text_sized(big,"Window");
-            imgui_indent_begin(small);
+            imgui_indent_begin(_small);
                 imgui_text("FPS: %.2f", fps);
 #if ENABLE_FPS_HIST
                 imgui_text("Min FPS: %.2f", fps_min);
@@ -258,7 +254,7 @@ static void draw_debug_box()
             imgui_indent_end();
 
             imgui_text_sized(big,"Player");
-            imgui_indent_begin(small);
+            imgui_indent_begin(_small);
                 imgui_text("Pos: %d, %d", (int)player->phys.pos.x, (int)player->phys.pos.y);
                 imgui_text("Actual Pos: %d, %d", (int)player->phys.actual_pos.x, (int)player->phys.actual_pos.y);
                 imgui_text("Vel: %.2f, %.2f (%.2f)", pvx, pvy, pv);
@@ -275,7 +271,7 @@ static void draw_debug_box()
             imgui_indent_end();
 
             imgui_text_sized(big,"Player Item");
-            imgui_indent_begin(small);
+            imgui_indent_begin(_small);
                 imgui_text("Equipped: %s", player->item_equipped ? "true" :  "false");
                 imgui_text("Type: %s", player_item_type_str(player->item.item_type));
                 imgui_text("Index: %d", player->item_index);
@@ -307,7 +303,7 @@ static void draw_debug_box()
             imgui_indent_end();
 
             imgui_text_sized(big,"Mouse");
-            imgui_indent_begin(small);
+            imgui_indent_begin(_small);
                 imgui_text("World:  %d, %d", wmx, wmy);
                 imgui_text("View:   %d, %d", vmx, vmy);
                 imgui_text("Window: %d, %d", mx, my);
@@ -317,7 +313,7 @@ static void draw_debug_box()
             imgui_indent_end();
             
             imgui_text_sized(big,"Camera");
-            imgui_indent_begin(small);
+            imgui_indent_begin(_small);
                 // imgui_text("VH: %d", cam_view_height);
                 imgui_text("Pos: %.2f, %.2f", camera_rect.x, camera_rect.y);
                 imgui_text("w,h: %.2f, %.2f", camera_rect.w, camera_rect.h);
@@ -325,7 +321,7 @@ static void draw_debug_box()
             imgui_indent_end();
 
             imgui_text_sized(big,"Zombies");
-            imgui_indent_begin(small);
+            imgui_indent_begin(_small);
                 imgui_text("Count: %d", zlist->count);
                 Zombie* z = zombie_get_by_id(zombie_info_id);
                 if(z != NULL)
@@ -340,7 +336,7 @@ static void draw_debug_box()
             if(role == ROLE_CLIENT)
             {
                 imgui_text_sized(big,"Network");
-                imgui_indent_begin(small);
+                imgui_indent_begin(_small);
                     imgui_text("Server IP: %s",server_ip_str);
                     imgui_text("Player count: %u",player_count);
                     imgui_text("Ping: %.0f ms",net_client_get_rtt());

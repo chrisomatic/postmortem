@@ -1,10 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include "headers.h"
+#if _WIN32
+#include <profileapi.h>
+#else
 #include <sys/time.h>
-#include <time.h>
-#include <unistd.h>
+#endif
 
 #include "timer.h"
 
@@ -15,26 +14,56 @@ static struct
     uint64_t  offset;
 } _timer;
 
+#if _WIN32
+void usleep(__int64 usec)
+{
+    HANDLE timer;
+    LARGE_INTEGER ft;
+
+    ft.QuadPart = -(10 * usec); // Convert to 100 nanosecond interval, negative value indicates relative time
+
+    timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
+}
+#endif
+
 static uint64_t get_timer_value(void)
 {
+#if _WIN32
+    uint64_t counter;
+    QueryPerformanceCounter((LARGE_INTEGER*)&counter);
+    return counter;
+#else
 #if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
     if (_timer.monotonic)
     {
         struct timespec ts;
         clock_gettime(CLOCK_MONOTONIC, &ts);
-        return (uint64_t) ts.tv_sec * (uint64_t) 1000000000 + (uint64_t) ts.tv_nsec;
+        return (uint64_t)ts.tv_sec * (uint64_t)1000000000 + (uint64_t)ts.tv_nsec;
     }
     else
 #endif
+
     {
         struct timeval tv;
         gettimeofday(&tv, NULL);
         return (uint64_t) tv.tv_sec * (uint64_t) 1000000 + (uint64_t) tv.tv_usec;
+
     }
+#endif
 }
 
 void init_timer(void)
 {
+#if _WIN32
+    uint64_t freq;
+    QueryPerformanceCounter((LARGE_INTEGER*)&freq);
+    _timer.monotonic = false;
+    _timer.frequency = freq;
+#else
+
 #if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
     struct timespec ts;
 
@@ -49,7 +78,9 @@ void init_timer(void)
         _timer.monotonic = false;
         _timer.frequency = 1000000;
     }
+#endif
     _timer.offset = get_timer_value();
+
 }
 
 

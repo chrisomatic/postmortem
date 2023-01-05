@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
+#include "headers.h"
 #include <GL/glew.h>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -14,6 +11,7 @@
 #include "lighting.h"
 #include "log.h"
 #include "gfx.h"
+
 
 #define MAX_LINES 100
 #define SPRITE_BATCH_MAX_SPRITES 4096
@@ -48,7 +46,7 @@ typedef struct
     GLuint tex_unit;
     GLuint ignore_light;
     GLuint blending_mode;
-} __attribute__((__packed__)) Sprite;
+} Sprite;
 
 typedef struct
 {

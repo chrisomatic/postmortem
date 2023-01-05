@@ -12,12 +12,11 @@
 #define PLATFORM PLATFORM_UNIX
 #endif
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
+#include "headers.h"
 
 #if PLATFORM == PLATFORM_WINDOWS
     #include <winsock2.h>
+    #include <ws2tcpip.h>
 #elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
     #include <sys/socket.h>
     #include <netinet/in.h>

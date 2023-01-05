@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-
+#include "headers.h"
 #include "main.h"
 #include "window.h"
 #include "gfx.h"
@@ -39,7 +35,9 @@ static void load_map_file(const char* file_path)
 
     int byte_count = 0;
 
-    uint8_t bytes[1024*1024] = {0};
+    //uint8_t bytes[1024*1024] = {0};
+    uint8_t* bytes = calloc(1024 * 1024, sizeof(uint8_t));
+
     for(;;)
     {
         int c = fgetc(fp);
@@ -60,6 +58,7 @@ static void load_map_file(const char* file_path)
 
     map.name_len = bytes[idx++];
 
+    printf("Loading map name\n");
     map.name = malloc((map.name_len+1)*sizeof(char));
     memcpy(map.name, &bytes[idx], map.name_len*sizeof(char));
     idx += map.name_len;
@@ -70,8 +69,11 @@ static void load_map_file(const char* file_path)
     map.cols = bytes[idx+1] << 8 | bytes[idx] << 0;
     idx += 2;
 
+    printf("Loading map data\n");
     map.data = malloc(map.rows*map.cols*sizeof(uint8_t));
     memcpy(map.data, &bytes[idx], byte_count*sizeof(uint8_t));
+
+    free(bytes);
 
     if(map.rows > MAP_GRID_ROWS_MAX)
     {
@@ -107,8 +109,9 @@ static void load_map_file(const char* file_path)
 void world_init()
 {
     load_map_file("src/map/test.map");
+    printf("load image\n");
     ground_sheet = gfx_load_image("src/img/ground_set.png", false, false, 32, 32);
-
+    printf("lighting init\n");
     lighting_init();
 
     // world lights

@@ -10,7 +10,7 @@ typedef struct
     uint8_t c;
     uint8_t d;
     uint16_t port;
-} __attribute__((__packed__)) Address;
+} Address;
 
 bool socket_initalize();
 void socket_shutdown();

@@ -1,4 +1,4 @@
-#include <string.h>
+#include "headers.h"
 #include "projectile.h"
 #include "player.h"
 #include "zombie.h"
@@ -754,8 +754,8 @@ static void handle_proj_collisions(void* data, double delta_t)
 
     if(num_hits > 0)
     {
-        Entity* min_e;
-        Physics* min_phys2;
+        Entity* min_e = NULL;
+        Physics* min_phys2 = NULL;
 
         float min_d = INFINITY;
         for(int _j = 0; _j < num_hits; ++_j)
@@ -774,45 +774,48 @@ static void handle_proj_collisions(void* data, double delta_t)
 
         ParticleEffect pe;
 
-        switch(min_e->type)
+        if (min_e && min_phys2)
         {
+            switch (min_e->type)
+            {
             case ENTITY_TYPE_PLAYER:
             {
                 Player* p = (Player*)min_e->data;
-                player_hurt(p,proj->damage);
-                memcpy(&pe,&particle_effects[EFFECT_BLOOD1],sizeof(ParticleEffect));
+                player_hurt(p, proj->damage);
+                memcpy(&pe, &particle_effects[EFFECT_BLOOD1], sizeof(ParticleEffect));
             } break;
             case ENTITY_TYPE_ZOMBIE:
             {
                 Zombie* z = (Zombie*)min_e->data;
-                zombie_hurt(z,proj->damage);
-                if(z->dead)
+                zombie_hurt(z, proj->damage);
+                if (z->dead)
                 {
-                    player_add_xp(proj->player,z->xp);
+                    player_add_xp(proj->player, z->xp);
                 }
-                memcpy(&pe,&particle_effects[EFFECT_BLOOD1],sizeof(ParticleEffect));
+                memcpy(&pe, &particle_effects[EFFECT_BLOOD1], sizeof(ParticleEffect));
             } break;
             case ENTITY_TYPE_BLOCK:
             {
                 block_t* b = (block_t*)min_e->data;
-                block_hurt(b,proj->damage);
-                memcpy(&pe,&particle_effects[EFFECT_DEBRIS1],sizeof(ParticleEffect));
+                block_hurt(b, proj->damage);
+                memcpy(&pe, &particle_effects[EFFECT_DEBRIS1], sizeof(ParticleEffect));
                 pe.sprite_index = b->type;
             } break;
+            }
+
+            pe.scale.init_min *= 0.5;
+            pe.scale.init_max *= 0.5;
+            pe.velocity_x.init_min = -(proj->vel.x * 0.02);
+            pe.velocity_x.init_max = -(proj->vel.x * 0.02);
+            pe.velocity_x.rate = -0.02;
+            pe.velocity_y.init_min = (proj->vel.y * 0.02);
+            pe.velocity_y.init_max = 0.0;
+            pe.velocity_y.rate = -0.02;
+
+            particles_spawn_effect(min_phys2->pos.x, min_phys2->pos.y, &pe, 0.6, true, false);
+
+            proj->dead = true;
         }
-
-        pe.scale.init_min *= 0.5;
-        pe.scale.init_max *= 0.5;
-        pe.velocity_x.init_min = -(proj->vel.x*0.02);
-        pe.velocity_x.init_max = -(proj->vel.x*0.02);
-        pe.velocity_x.rate = -0.02;
-        pe.velocity_y.init_min = (proj->vel.y*0.02);
-        pe.velocity_y.init_max = 0.0;
-        pe.velocity_y.rate = -0.02;
-
-        particles_spawn_effect(min_phys2->pos.x, min_phys2->pos.y, &pe, 0.6, true, false);
-
-        proj->dead = true;
     }
 }
 

@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-
+#include "headers.h"
 #include "math2d.h"
 #include "log.h"
 #include "glist.h"

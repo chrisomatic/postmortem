@@ -2,3 +2,5 @@
 bin/
 map/editor/autosave/
 img/blender_output/
+win/x64/
+win/.vs/

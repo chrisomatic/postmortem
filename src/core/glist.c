@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
+#include "headers.h"
 #include "log.h"
 #include "glist.h"
 
@@ -45,7 +42,9 @@ bool list_add(glist* list, void* item)
     if(list_is_full(list))
         return false;
 
-    memcpy(list->buf + list->count*list->item_size, item, list->item_size);
+    char* p = (char*)list->buf;
+
+    memcpy(p+list->count*list->item_size, item, list->item_size);
     list->count++;
     return true;
 }
@@ -58,7 +57,9 @@ bool list_remove(glist* list, int index)
     if(index >= list->count)
         return false;
 
-    memcpy(list->buf + index*list->item_size, list->buf+(list->count-1)*list->item_size, list->item_size);
+    char* p = (char*)list->buf;
+
+    memcpy(p + index*list->item_size, p+(list->count-1)*list->item_size, list->item_size);
     list->count--;
 }
 
@@ -70,7 +71,9 @@ bool list_remove_by_item(glist* list, void* item)
     if(item == NULL)
         return false;
 
-    memcpy(item, list->buf+(list->count-1)*list->item_size, list->item_size);
+    char* p = (char*)list->buf;
+
+    memcpy(item, p+(list->count-1)*list->item_size, list->item_size);
     list->count--;
 }
 
@@ -96,5 +99,7 @@ void* list_get(glist* list, int index)
     if(list == NULL)
         return NULL;
 
-    return list->buf + index*list->item_size;
+    char* p = (char*)list->buf;
+
+    return (void*)(p + index*list->item_size);
 }

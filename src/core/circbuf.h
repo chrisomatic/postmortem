@@ -28,11 +28,15 @@ void circbuf_add(CircBuf* cb, void* item)
 {
     int index = cb->count;
 
-    if(cb->count == cb->max_count)
+    char* p = (char*)cb->buf;
+
+    if (cb->count == cb->max_count)
     {
         // shift
-        for(int i = 1; i <= cb->max_count-1; ++i)
-            memcpy(cb->buf+(i-1),cb->buf+i,cb->item_size);
+        for (int i = 1; i <= cb->max_count - 1; ++i)
+        {
+            memcpy(p + (i - 1), p + i, cb->item_size);
+        }
 
         index--;
     }
@@ -41,7 +45,7 @@ void circbuf_add(CircBuf* cb, void* item)
         cb->count++;
     }
 
-    void* it = (cb->buf+index);
+    void* it = (p+index);
     memcpy(it,item,cb->item_size);
 }
 
@@ -50,5 +54,6 @@ void* circbuf_get_item(CircBuf* cb,int index)
     if(index < 0 || index >= cb->max_count)
         return NULL;
 
-    return (cb->buf+index);
+    char* p = (char*)cb->buf;
+    return (p+index);
 }

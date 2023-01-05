@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
+#include "headers.h"
 #include "main.h"
 #include "window.h"
 #include "camera.h"

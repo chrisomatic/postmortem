@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <string.h>
-
+#include "headers.h"
 #include "player.h"
 #include "zombie.h"
 #include "gui.h"

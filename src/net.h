@@ -7,6 +7,15 @@
 #define MAX_CLIENTS 8
 #define MAX_PACKET_DATA_SIZE 1024
 
+#ifdef __GNUC__
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#endif
+
+#ifdef _MSC_VER
+#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#endif
+
+
 typedef enum
 {
     PACKET_TYPE_INIT = 0,
@@ -44,7 +53,7 @@ typedef enum
     PACKET_ERROR_INVALID,
 } PacketError;
 
-typedef struct
+PACK(struct PacketHeader
 {
     uint32_t game_id;
     uint16_t id;
@@ -52,32 +61,40 @@ typedef struct
     uint32_t ack_bitfield;
     uint8_t type;
     uint8_t pad[3]; // pad to be 4-byte aligned
-} __attribute__((__packed__)) PacketHeader;
+});
 
-typedef struct
+typedef struct PacketHeader PacketHeader;
+
+PACK(struct Packet
 {
     PacketHeader hdr;
 
     uint32_t data_len;
     uint8_t  data[MAX_PACKET_DATA_SIZE];
-} __attribute__((__packed__)) Packet;
+});
 
-typedef struct
+typedef struct Packet Packet;
+
+PACK(struct NetPlayerInput
 {
     double delta_t;
     uint32_t keys;
     int mouse_x;
     int mouse_y;
-} __attribute__((__packed__)) NetPlayerInput;
+});
 
-typedef struct
+typedef struct NetPlayerInput NetPlayerInput;
+
+PACK(struct PlayerNetState
 {
     bool active;
     uint16_t associated_packet_id;
     Vector2f pos;
     float angle;
     uint8_t sprite_index;
-} __attribute__((__packed__)) PlayerNetState;
+});
+
+typedef struct PlayerNetState PlayerNetState;
 
 extern char* server_ip_address;
 
