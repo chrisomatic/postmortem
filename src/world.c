@@ -149,6 +149,11 @@ void world_draw()
             //gfx_draw_image(ground_sheet,index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0, true,true);
             gfx_sprite_batch_add(ground_sheet, index,x,y,COLOR_TINT_NONE,1.0,0.0,1.0, true,false,false);
 
+            uint32_t color = gfx_images[ground_sheet].avg_color[index];
+            Rect wrect = {0};
+            map_grid_to_rect(r, c, &wrect);
+            gfx_draw_rect(&wrect, color, 0.0,0.5,1.0, false, true);
+
 #if 0
             if(debug_enabled)
             {

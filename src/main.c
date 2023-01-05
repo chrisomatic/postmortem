@@ -465,18 +465,34 @@ void draw_debug()
     Rect r;
     get_camera_rect(&r);
 
+    int r1,c1,r2,c2;
+    coords_to_map_grid(r.x-r.w/2.0, r.y-r.h/2.0, &r1, &c1);
+    coords_to_map_grid(r.x+r.w/2.0, r.y+r.h/2.0, &r2, &c2);
+
     int wr1,wc1,wr2,wc2;
     coords_to_world_grid(r.x-r.w/2.0, r.y-r.h/2.0, &wr1, &wc1);
     coords_to_world_grid(r.x+r.w/2.0, r.y+r.h/2.0, &wr2, &wc2);
+
+    //TODO: mini map
+    // for(int r = (r1-1); r < (r2+1); ++r)
+    // {
+    //     for(int c = (c1-1); c < (c2+1); ++c)
+    //     {
+    //         uint8_t index = map_get_tile_index(r,c);
+    //         if(index == 0xFF) continue;
+    //         uint32_t color = gfx_images[ground_sheet].avg_color[index];
+    //         Rect wrect = {0};
+    //         map_grid_to_rect(r, c, &wrect);
+    //         // gfx_draw_rect(&wrect, color, 0.0,0.5,1.0, true, true);
+    //         gfx_draw_rect(&wrect, color, 0.0,1.0,1.0, true, true);
+    //     }
+    // }
 
 #if 0
     // tile grid
     // -----------------------------------------------------------------------
     {
-        int r1,c1,r2,c2;
         uint32_t line_color = COLOR_GREEN;
-        coords_to_map_grid(r.x-r.w/2.0, r.y-r.h/2.0, &r1, &c1);
-        coords_to_map_grid(r.x+r.w/2.0, r.y+r.h/2.0, &r2, &c2);
         // float xadj = -1.0*MAP_GRID_PXL_SIZE/2.0;
         // float yadj = -1.0*MAP_GRID_PXL_SIZE/2.0;
         for(int r = (r1-1); r < (r2+1); ++r)

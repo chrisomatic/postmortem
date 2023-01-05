@@ -372,12 +372,13 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     img.visible_rects = malloc(img.element_count * sizeof(Rect));
     img.sprite_visible_rects = malloc(img.element_count * sizeof(Rect));
     img.sprite_rects = malloc(img.element_count * sizeof(Rect));
+    img.avg_color = malloc(img.element_count * sizeof(uint32_t));
 
     int num_cols = img.elements_per_row;
     int num_rows = img.elements_per_col;
 
-
-    size_t temp_size = img.element_width*img.element_height*img.n*sizeof(unsigned char);
+    int num_pixels = img.element_width*img.element_height;
+    size_t temp_size = num_pixels*img.n*sizeof(unsigned char);
     unsigned char* temp_data = malloc(temp_size);
 
     other_time += timer_get_elapsed(&_timer);
@@ -388,6 +389,7 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
 
         int start_x = (i % num_cols) * img.element_width;
         int start_y = (i / num_cols) * img.element_height;
+        float avg_r=0.0,avg_g=0.0,avg_b=0.0;
         for(int y = 0; y < img.element_height; ++y)
         {
             for(int x = 0; x < img.element_width; ++x)
@@ -398,8 +400,17 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
                 {
                     temp_data[sub_index+_n] = image.data[index+_n];
                 }
+                avg_r += (temp_data[sub_index+0]*(float)temp_data[sub_index+3]/255.0);
+                avg_g += (temp_data[sub_index+1]*(float)temp_data[sub_index+3]/255.0);
+                avg_b += (temp_data[sub_index+2]*(float)temp_data[sub_index+3]/255.0);
             }//element_width
         }//element_height
+
+        avg_r /= (float)num_pixels;
+        avg_g /= (float)num_pixels;
+        avg_b /= (float)num_pixels;
+
+        img.avg_color[i] = COLOR((uint8_t)avg_r,(uint8_t)avg_g,(uint8_t)avg_b);
 
         other_time += timer_get_elapsed(&_timer);
 

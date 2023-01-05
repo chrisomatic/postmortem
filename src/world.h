@@ -38,6 +38,7 @@ typedef struct
 
 
 extern WorldMap map;
+extern int ground_sheet;
 
 void world_init();
 void world_update();

@@ -44,6 +44,8 @@ typedef struct
     Rect* visible_rects;
     Rect* sprite_visible_rects;
     Rect* sprite_rects;
+
+    uint32_t* avg_color;
 } GFXImage;
 
 typedef struct
