@@ -20,6 +20,18 @@
 #include "editor.h"
 #include "gui.h"
 
+#define ENABLE_FPS_HIST 0
+
+#if ENABLE_FPS_HIST
+#define FPS_HIST_MAX  60
+static float fps_hist[FPS_HIST_MAX] = {0};
+static int fps_hist_index = 0;
+static int fps_hist_count = 0;
+static float fps_min = 0.0;
+static float fps_max = 0.0;
+#endif
+
+static void update_fps_hist();
 static void draw_debug_box();
 static int item_profile_image;
 
@@ -166,10 +178,36 @@ void gui_draw()
     }
 }
 
+
+static void update_fps_hist()
+{
+#if ENABLE_FPS_HIST
+    float fps = timer_get_prior_frame_fps(&game_timer);
+
+    fps_hist[fps_hist_index++] = fps;
+
+    if(fps_hist_index >= FPS_HIST_MAX)
+        fps_hist_index = 0;
+
+    fps_hist_count = MIN(fps_hist_count+1, FPS_HIST_MAX);
+
+    fps_min = fps;
+    fps_max = fps;
+    for(int i = 0; i < fps_hist_count; ++i)
+    {
+        float _fps = fps_hist[i];
+        if(_fps < fps_min) fps_min = _fps;
+        if(_fps > fps_max) fps_max = _fps;
+    }
+#endif
+}
+
+
 static void draw_debug_box()
 {
     // window
     float fps = timer_get_prior_frame_fps(&game_timer);
+    update_fps_hist();
 
     // player
     float pvx = player->phys.vel.x;
@@ -211,6 +249,10 @@ static void draw_debug_box()
             imgui_text_sized(big,"Window");
             imgui_indent_begin(small);
                 imgui_text("FPS: %.2f", fps);
+#if ENABLE_FPS_HIST
+                imgui_text("Min FPS: %.2f", fps_min);
+                imgui_text("Max FPS: %.2f", fps_max);
+#endif
                 imgui_text("View: %d, %d", view_width, view_height);
                 imgui_text("Window: %d, %d", window_width, window_height);
             imgui_indent_end();
