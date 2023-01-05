@@ -138,7 +138,7 @@ ParticleSpawner* particles_get_spawner(int id)
 void particles_init()
 {
     spawner_list = list_create(spawners,MAX_PARTICLE_SPAWNERS,sizeof(ParticleSpawner));
-    particles_image = gfx_load_image("src/img/particles.png", false, true, 32, 32, NULL);
+    particles_image = gfx_load_image("src/img/particles.png", false, true, 32, 32);
 }
 
 ParticleSpawner* particles_spawn_effect(float x, float y, ParticleEffect* effect, float lifetime, bool in_world, bool hidden)

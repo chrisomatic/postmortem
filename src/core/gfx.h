@@ -44,18 +44,7 @@ typedef struct
     Rect* visible_rects;
     Rect* sprite_visible_rects;
     Rect* sprite_rects;
-
-    int node_sets;
-    Vector2f** nodes;   // node positions are interpreted as offsets from center of image visible rectangle
-    uint32_t* node_colors;
 } GFXImage;
-
-typedef struct
-{
-    const char* image_path;
-    uint32_t colors[10];
-    int num_sets;
-} GFXNodeDataInput;
 
 typedef struct
 {
@@ -86,12 +75,11 @@ void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b);
 // Images
 void gfx_image_init();
 bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip);
-int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int element_width, int element_height, GFXNodeDataInput* node_input);
+int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int element_width, int element_height);
 bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
 bool gfx_draw_image_ignore_light(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
 bool gfx_draw_particle(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool blend_additive);
 GFXImage* gfx_get_image_data(int img_index);
-bool gfx_get_image_node_point(int img_index, int sprite_index, uint32_t node_color, Vector2f* node);
 
 // Image Batch Drawing
 bool gfx_sprite_batch_begin(bool in_world);

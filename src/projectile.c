@@ -40,7 +40,7 @@ static void update_hurt_box(Projectile* proj)
 void projectile_init()
 {
     plist = list_create((void*)projectiles, MAX_PROJECTILES, sizeof(Projectile));
-    projectile_image_set = gfx_load_image("src/img/projectile_set.png", false, false, 32, 32, NULL);
+    projectile_image_set = gfx_load_image("src/img/projectile_set.png", false, false, 32, 32);
 }
 
 void projectile_add(Player* p, Gun* gun, float angle_offset)

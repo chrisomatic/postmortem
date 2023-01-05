@@ -331,7 +331,7 @@ bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip)
     }
 }
 
-int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int element_width, int element_height, GFXNodeDataInput* node_input)
+int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int element_width, int element_height)
 {
     GFXImageData image = {0};
     
@@ -376,35 +376,6 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
     int num_cols = img.elements_per_row;
     int num_rows = img.elements_per_col;
 
-    bool nodes = false;
-    GFXImageData node_image = {0};
-    if(node_input != NULL)
-    {
-        node_input->num_sets = MIN(node_input->num_sets, 10);
-        if(node_input->num_sets > 0)
-        {
-            nodes = gfx_load_image_data(node_input->image_path, &node_image, flip);
-
-            if(nodes)
-            {
-                img.node_sets = node_input->num_sets;
-                img.node_colors = calloc(img.node_sets, sizeof(uint32_t));
-                img.nodes = calloc(img.node_sets, sizeof(Vector2f*));
-                for(int c = 0; c < img.node_sets; ++c)
-                {
-                    img.node_colors[c] = node_input->colors[c];
-                    img.nodes[c] = calloc(img.element_count, sizeof(Vector2f));
-                    for(int i = 0; i < img.element_count; ++i)
-                    {
-                        img.nodes[c][i].x = INFINITY;
-                        img.nodes[c][i].y = INFINITY;
-                    }
-                }
-            }
-        }
-    }
-
-
 
     size_t temp_size = img.element_width*img.element_height*img.n*sizeof(unsigned char);
     unsigned char* temp_data = malloc(temp_size);
@@ -427,22 +398,6 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
                 {
                     temp_data[sub_index+_n] = image.data[index+_n];
                 }
-
-                if(nodes)
-                {
-                    uint32_t color = COLOR(node_image.data[index+0], node_image.data[index+1], node_image.data[index+2]);
-                    for(int c = 0; c < img.node_sets; ++c)
-                    {
-                        if(img.node_colors[c] == color)
-                        {
-                            img.nodes[c][i].x = x;
-                            img.nodes[c][i].y = y;
-                            // LOGI("(0x%08x) Found node at: %d,%d", color, img.nodes[c][i].x, img.nodes[c][i].y);
-                            continue;
-                        }
-                    }
-                }
-
             }//element_width
         }//element_height
 
@@ -459,20 +414,6 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
         img.sprite_rects[i].y = (float)(start_y+img.element_height/2.0) / image.h;
         img.sprite_rects[i].w = (float)img.element_width / image.w;
         img.sprite_rects[i].h = (float)img.element_height / image.h;
-
-
-        for(int c = 0; c < img.node_sets; ++c)
-        {
-            float nx = img.nodes[c][i].x;
-            float ny = img.nodes[c][i].y;
-            // node stays at center if not found for image
-            if(!FEQ(nx,0.0) || !FEQ(ny,0.0))
-            {
-                img.nodes[c][i].x = nx - vr->x;
-                img.nodes[c][i].y = ny - vr->y;
-            }
-            // LOGI("[%2d, %2d] Node: %.1f,%.1f -> %.1f,%.1f", c, i, nx, ny, img.nodes[c][i].x, img.nodes[c][i].y);
-        }
 
     }//element_count
 
@@ -531,7 +472,6 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
 
             if(temp_data != NULL) free(temp_data);
             if(image.data != NULL) free(image.data);
-            if(node_image.data != NULL) free(node_image.data);
 
             other_time += timer_get_elapsed(&_timer);
 
@@ -542,7 +482,6 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
 
     if(temp_data != NULL) free(temp_data);
     if(image.data != NULL) free(image.data);
-    if(node_image.data != NULL) free(node_image.data);
 
     return -1;
 }
@@ -877,39 +816,6 @@ GFXImage* gfx_get_image_data(int img_index)
         return NULL;
     }
     return &gfx_images[img_index];
-}
-
-bool gfx_get_image_node_point(int img_index, int sprite_index, uint32_t node_color, Vector2f* node)
-{
-    if(img_index < 0 || img_index >= MAX_GFX_IMAGES)
-    {
-        LOGE("%s: Invalid image index!", __func__);
-        return false;
-    }
-
-    GFXImage* img = &gfx_images[img_index];
-    if(sprite_index >= img->element_count)
-    {
-        LOGE("Invalid sprite index: %d (%d, %d)", sprite_index, img_index, img->element_count);
-        return false;
-    }
-
-    for(int c = 0; c < img->node_sets; ++c)
-    {
-        if(img->node_colors[c] == node_color)
-        {
-            bool xinf = img->nodes[c][sprite_index].x == INFINITY;
-            bool yinf = img->nodes[c][sprite_index].y == INFINITY;
-            if(xinf || yinf) return false;
-            if(node != NULL)
-            {
-                node->x = img->nodes[c][sprite_index].x;
-                node->y = img->nodes[c][sprite_index].y;
-            }
-            return true;
-        }
-    }
-    return false;
 }
 
 
@@ -1488,7 +1394,7 @@ static void image_get_visible_rect(int img_w, int img_h, int img_n, unsigned cha
 
 static void load_font()
 {
-    font_image = gfx_load_image("src/core/fonts/atlas.png", false, true, 0, 0, NULL);
+    font_image = gfx_load_image("src/core/fonts/atlas.png", false, true, 0, 0);
     LOGI("Font image index: %d",font_image);
 
     FILE* fp = fopen("src/core/fonts/atlas_layout.csv","r");

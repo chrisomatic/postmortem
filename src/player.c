@@ -103,7 +103,7 @@ void player_init_images()
                 // if(access(fname, F_OK) == 0)
                 if(io_file_exists(fname))
                 {
-                    player_image_sets_none[pm][t][ps] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
+                    player_image_sets_none[pm][t][ps] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H);
                     // printf("%s -> %d\n", fname, player_image_sets[pm][t][ps][wt]);
                 }
             }
@@ -127,7 +127,7 @@ void player_init_images()
                     // if(access(fname, F_OK) == 0)
                     if(io_file_exists(fname))
                     {
-                        player_image_sets_guns[pm][t][ps][wt] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
+                        player_image_sets_guns[pm][t][ps][wt] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H);
                         // printf("%s -> %d\n", fname, player_image_sets[pm][t][ps][wt]);
                     }
                 }
@@ -151,7 +151,7 @@ void player_init_images()
                     // if(access(fname, F_OK) == 0)
                     if(io_file_exists(fname))
                     {
-                        player_image_sets_melees[pm][t][ps][wt] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
+                        player_image_sets_melees[pm][t][ps][wt] = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H);
                         // printf("%s -> %d\n", fname, player_image_sets[pm][t][ps][wt]);
                     }
                 }
@@ -159,7 +159,7 @@ void player_init_images()
         }
     }
 
-    crosshair_image = gfx_load_image("src/img/crosshair2.png", false, false, 0, 0, NULL);
+    crosshair_image = gfx_load_image("src/img/crosshair2.png", false, false, 0, 0);
 }
 
 

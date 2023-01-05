@@ -214,7 +214,7 @@ void gun_fire(void* _player, Gun* gun, bool held)
 
 static void blocks_init()
 {
-    blocks_image = gfx_load_image("src/img/block_set.png", false, true, 32, 50, NULL);
+    blocks_image = gfx_load_image("src/img/block_set.png", false, true, 32, 50);
 
     blist = list_create((void*)blocks, MAX_BLOCKS, sizeof(blocks[0]));
     if(blist == NULL)
@@ -321,7 +321,7 @@ static void weapons_init_images()
 
                 char fname[100] = {0};
                 sprintf(fname, "src/img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_anim_state_str(ps), gun_type_str(guns[w].type), guns[w].name);
-                gun_image_sets[pm][ps][w] = gfx_load_image(fname, false, false, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
+                gun_image_sets[pm][ps][w] = gfx_load_image(fname, false, false, IMG_ELEMENT_W, IMG_ELEMENT_H);
             }
         }
     }
@@ -336,7 +336,7 @@ static void weapons_init_images()
                 melee_image_sets[pm][ps][w] = -1;
                 char fname[100] = {0};
                 sprintf(fname, "src/img/characters/%s-%s_%s_%s.png", player_models[pm].name, player_anim_state_str(ps), melee_type_str(melees[w].type), melees[w].name);
-                melee_image_sets[pm][ps][w] = gfx_load_image(fname, false, false, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
+                melee_image_sets[pm][ps][w] = gfx_load_image(fname, false, false, IMG_ELEMENT_W, IMG_ELEMENT_H);
             }
         }
     }

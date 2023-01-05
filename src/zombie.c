@@ -66,7 +66,7 @@ void zombie_init()
                 // if(access(fname, F_OK) == 0)
                 if(io_file_exists(fname))
                 {
-                    img = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H, NULL);
+                    img = gfx_load_image(fname, false, true, IMG_ELEMENT_W, IMG_ELEMENT_H);
                     // printf("%s -> %d\n", fname, player_image_sets[pm][t][ps][wt]);
                 }
                 zombie_image_sets_none[pm][t][ps] = img;

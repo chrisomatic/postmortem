@@ -37,7 +37,7 @@ static int item_profile_image;
 
 void gui_init()
 {
-    item_profile_image = gfx_load_image("src/img/item_profile_set.png", false, true, 64, 64, NULL);
+    item_profile_image = gfx_load_image("src/img/item_profile_set.png", false, true, 64, 64);
     editor_init();
 }
 
