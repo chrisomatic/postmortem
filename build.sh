@@ -29,6 +29,7 @@ gcc core/gfx.c \
     entity.c \
     editor.c \
     console.c \
+    zones.c \
     -Icore \
     -lglfw -lGLU -lGLEW -lGL -lm -O2 \
     -o ../bin/postmortem

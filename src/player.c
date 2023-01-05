@@ -323,6 +323,8 @@ static void player_init(int index)
     coords_to_map_grid(p->phys.actual_pos.x, p->phys.actual_pos.y, &p->grid_pos.x, &p->grid_pos.y);
 
 
+    p->zone_id = -1;
+
     p->predicted_state_index = 0;
     p->invincible = false;
 

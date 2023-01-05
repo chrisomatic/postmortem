@@ -20,6 +20,7 @@
 #include "bitpack.h"
 #include "console.h"
 #include "editor.h"
+#include "zones.h"
 
 // Settings
 // #define VIEW_WIDTH   1812
@@ -316,6 +317,9 @@ void init()
     LOGI(" - World.");
     world_init();
 
+    LOGI(" - Zones.");
+    zones_init();
+
     LOGI(" - Entities");
     entities_init();
 
@@ -423,6 +427,7 @@ void simulate(double delta_t)
     for(int i = 0; i < MAX_CLIENTS; ++i)
         player_update(&players[i],delta_t);
 
+    zones_update(delta_t);
 
     projectile_update(delta_t);
 
@@ -636,6 +641,8 @@ void draw()
 #endif
 
     player_draw_offscreen();
+    zones_draw();
+
     player_draw_crosshair(player);
 
     if(debug_enabled)

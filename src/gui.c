@@ -182,7 +182,6 @@ void minimap_draw()
         for(int c = 0; c < mm_range; ++c)
         {
 
-
             // minimap drawing location
             float draw_x = x_start + c*rsize;
             float draw_y = y_start + r*rsize;

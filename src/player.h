@@ -158,6 +158,8 @@ typedef struct
     float hp;
     float hp_max;
 
+    int zone_id;
+
     PlayerState state;
     bool busy;
     bool moving;
