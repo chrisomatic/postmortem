@@ -16,7 +16,7 @@
 #define MAX_LINES 100
 #define SPRITE_BATCH_MAX_SPRITES 4096
 
-#define PRINT_LOAD_LOGS 0
+#define PRINT_LOAD_LOGS 1
 
 // types
 // --------------------------------------------------------
@@ -121,13 +121,15 @@ int font_image;
 
 // static function prototypes
 // --------------------------------------------------------
-static void load_font();
+static int assign_image(GFXImageData image, bool linear_filter, int element_width, int element_height, bool raw);
+static void init_sprite_batch();
+static void print_sprite(Sprite* sprite);
 static int image_find_first_visible_rowcol(int side, int img_w, int img_h, int img_n, unsigned char* data);
 static void image_get_visible_rect(int img_w, int img_h, int img_n, unsigned char* img_data, Rect* ret);
+static void load_font();
 static void blend_mode_normal();
 static void blend_mode_both();
 static void blend_mode_additive();
-static void init_sprite_batch();
 
 // global functions
 // --------------------------------------------------------
@@ -329,36 +331,31 @@ bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip)
     }
 }
 
-int gfx_raw_image_create(unsigned char* data, int width, int height)
-{
-    GLuint texture;
-    glGenTextures(1, &texture);
+// int gfx_raw_image_create(unsigned char* data, int width, int height)
+// {
+//     GLuint texture;
+//     glGenTextures(1, &texture);
 
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width,height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+//     glBindTexture(GL_TEXTURE_2D, texture);
+//     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width,height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+//     glBindTexture(GL_TEXTURE_2D, 0);
 
-    return texture;
-}
+//     return texture;
+// }
 
-void gfx_raw_image_update(int texture, unsigned char* data, int width, int height)
-{
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
+
 
 int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int element_width, int element_height)
 {
     GFXImageData image = {0};
-    
+
     Timer _timer = {0};
     timer_begin(&_timer);   //img_time
     bool load = gfx_load_image_data(image_path, &image, flip);
@@ -366,232 +363,186 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
 
     if(!load) return -1;
 
-    timer_begin(&_timer);   //other_time
-
-    GFXImage img = {0};
-    img.w = image.w;
-    img.h = image.h;
-    img.n = image.n;
-
-    if(element_width <= 0 || element_height <= 0)
-    {
-        img.elements_per_row = 1;
-        img.elements_per_col = 1;
-        img.element_width = img.w;
-        img.element_height = img.h;
-    }
-    else
-    {
-        img.elements_per_row = (img.w / element_width);
-        img.elements_per_col = (img.h / element_height);
-        img.element_width = element_width;
-        img.element_height = element_height;
-    }
-    img.element_count = img.elements_per_row * img.elements_per_col;
-
-#if PRINT_LOAD_LOGS
-    LOGI("  Element Count: %d (%d x %d)", img.element_count, img.elements_per_row, img.elements_per_col);
-#endif
-
-    img.visible_rects = malloc(img.element_count * sizeof(Rect));
-    img.sprite_visible_rects = malloc(img.element_count * sizeof(Rect));
-    img.sprite_rects = malloc(img.element_count * sizeof(Rect));
-    img.avg_color = malloc(img.element_count * sizeof(uint32_t));
-
-    int num_cols = img.elements_per_row;
-    int num_rows = img.elements_per_col;
-
-    int num_pixels = img.element_width*img.element_height;
-    size_t temp_size = num_pixels*img.n*sizeof(unsigned char);
-    unsigned char* temp_data = malloc(temp_size);
-
-    other_time += timer_get_elapsed(&_timer);
-
-    for(int i = 0; i < img.element_count; ++i)
-    {
-        timer_begin(&_timer);   //other_time
-
-        int start_x = (i % num_cols) * img.element_width;
-        int start_y = (i / num_cols) * img.element_height;
-        float avg_r=0.0,avg_g=0.0,avg_b=0.0;
-        for(int y = 0; y < img.element_height; ++y)
-        {
-            for(int x = 0; x < img.element_width; ++x)
-            {
-                int index = ((start_y+y)*image.w + (start_x+x)) * img.n;
-                int sub_index = (y*img.element_width + x) * img.n;
-                for(int _n = 0; _n < img.n; ++_n)
-                {
-                    temp_data[sub_index+_n] = image.data[index+_n];
-                }
-                avg_r += (temp_data[sub_index+0]*(float)temp_data[sub_index+3]/255.0);
-                avg_g += (temp_data[sub_index+1]*(float)temp_data[sub_index+3]/255.0);
-                avg_b += (temp_data[sub_index+2]*(float)temp_data[sub_index+3]/255.0);
-            }//element_width
-        }//element_height
-
-        avg_r /= (float)num_pixels;
-        avg_g /= (float)num_pixels;
-        avg_b /= (float)num_pixels;
-
-        img.avg_color[i] = COLOR((uint8_t)avg_r,(uint8_t)avg_g,(uint8_t)avg_b);
-
-        other_time += timer_get_elapsed(&_timer);
-
-        image_get_visible_rect(img.element_width, img.element_height, img.n, temp_data, &img.visible_rects[i]);
-        Rect* vr = &img.visible_rects[i];
-        img.sprite_visible_rects[i].x = (float)(start_x+vr->x) / image.w;
-        img.sprite_visible_rects[i].y = (float)(start_y+vr->y) / image.h;
-        img.sprite_visible_rects[i].w = vr->w / image.w;
-        img.sprite_visible_rects[i].h = vr->h / image.h;
-
-        img.sprite_rects[i].x = (float)(start_x+img.element_width/2.0) / image.w;
-        img.sprite_rects[i].y = (float)(start_y+img.element_height/2.0) / image.h;
-        img.sprite_rects[i].w = (float)img.element_width / image.w;
-        img.sprite_rects[i].h = (float)img.element_height / image.h;
-
-    }//element_count
-
-
-    timer_begin(&_timer);   //other_time
-
-    //assign image
-    for(int i = 0; i < MAX_GFX_IMAGES; ++i)
-    {
-        if(gfx_images[i].texture == -1)
-        {
-#if PRINT_LOAD_LOGS
-            LOGI("  Index: %d", i);
-#endif
-            GFXImage* p = &gfx_images[i];
-            memcpy(p, &img, sizeof(GFXImage));
-
-            glGenTextures(1, &p->texture);
-            if(p->texture == -1)
-            {
-                p->texture = i; // @HACK: for server
-            }
-            else
-            {
-                glBindTexture(GL_TEXTURE_2D, p->texture);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.w, image.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
-
-                if(linear_filter)
-                {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                }
-                else
-                {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                }
-
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-                glBindTexture(GL_TEXTURE_2D, 0);
-            }
-
-
-            // DEBUG
-            // if(p->texture == 17)
-            // {
-            //     for(int idx = 0; idx < img.element_count; ++idx)
-            //     {
-            //         printf("%d) ", idx);
-            //         print_rect(&p->visible_rects[idx]);
-            //     }
-            // }
-
-
-            if(temp_data != NULL) free(temp_data);
-            if(image.data != NULL) free(image.data);
-
-            other_time += timer_get_elapsed(&_timer);
-
-            return i;
-            // return p->texture;
-        }
-    }
-
-    if(temp_data != NULL) free(temp_data);
-    if(image.data != NULL) free(image.data);
-
-    return -1;
+    return assign_image(image, linear_filter, element_width, element_height, false);
 }
 
-static void init_sprite_batch()
+void gfx_raw_image_update(int img_index, unsigned char* data, int width, int height)
 {
-    // VAO
-    glGenVertexArrays(1, &batch_vao);
-    glBindVertexArray(batch_vao);
-
-    Vertex batch_quad[] =
-    {
-        {{-0.5, -0.5},{0.0,0.0}},
-        {{-0.5, +0.5},{0.0,1.0}},
-        {{+0.5, -0.5},{1.0,0.0}},
-        {{+0.5, +0.5},{1.0,1.0}},
-    };
-
-    // Quad VBO
-    glGenBuffers(1, &batch_quad_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, batch_quad_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(batch_quad), batch_quad, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-    glVertexAttribDivisor(0, 0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)8);
-    glVertexAttribDivisor(1, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // Instance VBO
-    // printf("Size of sprite: %d\n",sizeof(Sprite));
-
-    glGenBuffers(1, &batch_instance_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, batch_instance_vbo);
-    glBufferData(GL_ARRAY_BUFFER, SPRITE_BATCH_MAX_SPRITES*sizeof(Sprite), NULL, GL_STREAM_DRAW);
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(0)); // model[0]
-    glVertexAttribDivisor(2, 1);
-    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(16)); // model[1]
-    glVertexAttribDivisor(3, 1);
-    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(32)); // model[2]
-    glVertexAttribDivisor(4, 1);
-    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(48)); // model[3]
-    glVertexAttribDivisor(5, 1);
-    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(64)); // sprite rect
-    glVertexAttribDivisor(6, 1);
-    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(80)); // color
-    glVertexAttribDivisor(7, 1);
-    glVertexAttribPointer(8, 1, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(92)); // opacity
-    glVertexAttribDivisor(8, 1);
-    glVertexAttribIPointer(9, 1, GL_UNSIGNED_INT, sizeof(Sprite),(const GLvoid*)(96)); // tex unit
-    glVertexAttribDivisor(9, 1);
-    glVertexAttribIPointer(10, 1, GL_UNSIGNED_INT, sizeof(Sprite),(const GLvoid*)(100)); // is particle
-    glVertexAttribDivisor(10, 1);
-    glVertexAttribIPointer(11, 1, GL_UNSIGNED_INT, sizeof(Sprite),(const GLvoid*)(104)); // blending mode
-    glVertexAttribDivisor(11, 1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    int texture = gfx_images[img_index].texture;
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-static void print_sprite(Sprite* sprite)
+int gfx_raw_image_create(unsigned char* data, int width, int height, bool linear_filter)
 {
-    printf("============\n");
-    printf("Sprite:\n");
-    printf("  World:\n");
-    printf("  [ %f %f %f %f ]\n", sprite->world1.x,sprite->world1.y, sprite->world1.z, sprite->world1.w);
-    printf("  [ %f %f %f %f ]\n", sprite->world2.x,sprite->world2.y, sprite->world2.z, sprite->world2.w);
-    printf("  [ %f %f %f %f ]\n", sprite->world3.x,sprite->world3.y, sprite->world3.z, sprite->world3.w);
-    printf("  [ %f %f %f %f ]\n", sprite->world4.x,sprite->world4.y, sprite->world4.z, sprite->world4.w);
-    printf("  Rect:");
-    printf("  [ %f %f %f %f ]\n", sprite->rect.x,sprite->rect.y, sprite->rect.w, sprite->rect.h);
-    printf("  Color:");
-    printf("  [ %08X ]\n", sprite->color);
-    printf("  Opacity:");
-    printf("  [ %f ]\n", sprite->opacity);
+    GFXImageData image = {0};
+    image.data = data;
+    image.w = width;
+    image.h = height;
+    image.n = 4;
+    LOGI("Creating raw image (w: %d, h: %d, n: %d)", image.w, image.h, image.n);
+    return assign_image(image, linear_filter, 0, 0, true);
 }
+
+
+//     timer_begin(&_timer);   //other_time
+
+//     GFXImage img = {0};
+//     img.w = image.w;
+//     img.h = image.h;
+//     img.n = image.n;
+
+//     if(element_width <= 0 || element_height <= 0)
+//     {
+//         img.elements_per_row = 1;
+//         img.elements_per_col = 1;
+//         img.element_width = img.w;
+//         img.element_height = img.h;
+//     }
+//     else
+//     {
+//         img.elements_per_row = (img.w / element_width);
+//         img.elements_per_col = (img.h / element_height);
+//         img.element_width = element_width;
+//         img.element_height = element_height;
+//     }
+//     img.element_count = img.elements_per_row * img.elements_per_col;
+
+// #if PRINT_LOAD_LOGS
+//     LOGI("  Element Count: %d (%d x %d)", img.element_count, img.elements_per_row, img.elements_per_col);
+// #endif
+
+//     img.visible_rects = malloc(img.element_count * sizeof(Rect));
+//     img.sprite_visible_rects = malloc(img.element_count * sizeof(Rect));
+//     img.sprite_rects = malloc(img.element_count * sizeof(Rect));
+//     img.avg_color = malloc(img.element_count * sizeof(uint32_t));
+
+//     int num_cols = img.elements_per_row;
+//     int num_rows = img.elements_per_col;
+
+//     int num_pixels = img.element_width*img.element_height;
+//     size_t temp_size = num_pixels*img.n*sizeof(unsigned char);
+//     unsigned char* temp_data = malloc(temp_size);
+
+//     other_time += timer_get_elapsed(&_timer);
+
+//     for(int i = 0; i < img.element_count; ++i)
+//     {
+//         timer_begin(&_timer);   //other_time
+
+//         int start_x = (i % num_cols) * img.element_width;
+//         int start_y = (i / num_cols) * img.element_height;
+//         float avg_r=0.0,avg_g=0.0,avg_b=0.0;
+//         for(int y = 0; y < img.element_height; ++y)
+//         {
+//             for(int x = 0; x < img.element_width; ++x)
+//             {
+//                 int index = ((start_y+y)*image.w + (start_x+x)) * img.n;
+//                 int sub_index = (y*img.element_width + x) * img.n;
+//                 for(int _n = 0; _n < img.n; ++_n)
+//                 {
+//                     temp_data[sub_index+_n] = image.data[index+_n];
+//                 }
+//                 avg_r += (temp_data[sub_index+0]*(float)temp_data[sub_index+3]/255.0);
+//                 avg_g += (temp_data[sub_index+1]*(float)temp_data[sub_index+3]/255.0);
+//                 avg_b += (temp_data[sub_index+2]*(float)temp_data[sub_index+3]/255.0);
+//             }//element_width
+//         }//element_height
+
+//         avg_r /= (float)num_pixels;
+//         avg_g /= (float)num_pixels;
+//         avg_b /= (float)num_pixels;
+
+//         img.avg_color[i] = COLOR((uint8_t)avg_r,(uint8_t)avg_g,(uint8_t)avg_b);
+
+//         other_time += timer_get_elapsed(&_timer);
+
+//         image_get_visible_rect(img.element_width, img.element_height, img.n, temp_data, &img.visible_rects[i]);
+//         Rect* vr = &img.visible_rects[i];
+//         img.sprite_visible_rects[i].x = (float)(start_x+vr->x) / image.w;
+//         img.sprite_visible_rects[i].y = (float)(start_y+vr->y) / image.h;
+//         img.sprite_visible_rects[i].w = vr->w / image.w;
+//         img.sprite_visible_rects[i].h = vr->h / image.h;
+
+//         img.sprite_rects[i].x = (float)(start_x+img.element_width/2.0) / image.w;
+//         img.sprite_rects[i].y = (float)(start_y+img.element_height/2.0) / image.h;
+//         img.sprite_rects[i].w = (float)img.element_width / image.w;
+//         img.sprite_rects[i].h = (float)img.element_height / image.h;
+
+//     }//element_count
+
+
+//     timer_begin(&_timer);   //other_time
+
+//     //assign image
+//     for(int i = 0; i < MAX_GFX_IMAGES; ++i)
+//     {
+//         if(gfx_images[i].texture == -1)
+//         {
+// #if PRINT_LOAD_LOGS
+//             LOGI("  Index: %d", i);
+// #endif
+//             GFXImage* p = &gfx_images[i];
+//             memcpy(p, &img, sizeof(GFXImage));
+
+//             glGenTextures(1, &p->texture);
+//             if(p->texture == -1)
+//             {
+//                 p->texture = i; // @HACK: for server
+//             }
+//             else
+//             {
+//                 glBindTexture(GL_TEXTURE_2D, p->texture);
+//                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.w, image.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
+
+//                 if(linear_filter)
+//                 {
+//                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//                 }
+//                 else
+//                 {
+//                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//                 }
+
+//                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+//                 glBindTexture(GL_TEXTURE_2D, 0);
+//             }
+
+
+//             // DEBUG
+//             // if(p->texture == 17)
+//             // {
+//             //     for(int idx = 0; idx < img.element_count; ++idx)
+//             //     {
+//             //         printf("%d) ", idx);
+//             //         print_rect(&p->visible_rects[idx]);
+//             //     }
+//             // }
+
+
+//             if(temp_data != NULL) free(temp_data);
+//             if(image.data != NULL) free(image.data);
+
+//             other_time += timer_get_elapsed(&_timer);
+
+//             return i;
+//             // return p->texture;
+//         }
+//     }
+
+//     if(temp_data != NULL) free(temp_data);
+//     if(image.data != NULL) free(image.data);
+
+//     return -1;
+// }
+
+
+
 
 bool gfx_sprite_batch_begin(bool in_world)
 {
@@ -1284,6 +1235,270 @@ uint32_t gfx_blend_colors(uint32_t color1, uint32_t color2, float factor)
 
 // static functions
 // --------------------------------------------------------
+
+static int assign_image(GFXImageData image, bool linear_filter, int element_width, int element_height, bool raw)
+{
+
+    Timer _timer = {0};
+    timer_begin(&_timer);   //img_time
+
+    GFXImage img = {0};
+    img.w = image.w;
+    img.h = image.h;
+    img.n = image.n;
+
+    if(element_width <= 0 || element_height <= 0)
+    {
+        img.elements_per_row = 1;
+        img.elements_per_col = 1;
+        img.element_width = img.w;
+        img.element_height = img.h;
+    }
+    else
+    {
+        img.elements_per_row = (img.w / element_width);
+        img.elements_per_col = (img.h / element_height);
+        img.element_width = element_width;
+        img.element_height = element_height;
+    }
+    img.element_count = img.elements_per_row * img.elements_per_col;
+
+#if PRINT_LOAD_LOGS
+    LOGI("  Element Count: %d (%d x %d)", img.element_count, img.elements_per_row, img.elements_per_col);
+#endif
+
+    img.visible_rects = malloc(img.element_count * sizeof(Rect));
+    img.sprite_visible_rects = malloc(img.element_count * sizeof(Rect));
+    img.sprite_rects = malloc(img.element_count * sizeof(Rect));
+    img.avg_color = malloc(img.element_count * sizeof(uint32_t));
+
+    int num_cols = img.elements_per_row;
+    int num_rows = img.elements_per_col;
+
+    int num_pixels = img.element_width*img.element_height;
+    size_t temp_size = num_pixels*img.n*sizeof(unsigned char);
+    unsigned char* temp_data = malloc(temp_size);
+
+    other_time += timer_get_elapsed(&_timer);
+
+    for(int i = 0; i < img.element_count; ++i)
+    {
+        timer_begin(&_timer);   //other_time
+
+        int start_x = (i % num_cols) * img.element_width;
+        int start_y = (i / num_cols) * img.element_height;
+
+        if(image.data != NULL)
+        {
+
+            float avg_r=0.0,avg_g=0.0,avg_b=0.0;
+            for(int y = 0; y < img.element_height; ++y)
+            {
+                for(int x = 0; x < img.element_width; ++x)
+                {
+                    int index = ((start_y+y)*image.w + (start_x+x)) * img.n;
+                    int sub_index = (y*img.element_width + x) * img.n;
+                    for(int _n = 0; _n < img.n; ++_n)
+                    {
+                        temp_data[sub_index+_n] = image.data[index+_n];
+                    }
+                    avg_r += (temp_data[sub_index+0]*(float)temp_data[sub_index+3]/255.0);
+                    avg_g += (temp_data[sub_index+1]*(float)temp_data[sub_index+3]/255.0);
+                    avg_b += (temp_data[sub_index+2]*(float)temp_data[sub_index+3]/255.0);
+                }//element_width
+            }//element_height
+
+            avg_r /= (float)num_pixels;
+            avg_g /= (float)num_pixels;
+            avg_b /= (float)num_pixels;
+
+            img.avg_color[i] = COLOR((uint8_t)avg_r,(uint8_t)avg_g,(uint8_t)avg_b);
+
+        }
+
+        other_time += timer_get_elapsed(&_timer);
+
+        if(raw)
+        {
+            // img.visible_rects[i].x = img.w/2.0;
+            // img.visible_rects[i].y = img.h/2.0;
+            // img.visible_rects[i].w = img.w;
+            // img.visible_rects[i].h = img.h;
+
+            img.sprite_visible_rects[i].x = 0.5;
+            img.sprite_visible_rects[i].y = 0.5;
+            img.sprite_visible_rects[i].w = 1.0;
+            img.sprite_visible_rects[i].h = 1.0;
+
+            img.sprite_rects[i].x = 0.5;
+            img.sprite_rects[i].y = 0.5;
+            img.sprite_rects[i].w = 1.0;
+            img.sprite_rects[i].h = 1.0;
+        }
+        else
+        {
+            image_get_visible_rect(img.element_width, img.element_height, img.n, temp_data, &img.visible_rects[i]);
+            Rect* vr = &img.visible_rects[i];
+            img.sprite_visible_rects[i].x = (float)(start_x+vr->x) / img.w;
+            img.sprite_visible_rects[i].y = (float)(start_y+vr->y) / img.h;
+            img.sprite_visible_rects[i].w = vr->w / img.w;
+            img.sprite_visible_rects[i].h = vr->h / img.h;
+
+            img.sprite_rects[i].x = (float)(start_x+img.element_width/2.0) / img.w;
+            img.sprite_rects[i].y = (float)(start_y+img.element_height/2.0) / img.h;
+            img.sprite_rects[i].w = (float)img.element_width / img.w;
+            img.sprite_rects[i].h = (float)img.element_height / img.h;
+        }
+
+
+    }//element_count
+
+
+    timer_begin(&_timer);   //other_time
+
+    //assign image
+    for(int i = 0; i < MAX_GFX_IMAGES; ++i)
+    {
+        if(gfx_images[i].texture == -1)
+        {
+#if PRINT_LOAD_LOGS
+            LOGI("  Index: %d", i);
+#endif
+            GFXImage* p = &gfx_images[i];
+            memcpy(p, &img, sizeof(GFXImage));
+
+            glGenTextures(1, &p->texture);
+            if(p->texture == -1)
+            {
+                p->texture = i; // @HACK: for server
+            }
+            else
+            {
+                glBindTexture(GL_TEXTURE_2D, p->texture);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.w, image.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
+
+                if(linear_filter)
+                {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                }
+                else
+                {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                }
+
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+                glBindTexture(GL_TEXTURE_2D, 0);
+            }
+
+
+            // DEBUG
+            // if(p->texture == 17)
+            // {
+            //     for(int idx = 0; idx < img.element_count; ++idx)
+            //     {
+            //         printf("%d) ", idx);
+            //         print_rect(&p->visible_rects[idx]);
+            //     }
+            // }
+
+
+            if(temp_data != NULL) free(temp_data);
+            if(!raw)
+            {
+                if(image.data != NULL) free(image.data);
+            }
+
+            other_time += timer_get_elapsed(&_timer);
+
+            return i;
+            // return p->texture;
+        }
+    }
+
+    if(temp_data != NULL) free(temp_data);
+    if(!raw)
+    {
+        if(image.data != NULL) free(image.data);
+    }
+
+    return -1;
+}
+
+static void init_sprite_batch()
+{
+    // VAO
+    glGenVertexArrays(1, &batch_vao);
+    glBindVertexArray(batch_vao);
+
+    Vertex batch_quad[] =
+    {
+        {{-0.5, -0.5},{0.0,0.0}},
+        {{-0.5, +0.5},{0.0,1.0}},
+        {{+0.5, -0.5},{1.0,0.0}},
+        {{+0.5, +0.5},{1.0,1.0}},
+    };
+
+    // Quad VBO
+    glGenBuffers(1, &batch_quad_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, batch_quad_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(batch_quad), batch_quad, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+    glVertexAttribDivisor(0, 0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)8);
+    glVertexAttribDivisor(1, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Instance VBO
+    // printf("Size of sprite: %d\n",sizeof(Sprite));
+
+    glGenBuffers(1, &batch_instance_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, batch_instance_vbo);
+    glBufferData(GL_ARRAY_BUFFER, SPRITE_BATCH_MAX_SPRITES*sizeof(Sprite), NULL, GL_STREAM_DRAW);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(0)); // model[0]
+    glVertexAttribDivisor(2, 1);
+    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(16)); // model[1]
+    glVertexAttribDivisor(3, 1);
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(32)); // model[2]
+    glVertexAttribDivisor(4, 1);
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(48)); // model[3]
+    glVertexAttribDivisor(5, 1);
+    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(64)); // sprite rect
+    glVertexAttribDivisor(6, 1);
+    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(80)); // color
+    glVertexAttribDivisor(7, 1);
+    glVertexAttribPointer(8, 1, GL_FLOAT, GL_FALSE, sizeof(Sprite),(const GLvoid*)(92)); // opacity
+    glVertexAttribDivisor(8, 1);
+    glVertexAttribIPointer(9, 1, GL_UNSIGNED_INT, sizeof(Sprite),(const GLvoid*)(96)); // tex unit
+    glVertexAttribDivisor(9, 1);
+    glVertexAttribIPointer(10, 1, GL_UNSIGNED_INT, sizeof(Sprite),(const GLvoid*)(100)); // is particle
+    glVertexAttribDivisor(10, 1);
+    glVertexAttribIPointer(11, 1, GL_UNSIGNED_INT, sizeof(Sprite),(const GLvoid*)(104)); // blending mode
+    glVertexAttribDivisor(11, 1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+static void print_sprite(Sprite* sprite)
+{
+    printf("============\n");
+    printf("Sprite:\n");
+    printf("  World:\n");
+    printf("  [ %f %f %f %f ]\n", sprite->world1.x,sprite->world1.y, sprite->world1.z, sprite->world1.w);
+    printf("  [ %f %f %f %f ]\n", sprite->world2.x,sprite->world2.y, sprite->world2.z, sprite->world2.w);
+    printf("  [ %f %f %f %f ]\n", sprite->world3.x,sprite->world3.y, sprite->world3.z, sprite->world3.w);
+    printf("  [ %f %f %f %f ]\n", sprite->world4.x,sprite->world4.y, sprite->world4.z, sprite->world4.w);
+    printf("  Rect:");
+    printf("  [ %f %f %f %f ]\n", sprite->rect.x,sprite->rect.y, sprite->rect.w, sprite->rect.h);
+    printf("  Color:");
+    printf("  [ %08X ]\n", sprite->color);
+    printf("  Opacity:");
+    printf("  [ %f ]\n", sprite->opacity);
+}
 
 // get first row or col that's not empty
 // side: 0=top,1=left,2=bottom,3=right

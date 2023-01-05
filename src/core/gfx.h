@@ -78,6 +78,9 @@ void gfx_clear_buffer(uint8_t r, uint8_t g, uint8_t b);
 void gfx_image_init();
 bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip);
 int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int element_width, int element_height);
+int gfx_raw_image_create(unsigned char* data, int width, int height, bool linear_filter);
+void gfx_raw_image_update(int img_index, unsigned char* data, int width, int height);
+
 bool gfx_draw_image(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
 bool gfx_draw_image_ignore_light(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world);
 bool gfx_draw_particle(int img_index, int sprite_index, float x, float y, uint32_t color, float scale, float rotation, float opacity, bool full_image, bool in_world, bool blend_additive);
