@@ -64,6 +64,7 @@ void world_grid_to_rect(int row, int col, Rect* r);
 int world_grid_to_index(int row, int col);
 void index_to_world_grid(int index, int* row, int* col);
 void world_get_grid_dimensions(int* num_rows, int* num_cols);
+void world_grid_to_map_grid(int row, int col, int* mrow, int* mcol);
 
 
 bool is_in_world_grid(Rect* pos, int row, int col);
