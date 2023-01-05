@@ -269,6 +269,13 @@ void world_get_grid_dimensions(int* num_rows, int* num_cols)
     *num_cols = map.cols/WORLD_GRID_WIDTH;
 }
 
+// returns top left map grid
+void world_grid_to_map_grid(int row, int col, int* mrow, int* mcol)
+{
+    *mrow = row / WORLD_GRID_HEIGHT;
+    *mcol = col / WORLD_GRID_WIDTH;
+}
+
 bool is_in_world_grid(Rect* pos, int row, int col)
 {
     Rect r = {0};

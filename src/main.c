@@ -473,7 +473,7 @@ void draw_debug()
     coords_to_world_grid(r.x-r.w/2.0, r.y-r.h/2.0, &wr1, &wc1);
     coords_to_world_grid(r.x+r.w/2.0, r.y+r.h/2.0, &wr2, &wc2);
 
-    //TODO: mini map
+    // DEBUG average map grid colors
     // for(int r = (r1-1); r < (r2+1); ++r)
     // {
     //     for(int c = (c1-1); c < (c2+1); ++c)
