@@ -322,6 +322,8 @@ static void player_init(int index)
     p->hp = p->hp_max;
     coords_to_map_grid(p->phys.actual_pos.x, p->phys.actual_pos.y, &p->grid_pos.x, &p->grid_pos.y);
 
+    memset(p->skills,0,sizeof(int)*SKILL_MAX);
+    p->avail_skill_points = 5;
 
     p->zone_id = -1;
 
@@ -441,6 +443,34 @@ const char* player_anim_state_str(PlayerAnimState anim_state)
         case ANIM_NONE: return "";
         default: return "";
     }
+}
+
+char* player_skill_to_str(int skill)
+{
+    switch(skill)
+    {
+        case SKILL_PASSIVE_INCREASED_AMMO:
+            return "Increased Ammo";
+        case SKILL_PASSIVE_FOOTSPEED:
+            return "Footspeed";
+        case SKILL_PASSIVE_DAMAGE_BOOST:
+            return "Damage Boost";
+        case SKILL_PASSIVE_RELOAD_SPEED:
+            return "Reload Speed";
+        case SKILL_PASSIVE_HEALTH_BOOST:
+            return "Health Boost";
+        case SKILL_ACTIVE_PIERCING_SHOT:
+            return "Piercing Shot";
+        case SKILL_ACTIVE_BRUTAL_SHOT:
+            return "Brutal Shot";
+        case SKILL_ACTIVE_COLD_TOUCH:
+            return "Cold Touch";
+        case SKILL_ACTIVE_DOUBLE_TIME:
+            return "Double Time";
+        case SKILL_ACTIVE_BERSERK:
+            return "Berserk";
+    }
+    return "Unknown";
 }
 
 int player_get_image_index(Player* p)
@@ -1613,6 +1643,7 @@ void player_add_xp(Player* p, float xp)
         p->xp -= p->max_xp;
         p->max_xp *= 1.5;
         p->level++;
+        p->avail_skill_points++;
         particles_spawn_effect(p->phys.pos.x, p->phys.pos.y, &particle_effects[EFFECT_LEVEL_UP], 1.5, true, false);
     }
 }

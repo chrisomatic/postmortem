@@ -40,6 +40,21 @@ typedef enum
     PLAYER_MODELS_MAX
 } PlayerModelIndex;
 
+enum PlayerSkill
+{
+    SKILL_PASSIVE_INCREASED_AMMO,
+    SKILL_PASSIVE_FOOTSPEED,
+    SKILL_PASSIVE_DAMAGE_BOOST,
+    SKILL_PASSIVE_RELOAD_SPEED,
+    SKILL_PASSIVE_HEALTH_BOOST,
+    SKILL_ACTIVE_PIERCING_SHOT,
+    SKILL_ACTIVE_BRUTAL_SHOT,
+    SKILL_ACTIVE_COLD_TOUCH,
+    SKILL_ACTIVE_DOUBLE_TIME,
+    SKILL_ACTIVE_BERSERK,
+    SKILL_MAX,
+    SKILL_NONE
+};
 
 typedef struct
 {
@@ -186,6 +201,9 @@ typedef struct
     int mouse_r;
     int mouse_c;
 
+    int skills[SKILL_MAX];
+    int avail_skill_points;
+
     // keys/actions
     PlayerAction actions[PLAYER_ACTION_MAX];
 
@@ -268,4 +286,6 @@ void player_hurt(Player* p, float damage);
 void player_add_xp(Player* p, float xp);
 
 void player_weapon_melee_check_collision(Player* p);
+
+char* player_skill_to_str(int skill);
 

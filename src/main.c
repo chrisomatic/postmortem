@@ -627,6 +627,7 @@ void draw()
     gfx_draw_lines();
 
     draw_debug();
+    zones_draw();
 
     gui_draw();
 
@@ -641,7 +642,6 @@ void draw()
 #endif
 
     player_draw_offscreen();
-    zones_draw();
 
     player_draw_crosshair(player);
 

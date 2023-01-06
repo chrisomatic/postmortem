@@ -24,6 +24,7 @@ static char particles_file_name[20] = {0};
 static int num_zombies = 10;
 static bool editor_collapsed = true;
 static float camera_z = 0.4;
+static int grass_clicks = 0;
 
 static char command_text[100] = {0};
 
@@ -154,7 +155,7 @@ void editor_draw()
                     imgui_horizontal_begin();
                     imgui_number_box("##num_zombies", 1, 100, &num_zombies);
 
-
+                    imgui_tooltip("Spawn Zombies!");
                     if(imgui_button("Spawn Zombies"))
                     {
                         ZombieSpawn spawn = {0};
@@ -181,6 +182,7 @@ void editor_draw()
 
                     imgui_horizontal_begin();
 
+                    imgui_tooltip("Kill all the Zombies!");
                     if(imgui_button("Kill All"))
                     {
                         zombie_kill_all();
@@ -218,6 +220,11 @@ void editor_draw()
                     }
                     imgui_horizontal_end();
 
+                    imgui_tooltip("Grass...");
+                    if(imgui_image_button(1,0,1.0,"Grass Clicks: %d", grass_clicks))
+                    {
+                        grass_clicks++;
+                    }
 
                     break;
                 case 1:

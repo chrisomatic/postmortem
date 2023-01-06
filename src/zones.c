@@ -8,7 +8,7 @@
 
 #define ZONE_NAME_MAX 32
 #define ZONE_DISPLAY_NAME_MAX_TIME 3.0
-#define ZONE_COUNT 2
+#define ZONE_COUNT 3
 
 typedef struct
 {
@@ -19,7 +19,8 @@ typedef struct
 
 Zone zones[ZONE_COUNT] = {
     {0, "Bunker",   {100.0,100.0,100.0,100.0}},
-    {1, "Wasteland",{300.0,300.0,100.0,100.0}}
+    {1, "Wasteland",{1200.0,1200.0,1000.0,1000.0}},
+    {2, "Survivor Outpost",{300.0,500.0,300.0,300.0}}
 };
 
 static bool display_zone_name;

@@ -10,6 +10,7 @@
 #define MAX_CONTEXTS 32
 #define MAX_INT_LOOKUPS 256
 #define MAX_HORIZONTAL_STACK 10
+#define MAX_TOOLTIP_LEN 32
 
 #define DRAW_DEBUG_BOXES 0
 
@@ -62,6 +63,10 @@ typedef struct
     int mouse_x, mouse_y;
 
     TextBoxProps text_box_props;
+
+    bool has_tooltip;
+    char tooltip[MAX_TOOLTIP_LEN+1];
+    uint32_t tooltip_hash;
 
     bool theme_initialized;
 
@@ -132,6 +137,7 @@ static inline void clear_highlighted();
 static inline void clear_active();
 static void assign_context(uint32_t hash);
 static void handle_highlighting(uint32_t hash, Rect* r);
+static void handle_tooltip();
 static void imgui_slider_float_internal(char* label, float min, float max, float* result, char* format);
 static IntLookup* get_int_lookup(uint32_t hash);
 static void progress_pos();
@@ -139,6 +145,7 @@ static void mask_off_hidden(char* label, char* new_label, int max_size);
 static void set_default_theme();
 
 static void draw_button(uint32_t hash, char* str, Rect* r);
+static void draw_image_button(uint32_t hash, char* str, Rect* r, int img_index, int sprite_index,float scale);
 static void draw_toggle_button(uint32_t hash, char* str, Rect* r, bool toggled);
 static void draw_checkbox(uint32_t hash, char* label, bool result);
 static void draw_slider(uint32_t hash, char* str, int slider_x, char* val_format, float val);
@@ -147,6 +154,7 @@ static void draw_label(int x, int y, uint32_t color, char* label);
 static void draw_number_box(uint32_t hash, char* label, Rect* r, int val, int max);
 static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text);
 static void draw_panel();
+static void draw_tooltip();
 
 void imgui_begin(char* name, int x, int y)
 {
@@ -164,7 +172,11 @@ void imgui_begin(char* name, int x, int y)
     ctx->accum_width = 0;
     ctx->horiontal_max_height = 0;
 
+    memset(ctx->horizontal_stack,false,sizeof(bool)*MAX_HORIZONTAL_STACK);
+
     ctx->text_box_props.highlighted = false;
+    ctx->has_tooltip = false;
+    ctx->tooltip_hash = 0x0;
 
     if(!ctx->theme_initialized)
     {
@@ -279,6 +291,14 @@ void imgui_newline()
     ctx->curr.y += theme.text_size_px;
 }
 
+void imgui_horizontal_line()
+{
+    float width = ctx->panel_width - theme.spacing - 2.0*theme.text_padding;
+    gfx_draw_rect_xywh(ctx->curr.x + width/2.0, ctx->curr.y, width,2, theme.text_color, 0.0, 1.0, 1.0, true,false);
+
+    ctx->curr.y += (2+theme.text_padding);
+}
+
 void imgui_horizontal_begin()
 {
     for(int i = 0; i < MAX_HORIZONTAL_STACK; ++i)
@@ -333,8 +353,16 @@ void imgui_horizontal_end()
 bool imgui_button(char* label, ...)
 {
     bool result = false;
-    uint32_t hash = hash_str(label,strlen(label),0x0);
+    va_list args;
+    va_start(args, label);
+    char str[256] = {0};
+    vsprintf(str,label, args);
+    va_end(args);
 
+    uint32_t hash = hash_str(str,strlen(str),0x0);
+
+    char new_label[256] = {0};
+    mask_off_hidden(str, new_label, 256);
 
     if(is_active(hash))
     {
@@ -355,15 +383,6 @@ bool imgui_button(char* label, ...)
         }
     }
 
-    va_list args;
-    va_start(args, label);
-    char str[256] = {0};
-    vsprintf(str,label, args);
-    va_end(args);
-
-    char new_label[256] = {0};
-    mask_off_hidden(str, new_label, 256);
-
     Vector2f text_size = gfx_string_get_size(theme.text_scale, new_label);
 
     Rect interactive = {ctx->curr.x, ctx->curr.y, text_size.x + 2*theme.text_padding, text_size.y + 2*theme.text_padding};
@@ -373,6 +392,55 @@ bool imgui_button(char* label, ...)
 
     ctx->curr.w = text_size.x + 2*theme.text_padding + theme.spacing;
     ctx->curr.h = text_size.y + 2*theme.text_padding + theme.spacing;
+
+    progress_pos();
+
+    return result;
+}
+
+bool imgui_image_button(int img_index, int sprite_index, float scale, char* label, ...)
+{
+    bool result = false;
+    va_list args;
+    va_start(args, label);
+    char str[256] = {0};
+    vsprintf(str,label, args);
+    va_end(args);
+
+    uint32_t hash = hash_str(str,strlen(str),0x0);
+
+    char new_label[256] = {0};
+    mask_off_hidden(str, new_label, 256);
+
+    if(is_active(hash))
+    {
+        if(window_mouse_left_went_up())
+        {
+            if(is_highlighted(hash))
+            {
+                result = true;
+            }
+            clear_active();
+        }
+    }
+    else if(is_highlighted(hash))
+    {
+        if(window_mouse_left_went_down())
+        {
+            set_active(hash);
+        }
+    }
+
+    Vector2f text_size = gfx_string_get_size(theme.text_scale, new_label);
+
+    GFXImage* img = &gfx_images[img_index];
+    Rect interactive = {ctx->curr.x, ctx->curr.y, img->element_width*scale,img->element_height*scale};
+    handle_highlighting(hash, &interactive);
+
+    draw_image_button(hash, new_label, &interactive,img_index,sprite_index,scale);
+
+    ctx->curr.w = interactive.w + 2*theme.text_padding + theme.spacing;
+    ctx->curr.h = interactive.h + 2*theme.text_padding + theme.spacing;
 
     progress_pos();
 
@@ -454,6 +522,24 @@ int imgui_button_select(int num_buttons, char* button_labels[], char* label)
     imgui_horizontal_end();
     return selection;
 }
+
+void imgui_tooltip(char* tooltip)
+{
+    if(!tooltip)
+        return;
+
+    if(is_highlighted(ctx->tooltip_hash))
+        return;
+
+    memset(ctx->tooltip,0,MAX_TOOLTIP_LEN+1);
+
+    int len = MIN(strlen(tooltip),MAX_TOOLTIP_LEN);
+    strncpy(ctx->tooltip,tooltip,len);
+
+    ctx->tooltip_hash = 0x0;
+    ctx->has_tooltip = true;
+}
+
 
 void imgui_checkbox(char* label, bool* result)
 {
@@ -874,6 +960,11 @@ Vector2f imgui_end()
         window_mouse_set_cursor_normal();
     }
 
+    if(ctx->has_tooltip && is_highlighted(ctx->tooltip_hash))
+    {
+        draw_tooltip();
+    }
+
     Vector2f size = {ctx->panel_width, ctx->panel_height};
     return size;
 }
@@ -1116,6 +1207,18 @@ static void handle_highlighting(uint32_t hash, Rect* r)
             clear_highlighted();
         }
     }
+
+    handle_tooltip(hash);
+}
+
+static void handle_tooltip(uint32_t hash)
+{
+    if(ctx->has_tooltip)
+    {
+        //if(is_highlighted(hash) && !ctx->tooltip_hash)
+        if(!ctx->tooltip_hash)
+            ctx->tooltip_hash = hash;
+    }
 }
 
 static void draw_button(uint32_t hash, char* str, Rect* r)
@@ -1135,6 +1238,26 @@ static void draw_button(uint32_t hash, char* str, Rect* r)
     gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, button_color, 0.0, 1.0, theme.button_opacity, true,false);
 
     gfx_draw_string(r->x + theme.text_padding, r->y + theme.text_padding, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, str);
+}
+
+static void draw_image_button(uint32_t hash, char* str, Rect* r, int img_index, int sprite_index,float scale)
+{
+    // draw button
+    uint32_t button_color = theme.button_color_background;
+
+    if(is_highlighted(hash))
+    {
+        button_color = theme.button_color_background_highlighted;
+    }
+    if(is_active(hash))
+    {
+        button_color = theme.button_color_background_active;
+    }
+
+    gfx_draw_image_ignore_light(img_index, sprite_index, r->x + r->w/2.0, r->y + r->h/2.0, COLOR_TINT_NONE, scale, 0.0, 1.0, true,false);
+    gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, button_color, 0.0, 1.0, 0.3, true,false);
+
+    gfx_draw_string(r->x + r->w + theme.text_padding, r->y, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, str);
 }
 
 static void draw_toggle_button(uint32_t hash, char* str, Rect* r, bool toggled)
@@ -1291,4 +1414,18 @@ static void draw_label(int x, int y, uint32_t color, char* label)
 static void draw_color_box(Rect* r, uint32_t color)
 {
     gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + r->h/2.0, r->w, r->h, color, 0.0, 1.0, 1.0, true,false);
+}
+
+static void draw_tooltip()
+{
+    const float scale = 0.18;
+    Vector2f text_size = gfx_string_get_size(scale,ctx->tooltip);
+
+    Rect r = {ctx->mouse_x,ctx->mouse_y,text_size.x+2.0*theme.text_padding,text_size.y+2.0*theme.text_padding};
+
+    r.y -= r.h;
+
+    gfx_draw_rect_xywh(r.x + r.w/2.0, r.y + r.h/2.0, r.w, r.h, 0x00323232, 0.0, 1.0, 0.75, true,false);
+    gfx_draw_string(r.x+theme.text_padding, r.y-(text_size.y-r.h)/2.0, theme.text_color, scale, 0.0, 1.0, false, false, ctx->tooltip);
+
 }

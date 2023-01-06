@@ -35,6 +35,8 @@ static int item_profile_image;
 static uint8_t minimap_data[MINIMAP_RANGE*MINIMAP_RANGE*4] = {0};
 static int minimap_image = -1;
 
+static Vector2f skills_panel_size;
+
 void gui_init()
 {
     item_profile_image = gfx_load_image("src/img/item_profile_set.png", false, true, 64, 64);
@@ -154,8 +156,6 @@ void minimap_draw()
     // draw_x = 30;
     // draw_y = 30;
     gfx_draw_image_ignore_light(minimap_image, 0, draw_x, draw_y, COLOR_TINT_NONE, scale, 0.0, 0.5, true, false);
-
-
 }
 
 void gui_draw()
@@ -194,6 +194,7 @@ void gui_draw()
 
 
     // controls
+    /*
     imgui_begin("Controls",view_width - 150,view_height - 130);
         imgui_set_text_size(16);
         imgui_text("Controls");
@@ -208,6 +209,7 @@ void gui_draw()
             imgui_text("F3: Toggle Editor");
         imgui_indent_end();
     imgui_end();
+    */
 
     // player HUD
     {
@@ -290,6 +292,40 @@ void gui_draw()
 
             curr_x += (hotbar_box_size + hotbar_padding);
         }
+    }
+
+    bool skills_menu_enabled = true;
+    if(skills_menu_enabled)
+    {
+        imgui_begin_panel("##Skills",view_width - skills_panel_size.x-10,view_height - skills_panel_size.y-10);
+            imgui_text_sized(18,"Skills");
+            imgui_horizontal_line();
+            imgui_newline();
+            imgui_indent_begin(10);
+
+            for(int i = 0; i < SKILL_MAX; ++i)
+            {
+                char* skill_str = player_skill_to_str(i);
+                
+                if((i % 3) == 0)
+                    imgui_horizontal_begin();
+
+                imgui_tooltip(skill_str);
+                if(imgui_image_button(particles_image,i,1.3,"%d##%s", player->skills[i],skill_str))
+                {
+                    if(player->avail_skill_points > 0)
+                    {
+                        player->skills[i]++;
+                        player->avail_skill_points--;
+                    }
+                }
+                if(((i+1) % 3) == 0)
+                    imgui_horizontal_end();
+            }
+        imgui_horizontal_end();
+        imgui_indent_end();
+        imgui_text_colored(0x00888888,"Remaining Points: %d",player->avail_skill_points);
+        skills_panel_size = imgui_end();
     }
 
     if(editor_enabled)
