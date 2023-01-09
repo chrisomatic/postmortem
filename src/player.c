@@ -445,7 +445,7 @@ const char* player_anim_state_str(PlayerAnimState anim_state)
     }
 }
 
-char* player_skill_to_str(int skill)
+char* player_skill_get_name(int skill)
 {
     switch(skill)
     {
@@ -455,6 +455,34 @@ char* player_skill_to_str(int skill)
             return "Footspeed";
         case SKILL_PASSIVE_DAMAGE_BOOST:
             return "Damage Boost";
+        case SKILL_PASSIVE_RELOAD_SPEED:
+            return "Reload Speed";
+        case SKILL_PASSIVE_HEALTH_BOOST:
+            return "Health Boost";
+        case SKILL_ACTIVE_PIERCING_SHOT:
+            return "Piercing Shot";
+        case SKILL_ACTIVE_BRUTAL_SHOT:
+            return "Brutal Shot";
+        case SKILL_ACTIVE_COLD_TOUCH:
+            return "Cold Touch";
+        case SKILL_ACTIVE_DOUBLE_TIME:
+            return "Double Time";
+        case SKILL_ACTIVE_BERSERK:
+            return "Berserk";
+    }
+    return "Unknown";
+}
+
+char* player_skill_get_desc(int skill)
+{
+    switch(skill)
+    {
+        case SKILL_PASSIVE_INCREASED_AMMO:
+            return "+10 Bullets in case";
+        case SKILL_PASSIVE_FOOTSPEED:
+            return "+10 Increased run speed";
+        case SKILL_PASSIVE_DAMAGE_BOOST:
+            return "+5 damage";
         case SKILL_PASSIVE_RELOAD_SPEED:
             return "Reload Speed";
         case SKILL_PASSIVE_HEALTH_BOOST:

@@ -10,7 +10,7 @@
 #define MAX_CONTEXTS 32
 #define MAX_INT_LOOKUPS 256
 #define MAX_HORIZONTAL_STACK 10
-#define MAX_TOOLTIP_LEN 32
+#define MAX_TOOLTIP_LEN 256
 
 #define DRAW_DEBUG_BOXES 0
 
@@ -523,7 +523,7 @@ int imgui_button_select(int num_buttons, char* button_labels[], char* label)
     return selection;
 }
 
-void imgui_tooltip(char* tooltip)
+void imgui_tooltip(char* tooltip, ...)
 {
     if(!tooltip)
         return;
@@ -531,10 +531,16 @@ void imgui_tooltip(char* tooltip)
     if(is_highlighted(ctx->tooltip_hash))
         return;
 
+    va_list args;
+    va_start(args, tooltip);
+    char str[256] = {0};
+    vsprintf(str,tooltip, args);
+    va_end(args);
+
     memset(ctx->tooltip,0,MAX_TOOLTIP_LEN+1);
 
-    int len = MIN(strlen(tooltip),MAX_TOOLTIP_LEN);
-    strncpy(ctx->tooltip,tooltip,len);
+    int len = MIN(strlen(str),MAX_TOOLTIP_LEN);
+    strncpy(ctx->tooltip,str,len);
 
     ctx->tooltip_hash = 0x0;
     ctx->has_tooltip = true;

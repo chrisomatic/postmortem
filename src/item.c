@@ -341,3 +341,88 @@ static void weapons_init_images()
         }
     }
 }
+
+// Collectibles
+
+#define MAX_COLLECTIBLES 32
+static Collectible collectibles[MAX_COLLECTIBLES] = {};
+static glist* collectibles_list;
+static int collectible_count = 0;
+static int collectibles_image = -1;
+
+void collectibles_init()
+{
+    collectibles_image = gfx_load_image("src/img/item_set.png", false, true, 32, 32);
+    collectibles_list = list_create(collectibles,MAX_COLLECTIBLES,sizeof(Collectible));
+}
+
+void collectibles_spawn(char* name,float x, float y)
+{
+    if(list_is_full(collectibles_list))
+    {
+        LOGW("Collectible List is full!");
+        return;
+    }
+
+    Collectible* c = (Collectible*)list_get(collectibles_list,collectibles_list->count);
+
+    c->pos.x = x;
+    c->pos.y = y;
+    c->pos.z = 16.0;
+
+    c->vel.x = 0.0;
+    c->vel.y = 0.0;
+    c->vel.z = 512.0;
+    
+    c->anim.curr_frame = 0;
+    c->anim.max_frames = 16;
+    for(int i = 0; i < 16; ++i)
+        c->anim.frame_sequence[i] = i;
+    c->anim.curr_frame_time = 0.0;
+    c->anim.max_frame_time = 0.06;
+    c->anim.finite = true;
+    c->anim.curr_loop = 0;
+    c->anim.max_loops = 1;
+
+    list_add(collectibles_list,c);
+
+    LOGI("Spawn Collectible! %d",collectibles_list->count);
+}
+
+void collectibles_update(Collectible* c, double delta_t)
+{
+    if(c->pos.z > 0.0)
+    {
+        c->vel.z -= (delta_t*1600.0);
+        c->pos.z += (delta_t*c->vel.z);
+        c->pos.z = MAX(0.0,c->pos.z);
+    }
+            
+    gfx_anim_update(&c->anim, delta_t);
+}
+
+void collectibles_update_all(double delta_t)
+{
+    for(int i = 0; i < collectibles_list->count; ++i)
+    {
+        Collectible* c = (Collectible*)list_get(collectibles_list,i);
+        collectibles_update(c,delta_t);
+    }
+}
+
+void collectibles_draw(Collectible* c)
+{
+    int sprite_index = c->anim.frame_sequence[c->anim.curr_frame];
+    assert(sprite_index >= 0);
+
+    gfx_draw_image(collectibles_image, sprite_index, c->pos.x, c->pos.y - 0.5*c->pos.z, COLOR_TINT_NONE,1.0,0.0,1.0,true,true);
+}
+
+void collectibles_draw_all()
+{
+    for(int i = 0; i < collectibles_list->count; ++i)
+    {
+        Collectible* c = (Collectible*)list_get(collectibles_list,i);
+        collectibles_draw(c);
+    }
+}

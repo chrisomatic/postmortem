@@ -335,6 +335,9 @@ void init()
     LOGI(" - Player Items.");
     player_items_init();
 
+    LOGI(" - Collectibles.");
+    collectibles_init();
+
     LOGI(" - Zombies.");
     zombie_init();
 
@@ -427,6 +430,7 @@ void simulate(double delta_t)
     for(int i = 0; i < MAX_CLIENTS; ++i)
         player_update(&players[i],delta_t);
 
+    collectibles_update_all(delta_t);
     zones_update(delta_t);
 
     projectile_update(delta_t);
@@ -616,6 +620,7 @@ void draw()
     world_draw();
 
     entities_draw(true);
+    collectibles_draw_all();
 
 #if DEBUG_PROJ_GRIDS
     if(pg_count > 0)

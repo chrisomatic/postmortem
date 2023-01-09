@@ -287,5 +287,6 @@ void player_add_xp(Player* p, float xp);
 
 void player_weapon_melee_check_collision(Player* p);
 
-char* player_skill_to_str(int skill);
+char* player_skill_get_name(int skill);
+char* player_skill_get_desc(int skill);
 

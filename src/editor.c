@@ -220,7 +220,7 @@ void editor_draw()
                     }
                     imgui_horizontal_end();
 
-                    imgui_tooltip("Grass...");
+                    imgui_tooltip("Your ass\n is Grass...");
                     if(imgui_image_button(1,0,1.0,"Grass Clicks: %d", grass_clicks))
                     {
                         grass_clicks++;

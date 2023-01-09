@@ -305,12 +305,13 @@ void gui_draw()
 
             for(int i = 0; i < SKILL_MAX; ++i)
             {
-                char* skill_str = player_skill_to_str(i);
+                char* skill_str = player_skill_get_name(i);
+                char* skill_desc = player_skill_get_desc(i);
                 
                 if((i % 3) == 0)
                     imgui_horizontal_begin();
 
-                imgui_tooltip(skill_str);
+                imgui_tooltip("%s\n  %s",skill_str,skill_desc);
                 if(imgui_image_button(particles_image,i,1.3,"%d##%s", player->skills[i],skill_str))
                 {
                     if(player->avail_skill_points > 0)

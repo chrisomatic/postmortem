@@ -894,17 +894,18 @@ static void wander(Zombie* z, float delta_t)
     }
 }
 
-static void zombie_die2(int index)
-{
-    zombies[index].dead = true;
-    zombies[index].anim.max_loops = 1;
-    zombies[index].anim.finite = true;
-}
-
 static void zombie_die(Zombie* z)
 {
     z->dead = true;
     z->anim.max_loops = 1;
     z->anim.finite = true;
+
+    int chance = rand() % 2;
+    if(chance == 0)
+        collectibles_spawn("Something",z->phys.pos.x, z->phys.pos.y);
+}
+static void zombie_die2(int index)
+{
+    zombie_die(&zombies[index]);
 }
 

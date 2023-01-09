@@ -7,6 +7,7 @@
 #include "physics.h"
 #include "math2d.h"
 #include "particles.h"
+#include "gfx.h"
 
 
 typedef enum
@@ -135,6 +136,15 @@ typedef struct
 } Melee;
 
 
+// Collectible
+typedef struct
+{
+    Vector3f pos;
+    Vector3f vel;
+    GFXAnimation anim;
+    char* name;
+} Collectible;
+
 // global vars
 // -----------------------------------------------------------
 
@@ -170,4 +180,10 @@ void block_destroy(block_t* b);
 
 void gun_fire(void* _player, Gun* gun, bool held);
 
-
+// collectibles
+void collectibles_init();
+void collectibles_spawn(char* name,float x, float y);
+void collectibles_update(Collectible* c, double delta_t);
+void collectibles_update_all(double delta_t);
+void collectibles_draw(Collectible* c);
+void collectibles_draw_all();

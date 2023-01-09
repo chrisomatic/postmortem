@@ -1006,11 +1006,26 @@ static Vector2f gfx_draw_string_internal(float x, float y, uint32_t color, uint3
 
     float x_pos = x;
     float y_pos = y+fontsize;
+    float longest_width = 0.0;
+
+    int num_lines = 1;
 
     for(;;)
     {
         if(*c == '\0')
             break;
+
+        if(*c == '\n')
+        {
+            y_pos += fontsize;
+            if((x_pos-x) > longest_width)
+                longest_width = (x_pos-x);
+
+            x_pos = x;
+            num_lines++;
+            c++;
+            continue;
+        }
 
         FontChar* fc = &font_chars[*c];
 
@@ -1067,9 +1082,12 @@ static Vector2f gfx_draw_string_internal(float x, float y, uint32_t color, uint3
         glUniform4f(loc_font_fg_color,r/255.0,g/255.0,b/255.0,opacity);
         glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 
-        x_pos += (fontsize*fc->advance);
         c++;
+        x_pos += (fontsize*fc->advance);
     }
+
+    if((x_pos-x) > longest_width)
+        longest_width = (x_pos-x);
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
@@ -1077,7 +1095,7 @@ static Vector2f gfx_draw_string_internal(float x, float y, uint32_t color, uint3
     glBindTexture(GL_TEXTURE_2D,0);
     glUseProgram(0);
 
-    Vector2f ret = {x_pos - x, fontsize};
+    Vector2f ret = {longest_width, fontsize*num_lines};
     return ret;
 }
 
@@ -1120,6 +1138,8 @@ Vector2f gfx_string_get_size(float scale, char* fmt, ...)
 
     float x_pos = 0.0;
     float fontsize = 64.0 * scale;
+    int num_lines = 1;
+    float longest_width = 0.0;
 
     char* c = str;
 
@@ -1128,13 +1148,26 @@ Vector2f gfx_string_get_size(float scale, char* fmt, ...)
         if(*c == '\0')
             break;
 
+        if(*c == '\n')
+        {
+            num_lines++;
+            if(x_pos > longest_width)
+                longest_width = x_pos;
+            x_pos = 0.0;
+            c++;
+            continue;
+        }
+
         FontChar* fc = &font_chars[*c];
 
         x_pos += (fontsize*fc->advance);
         c++;
     }
 
-    Vector2f ret = {x_pos, fontsize};
+    if(x_pos > longest_width)
+        longest_width = x_pos;
+
+    Vector2f ret = {longest_width, fontsize*num_lines};
     return ret;
 }
 
