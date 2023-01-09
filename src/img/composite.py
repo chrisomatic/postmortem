@@ -85,6 +85,9 @@ class Compositor():
 
         self.composite_image = None
 
+        self.orientations = []
+        self.anim_frames = []
+
         self.slash = "/"
         if sys.platform == "win32":
             self.slash = "\\"
@@ -107,28 +110,41 @@ class Compositor():
         self.save_path = output + self.model + "-" + self.model_set + ".png"
         self.save_path_bg = output_bg + self.model + "-" + self.model_set + "_bg.png"
 
+
+        # rows = orientations/angles      (8)
+        # cols = animations               (16)
+
+        # animation_orientation.png
+
         # self.folders = ["walk_normal", "walk_gun_ready"]
-        self.orientations = ["front" , "front_right", "right", "back_right", "back", "back_left", "left", "front_left"]
+        orientations = ["front" , "front_right", "right", "back_right", "back", "back_left", "left", "front_left"]
 
         self.scaled_size = QSize(scale_w, scale_h)
-        self.num_rows = len(self.orientations)
+        # self.num_rows = len(orientations)
+        self.num_rows = 0
         self.num_cols = 0
 
         nums = ["00%02d" % i for i in range(100)]
 
         self.pic_data = {}
-        for j in range(len(self.orientations)):
-            o = self.orientations[j]
+        for j in range(len(orientations)):
+            o = orientations[j]
+
 
             search_pics = [n + "_" + o + ".png" for n in nums]
 
             pics = [x.lower() for x in os.listdir(self.path) if os.path.isfile(self.path+x) and x.lower() in search_pics]
             pics.sort()
 
-            self.num_cols = len(pics)
+            if(len(pics) == 0):
+                continue
+
+            self.num_rows += 1
+            self.num_cols = max(self.num_cols, len(pics))
 
             for p in pics:
                 self.pic_data[self.path+p] = {}
+
 
         printf("%s\n", self.path)
 
