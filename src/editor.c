@@ -15,9 +15,12 @@
 #include "console.h"
 #include "editor.h"
 
+int minimap_range = 100;
+int minimap_draw_size = 100;
+float minimap_opacity = 0.5;
+
 bool editor_enabled = true;
 
-// static ParticleSpawner* particle_spawner;
 static ParticleSpawner* particle_spawner;
 static void randomize_effect(ParticleEffect* effect);
 static char particles_file_name[20] = {0};
@@ -117,6 +120,11 @@ void editor_draw()
                 case 0: // game
                     imgui_color_picker("Ambient Color", &ambient_light);
                     imgui_checkbox("Debug Enabled",&debug_enabled);
+
+                    imgui_number_box("Minimap Range", 2, 1000, &minimap_range);
+                    imgui_number_box("Minimap Size", 50, 200, &minimap_draw_size);
+                    imgui_slider_float("Minimap Opacity", 0.01, 1.0, &minimap_opacity);
+
                     imgui_slider_float("Player Scale", 0.1,10.0,&slider_pscale);
                     imgui_slider_float("Camera Z", -1.0,1.0,&camera_z);
                     camera_zoom(camera_z, false);
@@ -132,7 +140,6 @@ void editor_draw()
                     {
                         if(!p2->active)
                         {
-                            printf("activating player\n");
                             player_set_pos(p2, player->phys.pos.x, player->phys.pos.y);
                             player_count++;
                             p2->active = true;

@@ -42,7 +42,6 @@ void camera_update(int default_view_width, int default_view_height)
         float dy = camera_delta_target.pos.y/num_frames;
         float dz = camera_delta_target.pos.z/num_frames;
         move_camera(camera.pos.x+dx, camera.pos.y+dy, camera.pos.z+dz);
-
     }
 
     calc_cam_view(default_view_width, default_view_height);

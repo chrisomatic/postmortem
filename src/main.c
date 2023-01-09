@@ -547,12 +547,12 @@ void draw_debug()
             world_grid_to_coords_tl(r, wc1-1, &x0, &y0);
             world_grid_to_coords_tl(r, wc2+1, &x1, &y1);
             // gfx_add_line(x0,y0,x1,y1,line_color);
-            Rect r = {0};
-            r.x = x0 + (x1-x0)/2.0;
-            r.y = y0 + (y1-y0)/2.0;
-            r.w = x1-x0;
-            r.h = 0.1;
-            gfx_draw_rect(&r, line_color, 0.0,1.0,1.0, false, true);
+            Rect rec = {0};
+            rec.x = x0 + (x1-x0)/2.0;
+            rec.y = y0 + (y1-y0)/2.0;
+            rec.w = x1-x0;
+            rec.h = 0.1;
+            gfx_draw_rect(&rec, line_color, 0.0,1.0,1.0, false, true);
 
         }
         for(int c = (wc1-1); c < (wc2+1); ++c)
@@ -561,12 +561,12 @@ void draw_debug()
             world_grid_to_coords_tl(wr1-1, c, &x0, &y0);
             world_grid_to_coords_tl(wr2+1, c, &x1, &y1);
             // gfx_add_line(x0,y0,x1,y1,line_color);
-            Rect r = {0};
-            r.x = x0 + (x1-x0)/2.0;
-            r.y = y0 + (y1-y0)/2.0;
-            r.w = 0.1;
-            r.h = y1-y0;
-            gfx_draw_rect(&r, line_color, 0.0,1.0,1.0, false, true);
+            Rect rec = {0};
+            rec.x = x0 + (x1-x0)/2.0;
+            rec.y = y0 + (y1-y0)/2.0;
+            rec.w = 0.1;
+            rec.h = y1-y0;
+            gfx_draw_rect(&rec, line_color, 0.0,1.0,1.0, false, true);
         }
     }
 
@@ -605,6 +605,7 @@ void draw_debug()
     {
         for(int c = (wc1-1); c < (wc2+1); ++c)
         {
+            if(r < 0 || c < 0 || r >= WORLD_GRID_ROWS_MAX || c >= WORLD_GRID_COLS_MAX) continue;
             float x0,y0;
             world_grid_to_coords_tl(r, c, &x0, &y0);
             gfx_draw_string(x0+1.0, y0+1.0, COLOR_ORANGE, 0.1, 0.0, 1.0, true, false, "%d", grid_boxes[r][c].num);
@@ -632,6 +633,7 @@ void draw()
     gfx_draw_lines();
 
     draw_debug();
+
     zones_draw();
 
     gui_draw();

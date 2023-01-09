@@ -16,7 +16,7 @@
 #define MAX_LINES 100
 #define SPRITE_BATCH_MAX_SPRITES 4096
 
-#define PRINT_LOAD_LOGS 1
+#define PRINT_LOAD_LOGS 0
 
 // types
 // --------------------------------------------------------
@@ -331,26 +331,6 @@ bool gfx_load_image_data(const char* image_path, GFXImageData* image, bool flip)
     }
 }
 
-// int gfx_raw_image_create(unsigned char* data, int width, int height)
-// {
-//     GLuint texture;
-//     glGenTextures(1, &texture);
-
-//     glBindTexture(GL_TEXTURE_2D, texture);
-//     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width,height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-//     glBindTexture(GL_TEXTURE_2D, 0);
-
-//     return texture;
-// }
-
-
 
 int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int element_width, int element_height)
 {
@@ -368,7 +348,20 @@ int gfx_load_image(const char* image_path, bool flip, bool linear_filter, int el
 
 void gfx_raw_image_update(int img_index, unsigned char* data, int width, int height)
 {
-    int texture = gfx_images[img_index].texture;
+    GFXImage* img = &gfx_images[img_index];
+
+    img->w = width;
+    img->h = height;
+    img->elements_per_row = 1;
+    img->elements_per_col = 1;
+    img->element_width = width;
+    img->element_height = height;
+    img->visible_rects[0].x = width/2.0;
+    img->visible_rects[0].y = height/2.0;
+    img->visible_rects[0].w = width;
+    img->visible_rects[0].h = height;
+
+    int texture = img->texture;
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -1353,10 +1346,10 @@ static int assign_image(GFXImageData image, bool linear_filter, int element_widt
 
         if(raw)
         {
-            // img.visible_rects[i].x = img.w/2.0;
-            // img.visible_rects[i].y = img.h/2.0;
-            // img.visible_rects[i].w = img.w;
-            // img.visible_rects[i].h = img.h;
+            img.visible_rects[i].x = img.w/2.0;
+            img.visible_rects[i].y = img.h/2.0;
+            img.visible_rects[i].w = img.w;
+            img.visible_rects[i].h = img.h;
 
             img.sprite_visible_rects[i].x = 0.5;
             img.sprite_visible_rects[i].y = 0.5;

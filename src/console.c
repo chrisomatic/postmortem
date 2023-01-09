@@ -73,8 +73,7 @@ void console_run_command(char* text)
         // printf("row, col: %d, %d\n", row, col);
         float x,y;
         map_grid_to_coords(row, col, &x, &y);
-        player->phys.pos.x = x;
-        player->phys.pos.y = y;
+        player_set_pos(player, x, y);
 
         FREE(s_row);
         FREE(s_col);

@@ -31,9 +31,10 @@ static void update_fps_hist();
 static void draw_debug_box();
 static int item_profile_image;
 
-#define MINIMAP_RANGE   60
-static uint8_t minimap_data[MINIMAP_RANGE*MINIMAP_RANGE*4] = {0};
+#define MINIMAP_MAX_RANGE   1000
+static uint8_t minimap_data[MINIMAP_MAX_RANGE*MINIMAP_MAX_RANGE*4] = {0};
 static int minimap_image = -1;
+
 
 static Vector2f skills_panel_size;
 
@@ -42,17 +43,37 @@ void gui_init()
     item_profile_image = gfx_load_image("src/img/item_profile_set.png", false, true, 64, 64);
     editor_init();
 
-    minimap_image = gfx_raw_image_create(NULL, 60, 60, true);
-
-//     printf("item_profile_image: %d\n", item_profile_image);
-//     printf("   texture: %d\n", gfx_images[item_profile_image].texture);
-//     printf("minimap_image: %d\n", minimap_image);
-//     printf("   texture: %d\n", gfx_images[minimap_image].texture);
+    minimap_image = gfx_raw_image_create(NULL, MINIMAP_MAX_RANGE, MINIMAP_MAX_RANGE, true);
 }
+
+void minimap_set_color(int index, uint32_t color, float opacity)
+{
+    minimap_data[index+0] = (color >> 16) & 0xFF;
+    minimap_data[index+1] = (color >> 8)  & 0xFF;
+    minimap_data[index+2] = (color >> 0)  & 0xFF;
+    minimap_data[index+3] = 0xFF * opacity;
+}
+
+//@NOTE: row and col are relative to the minimap
+void minimap_set_color2(int row, int col, int radius, uint32_t color, float opacity)
+{
+    int end = radius == 0 ? 1 : radius;
+
+    for(int _row = row-radius; _row < row+end; ++_row)
+    {
+        for(int _col = col-radius; _col < col+end; ++_col)
+        {
+            if( _row < 0 || _col < 0 || _row >= minimap_range || _col >= minimap_range) continue;
+            int index = (_row * minimap_range + _col)*4;
+            minimap_set_color(index, color, opacity);
+        }
+    }
+
+}
+
 
 void minimap_draw()
 {
-
     Rect r;
     get_camera_rect(&r);
 
@@ -64,98 +85,74 @@ void minimap_draw()
 
     int mr1,mc1,mr2,mc2;
 
-    mr1 = mr - MINIMAP_RANGE/2;
-    mc1 = mc - MINIMAP_RANGE/2;
-    mr2 = mr + MINIMAP_RANGE/2-1;
-    mc2 = mc + MINIMAP_RANGE/2-1;
+    int half_range = minimap_range/2;
+    int rem_range = minimap_range - half_range;
 
-    if(mr1 < 0)
-    {
-        mr1 = 0;
-        mr2 = MINIMAP_RANGE-1;
-    }
-    else if(mr2 >= mrows)
-    {
-        mr2 = mrows-1;
-        mr1 = mr2 - MINIMAP_RANGE-1;
-    }
 
-    if(mc1 < 0)
+    int start_row = mr - half_range;
+    int start_col = mc - half_range;
+
+    if(start_row < 0)
     {
-        mc1 = 0;
-        mc2 = MINIMAP_RANGE-1;
+        start_row = 0;
     }
-    else if(mc2 >= mcols)
+    else if(mr+rem_range >= mrows)
     {
-        mc2 = mcols-1;
-        mc1 = mc2 - MINIMAP_RANGE-1;
+        start_row = mrows - minimap_range;
     }
 
-    // printf("row, col:   %d, %d  -->  %d, %d\n", mr1, mc1, mr2, mc2);
+    if(start_col < 0)
+    {
+        start_col = 0;
+    }
+    else if(mc+rem_range >= mcols)
+    {
+        start_col = mcols - minimap_range;
+    }
 
-    float rsize = 1.0;
-    float x_start = 10;
-    float y_start = view_height - MINIMAP_RANGE*rsize - 10;
+    // printf("row, col:   %d, %d  -->  %d, %d\n", start_row, start_col, start_row+minimap_range-1, start_col+minimap_range-1);
 
     int idx = 0;
+    int prow,pcol;
 
-    for(int r = 0; r < MINIMAP_RANGE; ++r)
+    for(int r = 0; r < minimap_range; ++r)
     {
-        for(int c = 0; c < MINIMAP_RANGE; ++c)
+        for(int c = 0; c < minimap_range; ++c)
         {
 
-            // minimap drawing location
-            float draw_x = x_start + c*rsize;
-            float draw_y = y_start + r*rsize;
-            Rect rect = {0};
-            rect.w = rsize;
-            rect.h = rsize;
-            rect.x = draw_x + rect.w/2.0;
-            rect.y = draw_y + rect.y/2.0;
-
-            int row = mr1+r;
-            int col = mc1+c;
-
+            int row = start_row + r;
+            int col = start_col + c;
             uint32_t color = 0;
             uint8_t index = map_get_tile_index(row,col);
             if(index != 0xFF)
             {
                 color = gfx_images[ground_sheet].avg_color[index];
-
-                minimap_data[idx++] = (color >> 16) & 0xFF;
-                minimap_data[idx++] = (color >> 8)  & 0xFF;
-                minimap_data[idx++] = (color >> 0)  & 0xFF;
-                minimap_data[idx++] = 0xFF;
             }
-            // gfx_draw_rect(&rect, color, 0.0, 1.0, 0.5, true, false);
-
-            for(int i = 0; i < MAX_CLIENTS; ++i)
-            {
-                if(players[i].active)
-                {
-                    int prow,pcol;
-                    coords_to_map_grid(players[i].phys.actual_pos.x, players[i].phys.actual_pos.y, &prow, &pcol);
-                    if(prow == row && pcol == col)
-                    {
-                        color = player_colors[players[i].index];
-                        // gfx_draw_rect(&rect, color, 0.0, 2.0, 1.0, true, false);
-                    }
-                }
-
-            }
+            minimap_set_color(idx, color, minimap_opacity);
+            idx += 4;
         }
     }
 
-    gfx_raw_image_update(minimap_image, (unsigned char*)minimap_data, MINIMAP_RANGE, MINIMAP_RANGE);
 
-    int draw_size = 60;
 
-    float scale = (float)draw_size / (float)MINIMAP_RANGE;
-    float draw_x = 10 + (MINIMAP_RANGE*scale)/2.0;
-    float draw_y = view_height - 10 - (MINIMAP_RANGE*scale)/2.0;
-    // draw_x = 30;
-    // draw_y = 30;
-    gfx_draw_image_ignore_light(minimap_image, 0, draw_x, draw_y, COLOR_TINT_NONE, scale, 0.0, 0.5, true, false);
+
+    for(int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        if(players[i].active)
+        {
+            uint32_t color = player_colors[players[i].index];
+            coords_to_map_grid(players[i].phys.actual_pos.x, players[i].phys.actual_pos.y, &prow, &pcol);
+            minimap_set_color2(prow-start_row, pcol-start_col, minimap_range/100, color, minimap_opacity);
+        }
+    }
+
+
+    gfx_raw_image_update(minimap_image, (unsigned char*)minimap_data, minimap_range, minimap_range);
+
+    float scale = (float)minimap_draw_size / (float)minimap_range;
+    float draw_x = 10 + (minimap_range*scale)/2.0;
+    float draw_y = view_height - 10 - (minimap_range*scale)/2.0;
+    gfx_draw_image_ignore_light(minimap_image, 0, draw_x, draw_y, COLOR_TINT_NONE, scale, 0.0, 1.0, true, false);
 }
 
 void gui_draw()
