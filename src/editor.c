@@ -129,6 +129,8 @@ void editor_draw()
                     imgui_slider_float("Camera Z", -1.0,1.0,&camera_z);
                     camera_zoom(camera_z, false);
 
+                    char* options[] = {"Red", "Blue", "Green", "Yellow"};
+                    imgui_dropdown(options, IM_ARRAYSIZE(options), "Color");
 
                     Player* p2 = &players[2];
                     char* p2_str = "Activate Player 2";

@@ -38,7 +38,6 @@ typedef struct
 {
     uint32_t hash;
 
-    // ids
     uint32_t highlighted_id;
     uint32_t active_id;
     uint32_t focused_text_id;
@@ -67,6 +66,8 @@ typedef struct
     bool has_tooltip;
     char tooltip[MAX_TOOLTIP_LEN+1];
     uint32_t tooltip_hash;
+
+    int dropdown_selected_index;
 
     bool theme_initialized;
 
@@ -153,6 +154,7 @@ static void draw_color_box(Rect* r, uint32_t color);
 static void draw_label(int x, int y, uint32_t color, char* label);
 static void draw_number_box(uint32_t hash, char* label, Rect* r, int val, int max);
 static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text);
+static void draw_dropdown(uint32_t hash, char* str, char* options[], int num_options, Rect* r);
 static void draw_panel();
 static void draw_tooltip();
 
@@ -521,6 +523,73 @@ int imgui_button_select(int num_buttons, char* button_labels[], char* label)
     imgui_text(label);
     imgui_horizontal_end();
     return selection;
+}
+
+int imgui_dropdown(char* options[], int num_options, char* label)
+{
+    if(num_options < 0 || num_options >= 32)
+        return 0;
+
+    char _str[100] = {0};
+    snprintf(_str,99,"%s_%s##dropdown%d",label,options[0],num_options);
+
+    uint32_t hash = hash_str(_str,strlen(_str),0x0);
+    IntLookup* lookup = get_int_lookup(hash);
+    int *val = &lookup->val;
+
+    char new_label[32] = {0};
+    mask_off_hidden(label, new_label, 32);
+
+    bool results[32] = {false};
+    int selection = 0;
+
+    float max_height = NOMINAL_FONT_SIZE*theme.text_scale + 2*theme.text_padding;
+    float max_width = 0.0;
+
+    for(int i = 0; i < num_options; ++i)
+    {
+        Vector2f text_size = gfx_string_get_size(theme.text_scale, options[i]);
+        if(text_size.x > max_width)
+        {
+            max_width = text_size.x;
+        }
+    }
+
+    if(is_highlighted(hash))
+    {
+        if(window_mouse_left_went_down())
+        {
+            if(is_active(hash))
+            {
+                // make new selection
+                float y_diff = ctx->mouse_y - ctx->curr.y;
+                ctx->dropdown_selected_index = floor(y_diff / max_height) - 1;
+                clear_active();
+            }
+            else
+                set_active(hash);
+        }
+    }
+
+    int display_count = 1;
+    if(is_active(hash))
+    {
+        display_count = num_options +1;
+    }
+
+    Rect interactive = {ctx->curr.x, ctx->curr.y, max_width+2*theme.text_padding, display_count* (max_height+2*theme.text_padding)};
+    handle_highlighting(hash, &interactive);
+
+    draw_dropdown(hash, new_label, options, num_options, &interactive);
+
+    ctx->curr.w = interactive.w + 2*theme.text_padding + theme.spacing;
+    ctx->curr.h = max_height + 4*theme.text_padding + theme.spacing;
+    //ctx->curr.h = interactive.h + 2*theme.text_padding + theme.spacing;
+
+    progress_pos();
+
+    return ctx->dropdown_selected_index;
+
 }
 
 void imgui_tooltip(char* tooltip, ...)
@@ -998,10 +1067,7 @@ static inline bool is_inside(Rect* r)
 }
 static inline void set_highlighted(uint32_t hash)
 {
-    if(ctx->active_id == 0x0)
-    {
-        ctx->highlighted_id = hash;
-    }
+    ctx->highlighted_id = hash;
 }
 static inline void set_active(uint32_t hash)
 {
@@ -1410,6 +1476,58 @@ static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text)
     }
 
     draw_label(r->x + r->w+theme.text_padding, r->y-(label_size.y-r->h)/2.0, theme.text_color, label);
+}
+
+static void draw_dropdown(uint32_t hash, char* str, char* options[], int num_options, Rect* r)
+{
+    // draw button
+    uint32_t button_color = theme.button_color_background;
+
+    if(is_active(hash))
+    {
+        button_color = theme.button_color_background_active;
+    }
+    else if(is_highlighted(hash))
+    {
+        button_color = theme.button_color_background_highlighted;
+    }
+
+    float box_height = NOMINAL_FONT_SIZE*theme.text_scale + 2*theme.text_padding;
+
+    gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + box_height/2.0, r->w, box_height, button_color, 0.0, 1.0, theme.button_opacity, true,false);
+
+    int selection = 0;
+    if(ctx->dropdown_selected_index >= 0 && ctx->dropdown_selected_index < num_options)
+        selection = ctx->dropdown_selected_index;
+
+    char* selected_text = options[selection];
+    gfx_draw_string(r->x + theme.text_padding, r->y + theme.text_padding, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, selected_text);
+
+    if(is_active(hash))
+    {
+        float y_diff = ctx->mouse_y - r->y;
+        int highlighted_index = floor(y_diff / box_height) - 1;
+
+        uint32_t color;
+
+        for(int i = 0; i < num_options; ++i)
+        {
+            if(i == highlighted_index)
+            {
+                color = theme.button_color_background_highlighted;
+            }
+            else
+            {
+                color = theme.button_color_background;
+            }
+
+            gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + (i+1.5)*box_height, r->w, box_height, color, 0.0, 1.0, theme.button_opacity, true,false);
+            gfx_draw_string(r->x + theme.text_padding, r->y + theme.text_padding + (i+1)*box_height, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, options[i]);
+        }
+    }
+
+    // label
+    gfx_draw_string(r->x + r->w + theme.text_padding, r->y + theme.text_padding, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, str);
 }
 
 static void draw_label(int x, int y, uint32_t color, char* label)

@@ -385,8 +385,6 @@ void collectibles_spawn(char* name,float x, float y)
     c->anim.max_loops = 1;
 
     list_add(collectibles_list,c);
-
-    LOGI("Spawn Collectible! %d",collectibles_list->count);
 }
 
 void collectibles_update(Collectible* c, double delta_t)
@@ -415,7 +413,7 @@ void collectibles_draw(Collectible* c)
     int sprite_index = c->anim.frame_sequence[c->anim.curr_frame];
     assert(sprite_index >= 0);
 
-    gfx_draw_image(collectibles_image, sprite_index, c->pos.x, c->pos.y - 0.5*c->pos.z, COLOR_TINT_NONE,1.0,0.0,1.0,true,true);
+    gfx_draw_image(collectibles_image, sprite_index, c->pos.x, c->pos.y - 0.5*c->pos.z, 0x00FFFF00,1.0,0.0,1.0,true,true);
 }
 
 void collectibles_draw_all()
