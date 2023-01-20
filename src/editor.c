@@ -25,7 +25,7 @@ static ParticleSpawner* particle_spawner;
 static void randomize_effect(ParticleEffect* effect);
 static char particles_file_name[20] = {0};
 static int num_zombies = 10;
-static bool editor_collapsed = true;
+static bool editor_collapsed = false;
 static float camera_z = 0.4;
 static int grass_clicks = 0;
 
@@ -118,6 +118,7 @@ void editor_draw()
             switch(selection)
             {
                 case 0: // game
+                {
                     imgui_color_picker("Ambient Color", &ambient_light);
                     imgui_checkbox("Debug Enabled",&debug_enabled);
 
@@ -129,8 +130,16 @@ void editor_draw()
                     imgui_slider_float("Camera Z", -1.0,1.0,&camera_z);
                     camera_zoom(camera_z, false);
 
-                    char* options[] = {"Red", "Blue", "Green", "Yellow"};
-                    imgui_dropdown(options, IM_ARRAYSIZE(options), "Color");
+                    char* options[] = {"None", "Red", "Blue", "Green", "Yellow"};
+                    int selected_color = imgui_dropdown(options, IM_ARRAYSIZE(options), "Color");
+                    switch(selected_color)
+                    {
+                        case 0: player->tint = 0x00FFFFFF; break;
+                        case 1: player->tint = 0x00FF0000; break;
+                        case 2: player->tint = 0x000000FF; break;
+                        case 3: player->tint = 0x0000FF00; break;
+                        case 4: player->tint = 0x00FFFF00; break;
+                    }
 
                     Player* p2 = &players[2];
                     char* p2_str = "Activate Player 2";
@@ -235,7 +244,7 @@ void editor_draw()
                         grass_clicks++;
                     }
 
-                    break;
+                }   break;
                 case 1:
                     imgui_slider_float("Slider 1", 0.0,1.0,&v1);
                     imgui_slider_float("Slider 2", 0.0,1.0,&v2);

@@ -36,6 +36,18 @@ typedef struct
 
 typedef struct
 {
+    bool draw_on_top;
+    uint32_t hash;
+    int selected_index;
+    char* options;
+    int num_options;
+    char label[32];
+    float text_size_px;
+    Rect size;
+} DropdownProps;
+
+typedef struct
+{
     uint32_t hash;
 
     uint32_t highlighted_id;
@@ -67,7 +79,7 @@ typedef struct
     char tooltip[MAX_TOOLTIP_LEN+1];
     uint32_t tooltip_hash;
 
-    int dropdown_selected_index;
+    DropdownProps dropdown_props;
 
     bool theme_initialized;
 
@@ -139,6 +151,7 @@ static inline void clear_active();
 static void assign_context(uint32_t hash);
 static void handle_highlighting(uint32_t hash, Rect* r);
 static void handle_tooltip();
+static bool dropdown_on_top(uint32_t hash, Rect* r);
 static void imgui_slider_float_internal(char* label, float min, float max, float* result, char* format);
 static IntLookup* get_int_lookup(uint32_t hash);
 static void progress_pos();
@@ -555,40 +568,67 @@ int imgui_dropdown(char* options[], int num_options, char* label)
         }
     }
 
+    bool active = is_active(hash);
+
     if(is_highlighted(hash))
     {
         if(window_mouse_left_went_down())
         {
-            if(is_active(hash))
+            if(active)
             {
                 // make new selection
                 float y_diff = ctx->mouse_y - ctx->curr.y;
-                ctx->dropdown_selected_index = floor(y_diff / max_height) - 1;
+                int index = floor(y_diff / max_height) - 1;
+                if(index >= 0 && index < num_options)
+                {
+                    ctx->dropdown_props.selected_index = index;
+                }
                 clear_active();
             }
             else
                 set_active(hash);
         }
     }
-
-    int display_count = 1;
-    if(is_active(hash))
+    else if(is_active(hash))
     {
-        display_count = num_options +1;
+        if(window_mouse_left_went_down())
+        {
+            clear_active();
+        }
     }
+
+    int display_count = active ? num_options +1 : 1;
 
     Rect interactive = {ctx->curr.x, ctx->curr.y, max_width+2*theme.text_padding, display_count* (max_height+2*theme.text_padding)};
     handle_highlighting(hash, &interactive);
 
-    draw_dropdown(hash, new_label, options, num_options, &interactive);
+    if(active)
+    {
+        ctx->dropdown_props.draw_on_top = true;
+
+        // cache needed properties to draw later
+        ctx->dropdown_props.hash = hash;
+        ctx->dropdown_props.options = options;
+        ctx->dropdown_props.num_options = num_options;
+        ctx->dropdown_props.text_size_px = theme.text_size_px;
+        memcpy(ctx->dropdown_props.label,new_label,31);
+        memcpy(&ctx->dropdown_props.size,&interactive,sizeof(Rect));
+    }
+    else
+    {
+        // draw now since the drop down isn't expanded
+        ctx->dropdown_props.draw_on_top = false;
+        draw_dropdown(hash, new_label, options, num_options, &interactive);
+    }
 
     ctx->curr.w = interactive.w + 2*theme.text_padding + theme.spacing;
     ctx->curr.h = max_height + 4*theme.text_padding + theme.spacing;
     //ctx->curr.h = interactive.h + 2*theme.text_padding + theme.spacing;
 
+
     progress_pos();
 
-    return ctx->dropdown_selected_index;
+    return ctx->dropdown_props.selected_index;
 
 }
 
@@ -1035,6 +1075,12 @@ Vector2f imgui_end()
         window_mouse_set_cursor_normal();
     }
 
+    if(ctx->dropdown_props.draw_on_top && is_active(ctx->dropdown_props.hash))
+    {
+        imgui_set_text_size(ctx->dropdown_props.text_size_px);
+        draw_dropdown(ctx->dropdown_props.hash, ctx->dropdown_props.label, ctx->dropdown_props.options, ctx->dropdown_props.num_options, &ctx->dropdown_props.size);
+    }
+
     if(ctx->has_tooltip && is_highlighted(ctx->tooltip_hash))
     {
         draw_tooltip();
@@ -1268,7 +1314,7 @@ static void imgui_slider_float_internal(char* label, float min, float max, float
 
 static void handle_highlighting(uint32_t hash, Rect* r)
 {
-    if(is_inside(r))
+    if(is_inside(r) && !dropdown_on_top(hash, r))
     {
         set_highlighted(hash);
     }
@@ -1281,6 +1327,23 @@ static void handle_highlighting(uint32_t hash, Rect* r)
     }
 
     handle_tooltip(hash);
+}
+
+static bool dropdown_on_top(uint32_t hash, Rect* r)
+{
+    if(ctx->dropdown_props.draw_on_top)
+    {
+        if(ctx->dropdown_props.hash == hash)
+        {
+            return false;
+        }
+
+        if(rectangles_colliding(&ctx->dropdown_props.size,r))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 static void handle_tooltip(uint32_t hash)
@@ -1497,8 +1560,8 @@ static void draw_dropdown(uint32_t hash, char* str, char* options[], int num_opt
     gfx_draw_rect_xywh(r->x + r->w/2.0, r->y + box_height/2.0, r->w, box_height, button_color, 0.0, 1.0, theme.button_opacity, true,false);
 
     int selection = 0;
-    if(ctx->dropdown_selected_index >= 0 && ctx->dropdown_selected_index < num_options)
-        selection = ctx->dropdown_selected_index;
+    if(ctx->dropdown_props.selected_index >= 0 && ctx->dropdown_props.selected_index < num_options)
+        selection = ctx->dropdown_props.selected_index;
 
     char* selected_text = options[selection];
     gfx_draw_string(r->x + theme.text_padding, r->y + theme.text_padding, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, selected_text);
@@ -1512,7 +1575,7 @@ static void draw_dropdown(uint32_t hash, char* str, char* options[], int num_opt
 
         for(int i = 0; i < num_options; ++i)
         {
-            if(i == highlighted_index)
+            if(is_highlighted(hash) && i == highlighted_index)
             {
                 color = theme.button_color_background_highlighted;
             }

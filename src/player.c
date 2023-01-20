@@ -314,7 +314,7 @@ static void player_init(int index)
     p->phys.vel.x = 0.0;
     p->phys.vel.y = 0.0;
 
-
+    p->tint = COLOR_TINT_NONE;
 
     // other
     // --------------------------------------------------------
@@ -1427,11 +1427,11 @@ void player_draw(Player* p, bool add_to_existing_batch)
     // player
     if(add_to_existing_batch)
     {
-        gfx_sprite_batch_add(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE,p->scale,0.0,1.0,true,false,false);
+        gfx_sprite_batch_add(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, p->tint,p->scale,0.0,1.0,true,false,false);
     }
     else
     {
-        gfx_draw_image(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, COLOR_TINT_NONE,p->scale,0.0,1.0,true,true);
+        gfx_draw_image(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, p->tint,p->scale,0.0,1.0,true,true);
     }
 
     if(p->item.drawable && p->item.props != NULL)

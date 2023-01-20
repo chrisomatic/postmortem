@@ -220,7 +220,7 @@ typedef struct
     PlayerNetState predicted_states[MAX_CLIENT_PREDICTED_STATES];
     int predicted_state_index;
 
-
+    uint32_t tint;
 
 } Player;
 
