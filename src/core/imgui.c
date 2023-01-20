@@ -4,6 +4,7 @@
 #include "window.h"
 #include "hash.h"
 #include "imgui.h"
+#include "log.h"
 #include <math.h>
 
 #define NOMINAL_FONT_SIZE 64.0 // px for 1.0 scale
@@ -935,6 +936,7 @@ Vector2f imgui_draw_demo(int x, int y)
 
 static bool _editor_test = false;
 static char _editor_text[20]= {0};
+static char _editor_file_name[32] = {0};
 
 void imgui_theme_editor()
 {
@@ -1002,13 +1004,29 @@ void imgui_theme_editor()
     imgui_number_box("Panel min width", 0, 1000, &theme.panel_min_width);
     imgui_indent_end();
 
-    imgui_horizontal_begin();
     if(imgui_button("Defaults"))
     {
         set_default_theme();
     }
 
-    imgui_button("Save");
+    imgui_horizontal_begin();
+    imgui_text_box("File Name##file_name",_editor_file_name,IM_ARRAYSIZE(_editor_file_name));
+    if(imgui_button("Save"))
+    {
+        char file_path[64]= {0};
+        snprintf(file_path,63,"src/themes/%s.theme",_editor_file_name);
+        FILE* fp = fopen(file_path,"wb");
+        if(fp)
+        {
+            fwrite(&theme,sizeof(ImGuiTheme),1,fp);
+            LOGI("Saved theme: %s",file_path);
+            fclose(fp);
+        }
+        else
+        {
+            LOGW("Failed to save file %s\n",file_path);
+        }
+    }
     imgui_horizontal_end();
 
     imgui_set_text_size(prior_text_size);

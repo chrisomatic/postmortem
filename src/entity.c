@@ -193,7 +193,7 @@ void entities_update_grid_boxes()
         Player* p = &players[i];
         if(p->active)
         {
-            if(p->index == 0) dbg = true;
+            //if(p->index == 0) dbg = true;
             add_to_grid_boxes(ENTITY_TYPE_PLAYER, (void*)p);
             dbg = false;
         }
