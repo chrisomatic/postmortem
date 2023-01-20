@@ -73,6 +73,52 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods);
 
 int main(int argc, char* argv[])
 {
+
+    // LineSeg segs[5] = {0};
+    // segs[0].a.x = 1012.800171;
+    // segs[0].a.y = 1015.801697;
+    // segs[0].b.x = 1014.933533;
+    // segs[0].b.y = 1015.801697;
+    // segs[1].a.x = 1000.685486;
+    // segs[1].a.y = 1005.267212;
+    // segs[1].b.x = 1002.818848;
+    // segs[1].b.y = 1005.267212;
+    // segs[2].a.x = 1024.914795;
+    // segs[2].a.y = 1005.267212;
+    // segs[2].b.x = 1027.048218;
+    // segs[2].b.y = 1005.267212;
+    // segs[3].a.x = 1000.685486;
+    // segs[3].a.y = 1026.336182;
+    // segs[3].b.x = 1002.818848;
+    // segs[3].b.y = 1026.336182;
+    // segs[4].a.x = 1024.914795;
+    // segs[4].a.y = 1026.336182;
+    // segs[4].b.x = 1027.048218;
+    // segs[4].b.y = 1026.336182;
+    // Rect r00 = {0};
+    // r00.x = 960.000000;
+    // r00.y = 960.000000;
+    // r00.w = 128.000000;
+    // r00.h = 128.000000;
+    // Rect r01 = {0};
+    // r01.x = 960.000000;
+    // r01.y = 1088.000000;
+    // r01.w = 128.000000;
+    // r01.h = 128.000000;
+    // Rect r10 = {0};
+    // r10.x = 1088.000000;
+    // r10.y = 960.000000;
+    // r10.w = 128.000000;
+    // r10.h = 128.000000;
+    // Rect r11 = {0};
+    // r11.x = 1088.000000;
+    // r11.y = 1088.000000;
+    // r11.w = 128.000000;
+    // r11.h = 128.000000;
+
+    // bool intersect = are_line_segs_intersecting_rect(segs, 5, &r00);
+
+
     // for(int i = 0; i < 16; ++i)
     // {
     //     Vector2f r = angle_sector_range(16, i);
@@ -608,7 +654,8 @@ void draw_debug()
             if(r < 0 || c < 0 || r >= WORLD_GRID_ROWS_MAX || c >= WORLD_GRID_COLS_MAX) continue;
             float x0,y0;
             world_grid_to_coords_tl(r, c, &x0, &y0);
-            gfx_draw_string(x0+1.0, y0+1.0, COLOR_ORANGE, 0.1, 0.0, 1.0, true, false, "%d", grid_boxes[r][c].num);
+            gfx_draw_string(x0+1.0, y0+1.0, COLOR_ORANGE, 0.08, 0.0, 1.0, true, false, "%d,%d (%d)", r, c, grid_boxes[r][c].num);
+
         }
     }
 

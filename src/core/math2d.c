@@ -568,6 +568,15 @@ void rectxy_to_rect(RectXY* in, Rect* out)
     out->y = ymin + out->h/2.0;
 }
 
+bool rects_equal(Rect* r1, Rect* r2)
+{
+    if(!FEQ(r1->x, r2->x)) return false;
+    if(!FEQ(r1->y, r2->y)) return false;
+    if(!FEQ(r1->w, r2->w)) return false;
+    if(!FEQ(r1->h, r2->h)) return false;
+    return true;
+}
+
 void print_rect(Rect* r)
 {
     printf("Rectangle (x,y,w,h): %.3f, %.3f, %.3f, %.3f\n", r->x, r->y, r->w, r->h);

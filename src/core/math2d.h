@@ -119,6 +119,7 @@ float rangef(float arr[], int n, float* fmin, float* fmax);
 void rotate_rect(Rect* in, float rotation, float rotation_x, float rotation_y, RectXY* out);
 void rect_to_rectxy(Rect* in, RectXY* out);
 void rectxy_to_rect(RectXY* in, Rect* out);
+bool rects_equal(Rect* r1, Rect* r2);
 void print_rect(Rect* r);
 void print_rectxy(RectXY* r);
 

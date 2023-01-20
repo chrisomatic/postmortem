@@ -193,7 +193,7 @@ void entities_update_grid_boxes()
         Player* p = &players[i];
         if(p->active)
         {
-            // if(p->index == 0) dbg = true;
+            if(p->index == 0) dbg = true;
             add_to_grid_boxes(ENTITY_TYPE_PLAYER, (void*)p);
             dbg = false;
         }
@@ -387,12 +387,14 @@ static int rect_get_grid_boxes(Rect* rect, int radius, int* rows, int* cols)
             if(_row < 0 || _col < 0) continue;
             if(_row >= WORLD_GRID_ROWS_MAX || _col >= WORLD_GRID_COLS_MAX) continue;
 
-            if(dbg) printf("%d, %d\n", _row, _col);
+            if(dbg) printf("check: %d, %d\n", _row, _col);
 
             Rect check = {0};
             world_grid_to_rect(_row, _col, &check);
             if(rectangles_colliding(rect, &check))
             {
+                if(dbg) printf("collide: %d, %d\n", _row, _col);
+
                 rows[count] = _row;
                 cols[count] = _col;
                 count++;
@@ -402,7 +404,6 @@ static int rect_get_grid_boxes(Rect* rect, int radius, int* rows, int* cols)
         }
     }
     if(dbg) printf("count: %d\n", count);
-    dbg = false;
 
     return count;
 }
@@ -568,8 +569,23 @@ static int scum(Physics* phys, int rows[20], int cols[20])
     int edge_cols[8] = {0};
 
     int pcount = rect_get_grid_boxes(prc, 1, edge_rows, edge_cols);
+
+    if(rects_equal(rc, prc))
+    {
+        for(int i = 0; i < pcount; ++i)
+        {
+            rows[i] = edge_rows[i];
+            cols[i] = edge_cols[i];
+            gc++;
+        }
+        goto scum_exit;
+    }
+
+
     int ccount = rect_get_grid_boxes(rc, 1, edge_rows+pcount, edge_cols+pcount);
     int count = pcount + ccount;
+
+    if(dbg) printf("pcount: %d, ccount: %d\n", pcount, ccount);
 
     if(count == 0)
     {
@@ -654,11 +670,49 @@ static int scum(Physics* phys, int rows[20], int cols[20])
         }
 
     }
+    else if(max_col-min_col == 1 && max_row-min_row == 1)
+    {
+        // intersecting with 4 grid spaces
+        for(int i = min_col; i <= max_col; ++i)
+        {
+            for(int j = min_row; j <= max_row; ++j)
+            {
+                rows[gc] = j;
+                cols[gc] = i;
+                gc++;
+            }
+        }
+        goto scum_exit;
+    }
     else
     {
 
+        // if(dbg)
+        // {
+        //     printf("min: %d, %d\n", min_row, min_col);
+        //     printf("max: %d, %d\n", max_row, max_col);
+        // }
+
         LineSeg segs[5] = {0};
         rects_to_ling_segs(prc, rc, segs);
+
+        if(dbg)
+        {
+            printf("LineSeg segs[5] = {0};\n");
+            for(int i = 0; i < 5; ++i)
+            {
+                printf("segs[%d].a.x = %f;\n", i, segs[i].a.x);
+                printf("segs[%d].a.y = %f;\n", i, segs[i].a.y);
+                printf("segs[%d].b.x = %f;\n", i, segs[i].b.x);
+                printf("segs[%d].b.y = %f;\n", i, segs[i].b.y);
+            }
+
+            // printf("%.2f, %.2f  ->  %.2f, %.2f\n", segs[0].a.x, segs[0].a.y, segs[0].b.x, segs[0].b.y);
+            // printf("%.2f, %.2f  ->  %.2f, %.2f\n", segs[1].a.x, segs[1].a.y, segs[1].b.x, segs[1].b.y);
+            // printf("%.2f, %.2f  ->  %.2f, %.2f\n", segs[2].a.x, segs[2].a.y, segs[2].b.x, segs[2].b.y);
+            // printf("%.2f, %.2f  ->  %.2f, %.2f\n", segs[3].a.x, segs[3].a.y, segs[3].b.x, segs[3].b.y);
+            // printf("%.2f, %.2f  ->  %.2f, %.2f\n", segs[4].a.x, segs[4].a.y, segs[4].b.x, segs[4].b.y);
+        }
 
         for(int i = 0; i <= crange; ++i)
         {
@@ -668,6 +722,18 @@ static int scum(Physics* phys, int rows[20], int cols[20])
                 int r = start_row + j*ydir;
                 Rect wr = {0};
                 world_grid_to_rect(r, c, &wr);
+
+                if(dbg)
+                {
+                    // print_rect(&wr);
+                    printf("Rect r%d%d = {0};\n",i,j);
+                    printf("r%d%d.x = %f;\n",i,j, wr.x);
+                    printf("r%d%d.y = %f;\n",i,j, wr.y);
+                    printf("r%d%d.w = %f;\n",i,j, wr.w);
+                    printf("r%d%d.h = %f;\n",i,j, wr.h);
+                }
+
+
                 bool intersect = are_line_segs_intersecting_rect(segs, 5, &wr);
                 if(intersect)
                 {
@@ -691,6 +757,11 @@ scum_exit:
         world_grid_to_rect(rows[i], cols[i], &pg[pg_count++]);
     }
 #endif
+
+    if(dbg) printf("scum returning: %d\n", gc);
+
+    if(dbg && gc == 0)
+        exit(1);
 
     return gc;
 }
