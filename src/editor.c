@@ -96,12 +96,14 @@ void editor_draw()
             }
         }
 
+        int selection = -1;
+
         if(!editor_collapsed)
         {
             imgui_newline();
 
             char* buttons[] = {"Game", "Weapons", "Particles", "Console", "UI Theme"};
-            int selection = imgui_button_select(IM_ARRAYSIZE(buttons), buttons, "");
+            selection = imgui_button_select(IM_ARRAYSIZE(buttons), buttons, "");
 
             imgui_newline();
             imgui_text_sized(20,buttons[selection]);
@@ -417,7 +419,8 @@ void editor_draw()
 
         }
 
-    imgui_restore_theme();
+    if(selection != 4)
+        imgui_restore_theme();
     Vector2f size = imgui_end();
 
     Rect panel_rect = {0};

@@ -39,7 +39,7 @@ typedef struct
     bool draw_on_top;
     uint32_t hash;
     int selected_index;
-    char* options;
+    char** options;
     int num_options;
     char label[32];
     float text_size_px;
@@ -167,7 +167,7 @@ static void draw_color_box(Rect* r, uint32_t color);
 static void draw_label(int x, int y, uint32_t color, char* label);
 static void draw_number_box(uint32_t hash, char* label, Rect* r, int val, int max);
 static void draw_input_box(uint32_t hash, char* label, Rect* r, char* text);
-static void draw_dropdown(uint32_t hash, char* str, char* options[], int num_options, Rect* r);
+static void draw_dropdown(uint32_t hash, char* str, char** options, int num_options, Rect* r);
 static void draw_panel();
 static void draw_tooltip();
 
@@ -568,6 +568,8 @@ int imgui_dropdown(char* options[], int num_options, char* label)
         }
     }
 
+    max_width += 16; // size of arrow
+
     bool active = is_active(hash);
 
     if(is_highlighted(hash))
@@ -608,7 +610,7 @@ int imgui_dropdown(char* options[], int num_options, char* label)
 
         // cache needed properties to draw later
         ctx->dropdown_props.hash = hash;
-        ctx->dropdown_props.options = options;
+        ctx->dropdown_props.options = (char**)options;
         ctx->dropdown_props.num_options = num_options;
         ctx->dropdown_props.text_size_px = theme.text_size_px;
         memcpy(ctx->dropdown_props.label,new_label,31);
@@ -1563,10 +1565,13 @@ static void draw_dropdown(uint32_t hash, char* str, char* options[], int num_opt
     if(ctx->dropdown_props.selected_index >= 0 && ctx->dropdown_props.selected_index < num_options)
         selection = ctx->dropdown_props.selected_index;
 
+    bool active = is_active(hash);
+
     char* selected_text = options[selection];
     gfx_draw_string(r->x + theme.text_padding, r->y + theme.text_padding, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, selected_text);
+    gfx_draw_string(r->x + theme.text_padding + r->w - 16, r->y + theme.text_padding, theme.button_color_foreground, theme.text_scale, 0.0, 1.0, false, false, active ? "-" : "+");
 
-    if(is_active(hash))
+    if(active)
     {
         float y_diff = ctx->mouse_y - r->y;
         int highlighted_index = floor(y_diff / box_height) - 1;
