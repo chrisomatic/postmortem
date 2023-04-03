@@ -381,22 +381,31 @@ bool rectangles_colliding(Rect* a, Rect* b)
 
 bool rectangles_colliding2(Rect* a, Rect* b)
 {
-    float ax0 = a->x - a->w/2.0;
-    float ax1 = a->x + a->w/2.0;
-    float ay0 = a->y - a->h/2.0;
-    float ay1 = a->y + a->h/2.0;
+    bool isOverlapping(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2);
 
-    float bx0 = b->x - b->w/2.0;
-    float bx1 = b->x + b->w/2.0;
-    float by0 = b->y - b->h/2.0;
-    float by1 = b->y + b->h/2.0;
+    int x1 = a->x;
+    int y1 = a->y;
+    int w1 = a->w;
+    int h1 = a->h;
 
-    bool overlap = (
-        ax0 < (bx1) && (ax1) > bx0 &&
-        ay0 < (by1) && (ay1) > by0
-    );
+    int x2 = b->x;
+    int y2 = b->y;
+    int w2 = b->w;
+    int h2 = b->h;
 
-    return overlap;
+    // Check if one rectangle is on the left side of the other
+    if (x1 + w1 <= x2 || x2 + w2 <= x1) {
+        return false;
+    }
+
+    // Check if one rectangle is above the other
+    if (y1 + h1 <= y2 || y2 + h2 <= y1) {
+        return false;
+    }
+
+    // If neither of the above checks are true, then the
+    // two rectangles must be overlapping.
+    return true;
 }
 
 void get_scale_transform(Matrix* mat, Vector3f* scale)

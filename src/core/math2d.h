@@ -12,6 +12,8 @@
 
 #define RAND_RANGE(min, max) ((rand()%((max)-(min)+1)) + (min))
 #define RAND_FLOAT(min, max) ((float)((double)rand()/(double)(RAND_MAX/((max)-(min))))+(min))
+#define RAND8() (rand()%256)
+
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define RANGE(x,y,z) MIN(MAX((x),(y)),(z))
@@ -111,6 +113,7 @@ bool are_line_segs_intersecting(LineSeg* l1, LineSeg* l2);
 void rects_to_ling_segs(Rect* a, Rect* b, LineSeg out[5]);
 bool are_rects_colliding(Rect* prior_s, Rect* curr_s, Rect* check);
 bool rectangles_colliding(Rect* a, Rect* b);
+bool rectangles_colliding2(Rect* a, Rect* b);
 
 int angle_sector(float angle, int num_sectors);
 Vector2f angle_sector_range(int num_sectors, int sector);

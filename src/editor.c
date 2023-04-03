@@ -75,11 +75,11 @@ void editor_draw()
     float tl_x = 10.0;
     float tl_y = 10.0;
 
-    imgui_begin_panel("Editor", (int)tl_x, (int)tl_y);
+    imgui_begin_panel("Editor", (int)tl_x, (int)tl_y,true);
 
         imgui_store_theme();
         imgui_set_text_size(12);
-        imgui_text_sized(28,"Editor");
+        //imgui_text_sized(28,"Editor");
 
         if(editor_collapsed)
         {

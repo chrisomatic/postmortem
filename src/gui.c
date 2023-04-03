@@ -294,9 +294,9 @@ void gui_draw()
     bool skills_menu_enabled = true;
     if(skills_menu_enabled)
     {
-        imgui_begin_panel("##Skills",view_width - skills_panel_size.x-10,view_height - skills_panel_size.y-10);
-            imgui_text_sized(18,"Skills");
-            imgui_horizontal_line();
+        imgui_begin_panel("Skills##Skills",view_width - skills_panel_size.x-10,view_height - skills_panel_size.y-10,true);
+            //imgui_text_sized(18,"Skills");
+            //imgui_horizontal_line();
             imgui_newline();
             imgui_indent_begin(10);
 
@@ -403,7 +403,7 @@ static void draw_debug_box()
         float big = 23.0/factor;
         float _small = 15.0/factor;
 
-        imgui_begin_panel("Debug",950,10);
+        imgui_begin_panel("Debug",950,10,true);
             imgui_set_text_size(_small);
 
             imgui_text_sized(big,"Window");
