@@ -28,7 +28,7 @@ static void load_map_file(const char* file_path)
     
     //  # id (1), data len (4), version (1), name len (1), name..., rows (2), cols (2), data...
 
-    if(map.name) free(map.name);
+    if(map.header.name) free(map.header.name);
     if(map.data) free(map.data);
 
     memset(&map, 0, sizeof(WorldMap));
@@ -36,6 +36,7 @@ static void load_map_file(const char* file_path)
     int byte_count = 0;
 
     //uint8_t bytes[1024*1024] = {0};
+    uint8_t map_header[1+4+1+1+2+2] = {0};
     uint8_t* bytes = calloc(1024 * 1024, sizeof(uint8_t));
 
     for(;;)
@@ -49,57 +50,57 @@ static void load_map_file(const char* file_path)
 
     int idx = 0;
 
-    map.id = bytes[idx++];
+    map.header.id = bytes[idx++];
 
-    map.data_len = (uint32_t)((bytes[idx+3] << 24) | (bytes[idx+2] << 16) | (bytes[idx+1] << 8) | (bytes[idx] << 0));
+    map.header.data_len = (uint32_t)((bytes[idx+3] << 24) | (bytes[idx+2] << 16) | (bytes[idx+1] << 8) | (bytes[idx] << 0));
     idx += 4;
 
-    map.version = bytes[idx++];
+    map.header.version = bytes[idx++];
 
-    map.name_len = bytes[idx++];
+    map.header.name_len = bytes[idx++];
 
     printf("Loading map name\n");
-    map.name = malloc((map.name_len+1)*sizeof(char));
-    memcpy(map.name, &bytes[idx], map.name_len*sizeof(char));
-    idx += map.name_len;
+    map.header.name = malloc((map.header.name_len+1)*sizeof(char));
+    memcpy(map.header.name, &bytes[idx], map.header.name_len*sizeof(char));
+    idx += map.header.name_len;
 
-    map.rows = bytes[idx+1] << 8 | bytes[idx] << 0;
+    map.header.rows = bytes[idx+1] << 8 | bytes[idx] << 0;
     idx += 2;
 
-    map.cols = bytes[idx+1] << 8 | bytes[idx] << 0;
+    map.header.cols = bytes[idx+1] << 8 | bytes[idx] << 0;
     idx += 2;
 
     printf("Loading map data\n");
-    map.data = malloc(map.rows*map.cols*sizeof(uint8_t));
+    map.data = malloc(map.header.rows*map.header.cols*sizeof(uint8_t));
     memcpy(map.data, &bytes[idx], byte_count*sizeof(uint8_t));
 
     free(bytes);
 
-    if(map.rows > MAP_GRID_ROWS_MAX)
+    if(map.header.rows > MAP_GRID_ROWS_MAX)
     {
-        LOGW("map.rows (%u) exceeds max (%d)", map.rows, MAP_GRID_ROWS_MAX);
-        map.rows = MAP_GRID_ROWS_MAX;
+        LOGW("map.rows (%u) exceeds max (%d)", map.header.rows, MAP_GRID_ROWS_MAX);
+        map.header.rows = MAP_GRID_ROWS_MAX;
     }
 
-    if(map.cols > MAP_GRID_COLS_MAX)
+    if(map.header.cols > MAP_GRID_COLS_MAX)
     {
-        LOGW("map.cols (%u) exceeds max (%d)", map.cols, MAP_GRID_COLS_MAX);
-        map.cols = MAP_GRID_COLS_MAX;
+        LOGW("map.cols (%u) exceeds max (%d)", map.header.cols, MAP_GRID_COLS_MAX);
+        map.header.cols = MAP_GRID_COLS_MAX;
     }
 
     // print map
     LOGI("Map Loaded (%s):", file_path);
-    LOGI("  ID: %u",map.id);
-    LOGI("  Data Len: %u", map.data_len);
-    LOGI("  Version: %u",map.version);
-    LOGI("  Name (len: %u): %s",map.name_len, map.name);
-    LOGI("  Rows: %u",map.rows);
-    LOGI("  Cols: %u",map.cols);
+    LOGI("  ID: %u",map.header.id);
+    LOGI("  Data Len: %u", map.header.data_len);
+    LOGI("  Version: %u",map.header.version);
+    LOGI("  Name (len: %u): %s",map.header.name_len, map.header.name);
+    LOGI("  Rows: %u",map.header.rows);
+    LOGI("  Cols: %u",map.header.cols);
     LOGI("  Data:");
     print_hex(map.data, 100);
 
-    float width = map.cols*MAP_GRID_PXL_SIZE;
-    float height = map.rows*MAP_GRID_PXL_SIZE;
+    float width = map.header.cols*MAP_GRID_PXL_SIZE;
+    float height = map.header.rows*MAP_GRID_PXL_SIZE;
     map.rect.w = width;
     map.rect.h = height;
     map.rect.x = map.rect.w/2.0;
@@ -173,9 +174,9 @@ void world_draw()
 
 uint8_t map_get_tile_index(int row, int col)
 {
-    if(row >= map.rows || col >= map.cols || row < 0 || col < 0)
+    if(row >= map.header.rows || col >= map.header.cols || row < 0 || col < 0)
         return 0xFF;
-    return map.data[row*map.cols+col];
+    return map.data[row*map.header.cols+col];
 }
 
 void coords_to_map_grid(float x, float y, int* row, int* col)
@@ -205,7 +206,7 @@ void map_grid_to_rect(int row, int col, Rect* r)
 
 int map_grid_to_index(int row, int col)
 {
-    return row*map.cols+col;
+    return row*map.header.cols+col;
 }
 
 bool is_grid_within_radius(int r1, int c1, int r2, int c2, int radius)
@@ -216,14 +217,14 @@ bool is_grid_within_radius(int r1, int c1, int r2, int c2, int radius)
 
 void index_to_map_grid(int index, int* row, int* col)
 {
-    *row = (index / map.cols);
-    *col = (index % map.cols);
+    *row = (index / map.header.cols);
+    *col = (index % map.header.cols);
 }
 
 void map_get_grid_dimensions(int* num_rows, int* num_cols)
 {
-    *num_rows = (int)map.rows;
-    *num_cols = (int)map.cols;
+    *num_rows = (int)map.header.rows;
+    *num_cols = (int)map.header.cols;
 }
 
 
@@ -265,8 +266,8 @@ void index_to_world_grid(int index, int* row, int* col)
 
 void world_get_grid_dimensions(int* num_rows, int* num_cols)
 {
-    *num_rows = map.rows/WORLD_GRID_HEIGHT;
-    *num_cols = map.cols/WORLD_GRID_WIDTH;
+    *num_rows = map.header.rows/WORLD_GRID_HEIGHT;
+    *num_cols = map.header.cols/WORLD_GRID_WIDTH;
 }
 
 // returns top left map grid

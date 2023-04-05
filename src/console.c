@@ -68,8 +68,8 @@ void console_run_command(char* text)
         int row = atoi(s_row);
         int col = atoi(s_col);
 
-        row = RANGE(row, 0, map.rows-1);
-        col = RANGE(col, 0, map.cols-1);
+        row = RANGE(row, 0, map.header.rows-1);
+        col = RANGE(col, 0, map.header.cols-1);
         // printf("row, col: %d, %d\n", row, col);
         float x,y;
         map_grid_to_coords(row, col, &x, &y);

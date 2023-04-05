@@ -32,6 +32,11 @@ typedef struct
     char* name;
     uint16_t rows;
     uint16_t cols;
+} WorldMapHeader;
+
+typedef struct
+{
+    WorldMapHeader header;
     uint8_t* data;
     Rect rect;  //pixels
 } WorldMap;

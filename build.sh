@@ -16,6 +16,7 @@ gcc core/gfx.c \
     core/bitpack.c \
     core/imgui.c \
     core/particles.c \
+    core/pathfind.c \
     core/glist.c \
     main.c \
     world.c \
