@@ -4,7 +4,7 @@
 
 This is a work-in-progress 2D game
 
-![](postmortem.gif)
+![](screenshot.png)
 
 ## TODO
 
