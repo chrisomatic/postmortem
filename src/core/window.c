@@ -494,6 +494,18 @@ static void char_callback(GLFWwindow* window, unsigned int code)
     {
         char c = (char)code;
         int index = imgui_get_text_cursor_index();
+
+        // remove any highlighted text when typing
+        int i0, i1;
+        imgui_get_text_cursor_indices(&i0, &i1);
+        if(i1 > i0)
+        {
+            for(int i = i0; i < i1; ++i)
+                window_text_mode_buf_remove(i0+1,true);
+            imgui_set_text_cursor_indices(i0,i0);
+        }
+
+        // insert character
         windows_text_mode_buf_insert(c,index);
         imgui_text_cursor_inc(1);
     }
@@ -502,6 +514,12 @@ static void char_callback(GLFWwindow* window, unsigned int code)
 static void key_callback(GLFWwindow* window, int key, int scan_code, int action, int mods)
 {
     // printf("key callback: %d\n", key);
+
+    bool control = IS_BIT_SET(mods,GLFW_MOD_CONTROL);
+    bool shift = IS_BIT_SET(mods,GLFW_MOD_SHIFT);
+
+    int i0, i1;
+    imgui_get_text_cursor_indices(&i0, &i1);
 
     if(key_mode == KEY_MODE_NORMAL)
     {
@@ -530,9 +548,6 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
             }
             else if(key == GLFW_KEY_BACKSPACE)
             {
-                int i0, i1;
-                imgui_get_text_cursor_indices(&i0, &i1);
-
                 if(i0 == i1)
                 {
                     window_text_mode_buf_remove(i0,true);
@@ -548,9 +563,6 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
             }
             else if(key == GLFW_KEY_DELETE)
             {
-                int i0, i1;
-                imgui_get_text_cursor_indices(&i0, &i1);
-
                 if(i0 == i1)
                 {
                     window_text_mode_buf_remove(i0,false);
@@ -563,13 +575,127 @@ static void key_callback(GLFWwindow* window, int key, int scan_code, int action,
                     imgui_set_text_cursor_indices(i0,i0);
                 }
             }
+            else if(key == GLFW_KEY_A)
+            {
+                if(control)
+                {
+                    imgui_set_text_cursor_indices(0,strlen(text_buf));
+                }
+            }
+            else if(key == GLFW_KEY_C)
+            {
+                if(control)
+                {
+                    char temp_buf[100] = {0};
+                    memcpy(temp_buf,text_buf+i0,(i1-i0)*sizeof(char));
+                    window_set_clipboard(temp_buf);
+                }
+            }
+            else if(key == GLFW_KEY_V)
+            {
+                if(control)
+                {
+                    const char* clip = window_get_clipboard();
+
+                    // remove any highlighted text when typing
+                    if(i1 > i0)
+                    {
+                        for(int i = i0; i < i1; ++i)
+                            window_text_mode_buf_remove(i0+1,true);
+                        imgui_set_text_cursor_indices(i0,i0);
+                    }
+
+                    // insert character
+                    for(int i = 0 ; i < strlen(clip); ++i)
+                    {
+                        windows_text_mode_buf_insert(clip[i],i0+i);
+                        imgui_text_cursor_inc(1);
+                    }
+                }
+            }
             else if(key == GLFW_KEY_LEFT)
             {
-                imgui_text_cursor_inc(-1);
+                if(control)
+                {
+                    int steps = 0;
+                    bool first_non_whitespace = false;
+                    for(int i = i0-1; i >= 0; --i)
+                    {
+                        if(text_buf[i] == ' ' || text_buf[i] == '\t' || text_buf[i] == '\n')
+                        {
+                            if(first_non_whitespace)
+                                break;
+                        }
+                        else
+                        {
+                            first_non_whitespace = true;
+                        }
+
+                        steps++;
+                    }
+
+                    if(shift)
+                    {
+                        // control+shift
+                        imgui_set_text_cursor_indices(i0-steps,i1);
+                    }
+                    else
+                    {
+                        imgui_text_cursor_inc(-steps);
+                    }
+                }
+                else if(shift)
+                {
+                    imgui_set_text_cursor_indices(i0-1,i1);
+                }
+                else
+                {
+                    imgui_text_cursor_inc(-1);
+                }
+
+                imgui_reset_cursor_blink();
             }
             else if(key == GLFW_KEY_RIGHT)
             {
-                imgui_text_cursor_inc(+1);
+                if(control)
+                {
+                    int steps = 0;
+                    bool first_whitespace = false;
+                    for(int i = i0; i < strlen(text_buf); ++i)
+                    {
+                        if(text_buf[i] == ' ' || text_buf[i] == '\t' || text_buf[i] == '\n')
+                        {
+                            first_whitespace = true;
+                        }
+                        else
+                        {
+                            if(first_whitespace)
+                                break;
+                        }
+                        steps++;
+                    }
+
+                    if(shift)
+                    {
+                        // control+shift
+                        imgui_set_text_cursor_indices(i0+steps,i1);
+                    }
+                    else
+                    {
+                        imgui_text_cursor_inc(+steps);
+                    }
+                }
+                else if(shift)
+                {
+                    imgui_set_text_cursor_indices(i0+1,i1); // @TODO: Debug this
+                    //printf("i0: %d, i1: %d\n",i0, i1);
+                }
+                else
+                {
+                    imgui_text_cursor_inc(+1);
+                }
+
+                imgui_reset_cursor_blink();
             }
             else if(key == GLFW_KEY_ESCAPE)
             {
@@ -709,4 +835,12 @@ void window_text_mode_buf_remove(int index, bool backspace)
     }
 }
 
+const char* window_get_clipboard()
+{
+    return glfwGetClipboardString(window);
+}
 
+void window_set_clipboard(const char* clip)
+{
+    glfwSetClipboardString(window, clip);
+}

@@ -62,3 +62,6 @@ void window_mouse_update_actions();
 
 void window_mouse_set_cursor_ibeam();
 void window_mouse_set_cursor_normal();
+
+const char* window_get_clipboard();
+void window_set_clipboard(const char* clip);
