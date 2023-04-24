@@ -241,7 +241,7 @@ def main():
 
     else:
 
-        c = Compositor("zombie1_0","die", sprite_w, sprite_h, True)
+        c = Compositor("female1_0","idle", sprite_w, sprite_h, True)
 
         # @TEST
         # # img = QImage(32, 32, QImage.Format_ARGB32)

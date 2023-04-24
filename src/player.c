@@ -371,7 +371,6 @@ void players_init()
         if(p->active)
             player_count++;
     }
-
 }
 
 void player_set_scale(Player* p, float scale)
