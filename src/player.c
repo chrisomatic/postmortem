@@ -43,6 +43,7 @@ uint32_t player_colors[MAX_CLIENTS] = {
 int player_image_sets_none[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][ANIM_MAX];
 int player_image_sets_guns[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][ANIM_MAX][GUN_TYPE_MAX];
 int player_image_sets_melees[PLAYER_MODELS_MAX][PLAYER_TEXTURES_MAX][ANIM_MAX][MELEE_TYPE_MAX];
+int player_image_shadow;
 
 PlayerModel player_models[PLAYER_MODELS_MAX];
 bool moving_zombie = false;
@@ -156,6 +157,7 @@ void player_init_images()
     }
 
     crosshair_image = gfx_load_image("src/img/crosshair2.png", false, false, 0, 0);
+    player_image_shadow = gfx_load_image("src/img/shadow.png", false, false, 0, 0);
 }
 
 
@@ -1426,6 +1428,7 @@ void player_draw(Player* p, bool add_to_existing_batch)
     // player
     if(add_to_existing_batch)
     {
+        gfx_sprite_batch_add(player_image_shadow, 0, p->phys.pos.x, p->phys.pos.y + p->phys.pos.h/2.0, 0x00FFFFFF,p->scale*1.3,0.0,0.4,true,false,false);
         gfx_sprite_batch_add(p->image, p->sprite_index, p->phys.pos.x, p->phys.pos.y, p->tint,p->scale,0.0,1.0,true,false,false);
     }
     else
