@@ -47,8 +47,7 @@ char console_text_hist[CONSOLE_HIST_MAX][CONSOLE_TEXT_MAX+1] = {{0}};
 int console_text_hist_index = 0;
 int console_text_hist_selection = 0;
 
-bool console_enabled = false;
-bool debug_enabled = true;
+bool debug_enabled = false;
 bool show_menu = false;
 
 // =========================
@@ -720,7 +719,6 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
             {
                 window_controls_set_key_mode(KEY_MODE_TEXT);
                 window_controls_set_text_buf(console_text, CONSOLE_TEXT_MAX);
-                console_enabled = true;
             }
             else if(key == GLFW_KEY_ESCAPE)
             {
@@ -742,7 +740,6 @@ void key_cb(GLFWwindow* window, int key, int scan_code, int action, int mods)
             if(key == GLFW_KEY_ESCAPE || key == GLFW_KEY_F10)
             {
                 window_controls_set_key_mode(KEY_MODE_NORMAL);
-                console_enabled = false;
                 // printf("console not enabled\n");
             }
 

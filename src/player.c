@@ -77,11 +77,11 @@ void player_init_models()
     player_models[idx].textures = 1;
     // player_model_texture_count += player_models[idx].textures;
 
-    // idx = HUMAN2;
-    // player_models[idx].index = idx;
-    // player_models[idx].name = "human2";
-    // player_models[idx].textures = 1;
-    // player_model_texture_count += player_models[idx].textures;
+    idx = FEMALE1;
+    player_models[idx].index = idx;
+    player_models[idx].name = "female1";
+    player_models[idx].textures = 1;
+    //player_model_texture_count += player_models[idx].textures;
 }
 
 void player_init_images()
@@ -1263,8 +1263,8 @@ void player_update(Player* p, double delta_t)
 
     if(p->running && moving_player && !p->busy)
     {
-        //accel_factor *= 3.0;
-        accel_factor *= 20.0;
+        accel_factor *= 3.0;
+        //accel_factor *= 20.0;
     }
 
     if((up || down) && (left || right))

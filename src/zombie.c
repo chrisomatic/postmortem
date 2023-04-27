@@ -156,13 +156,13 @@ bool zombie_add(ZombieSpawn* spawn)
     // set default values if not set by spawn
     // --------------------------------------------------------
     if(FEQ(spawn->max_linear_vel, 0.0))
-        spawn->max_linear_vel = 128.0;
+        spawn->max_linear_vel = 112.0;
 
     if(FEQ(spawn->hp_max, 0.0))
         spawn->hp_max = 3.0;
 
     if(FEQ(spawn->speed, 0.0))
-        spawn->speed = 16.0;
+        spawn->speed = 12.0;
 
     if(FEQ(spawn->scale, 0.0))
         spawn->scale = 1.0;
@@ -172,7 +172,7 @@ bool zombie_add(ZombieSpawn* spawn)
     z->anim.curr_frame = 0;
     z->anim.max_frames = 16;
     z->anim.curr_frame_time = 0.0f;
-    z->anim.max_frame_time = 0.04f;
+    z->anim.max_frame_time = 0.01f;
     z->anim.finite = false;
     z->anim.curr_loop = 0;
     z->anim.max_loops = 0;

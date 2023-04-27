@@ -36,6 +36,7 @@ typedef enum
 typedef enum
 {
     HUMAN1,
+    FEMALE1,
 
     PLAYER_MODELS_MAX
 } PlayerModelIndex;

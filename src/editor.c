@@ -25,7 +25,7 @@ static ParticleSpawner* particle_spawner;
 static void randomize_effect(ParticleEffect* effect);
 static char particles_file_name[20] = {0};
 static int num_zombies = 10;
-static bool editor_collapsed = false;
+static bool editor_collapsed = true;
 static float camera_z = 0.4;
 static int grass_clicks = 0;
 

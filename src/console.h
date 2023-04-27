@@ -18,7 +18,6 @@ extern char console_text[CONSOLE_TEXT_MAX+1];
 extern char console_text_hist[CONSOLE_HIST_MAX][CONSOLE_TEXT_MAX+1];
 extern int console_text_hist_index;
 extern int console_text_hist_selection;
-extern bool console_enabled;
 
 void console_run_command(char* text);
 void console_message_add(uint32_t color, char* fmt, ...);
