@@ -126,13 +126,12 @@ void projectile_update(float delta_t)
             continue;
         }
 
-        delta_t = RANGE(delta_t, 0.0, proj->ttl - proj->time);
+        float _dt = RANGE(proj->ttl - proj->time, 0.0, delta_t);
 
-        proj->time += delta_t;
+        proj->time += _dt;
 
-
-        proj->phys.pos.x += delta_t*proj->vel.x;
-        proj->phys.pos.y -= delta_t*proj->vel.y; // @minus
+        proj->phys.pos.x += _dt*proj->vel.x;
+        proj->phys.pos.y -= _dt*proj->vel.y; // @minus
 
         memcpy(&proj->grid_pos_prior, &proj->grid_pos, sizeof(Vector2i));
         coords_to_map_grid(proj->phys.pos.x, proj->phys.pos.y, &proj->grid_pos.x, &proj->grid_pos.y);
