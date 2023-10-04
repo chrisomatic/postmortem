@@ -367,6 +367,8 @@ void players_init()
             if(p2 == p)
             {
                 player_init_debug_controls(p2);
+                p2->model_index = FEMALE1;
+
             }
         }
 
